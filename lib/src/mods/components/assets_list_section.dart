@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/components/assets_url.dart';
+import 'package:tts_mod_vault/src/mods/components/assets_url.dart';
 import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
 
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/components/assets_action_buttons.dart';
-import 'package:tts_mod_vault/src/components/assets_list_section.dart';
-import 'package:tts_mod_vault/src/components/progress_bar.dart';
+import 'package:tts_mod_vault/src/mods/components/assets_action_buttons.dart';
+import 'package:tts_mod_vault/src/mods/components/assets_list_section.dart';
+import 'package:tts_mod_vault/src/mods/components/progress_bar.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 import 'package:tts_mod_vault/src/state/provider.dart';
 

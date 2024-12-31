@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/components/assets_list.dart';
-import 'package:tts_mod_vault/src/components/mods_grid.dart';
-import 'package:tts_mod_vault/src/components/toolbar.dart';
+import 'package:tts_mod_vault/src/mods/components/assets_list.dart';
+import 'package:tts_mod_vault/src/mods/components/mods_grid.dart';
+import 'package:tts_mod_vault/src/mods/components/toolbar.dart';
 
 class ModsPage extends ConsumerWidget {
   const ModsPage({super.key});

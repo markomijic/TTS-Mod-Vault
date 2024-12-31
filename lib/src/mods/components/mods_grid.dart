@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/components/mods_grid_card.dart';
+import 'package:tts_mod_vault/src/mods/components/mods_grid_card.dart';
 import 'package:tts_mod_vault/src/state/provider.dart';
 
 class ModsGrid extends ConsumerWidget {

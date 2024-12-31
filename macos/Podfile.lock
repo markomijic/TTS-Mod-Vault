@@ -1,0 +1,36 @@
+PODS:
+  - flutter_archive (0.0.1):
+    - FlutterMacOS
+    - ZIPFoundation (= 0.9.19)
+  - FlutterMacOS (1.0.0)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - ZIPFoundation (0.9.19)
+
+DEPENDENCIES:
+  - flutter_archive (from `Flutter/ephemeral/.symlinks/plugins/flutter_archive/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - ZIPFoundation
+
+EXTERNAL SOURCES:
+  flutter_archive:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_archive/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  path_provider_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
+
+SPEC CHECKSUMS:
+  flutter_archive: 52a43c0bc9d310d2fdfc5c54c7d7ccf4c624bc9a
+  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  ZIPFoundation: b8c29ea7ae353b309bc810586181fd073cb3312c
+
+PODFILE CHECKSUM: 236401fc2c932af29a9fcf0e97baeeb2d750d367
+
+COCOAPODS: 1.15.2

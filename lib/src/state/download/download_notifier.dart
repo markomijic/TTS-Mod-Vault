@@ -1,0 +1,150 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
+
+import 'package:riverpod/riverpod.dart';
+import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
+import 'package:tts_mod_vault/src/utils.dart'
+    show getDirectoryByType, getExtensionByType, getFileNameFromURL;
+import 'download_state.dart';
+import 'package:path/path.dart' as path;
+
+class DownloadNotifier extends StateNotifier<DownloadState> {
+  final DirectoriesState directories;
+
+  DownloadNotifier(this.directories) : super(const DownloadState());
+
+  Future<void> downloadAllMods(
+    List<Mod> mods,
+    Future<void> Function(Mod mod) callback,
+  ) async {
+    for (final mod in mods) {
+      await downloadAllFiles(mod);
+      await callback(mod);
+    }
+  }
+
+  Future<void> downloadAllFiles(Mod mod) async {
+    if (mod.assetLists == null) {
+      return;
+    }
+
+    await downloadFiles(
+      modName: mod.name,
+      urls: mod.assetLists!.assetBundles
+          .where((e) => !e.fileExists)
+          .map((e) => e.url)
+          .toList(),
+      type: AssetType.assetBundle,
+    );
+
+    await downloadFiles(
+      modName: mod.name,
+      urls: mod.assetLists!.audio
+          .where((e) => !e.fileExists)
+          .map((e) => e.url)
+          .toList(),
+      type: AssetType.audio,
+    );
+
+    await downloadFiles(
+      modName: mod.name,
+      urls: mod.assetLists!.images
+          .where((e) => !e.fileExists)
+          .map((e) => e.url)
+          .toList(),
+      type: AssetType.image,
+    );
+
+    await downloadFiles(
+      modName: mod.name,
+      urls: mod.assetLists!.models
+          .where((e) => !e.fileExists)
+          .map((e) => e.url)
+          .toList(),
+      type: AssetType.model,
+    );
+
+    await downloadFiles(
+      modName: mod.name,
+      urls: mod.assetLists!.pdf
+          .where((e) => !e.fileExists)
+          .map((e) => e.url)
+          .toList(),
+      type: AssetType.pdf,
+    );
+  }
+
+  Future<void> downloadFiles({
+    required String modName,
+    required List<String> urls,
+    required AssetType type,
+  }) async {
+    if (urls.isEmpty) {
+      return;
+    }
+
+    try {
+      state = state.copyWith(
+        isDownloading: true,
+        progress: 0.0,
+        errorMessage: null,
+        downloadingType: type,
+      );
+
+      final int batchSize = 5; // set from settings
+      Dio dio = Dio();
+      for (int i = 0; i < urls.length; i += batchSize) {
+        final batch = urls.sublist(
+          i,
+          i + batchSize > urls.length ? urls.length : i + batchSize,
+        );
+
+        await Future.wait(batch.map((url) async {
+          try {
+            final assetPath = path.joinAll(
+              [
+                getDirectoryByType(directories, type),
+                getFileNameFromURL(url) + getExtensionByType(type),
+              ],
+            );
+
+            await dio.download(
+              url,
+              assetPath,
+              // Progress per file
+              onReceiveProgress: (received, total) {
+                if (total <= 0 || batch.length > 1) {
+                  return;
+                }
+
+                double progress = received / total;
+                state = state.copyWith(progress: progress);
+              },
+            );
+          } catch (e) {
+            debugPrint('error occured while downloading files $e');
+          }
+        }));
+
+        // Progress per batch
+        if (batch.length > 1) {
+          double progress = (i + batchSize) / urls.length;
+          state = state.copyWith(progress: progress.clamp(0.0, 1.0));
+        }
+      }
+
+      state = state.copyWith(
+        isDownloading: false,
+        progress: 1.0,
+        downloadingType: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isDownloading: false,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+}

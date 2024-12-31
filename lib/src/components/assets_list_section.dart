@@ -8,11 +8,11 @@ import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 import 'package:tts_mod_vault/src/state/provider.dart';
 
-class AssetLinksColumn extends HookConsumerWidget {
+class AssetsListSection extends HookConsumerWidget {
   final AssetType type;
   final List<Asset> assets;
 
-  const AssetLinksColumn({
+  const AssetsListSection({
     super.key,
     required this.type,
     required this.assets,

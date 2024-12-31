@@ -43,35 +43,35 @@ class AssetsList extends HookConsumerWidget {
 
                   // Asset Bundles Column
                   if (selectedMod.assetLists!.assetBundles.isNotEmpty)
-                    AssetLinksColumn(
+                    AssetsListSection(
                       type: AssetType.assetBundle,
                       assets: selectedMod.assetLists!.assetBundles,
                     ),
 
                   // Audio Column
                   if (selectedMod.assetLists!.audio.isNotEmpty)
-                    AssetLinksColumn(
+                    AssetsListSection(
                       type: AssetType.audio,
                       assets: selectedMod.assetLists!.audio,
                     ),
 
                   // Images Column
                   if (selectedMod.assetLists!.images.isNotEmpty)
-                    AssetLinksColumn(
+                    AssetsListSection(
                       type: AssetType.image,
                       assets: selectedMod.assetLists!.images,
                     ),
 
                   // Models Column
                   if (selectedMod.assetLists!.models.isNotEmpty)
-                    AssetLinksColumn(
+                    AssetsListSection(
                       type: AssetType.model,
                       assets: selectedMod.assetLists!.models,
                     ),
 
                   // PDF Column
                   if (selectedMod.assetLists!.pdf.isNotEmpty)
-                    AssetLinksColumn(
+                    AssetsListSection(
                       type: AssetType.pdf,
                       assets: selectedMod.assetLists!.pdf,
                     ),

@@ -5,7 +5,7 @@ import 'package:tts_mod_vault/src/state/directories/directories.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/download/download_notifier.dart';
 import 'package:tts_mod_vault/src/state/download/download_state.dart';
-import 'package:tts_mod_vault/src/state/mods/mod_state.dart';
+import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mods_notifier.dart';
 
 final directoriesProvider =

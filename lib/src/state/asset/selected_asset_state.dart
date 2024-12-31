@@ -9,18 +9,4 @@ class SelectedAssetState {
     required this.asset,
     required this.type,
   });
-
-  // DownloadState copyWith({
-  //   bool? isLoading,
-  //   double? progress,
-  //   String? errorMessage,
-  //   AssetType? downloadingType,
-  // }) {
-  //   return DownloadState(
-  //     isLoading: isLoading ?? this.isLoading,
-  //     progress: progress ?? this.progress,
-  //     errorMessage: errorMessage ?? this.errorMessage,
-  //     downloadingType: downloadingType ?? this.downloadingType,
-  //   );
-  // }
 }

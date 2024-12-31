@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:tts_mod_vault/src/mods/mods_page.dart';
-import 'package:tts_mod_vault/src/settings/settings_page.dart';
 import 'package:tts_mod_vault/src/splash/splash_page.dart';
 
 class App extends StatelessWidget {
@@ -68,7 +67,6 @@ class App extends StatelessWidget {
       routes: {
         '/': (context) => const SplashPage(),
         '/mods': (context) => const ModsPage(),
-        '/settings': (context) => const SettingsPage(),
       },
     );
   }

@@ -8,7 +8,7 @@ import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
-import 'package:tts_mod_vault/src/state/mods/mod_state.dart';
+import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/utils.dart';
 
 class ModsStateNotifier extends StateNotifier<ModsState> {

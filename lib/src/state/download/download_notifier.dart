@@ -14,18 +14,21 @@ import 'package:path/path.dart' as path;
 
 class DownloadNotifier extends StateNotifier<DownloadState> {
   final Ref ref;
+  final Dio dio;
 
-  DownloadNotifier(this.ref) : super(const DownloadState());
+  DownloadNotifier(this.ref)
+      : dio = Dio(),
+        super(const DownloadState());
 
-  Future<void> downloadAllMods(
+/*   Future<void> downloadAllMods(
     List<Mod> mods,
     Future<void> Function(Mod mod) callback,
   ) async {
     for (final mod in mods) {
-      await downloadAllFiles(mod);
+      await downloadAllFiles(mod); 
       await callback(mod);
     }
-  }
+  } */
 
   Future<void> downloadAllFiles(Mod mod) async {
     if (mod.assetLists == null) {
@@ -76,12 +79,19 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .toList(),
       type: AssetType.pdf,
     );
+
+    state = state.copyWith(
+      isDownloading: false,
+      progress: null,
+      downloadingType: null,
+    );
   }
 
   Future<void> downloadFiles({
     required String modName,
     required List<String> urls,
     required AssetType type,
+    bool downloadingAllFiles = true,
   }) async {
     if (urls.isEmpty) {
       return;
@@ -94,7 +104,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         errorMessage: null,
         downloadingType: type,
       );
-      Dio dio = Dio();
 
       final int batchSize = 5; // set from settings
 
@@ -155,11 +164,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         }
       }
 
-      state = state.copyWith(
-        isDownloading: false,
-        progress: 1.0,
-        downloadingType: null,
-      );
+      if (!downloadingAllFiles) {
+        state = state.copyWith(
+          isDownloading: false,
+          progress: null,
+          downloadingType: null,
+        );
+      }
     } catch (e) {
       state = state.copyWith(
         isDownloading: false,

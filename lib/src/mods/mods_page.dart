@@ -1,14 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/src/mods/components/assets_list.dart';
 import 'package:tts_mod_vault/src/mods/components/mods_grid.dart';
 import 'package:tts_mod_vault/src/mods/components/toolbar.dart';
+import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
+import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:tts_mod_vault/src/utils.dart';
 
-class ModsPage extends ConsumerWidget {
+class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cleanUpStatus = ref.watch(cleanupProvider).status;
+
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (cleanUpStatus == CleanUpStatusEnum.completed) {
+          showSnackBar(context, 'Cleanup finished!');
+          ref.read(cleanupProvider.notifier).resetState();
+        } else if (cleanUpStatus == CleanUpStatusEnum.error) {
+          showSnackBar(
+            context,
+            'Cleanup error: ${ref.read(cleanupProvider).errorMessage}',
+          );
+          ref.read(cleanupProvider.notifier).resetState();
+        }
+      });
+
+      return null;
+    }, [cleanUpStatus]);
+
     return SafeArea(
       child: Scaffold(
         body: Column(

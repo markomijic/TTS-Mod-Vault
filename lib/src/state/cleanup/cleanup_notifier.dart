@@ -5,17 +5,17 @@ import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 import 'package:tts_mod_vault/src/state/provider.dart';
 
-class CleanupNotifier extends StateNotifier<CleanupState> {
+class CleanupNotifier extends StateNotifier<CleanUpState> {
   final Ref ref;
 
-  CleanupNotifier(this.ref) : super(const CleanupState());
+  CleanupNotifier(this.ref) : super(const CleanUpState());
 
   Future<void> startCleanup(
     Function(int fileCount) onAwaitingConfirmation,
   ) async {
     try {
-      state = CleanupState(
-        status: CleanupStatus.scanning,
+      state = CleanUpState(
+        status: CleanUpStatusEnum.scanning,
         errorMessage: null,
         filesToDelete: [],
       );
@@ -37,12 +37,15 @@ class CleanupNotifier extends StateNotifier<CleanupState> {
         await _processDirectory(asset, referencedFiles);
       }
 
-      state = state.copyWith(status: CleanupStatus.awaitingConfirmation);
+      state = state.copyWith(
+          status: state.filesToDelete.isNotEmpty
+              ? CleanUpStatusEnum.awaitingConfirmation
+              : CleanUpStatusEnum.idle);
 
       onAwaitingConfirmation(state.filesToDelete.length);
     } catch (e) {
       state = state.copyWith(
-        status: CleanupStatus.error,
+        status: CleanUpStatusEnum.error,
         errorMessage: e.toString(),
       );
     }
@@ -70,10 +73,10 @@ class CleanupNotifier extends StateNotifier<CleanupState> {
   }
 
   Future<void> executeDelete() async {
-    if (state.status != CleanupStatus.awaitingConfirmation) return;
+    if (state.status != CleanUpStatusEnum.awaitingConfirmation) return;
 
     try {
-      state = state.copyWith(status: CleanupStatus.deleting);
+      state = state.copyWith(status: CleanUpStatusEnum.deleting);
 
       for (final filePath in state.filesToDelete) {
         final file = File(filePath);
@@ -83,19 +86,19 @@ class CleanupNotifier extends StateNotifier<CleanupState> {
       }
 
       state = state.copyWith(
-        status: CleanupStatus.completed,
+        status: CleanUpStatusEnum.completed,
         filesToDelete: [],
       );
     } catch (e) {
       state = state.copyWith(
-        status: CleanupStatus.error,
+        status: CleanUpStatusEnum.error,
         errorMessage: e.toString(),
       );
     }
   }
 
-  void cancelCleanup() {
-    state = const CleanupState();
+  void resetState() {
+    state = const CleanUpState();
   }
 
   String _getDirectoryByType(AssetType type) {

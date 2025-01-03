@@ -22,7 +22,7 @@ class AssetsListSection extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedAssetNotifier = ref.watch(selectedAssetProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
-    final isDownloading = ref.watch(downloadProvider).isDownloading;
+    final actionInProgress = ref.watch(actionInProgressProvider);
 
     final hasMissingFiles = useMemoized(
       () => assets.any((e) => !e.fileExists),
@@ -54,7 +54,7 @@ class AssetsListSection extends HookConsumerWidget {
                   type.label,
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                if (hasMissingFiles && !isDownloading)
+                if (hasMissingFiles && !actionInProgress)
                   MouseRegion(
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
@@ -68,6 +68,7 @@ class AssetsListSection extends HookConsumerWidget {
                           modName: name,
                           urls: urls,
                           type: type,
+                          downloadingAllFiles: false,
                         );
 
                         await ref.read(modsProvider.notifier).updateMod(name);

@@ -28,6 +28,14 @@ final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),
 );
 
-final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanupState>(
+final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanUpState>(
   (ref) => CleanupNotifier(ref),
 );
+
+final actionInProgressProvider = Provider<bool>((ref) {
+  final isDownloading = ref.watch(downloadProvider).isDownloading;
+  final isLoading = ref.watch(modsProvider).isLoading;
+  final cleanUpStatus = ref.watch(cleanupProvider).status;
+
+  return cleanUpStatus != CleanUpStatusEnum.idle || isDownloading || isLoading;
+});

@@ -21,8 +21,9 @@ void showSnackBar(BuildContext context, String message, [Duration? duration]) {
 void showAlertDialog(
   BuildContext context,
   String contentMessage,
-  VoidCallback onConfirm,
-) {
+  VoidCallback onConfirm, [
+  VoidCallback? onCancel,
+]) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -31,7 +32,11 @@ void showAlertDialog(
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              if (onCancel != null) {
+                onCancel();
+              } else {
+                Navigator.of(context).pop();
+              }
             },
             child: const Text('Cancel'),
           ),

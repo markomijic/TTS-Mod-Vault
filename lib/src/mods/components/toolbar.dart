@@ -8,6 +8,7 @@ class Toolbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final actionInProgress = ref.watch(actionInProgressProvider);
     final cleanupNotifier = ref.watch(cleanupProvider.notifier);
 
     return Row(
@@ -18,31 +19,39 @@ class Toolbar extends ConsumerWidget {
           child: const Text('Settings'),
         ),
         ElevatedButton(
-          onPressed: () async {
-            await cleanupNotifier.startCleanup(
-              (count) {
-                if (count > 0) {
-                  showAlertDialog(
-                    context,
-                    '$count files found, are you sure you want to delete them?',
-                    () async {
-                      await cleanupNotifier.executeDelete();
+          onPressed: actionInProgress
+              ? null
+              : () async {
+                  await cleanupNotifier.startCleanup(
+                    (count) {
+                      if (count > 0) {
+                        showAlertDialog(
+                          context,
+                          '$count files found, are you sure you want to delete them?',
+                          () async {
+                            await cleanupNotifier.executeDelete();
+                          },
+                          () {
+                            cleanupNotifier.resetState();
+                            Navigator.of(context).pop();
+                          },
+                        );
+                      } else {
+                        showSnackBar(context, 'No files found to delete.');
+                      }
                     },
                   );
-                } else {
-                  showSnackBar(context, 'No files found to delete.');
-                }
-              },
-            );
-          },
+                },
           child: const Text('Clean Up'),
         ),
         ElevatedButton(
-          onPressed: () => showAlertDialog(
-            context,
-            'Are you sure you want to refresh all mods?',
-            () => Navigator.of(context).pushNamed('/'),
-          ),
+          onPressed: actionInProgress
+              ? null
+              : () => showAlertDialog(
+                    context,
+                    'Are you sure you want to refresh all mods?',
+                    () => Navigator.of(context).pushNamed('/'),
+                  ),
           child: const Text('Refresh'),
         ),
         SizedBox(width: 50),

@@ -25,6 +25,7 @@ class AssetsActionButtons extends HookConsumerWidget {
     final selectedAssetNotifier = ref.watch(selectedAssetProvider.notifier);
     final modsLibraryNotifier = ref.watch(modsProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
+    final actionInProgress = ref.watch(actionInProgressProvider);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -32,16 +33,15 @@ class AssetsActionButtons extends HookConsumerWidget {
       spacing: 10,
       children: [
         ElevatedButton(
-          onPressed: selectedAsset != null
+          onPressed: selectedAsset != null && !actionInProgress
               ? () async {
                   await downloadNotifier.downloadFiles(
                     modName: selectedMod.name,
                     urls: [selectedAsset.asset.url],
                     type: selectedAsset.type,
+                    downloadingAllFiles: false,
                   );
-
                   await modsLibraryNotifier.updateMod(selectedMod.name);
-
                   selectedAssetNotifier.resetState();
                 }
               : null,
@@ -51,12 +51,10 @@ class AssetsActionButtons extends HookConsumerWidget {
               )),
         ),
         ElevatedButton(
-          onPressed: hasMissingFiles
+          onPressed: hasMissingFiles && !actionInProgress
               ? () async {
                   await downloadNotifier.downloadAllFiles(selectedMod);
-
                   await modsLibraryNotifier.updateMod(selectedMod.name);
-
                   selectedAssetNotifier.resetState();
                 }
               : null,

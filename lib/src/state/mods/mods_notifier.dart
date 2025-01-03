@@ -18,7 +18,7 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
   ModsStateNotifier(this.ref) : super(ModsState());
 
   Future<void> loadModsData(VoidCallback onDataLoaded) async {
-    state = ModsState(mods: [], selectedMod: null);
+    state = ModsState(mods: [], selectedMod: null, isLoading: true);
 
     try {
       final workShopFileInfosPath = path.join(
@@ -43,7 +43,7 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
         }
       }
 
-      state = state.copyWith(mods: mods);
+      state = state.copyWith(mods: mods, isLoading: false);
       onDataLoaded();
     } catch (e) {
       debugPrint('Error loading items: $e');
@@ -70,6 +70,7 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
   }
 
   Future<void> updateMod(String modName) async {
+    state = state.copyWith(isLoading: true);
     Mod? updatedMod;
     final updatedMods = await Future.wait(state.mods.map((mod) async {
       if (mod.name == modName) {
@@ -80,7 +81,11 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
       return mod;
     }).toList());
 
-    state = state.copyWith(mods: updatedMods, selectedMod: updatedMod);
+    state = state.copyWith(
+      mods: updatedMods,
+      selectedMod: updatedMod,
+      isLoading: false,
+    );
   }
 
   Future<(AssetLists, int, int)> getAssetListsFromUrls(

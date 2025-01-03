@@ -13,7 +13,7 @@ class ModsGridCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final modsNotifier = ref.watch(modsProvider.notifier);
+    final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedMod = ref.watch(modsProvider).selectedMod;
 
     final imageExists = useMemoized(() {
@@ -29,7 +29,9 @@ class ModsGridCard extends HookConsumerWidget {
       onExit: (_) => isHovered.value = false,
       child: GestureDetector(
         onTap: () {
-          modsNotifier.selectItem(mod);
+          if (actionInProgress) return;
+
+          ref.read(modsProvider.notifier).selectItem(mod);
           ref.read(selectedAssetProvider.notifier).resetState();
         },
         child: Container(

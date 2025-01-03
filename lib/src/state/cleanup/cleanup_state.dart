@@ -1,4 +1,4 @@
-enum CleanupStatus {
+enum CleanUpStatusEnum {
   idle,
   scanning,
   awaitingConfirmation,
@@ -7,24 +7,24 @@ enum CleanupStatus {
   error,
 }
 
-class CleanupState {
-  final CleanupStatus status;
+class CleanUpState {
+  final CleanUpStatusEnum status;
   final List<String> filesToDelete;
 
   final String? errorMessage;
 
-  const CleanupState({
-    this.status = CleanupStatus.idle,
+  const CleanUpState({
+    this.status = CleanUpStatusEnum.idle,
     this.filesToDelete = const [],
     this.errorMessage,
   });
 
-  CleanupState copyWith({
-    CleanupStatus? status,
+  CleanUpState copyWith({
+    CleanUpStatusEnum? status,
     List<String>? filesToDelete,
     String? errorMessage,
   }) {
-    return CleanupState(
+    return CleanUpState(
       status: status ?? this.status,
       filesToDelete: filesToDelete ?? this.filesToDelete,
       errorMessage: errorMessage ?? this.errorMessage,

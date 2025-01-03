@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mime/mime.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
@@ -47,28 +48,45 @@ void showAlertDialog(
   );
 }
 
-String getExtensionByType(AssetType type) {
-  String extension = '';
-
+String getExtensionByType(
+  AssetType type, [
+  String filePath = '',
+  List<int>? bytes,
+]) {
   switch (type) {
     case AssetType.assetBundle:
-      extension = '.unity3d';
-      break;
-    case AssetType.audio:
-      extension = '.MP3';
-      break;
-    case AssetType.image:
-      extension = '.png';
-      break;
-    case AssetType.model:
-      extension = '.obj';
-      break;
-    case AssetType.pdf:
-      extension = '.pdf';
-      break;
-  }
+      return '.unity3d';
 
-  return extension;
+    case AssetType.audio:
+      return '.MP3';
+
+    case AssetType.image:
+      {
+        if (filePath.isEmpty) {
+          return '.png';
+        }
+
+        final mimeType = lookupMimeType(filePath, headerBytes: bytes);
+
+        if (mimeType == null) {
+          return '.png';
+        } else {
+          if (mimeType == 'image/png') {
+            return '.png';
+          } else if (mimeType == 'image/jpeg') {
+            return '.jpg';
+          }
+        }
+
+        return '.png';
+      }
+
+    case AssetType.model:
+      return '.obj';
+
+    case AssetType.pdf:
+      return '.pdf';
+  }
 }
 
 String getDirectoryByType(DirectoriesState directories, AssetType type) {

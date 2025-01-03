@@ -1,19 +1,21 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:riverpod/riverpod.dart';
-import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
+import 'package:tts_mod_vault/src/state/provider.dart';
 import 'package:tts_mod_vault/src/utils.dart'
     show getDirectoryByType, getExtensionByType, getFileNameFromURL;
 import 'download_state.dart';
 import 'package:path/path.dart' as path;
 
 class DownloadNotifier extends StateNotifier<DownloadState> {
-  final DirectoriesState directories;
+  final Ref ref;
 
-  DownloadNotifier(this.directories) : super(const DownloadState());
+  DownloadNotifier(this.ref) : super(const DownloadState());
 
   Future<void> downloadAllMods(
     List<Mod> mods,
@@ -92,9 +94,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         errorMessage: null,
         downloadingType: type,
       );
+      Dio dio = Dio();
 
       final int batchSize = 5; // set from settings
-      Dio dio = Dio();
+
       for (int i = 0; i < urls.length; i += batchSize) {
         final batch = urls.sublist(
           i,
@@ -103,28 +106,45 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
         await Future.wait(batch.map((url) async {
           try {
-            final assetPath = path.joinAll(
-              [
-                getDirectoryByType(directories, type),
-                getFileNameFromURL(url) + getExtensionByType(type),
-              ],
-            );
+            final fileName = getFileNameFromURL(url);
+            final directory =
+                getDirectoryByType(ref.read(directoriesProvider), type);
 
-            await dio.download(
-              url,
-              assetPath,
-              // Progress per file
-              onReceiveProgress: (received, total) {
-                if (total <= 0 || batch.length > 1) {
-                  return;
-                }
+            if (type == AssetType.image) {
+              final tempPath = path.join(directory, '${fileName}_temp');
+              await dio.download(
+                url,
+                tempPath,
+                onReceiveProgress: (received, total) {
+                  if (total <= 0 || batch.length > 1) return;
+                  // Progress per file
+                  state = state.copyWith(progress: received / total);
+                },
+              );
 
-                double progress = received / total;
-                state = state.copyWith(progress: progress);
-              },
-            );
+              final bytes = await File(tempPath).readAsBytes();
+              final extension = getExtensionByType(type, tempPath, bytes);
+
+              final finalPath = path.join(directory, fileName + extension);
+              await File(tempPath).rename(finalPath);
+            } else {
+              final assetPath = path.join(
+                directory,
+                fileName + getExtensionByType(type),
+              );
+
+              await dio.download(
+                url,
+                assetPath,
+                onReceiveProgress: (received, total) {
+                  if (total <= 0 || batch.length > 1) return;
+                  // Progress per file
+                  state = state.copyWith(progress: received / total);
+                },
+              );
+            }
           } catch (e) {
-            debugPrint('error occured while downloading files $e');
+            debugPrint('error occurred while downloading files $e');
           }
         }));
 

@@ -13,18 +13,15 @@ final directoriesProvider =
   (ref) => DirectoriesNotifier(),
 );
 
-final modsProvider = StateNotifierProvider<ModsStateNotifier, ModsState>((ref) {
-  final directories = ref.watch(directoriesProvider);
-  return ModsStateNotifier(directories);
-});
+final modsProvider = StateNotifierProvider<ModsStateNotifier, ModsState>(
+  (ref) => ModsStateNotifier(ref),
+);
 
 final selectedAssetProvider =
-    StateNotifierProvider<SelectedAssetNotifier, SelectedAssetState?>((ref) {
-  return SelectedAssetNotifier();
-});
+    StateNotifierProvider<SelectedAssetNotifier, SelectedAssetState?>(
+  (ref) => SelectedAssetNotifier(),
+);
 
-final downloadProvider =
-    StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
-  final directories = ref.watch(directoriesProvider);
-  return DownloadNotifier(directories);
-});
+final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
+  (ref) => DownloadNotifier(ref),
+);

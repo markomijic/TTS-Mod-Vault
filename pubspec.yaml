@@ -25,6 +25,7 @@ dependencies:
   dio: ^5.7.0
   collection: ^1.19.0
   window_manager: ^0.4.3
+  mime: ^2.0.0
 
 dev_dependencies:
   flutter_test:

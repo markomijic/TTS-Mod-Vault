@@ -1,27 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod/riverpod.dart';
 import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart';
 import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
-import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
+import 'package:tts_mod_vault/src/state/provider.dart';
 import 'package:tts_mod_vault/src/utils.dart';
 
 class ModsStateNotifier extends StateNotifier<ModsState> {
-  final DirectoriesState directories;
+  final Ref ref;
 
-  ModsStateNotifier(this.directories) : super(ModsState());
+  ModsStateNotifier(this.ref) : super(ModsState());
 
   Future<void> loadModsData() async {
     state = ModsState(mods: [], selectedMod: null);
 
     try {
-      final workShopFileInfosPath =
-          path.join(directories.workshopDir, 'WorkshopFileInfos.json');
+      final workShopFileInfosPath = path.join(
+          ref.read(directoriesProvider).workshopDir, 'WorkshopFileInfos.json');
 
       final String jsonString =
           await File(workShopFileInfosPath).readAsString();
@@ -50,7 +51,8 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
 
   Future<Mod> getModData(Mod mod) async {
     final fileName = path.basenameWithoutExtension(mod.directory);
-    final imageFilePath = path.join(directories.workshopDir, '$fileName.png');
+    final imageFilePath =
+        path.join(ref.read(directoriesProvider).workshopDir, '$fileName.png');
     final jsonURLs = await extractUrlsFromJson(mod.directory);
     final assetLists = await getAssetListsFromUrls(jsonURLs);
 
@@ -155,14 +157,31 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
   }
 
   Future<bool> doesJsonExist(String fileName) async {
-    final jsonPath = path.joinAll([directories.workshopDir, fileName]);
+    final jsonPath =
+        path.joinAll([ref.read(directoriesProvider).workshopDir, fileName]);
     return await File(jsonPath).exists();
   }
 
   Future<bool> doesAssetExist(String url, AssetType type) async {
+    String filePath = '';
+    if (type == AssetType.image) {
+      final file = Directory(ref.read(directoriesProvider).imagesDir)
+          .listSync()
+          .firstWhereOrNull(
+            (entity) =>
+                entity is File &&
+                path.basenameWithoutExtension(entity.path) ==
+                    getFileNameFromURL(url),
+          );
+
+      if (file != null && file is File) {
+        filePath = file.path;
+      }
+    }
+
     final assetPath = path.joinAll([
-      getDirectoryByType(directories, type),
-      getFileNameFromURL(url) + getExtensionByType(type)
+      getDirectoryByType(ref.read(directoriesProvider), type),
+      getFileNameFromURL(url) + getExtensionByType(type, filePath),
     ]);
 
     return await File(assetPath).exists();

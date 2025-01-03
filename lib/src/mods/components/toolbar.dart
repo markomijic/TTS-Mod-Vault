@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:tts_mod_vault/src/state/provider.dart';
 import 'package:tts_mod_vault/src/utils.dart';
 
 class Toolbar extends ConsumerWidget {
@@ -7,6 +8,8 @@ class Toolbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cleanupNotifier = ref.watch(cleanupProvider.notifier);
+
     return Row(
       spacing: 10,
       children: [
@@ -15,7 +18,23 @@ class Toolbar extends ConsumerWidget {
           child: const Text('Settings'),
         ),
         ElevatedButton(
-          onPressed: null,
+          onPressed: () async {
+            await cleanupNotifier.startCleanup(
+              (count) {
+                if (count > 0) {
+                  showAlertDialog(
+                    context,
+                    '$count files found, are you sure you want to delete them?',
+                    () async {
+                      await cleanupNotifier.executeDelete();
+                    },
+                  );
+                } else {
+                  showSnackBar(context, 'No files found to delete.');
+                }
+              },
+            );
+          },
           child: const Text('Clean Up'),
         ),
         ElevatedButton(

@@ -1,6 +1,8 @@
 import 'package:riverpod/riverpod.dart';
 import 'package:tts_mod_vault/src/state/asset/selected_asset_notifier.dart';
 import 'package:tts_mod_vault/src/state/asset/selected_asset_state.dart';
+import 'package:tts_mod_vault/src/state/cleanup/cleanup_notifier.dart';
+import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
 import 'package:tts_mod_vault/src/state/directories/directories.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/download/download_notifier.dart';
@@ -24,4 +26,8 @@ final selectedAssetProvider =
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),
+);
+
+final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanupState>(
+  (ref) => CleanupNotifier(ref),
 );

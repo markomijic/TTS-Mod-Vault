@@ -1,4 +1,5 @@
 import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart';
+import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
 
 class Mod {
   final String directory;
@@ -27,5 +28,17 @@ class Mod {
       name: json['Name'] as String,
       updateTime: json['UpdateTime'] as int,
     );
+  }
+
+  List<Asset> getAllAssets() {
+    if (assetLists == null) return [];
+
+    return [
+      ...assetLists!.assetBundles,
+      ...assetLists!.audio,
+      ...assetLists!.images,
+      ...assetLists!.models,
+      ...assetLists!.pdf,
+    ];
   }
 }

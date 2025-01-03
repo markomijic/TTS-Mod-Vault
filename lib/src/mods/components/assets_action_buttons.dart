@@ -14,15 +14,7 @@ class AssetsActionButtons extends HookConsumerWidget {
     final hasMissingFiles = useMemoized(() {
       if (selectedMod == null || selectedMod.assetLists == null) return false;
 
-      final assets = [
-        ...selectedMod.assetLists!.assetBundles,
-        ...selectedMod.assetLists!.audio,
-        ...selectedMod.assetLists!.images,
-        ...selectedMod.assetLists!.models,
-        ...selectedMod.assetLists!.pdf,
-      ];
-
-      return assets.any((asset) => !asset.fileExists);
+      return selectedMod.getAllAssets().any((asset) => !asset.fileExists);
     }, [selectedMod]);
 
     if (selectedMod == null) {

@@ -127,11 +127,16 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
                 'http://cloud-3.steamusercontent.com/',
                 'https://steamusercontent-a.akamaihd.net/');
 
-            final fileExists = await doesAssetExist(updatedUrl, type);
+            final filePath = getFilePath(updatedUrl, type);
+            final fileExists = await File(filePath).exists();
             if (fileExists) {
               existingFilesCount++;
             }
-            return Asset(url: updatedUrl, fileExists: fileExists);
+            return Asset(
+              url: updatedUrl,
+              fileExists: fileExists,
+              filePath: fileExists ? filePath : null,
+            );
           },
         ),
       );
@@ -163,7 +168,7 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
     return await File(jsonPath).exists();
   }
 
-  Future<bool> doesAssetExist(String url, AssetType type) async {
+  String getFilePath(String url, AssetType type) {
     String filePath = '';
     if (type == AssetType.image || type == AssetType.audio) {
       final file = Directory(ref.read(directoriesProvider).imagesDir)
@@ -180,12 +185,10 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
       }
     }
 
-    final assetPath = path.joinAll([
+    return path.joinAll([
       getDirectoryByType(ref.read(directoriesProvider), type),
       getFileNameFromURL(url) + getExtensionByType(type, filePath),
     ]);
-
-    return await File(assetPath).exists();
   }
 
   Future<void> selectItem(Mod item) async {

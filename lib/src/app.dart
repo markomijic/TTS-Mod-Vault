@@ -11,7 +11,7 @@ class App extends StatelessWidget {
     final ThemeData darkTheme = ThemeData(
       brightness: Brightness.dark,
       primaryColor: Colors.black,
-      scaffoldBackgroundColor: Colors.black,
+      scaffoldBackgroundColor: Color(0xFF141218),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,

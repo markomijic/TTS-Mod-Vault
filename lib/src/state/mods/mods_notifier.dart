@@ -17,7 +17,7 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
 
   ModsStateNotifier(this.ref) : super(ModsState());
 
-  Future<void> loadModsData() async {
+  Future<void> loadModsData(VoidCallback onDataLoaded) async {
     state = ModsState(mods: [], selectedMod: null);
 
     try {
@@ -44,6 +44,7 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
       }
 
       state = state.copyWith(mods: mods);
+      onDataLoaded();
     } catch (e) {
       debugPrint('Error loading items: $e');
     }
@@ -164,7 +165,7 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
 
   Future<bool> doesAssetExist(String url, AssetType type) async {
     String filePath = '';
-    if (type == AssetType.image) {
+    if (type == AssetType.image || type == AssetType.audio) {
       final file = Directory(ref.read(directoriesProvider).imagesDir)
           .listSync()
           .firstWhereOrNull(

@@ -58,27 +58,37 @@ String getExtensionByType(
       return '.unity3d';
 
     case AssetType.audio:
-      return '.MP3';
+      {
+        final mimeType = lookupMimeType(filePath, headerBytes: bytes);
+
+        switch (mimeType) {
+          case 'audio/ogg':
+            return '.ogg';
+
+          case 'audio/wav':
+            return '.wav';
+
+          case 'video/ogv':
+            return '.ogv';
+
+          case 'audio/mpeg':
+          default:
+            return '.mp3';
+        }
+      }
 
     case AssetType.image:
       {
-        if (filePath.isEmpty) {
-          return '.png';
-        }
-
         final mimeType = lookupMimeType(filePath, headerBytes: bytes);
 
-        if (mimeType == null) {
-          return '.png';
-        } else {
-          if (mimeType == 'image/png') {
-            return '.png';
-          } else if (mimeType == 'image/jpeg') {
+        switch (mimeType) {
+          case 'image/jpeg':
             return '.jpg';
-          }
-        }
 
-        return '.png';
+          case 'image/png':
+          default:
+            return '.png';
+        }
       }
 
     case AssetType.model:

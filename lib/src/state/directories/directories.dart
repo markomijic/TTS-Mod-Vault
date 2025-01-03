@@ -59,4 +59,12 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
       return false;
     }
   }
+
+  Future<bool> checkIfTtsDirectoryFoldersExist(String ttsDir) {
+    final requiredFolders = ['Mods', 'Saves', 'DLC', 'Screenshots'];
+
+    return Future.wait(requiredFolders
+            .map((folder) => Directory(path.join(ttsDir, folder)).exists()))
+        .then((exists) => exists.every((e) => e));
+  }
 }

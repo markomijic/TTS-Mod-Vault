@@ -110,7 +110,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             final directory =
                 getDirectoryByType(ref.read(directoriesProvider), type);
 
-            if (type == AssetType.image) {
+            if (type == AssetType.image || type == AssetType.audio) {
               final tempPath = path.join(directory, '${fileName}_temp');
               await dio.download(
                 url,

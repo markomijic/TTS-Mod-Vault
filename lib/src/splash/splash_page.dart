@@ -6,7 +6,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/src/state/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:tts_mod_vault/src/utils.dart';
-import 'package:path/path.dart' as path;
 
 class SplashPage extends HookConsumerWidget {
   const SplashPage({super.key});
@@ -18,19 +17,12 @@ class SplashPage extends HookConsumerWidget {
 
     final ttsDirNotFound = useState(false);
 
-    Future<void> load() async {
-      ttsDirNotFound.value = false;
-      await modsNotifier.loadModsData().then(
-            (value) => context.mounted
-                ? Navigator.of(context).pushReplacementNamed('/mods')
-                : null,
-          );
-    }
-
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (await directoriesNotifier.checkIfTtsDirectoryExists()) {
-          await load();
+          await modsNotifier.loadModsData(
+            () => Navigator.of(context).pushReplacementNamed('/mods'),
+          );
         } else {
           ttsDirNotFound.value = true;
         }
@@ -61,21 +53,20 @@ class SplashPage extends HookConsumerWidget {
                                 await FilePicker.platform.getDirectoryPath();
 
                             if (ttsDir != null) {
-                              if (await Directory(path.join(ttsDir, 'Mods'))
-                                  .exists()) {
+                              if (await directoriesNotifier
+                                  .checkIfTtsDirectoryFoldersExist(ttsDir)) {
                                 directoriesNotifier.updateTtsDirectory(ttsDir);
-                                await load();
+                                await modsNotifier.loadModsData(
+                                  () => Navigator.of(context)
+                                      .pushReplacementNamed('/mods'),
+                                );
                               } else {
                                 if (!context.mounted) {
                                   return;
                                 }
-                              }
-                            } else {
-                              if (!context.mounted) {
-                                return;
-                              }
 
-                              showSnackBar(context, 'Invalid directory');
+                                showSnackBar(context, 'Invalid directory');
+                              }
                             }
                           },
                           child: Text('Select TTS directory'),

@@ -1,15 +1,25 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/widgets.dart';
+
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart' show VoidCallback, debugPrint;
 import 'package:path/path.dart' as path;
-import 'package:riverpod/riverpod.dart';
-import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart';
-import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
-import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
-import 'package:tts_mod_vault/src/utils.dart';
+import 'package:riverpod/riverpod.dart' show AsyncNotifier, AsyncValue;
+import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart'
+    show AssetLists;
+import 'package:tts_mod_vault/src/state/asset/asset_model.dart' show Asset;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetType;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show
+        directoriesProvider,
+        existingAssetListsProvider,
+        selectedModProvider,
+        storageProvider;
+import 'package:tts_mod_vault/src/utils.dart'
+    show getDirectoryByType, getExtensionByType, getFileNameFromURL;
 
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
@@ -21,7 +31,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     state = const AsyncValue.loading();
   }
 
-  Future<void> loadModsData(VoidCallback onDataLoaded) async {
+  Future<void> loadModsData(VoidCallback? onDataLoaded) async {
     debugPrint('loadModsData START: ${DateTime.now()}');
 
     setLoading();
@@ -32,14 +42,44 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         'WorkshopFileInfos.json',
       );
 
+      final workshopDirJsonFilePaths = await getJsonFilesInDirectory(
+          ref.read(directoriesProvider).workshopDir);
+
       final String jsonString =
           await File(workShopFileInfosPath).readAsString();
       final List<dynamic> jsonList = json.decode(jsonString);
-      final items = jsonList.map((json) => Mod.fromJson(json)).toList();
+
+      final jsonListMods = jsonList.map((json) => Mod.fromJson(json)).toList();
+
+      for (final workshopDirJsonFilePath in workshopDirJsonFilePaths) {
+        final workshopDirJsonFileName =
+            path.basenameWithoutExtension(workshopDirJsonFilePath);
+
+        if (workshopDirJsonFileName == "WorkshopFileInfos") continue;
+
+        final modIsInJsonList = jsonListMods.firstWhereOrNull((jsonItem) =>
+            path.basenameWithoutExtension(jsonItem.directory) ==
+            workshopDirJsonFileName);
+
+        if (modIsInJsonList == null) {
+          final saveName = await getSaveNameFromJson(workshopDirJsonFilePath);
+
+          if (saveName != null && saveName.isNotEmpty) {
+            jsonListMods.add(Mod(
+              directory: workshopDirJsonFilePath,
+              name: saveName,
+              updateTime: 0,
+            ));
+          }
+        }
+      }
+
+      // Sort alphabetically
+      jsonListMods.sort((a, b) => a.name.compareTo(b.name));
 
       // Process items concurrently
       final mods = await Future.wait(
-        items.map((item) async {
+        jsonListMods.map((item) async {
           try {
             if (await doesJsonExist(path.basename(item.directory))) {
               final fileName = path.basenameWithoutExtension(item.directory);
@@ -71,17 +111,16 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
               return mod;
             } else {
-              debugPrint('Missing JSON: ${item.directory}');
+              debugPrint('loadModsData - missing JSON: ${item.directory}');
               return null;
             }
           } catch (e) {
-            debugPrint('Error processing item: ${e.toString()}');
+            debugPrint('loadModsData - error processing item: ${e.toString()}');
             return null;
           }
         }),
       );
 
-      Future.delayed(Duration(milliseconds: 500), () {});
       state = AsyncValue.data(
         ModsState(
           mods: mods.whereType<Mod>().toList(), // Filter out null mods
@@ -90,7 +129,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       );
 
       debugPrint('loadModsData END: ${DateTime.now()}');
-      onDataLoaded();
+      if (onDataLoaded != null) {
+        onDataLoaded();
+      }
     } catch (e) {
       debugPrint('loadModsData error: $e');
       state = AsyncValue.error(e, StackTrace.current);
@@ -160,10 +201,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }).toList();
 
     final existenceChecks = filePaths
-        .map((path23) =>
+        .map((filePath) =>
             ref
-                .read(stringListProvider.notifier)
-                .hasStringStartingWith(getFileNameFromURL(path23.$1), type) !=
+                .read(existingAssetListsProvider.notifier)
+                .getAssetNameStartingWith(
+                    getFileNameFromURL(filePath.$1), type) !=
             null)
         .toList();
 
@@ -172,7 +214,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       (i) => Asset(
         url: filePaths[i].$1,
         fileExists: existenceChecks[i],
-        filePath: existenceChecks[i] ? filePaths[i].$2 : null,
+        filePath: existenceChecks[i] ? path.normalize(filePaths[i].$2) : null,
       ),
     );
   }
@@ -225,8 +267,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final fileNameFromURL = getFileNameFromURL(url);
     if (type == AssetType.image || type == AssetType.audio) {
       final fileExists = ref
-          .read(stringListProvider.notifier)
-          .hasStringStartingWith(fileNameFromURL, type);
+          .read(existingAssetListsProvider.notifier)
+          .getAssetNameStartingWith(fileNameFromURL, type);
 
       if (fileExists != null) {
         filePath = path.joinAll([
@@ -304,5 +346,50 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
 
     return {};
+  }
+
+  Future<List<String>> getJsonFilesInDirectory(String directoryPath) async {
+    final List<String> jsonFilePaths = [];
+
+    try {
+      final Directory directory = Directory(directoryPath);
+
+      if (!await directory.exists()) {
+        return jsonFilePaths;
+      }
+
+      // List all files in the directory
+      await for (final FileSystemEntity entity
+          in directory.list(recursive: false)) {
+        if (entity is File) {
+          // Check if the file has a .json extension
+          if (path.extension(entity.path).toLowerCase() == '.json') {
+            jsonFilePaths.add(entity.path);
+          }
+        }
+      }
+
+      return jsonFilePaths;
+    } catch (e) {
+      debugPrint('getJsonFilesInDirectory error: $e');
+      return jsonFilePaths;
+    }
+  }
+
+  Future<String?> getSaveNameFromJson(String filePath) async {
+    try {
+      final File file = File(filePath);
+      final String jsonString = await file.readAsString();
+      final Map<String, dynamic> jsonData = jsonDecode(jsonString);
+
+      if (jsonData.containsKey('SaveName')) {
+        return jsonData['SaveName'] as String;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint("getSaveNameFromJson error: $e");
+      return null;
+    }
   }
 }

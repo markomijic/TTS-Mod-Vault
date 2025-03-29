@@ -1,56 +1,21 @@
-import 'package:collection/collection.dart';
-import 'package:riverpod/riverpod.dart';
-import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'dart:io';
 
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
-import 'package:tts_mod_vault/src/utils.dart';
+import 'package:collection/collection.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart' show StateNotifier;
+import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart'
+    show AssetTypeLists;
+import 'package:tts_mod_vault/src/state/directories/directories_state.dart'
+    show DirectoriesState;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetType;
+import 'package:tts_mod_vault/src/utils.dart' show getDirectoryByType;
 
-class AssetTypeLists {
-  final List<String> assetBundles;
-  final List<String> audio;
-  final List<String> images;
-  final List<String> models;
-  final List<String> pdfs;
-
-  AssetTypeLists({
-    required this.assetBundles,
-    required this.audio,
-    required this.images,
-    required this.models,
-    required this.pdfs,
-  });
-
-  AssetTypeLists.empty()
-      : assetBundles = [],
-        audio = [],
-        images = [],
-        models = [],
-        pdfs = [];
-
-  AssetTypeLists copyWith({
-    List<String>? assetBundles,
-    List<String>? audio,
-    List<String>? images,
-    List<String>? models,
-    List<String>? pdfs,
-  }) {
-    return AssetTypeLists(
-      assetBundles: assetBundles ?? this.assetBundles,
-      audio: audio ?? this.audio,
-      images: images ?? this.images,
-      models: models ?? this.models,
-      pdfs: pdfs ?? this.pdfs,
-    );
-  }
-}
-
-class StringListNotifier extends StateNotifier<AssetTypeLists> {
+class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
   final DirectoriesState directories;
 
-  StringListNotifier(this.directories) : super(AssetTypeLists.empty());
+  ExistingAssetsNotifier(this.directories) : super(AssetTypeLists.empty());
 
-  Future<void> loadStrings() async {
+  Future<void> loadAssetTypeLists() async {
     final assetBundles = <String>[];
     final audio = <String>[];
     final images = <String>[];
@@ -100,7 +65,7 @@ class StringListNotifier extends StateNotifier<AssetTypeLists> {
     return filenames;
   }
 
-  Future<void> updateTypeList(AssetType type) async {
+  Future<void> updateAssetTypeList(AssetType type) async {
     final directory = getDirectoryByType(directories, type);
     final filenames = await getDirectoryFilenames(directory);
 
@@ -123,7 +88,7 @@ class StringListNotifier extends StateNotifier<AssetTypeLists> {
     }
   }
 
-  String? hasStringStartingWith(String prefix, AssetType type) {
+  String? getAssetNameStartingWith(String prefix, AssetType type) {
     switch (type) {
       case AssetType.assetBundle:
         return state.assetBundles

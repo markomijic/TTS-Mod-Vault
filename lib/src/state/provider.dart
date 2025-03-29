@@ -1,7 +1,10 @@
 import 'package:riverpod/riverpod.dart';
+import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_asset_notifier.dart';
 import 'package:tts_mod_vault/src/state/asset/selected_asset_notifier.dart';
 import 'package:tts_mod_vault/src/state/asset/selected_asset_state.dart';
+import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
+import 'package:tts_mod_vault/src/state/backup/backup_state_notifier.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_notifier.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
 import 'package:tts_mod_vault/src/state/directories/directories.dart';
@@ -20,10 +23,10 @@ final directoriesProvider =
   (ref) => DirectoriesNotifier(),
 );
 
-final stringListProvider =
-    StateNotifierProvider<StringListNotifier, AssetTypeLists>((ref) {
+final existingAssetListsProvider =
+    StateNotifierProvider<ExistingAssetsNotifier, AssetTypeLists>((ref) {
   final directories = ref.watch(directoriesProvider);
-  return StringListNotifier(directories);
+  return ExistingAssetsNotifier(directories);
 });
 
 /* final modsProvider = StateNotifierProvider<ModsStateNotifier, ModsState>(
@@ -48,13 +51,20 @@ final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanUpState>(
   (ref) => CleanupNotifier(ref),
 );
 
+final backupProvider = StateNotifierProvider<BackupNotifier, BackupState>(
+  (ref) => BackupNotifier(ref),
+);
+
 final actionInProgressProvider = Provider<bool>((ref) {
   final isDownloading = ref.watch(downloadProvider).isDownloading;
-  // TODO check if applied
-  final modsIsLoading = ref.watch(modsProvider).isLoading;
+  final modsAsyncValue = ref.watch(modsProvider);
   final cleanUpStatus = ref.watch(cleanupProvider).status;
+  final importInProgress = ref.watch(backupProvider).importInProgress;
+  final backupInprogress = ref.watch(backupProvider).backupInprogress;
 
   return cleanUpStatus != CleanUpStatusEnum.idle ||
       isDownloading ||
-      modsIsLoading;
+      modsAsyncValue is AsyncLoading ||
+      importInProgress ||
+      backupInprogress;
 });

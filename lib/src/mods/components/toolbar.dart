@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
-import 'package:tts_mod_vault/src/utils.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show
+        actionInProgressProvider,
+        backupProvider,
+        cleanupProvider,
+        directoriesProvider,
+        existingAssetListsProvider,
+        modsProvider;
+import 'package:tts_mod_vault/src/utils.dart'
+    show showAlertDialog, showSnackBar;
 
 class Toolbar extends ConsumerWidget {
   const Toolbar({super.key});
@@ -10,6 +19,7 @@ class Toolbar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
     final cleanupNotifier = ref.watch(cleanupProvider.notifier);
+    final backupNotifier = ref.watch(backupProvider.notifier);
 
     return Row(
       spacing: 10,
@@ -42,7 +52,7 @@ class Toolbar extends ConsumerWidget {
                     },
                   );
                 },
-          child: const Text('Clean Up'),
+          child: const Text('Cleanup'),
         ),
         ElevatedButton(
           onPressed: actionInProgress
@@ -54,17 +64,42 @@ class Toolbar extends ConsumerWidget {
                       ref.read(modsProvider.notifier).setLoading();
                       WidgetsBinding.instance.addPostFrameCallback((_) async {
                         await ref
-                            .read(stringListProvider.notifier)
-                            .loadStrings();
-                        await ref.read(modsProvider.notifier).loadModsData(
-                              () {},
-                            );
+                            .read(existingAssetListsProvider.notifier)
+                            .loadAssetTypeLists();
+                        await ref
+                            .read(modsProvider.notifier)
+                            .loadModsData(null);
                       });
                     },
                   ),
           child: const Text('Refresh'),
         ),
-        SizedBox(width: 50),
+        ElevatedButton(
+          onPressed: actionInProgress
+              ? null
+              : () async {
+                  final backupResult = await backupNotifier
+                      .importBackup(ref.read(directoriesProvider).ttsDir);
+
+                  if (backupResult && context.mounted) {
+                    showSnackBar(context, 'Import finished. Refreshing data...',
+                        Duration(seconds: 2));
+                    Future.delayed(
+                        kThemeChangeDuration,
+                        () => WidgetsBinding.instance
+                                .addPostFrameCallback((_) async {
+                              ref.read(modsProvider.notifier).setLoading();
+                              await ref
+                                  .read(existingAssetListsProvider.notifier)
+                                  .loadAssetTypeLists();
+                              await ref
+                                  .read(modsProvider.notifier)
+                                  .loadModsData(null);
+                            }));
+                  }
+                },
+          child: const Text('Import backup'),
+        ),
         ElevatedButton(
           onPressed: null,
           /*    onPressed: () {

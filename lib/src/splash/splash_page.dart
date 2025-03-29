@@ -13,7 +13,8 @@ class SplashPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final directoriesNotifier = ref.watch(directoriesProvider.notifier);
-    final stringsNotifier = ref.watch(stringListProvider.notifier);
+    final existingAssetListsNotifier =
+        ref.watch(existingAssetListsProvider.notifier);
     final localStorageNotifier = ref.watch(storageProvider);
     final modsNotifier = ref.watch(modsProvider.notifier);
 
@@ -23,7 +24,7 @@ class SplashPage extends HookConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (await directoriesNotifier.checkIfTtsDirectoryExists()) {
           await localStorageNotifier.init();
-          await stringsNotifier.loadStrings();
+          await existingAssetListsNotifier.loadAssetTypeLists();
           await modsNotifier.loadModsData(
             () => Navigator.of(context).pushReplacementNamed('/mods'),
           );

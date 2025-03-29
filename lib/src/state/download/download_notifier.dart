@@ -80,7 +80,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       type: AssetType.pdf,
     );
 
-    await ref.read(stringListProvider.notifier).loadStrings();
+    await ref.read(existingAssetListsProvider.notifier).loadAssetTypeLists();
 
     state = state.copyWith(
       isDownloading: false,
@@ -167,7 +167,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
 
       if (!downloadingAllFiles) {
-        await ref.read(stringListProvider.notifier).updateTypeList(type);
+        await ref
+            .read(existingAssetListsProvider.notifier)
+            .updateAssetTypeList(type);
         state = state.copyWith(
           isDownloading: false,
           progress: null,

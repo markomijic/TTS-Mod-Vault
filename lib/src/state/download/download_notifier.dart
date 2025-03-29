@@ -80,6 +80,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       type: AssetType.pdf,
     );
 
+    await ref.read(stringListProvider.notifier).loadStrings();
+
     state = state.copyWith(
       isDownloading: false,
       progress: null,
@@ -105,7 +107,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         downloadingType: type,
       );
 
-      final int batchSize = 5; // set from settings
+      final int batchSize = 5; // TODO set from settings
 
       for (int i = 0; i < urls.length; i += batchSize) {
         final batch = urls.sublist(
@@ -153,7 +155,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
               );
             }
           } catch (e) {
-            debugPrint('error occurred while downloading files $e');
+            debugPrint('Error occurred while downloading files: $e');
           }
         }));
 
@@ -165,6 +167,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
 
       if (!downloadingAllFiles) {
+        await ref.read(stringListProvider.notifier).updateTypeList(type);
         state = state.copyWith(
           isDownloading: false,
           progress: null,

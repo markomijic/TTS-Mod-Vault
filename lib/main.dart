@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
 import 'package:window_manager/window_manager.dart';
 
 import 'src/app.dart';
@@ -9,9 +10,9 @@ void main() async {
   await windowManager.ensureInitialized();
 
   WindowOptions windowOptions = const WindowOptions(
-    size: Size.fromHeight(double.infinity),
+    size: Size(double.infinity, double.infinity),
     minimumSize: Size(1280, 720),
-    title: 'TTS Mod Vault',
+    title: 'TTS Mod Vault 0.3',
     center: true,
   );
 

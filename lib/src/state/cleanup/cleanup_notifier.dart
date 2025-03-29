@@ -21,7 +21,7 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
       );
 
       final Set<String> referencedFiles = {};
-      final mods = ref.read(modsProvider).mods;
+      final mods = ref.read(modsProvider).value!.mods;
 
       for (final mod in mods) {
         mod.getAllAssets().forEach(

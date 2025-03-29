@@ -14,14 +14,14 @@ class ModsGridCard extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
-    final selectedMod = ref.watch(modsProvider).selectedMod;
+    final selectedMod = ref.watch(selectedModProvider);
 
+    final isHovered = useState(false);
     final imageExists = useMemoized(() {
       return mod.imageFilePath != null
           ? File(mod.imageFilePath!).existsSync()
           : false;
     }, [mod]);
-    final isHovered = useState(false);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -37,12 +37,12 @@ class ModsGridCard extends HookConsumerWidget {
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color: selectedMod != null && mod.fileName == selectedMod.fileName
+              width: 4,
+              color: selectedMod == mod
                   ? Colors.white
                   : isHovered.value
                       ? Colors.white70
                       : Colors.transparent,
-              width: 4,
             ),
           ),
           child: Stack(
@@ -71,14 +71,10 @@ class ModsGridCard extends HookConsumerWidget {
                     padding: const EdgeInsets.all(4.0),
                     child: Container(
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 1,
-                        ),
                         borderRadius: BorderRadius.all(Radius.circular(6)),
                         color: Colors.black.withAlpha(200),
                       ),
-                      padding: EdgeInsets.all(6),
+                      padding: EdgeInsets.all(4),
                       child: Text(
                         '${mod.totalExistsCount}/${mod.totalCount}',
                         style: TextStyle(

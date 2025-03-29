@@ -13,24 +13,26 @@ class ModsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cleanUpStatus = ref.watch(cleanupProvider).status;
+    final cleanUpNotifier = ref.watch(cleanupProvider.notifier);
+    final cleanUpState = ref.watch(cleanupProvider);
+    final mods = ref.watch(modsProvider);
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (cleanUpStatus == CleanUpStatusEnum.completed) {
+        if (cleanUpState.status == CleanUpStatusEnum.completed) {
           showSnackBar(context, 'Cleanup finished!');
-          ref.read(cleanupProvider.notifier).resetState();
-        } else if (cleanUpStatus == CleanUpStatusEnum.error) {
+          cleanUpNotifier.resetState();
+        } else if (cleanUpState.status == CleanUpStatusEnum.error) {
           showSnackBar(
             context,
             'Cleanup error: ${ref.read(cleanupProvider).errorMessage}',
           );
-          ref.read(cleanupProvider.notifier).resetState();
+          cleanUpNotifier.resetState();
         }
       });
 
       return null;
-    }, [cleanUpStatus]);
+    }, [cleanUpState]);
 
     return SafeArea(
       child: Scaffold(
@@ -45,20 +47,34 @@ class ModsPage extends HookConsumerWidget {
               ),
             ),
             Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: ModsGrid(),
-                    ),
+              child: mods.when(
+                data: (data) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: ModsGrid(mods: data.mods),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: AssetsList(),
+                      ),
+                    ],
+                  );
+                },
+                // TODO test and improve error handling
+                error: (e, st) => Center(
+                  child: Text('Error: $e'),
+                ),
+                loading: () => Center(
+                  child: Text(
+                    "Loading...",
+                    style: TextStyle(fontSize: 32),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: AssetsList(),
-                  ),
-                ],
+                ),
               ),
             ),
           ],

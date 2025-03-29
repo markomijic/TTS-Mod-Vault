@@ -43,7 +43,7 @@ void showAlertDialog(
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              onConfirm();
+              Future.delayed(kThemeChangeDuration, () => onConfirm());
             },
             child: const Text('Confirm'),
           ),

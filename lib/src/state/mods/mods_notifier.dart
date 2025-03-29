@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod/riverpod.dart';
@@ -12,50 +11,132 @@ import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/state/provider.dart';
 import 'package:tts_mod_vault/src/utils.dart';
 
-class ModsStateNotifier extends StateNotifier<ModsState> {
-  final Ref ref;
+class ModsStateNotifier extends AsyncNotifier<ModsState> {
+  @override
+  Future<ModsState> build() async {
+    return ModsState(mods: [], selectedMod: null);
+  }
 
-  ModsStateNotifier(this.ref) : super(ModsState());
+  void setLoading() {
+    state = const AsyncValue.loading();
+  }
 
   Future<void> loadModsData(VoidCallback onDataLoaded) async {
-    state = ModsState(mods: [], selectedMod: null, isLoading: true);
+    debugPrint('loadModsData START: ${DateTime.now()}');
+
+    setLoading();
 
     try {
       final workShopFileInfosPath = path.join(
-          ref.read(directoriesProvider).workshopDir, 'WorkshopFileInfos.json');
+        ref.read(directoriesProvider).workshopDir,
+        'WorkshopFileInfos.json',
+      );
 
       final String jsonString =
           await File(workShopFileInfosPath).readAsString();
       final List<dynamic> jsonList = json.decode(jsonString);
       final items = jsonList.map((json) => Mod.fromJson(json)).toList();
 
-      List<Mod> mods = [];
+      // Process items concurrently
+      final mods = await Future.wait(
+        items.map((item) async {
+          try {
+            if (await doesJsonExist(path.basename(item.directory))) {
+              final fileName = path.basenameWithoutExtension(item.directory);
+              Map<String, String>? jsonURLs;
 
-      for (final item in items) {
-        try {
-          if (await doesJsonExist(path.basename(item.directory))) {
-            mods.add(await getModData(item));
-          } else {
-            debugPrint('missing json: ${item.directory}');
+              jsonURLs = ref.read(storageProvider).getItemMap(fileName) ??
+                  await extractUrlsFromJson(item.directory);
+
+              final mod = getModData(item, fileName, jsonURLs);
+
+              if (ref.read(storageProvider).getItem(fileName) == null ||
+                  ref.read(storageProvider).getItemUpdateTime(fileName) !=
+                      item.updateTime) {
+                if (ref.read(storageProvider).getItemUpdateTime(fileName) !=
+                    item.updateTime) {
+                  await ref.read(storageProvider).deleteItem(fileName);
+                }
+                await ref.read(storageProvider).saveAllItemData(
+                      fileName,
+                      fileName,
+                      item.updateTime,
+                      jsonURLs,
+                    );
+              }
+              // Uncomment to delete all cached mod data
+              /*   else {
+                await ref.read(storageProvider).deleteItem(fileName);
+              } */
+
+              return mod;
+            } else {
+              debugPrint('Missing JSON: ${item.directory}');
+              return null;
+            }
+          } catch (e) {
+            debugPrint('Error processing item: ${e.toString()}');
+            return null;
           }
-        } catch (e) {
-          continue;
-        }
-      }
+        }),
+      );
 
-      state = state.copyWith(mods: mods, isLoading: false);
+      Future.delayed(Duration(milliseconds: 500), () {});
+      state = AsyncValue.data(
+        ModsState(
+          mods: mods.whereType<Mod>().toList(), // Filter out null mods
+          selectedMod: null,
+        ),
+      );
+
+      debugPrint('loadModsData END: ${DateTime.now()}');
       onDataLoaded();
     } catch (e) {
-      debugPrint('Error loading items: $e');
+      debugPrint('loadModsData error: $e');
+      state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
-  Future<Mod> getModData(Mod mod) async {
-    final fileName = path.basenameWithoutExtension(mod.directory);
+  Future<void> updateMod(String modName) async {
+    try {
+      Mod? updatedMod;
+
+      final updatedMods = await Future.wait(
+        state.value!.mods.map((mod) async {
+          if (mod.name == modName) {
+            updatedMod = getModData(
+              mod,
+              mod.fileName!,
+              ref.read(storageProvider).getItemMap(mod.fileName!) ??
+                  await extractUrlsFromJson(mod.directory),
+            );
+            return updatedMod ?? mod;
+          }
+          return mod;
+        }).toList(),
+      );
+
+      if (updatedMod != null) {
+        selectItem(updatedMod!);
+      }
+
+      state = AsyncValue.data(
+        state.value!.copyWith(
+          mods: updatedMods,
+          isLoading: false,
+        ),
+      );
+    } catch (e) {
+      debugPrint('updateMod error: $e');
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  Mod getModData(Mod mod, String fileName, Map<String, String> jsonURLs) {
     final imageFilePath =
         path.join(ref.read(directoriesProvider).workshopDir, '$fileName.png');
-    final jsonURLs = await extractUrlsFromJson(mod.directory);
-    final assetLists = await getAssetListsFromUrls(jsonURLs);
+
+    final assetLists = getAssetListsFromUrls(jsonURLs);
 
     return Mod(
       directory: mod.directory,
@@ -69,98 +150,64 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
     );
   }
 
-  Future<void> updateMod(String modName) async {
-    state = state.copyWith(isLoading: true);
-    Mod? updatedMod;
-    final updatedMods = await Future.wait(state.mods.map((mod) async {
-      if (mod.name == modName) {
-        updatedMod = await getModData(mod);
-        return updatedMod ?? mod;
-      }
+  List<Asset> getAssetsByType(List<String> urls, AssetType type) {
+    final filePaths = urls.map((url) {
+      final updatedUrl = replaceInUrl(
+          url,
+          'http://cloud-3.steamusercontent.com/',
+          'https://steamusercontent-a.akamaihd.net/');
+      return (updatedUrl, getFilePath(updatedUrl, type));
+    }).toList();
 
-      return mod;
-    }).toList());
+    final existenceChecks = filePaths
+        .map((path23) =>
+            ref
+                .read(stringListProvider.notifier)
+                .hasStringStartingWith(getFileNameFromURL(path23.$1), type) !=
+            null)
+        .toList();
 
-    state = state.copyWith(
-      mods: updatedMods,
-      selectedMod: updatedMod,
-      isLoading: false,
+    return List.generate(
+      urls.length,
+      (i) => Asset(
+        url: filePaths[i].$1,
+        fileExists: existenceChecks[i],
+        filePath: existenceChecks[i] ? filePaths[i].$2 : null,
+      ),
     );
   }
 
-  Future<(AssetLists, int, int)> getAssetListsFromUrls(
-      Map<String, String> data) async {
-    final List<String> assetBundleURLs = [];
-    final List<String> audioURLs = [];
-    final List<String> imageURLs = [];
-    final List<String> modelURLs = [];
-    final List<String> pdfURLs = [];
-
-    int totalCount = 0;
-    int existingFilesCount = 0;
+  (AssetLists, int, int) getAssetListsFromUrls(Map<String, String> data) {
+    Map<AssetType, List<String>> urlsByType = {
+      for (var type in AssetType.values) type: [],
+    };
 
     for (final element in data.entries) {
       for (final assetType in AssetType.values) {
         if (assetType.subtypes.contains(element.value)) {
-          totalCount++;
-          switch (assetType) {
-            case AssetType.assetBundle:
-              assetBundleURLs.add(element.key);
-            case AssetType.audio:
-              audioURLs.add(element.key);
-            case AssetType.image:
-              imageURLs.add(element.key);
-            case AssetType.model:
-              modelURLs.add(element.key);
-            case AssetType.pdf:
-              pdfURLs.add(element.key);
-          }
+          urlsByType[assetType]!.add(element.key);
           break;
         }
       }
     }
 
-    Future<List<Asset>> getAssetsByType(
-      List<String> urls,
-      AssetType type,
-    ) async {
-      return await Future.wait(
-        urls.map(
-          (url) async {
-            final updatedUrl = replaceInUrl(
-                url,
-                'http://cloud-3.steamusercontent.com/',
-                'https://steamusercontent-a.akamaihd.net/');
+    final results = AssetType.values
+        .map((type) => getAssetsByType(urlsByType[type]!, type))
+        .toList();
 
-            final filePath = getFilePath(updatedUrl, type);
-            final fileExists = await File(filePath).exists();
-            if (fileExists) {
-              existingFilesCount++;
-            }
-            return Asset(
-              url: updatedUrl,
-              fileExists: fileExists,
-              filePath: fileExists ? filePath : null,
-            );
-          },
-        ),
-      );
-    }
-
-    final assetBundleAssets =
-        await getAssetsByType(assetBundleURLs, AssetType.assetBundle);
-    final audioAssets = await getAssetsByType(audioURLs, AssetType.audio);
-    final imageAssets = await getAssetsByType(imageURLs, AssetType.image);
-    final modelAssets = await getAssetsByType(modelURLs, AssetType.model);
-    final pdfAssets = await getAssetsByType(pdfURLs, AssetType.pdf);
+    final totalCount = data.length;
+    final existingFilesCount = results
+        .expand((list) => list)
+        .where((asset) => asset.fileExists)
+        .length;
 
     return (
       AssetLists(
-        assetBundles: assetBundleAssets,
-        audio: audioAssets,
-        images: imageAssets,
-        models: modelAssets,
-        pdf: pdfAssets,
+        assetBundles: results[0],
+        audio: results[1],
+        images: results[2],
+        models: results[3],
+        pdf: results[4],
       ),
       totalCount,
       existingFilesCount,
@@ -175,29 +222,30 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
 
   String getFilePath(String url, AssetType type) {
     String filePath = '';
+    final fileNameFromURL = getFileNameFromURL(url);
     if (type == AssetType.image || type == AssetType.audio) {
-      final file = Directory(ref.read(directoriesProvider).imagesDir)
-          .listSync()
-          .firstWhereOrNull(
-            (entity) =>
-                entity is File &&
-                path.basenameWithoutExtension(entity.path) ==
-                    getFileNameFromURL(url),
-          );
+      final fileExists = ref
+          .read(stringListProvider.notifier)
+          .hasStringStartingWith(fileNameFromURL, type);
 
-      if (file != null && file is File) {
-        filePath = file.path;
+      if (fileExists != null) {
+        filePath = path.joinAll([
+          type == AssetType.image
+              ? ref.read(directoriesProvider).imagesDir
+              : ref.read(directoriesProvider).audioDir,
+          fileExists
+        ]);
       }
     }
 
     return path.joinAll([
       getDirectoryByType(ref.read(directoriesProvider), type),
-      getFileNameFromURL(url) + getExtensionByType(type, filePath),
+      fileNameFromURL + getExtensionByType(type, filePath),
     ]);
   }
 
   Future<void> selectItem(Mod item) async {
-    state = state.copyWith(selectedMod: item);
+    ref.read(selectedModProvider.notifier).state = item;
   }
 
   String replaceInUrl(String url, String oldPart, String newPart) {
@@ -232,8 +280,9 @@ class ModsStateNotifier extends StateNotifier<ModsState> {
         urls.addAll(extractUrlsWithReversedKeys(item, parentKey ?? ''));
       }
     }
-
-    return urls;
+    // Filter urls where the value (key name) matches any subtype from any AssetType
+    return Map.fromEntries(urls.entries.where((entry) =>
+        AssetType.values.any((type) => type.subtypes.contains(entry.value))));
   }
 
   // Function to load and parse the JSON from a file

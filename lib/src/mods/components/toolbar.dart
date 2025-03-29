@@ -50,7 +50,17 @@ class Toolbar extends ConsumerWidget {
               : () => showAlertDialog(
                     context,
                     'Are you sure you want to refresh all mods?',
-                    () => Navigator.of(context).pushNamed('/'),
+                    () async {
+                      ref.read(modsProvider.notifier).setLoading();
+                      WidgetsBinding.instance.addPostFrameCallback((_) async {
+                        await ref
+                            .read(stringListProvider.notifier)
+                            .loadStrings();
+                        await ref.read(modsProvider.notifier).loadModsData(
+                              () {},
+                            );
+                      });
+                    },
                   ),
           child: const Text('Refresh'),
         ),

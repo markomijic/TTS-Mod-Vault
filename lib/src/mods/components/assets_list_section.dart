@@ -23,6 +23,7 @@ class AssetsListSection extends HookConsumerWidget {
     final selectedAssetNotifier = ref.watch(selectedAssetProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
+    final selectedMod = ref.watch(selectedModProvider);
 
     final hasMissingFiles = useMemoized(
       () => assets.any((e) => !e.fileExists),
@@ -59,11 +60,15 @@ class AssetsListSection extends HookConsumerWidget {
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
                       onTap: () async {
+                        if (selectedMod == null) {
+                          return;
+                        }
+
                         final urls = assets
                             .map((e) => e.fileExists ? null : e.url)
                             .nonNulls
                             .toList();
-                        final name = ref.read(modsProvider).selectedMod!.name;
+                        final name = selectedMod.name;
                         await downloadNotifier.downloadFiles(
                           modName: name,
                           urls: urls,

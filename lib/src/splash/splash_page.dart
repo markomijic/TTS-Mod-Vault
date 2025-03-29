@@ -13,6 +13,8 @@ class SplashPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final directoriesNotifier = ref.watch(directoriesProvider.notifier);
+    final stringsNotifier = ref.watch(stringListProvider.notifier);
+    final localStorageNotifier = ref.watch(storageProvider);
     final modsNotifier = ref.watch(modsProvider.notifier);
 
     final ttsDirNotFound = useState(false);
@@ -20,6 +22,8 @@ class SplashPage extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (await directoriesNotifier.checkIfTtsDirectoryExists()) {
+          await localStorageNotifier.init();
+          await stringsNotifier.loadStrings();
           await modsNotifier.loadModsData(
             () => Navigator.of(context).pushReplacementNamed('/mods'),
           );
@@ -53,21 +57,31 @@ class SplashPage extends HookConsumerWidget {
                                 await FilePicker.platform.getDirectoryPath();
 
                             if (ttsDir != null) {
-                              if (await directoriesNotifier
+                              directoriesNotifier.updateTtsDirectory(ttsDir);
+                            } else {
+                              return;
+                            }
+
+                            WidgetsBinding.instance
+                                .addPostFrameCallback((_) async {
+                              if (!await directoriesNotifier
                                   .checkIfTtsDirectoryFoldersExist(ttsDir)) {
-                                directoriesNotifier.updateTtsDirectory(ttsDir);
-                                await modsNotifier.loadModsData(
-                                  () => Navigator.of(context)
-                                      .pushReplacementNamed('/mods'),
-                                );
-                              } else {
                                 if (!context.mounted) {
                                   return;
                                 }
 
                                 showSnackBar(context, 'Invalid directory');
+                                return;
                               }
-                            }
+
+                              await localStorageNotifier.init();
+                              // TODO fix bug and uncomment
+                              //await stringsNotifier.loadStrings();
+                              await modsNotifier.loadModsData(
+                                () => Navigator.of(context)
+                                    .pushReplacementNamed('/mods'),
+                              );
+                            });
                           },
                           child: Text('Select TTS directory'),
                         ),
@@ -79,8 +93,9 @@ class SplashPage extends HookConsumerWidget {
                     ),
                   ],
                 )
-              : CircularProgressIndicator(
-                  color: Colors.white,
+              : Text(
+                  "Loading...",
+                  style: TextStyle(fontSize: 32),
                 ),
         ),
       ),

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/src/mods/components/mods_grid_card.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 
 class ModsGrid extends ConsumerWidget {
-  const ModsGrid({super.key});
+  final List<Mod> mods;
+
+  const ModsGrid({super.key, required this.mods});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mods = ref.watch(modsProvider).mods;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount =

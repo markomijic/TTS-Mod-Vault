@@ -9,7 +9,7 @@ class AssetsActionButtons extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMod = ref.watch(modsProvider).selectedMod;
+    final selectedMod = ref.watch(selectedModProvider);
 
     final hasMissingFiles = useMemoized(() {
       if (selectedMod == null || selectedMod.assetLists == null) return false;

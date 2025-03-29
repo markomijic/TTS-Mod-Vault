@@ -11,7 +11,7 @@ class AssetsList extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMod = ref.watch(modsProvider).selectedMod;
+    final selectedMod = ref.watch(selectedModProvider);
     final isDownloading = ref.watch(downloadProvider).isDownloading;
 
     return Column(

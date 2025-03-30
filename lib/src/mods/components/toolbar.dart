@@ -21,6 +21,17 @@ class Toolbar extends ConsumerWidget {
     final cleanupNotifier = ref.watch(cleanupProvider.notifier);
     final backupNotifier = ref.watch(backupProvider.notifier);
 
+    Future<void> refreshData() async {
+      ref.read(modsProvider.notifier).setLoading();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await ref
+            .read(existingAssetListsProvider.notifier)
+            .loadAssetTypeLists();
+        await ref.read(modsProvider.notifier).loadModsData(null);
+      });
+    }
+
     return Row(
       spacing: 10,
       children: [
@@ -59,17 +70,9 @@ class Toolbar extends ConsumerWidget {
               ? null
               : () => showAlertDialog(
                     context,
-                    'Are you sure you want to refresh all mods?',
+                    'Are you sure you want to refresh data for all mods?',
                     () async {
-                      ref.read(modsProvider.notifier).setLoading();
-                      WidgetsBinding.instance.addPostFrameCallback((_) async {
-                        await ref
-                            .read(existingAssetListsProvider.notifier)
-                            .loadAssetTypeLists();
-                        await ref
-                            .read(modsProvider.notifier)
-                            .loadModsData(null);
-                      });
+                      await refreshData();
                     },
                   ),
           child: const Text('Refresh'),
@@ -83,24 +86,14 @@ class Toolbar extends ConsumerWidget {
 
                   if (backupResult && context.mounted) {
                     showSnackBar(context, 'Import finished. Refreshing data...',
-                        Duration(seconds: 2));
+                        Duration(seconds: 1));
                     Future.delayed(
-                        kThemeChangeDuration,
-                        () => WidgetsBinding.instance
-                                .addPostFrameCallback((_) async {
-                              ref.read(modsProvider.notifier).setLoading();
-                              await ref
-                                  .read(existingAssetListsProvider.notifier)
-                                  .loadAssetTypeLists();
-                              await ref
-                                  .read(modsProvider.notifier)
-                                  .loadModsData(null);
-                            }));
+                        kThemeChangeDuration, () async => await refreshData());
                   }
                 },
           child: const Text('Import backup'),
         ),
-        ElevatedButton(
+/*         ElevatedButton(
           onPressed: null,
           /*    onPressed: () {
                 ref.read(downloadProvider.notifier).downloadAllMods(
@@ -115,7 +108,7 @@ class Toolbar extends ConsumerWidget {
         ElevatedButton(
           onPressed: null,
           child: const Text('Backup all mods'),
-        ),
+        ), */
       ],
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
@@ -27,27 +29,30 @@ void showAlertDialog(
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-        content: Text(contentMessage),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (onCancel != null) {
-                onCancel();
-              } else {
+      return BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+        child: AlertDialog(
+          content: Text(contentMessage),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (onCancel != null) {
+                  onCancel();
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
                 Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Future.delayed(kThemeChangeDuration, () => onConfirm());
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
+                Future.delayed(kThemeChangeDuration, () => onConfirm());
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
       );
     },
   );

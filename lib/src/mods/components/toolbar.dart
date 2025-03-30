@@ -37,7 +37,7 @@ class Toolbar extends ConsumerWidget {
                       if (count > 0) {
                         showAlertDialog(
                           context,
-                          '$count files found, are you sure you want to delete them?',
+                          '$count files found that are not used by any of your mods.\nAre you sure you want to delete them?',
                           () async {
                             await cleanupNotifier.executeDelete();
                           },

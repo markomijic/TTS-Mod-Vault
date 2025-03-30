@@ -42,7 +42,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         'WorkshopFileInfos.json',
       );
 
-      final workshopDirJsonFilePaths = await getJsonFilesInDirectory(
+      final workshopDirJsonFilePaths = await _getJsonFilesInDirectory(
           ref.read(directoriesProvider).workshopDir);
 
       final String jsonString =
@@ -62,7 +62,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
             workshopDirJsonFileName);
 
         if (modIsInJsonList == null) {
-          final saveName = await getSaveNameFromJson(workshopDirJsonFilePath);
+          final saveName = await _getSaveNameFromJson(workshopDirJsonFilePath);
 
           if (saveName != null && saveName.isNotEmpty) {
             jsonListMods.add(Mod(
@@ -74,31 +74,35 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         }
       }
 
-      // Sort alphabetically
+      // Sort Mods alphabetically
       jsonListMods.sort((a, b) => a.name.compareTo(b.name));
 
       // Process items concurrently
       final mods = await Future.wait(
         jsonListMods.map((item) async {
           try {
-            if (await doesJsonExist(path.basename(item.directory))) {
+            if (await File(path.normalize(item.directory)).exists()) {
               final fileName = path.basenameWithoutExtension(item.directory);
               Map<String, String>? jsonURLs;
 
-              jsonURLs = ref.read(storageProvider).getItemMap(fileName) ??
-                  await extractUrlsFromJson(item.directory);
+              jsonURLs = ref.read(storageProvider).getModAssetLists(fileName) ??
+                  await _extractUrlsFromJson(item.directory);
 
-              final mod = getModData(item, fileName, jsonURLs);
+              final mod = _getModData(item, fileName, jsonURLs);
 
-              if (ref.read(storageProvider).getItem(fileName) == null ||
-                  ref.read(storageProvider).getItemUpdateTime(fileName) !=
-                      item.updateTime) {
-                if (ref.read(storageProvider).getItemUpdateTime(fileName) !=
-                    item.updateTime) {
-                  await ref.read(storageProvider).deleteItem(fileName);
-                }
-                await ref.read(storageProvider).saveAllItemData(
-                      fileName,
+              final modUpdateTimeChanged =
+                  ref.read(storageProvider).getModUpdateTime(fileName) !=
+                      item.updateTime;
+
+              if (modUpdateTimeChanged) {
+                await ref.read(storageProvider).deleteMod(fileName);
+              }
+
+              final modDoesNotHaveDataCached =
+                  ref.read(storageProvider).getMod(fileName) == null;
+
+              if (modDoesNotHaveDataCached || modUpdateTimeChanged) {
+                await ref.read(storageProvider).saveModData(
                       fileName,
                       item.updateTime,
                       jsonURLs,
@@ -145,11 +149,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final updatedMods = await Future.wait(
         state.value!.mods.map((mod) async {
           if (mod.name == modName) {
-            updatedMod = getModData(
+            updatedMod = _getModData(
               mod,
               mod.fileName!,
-              ref.read(storageProvider).getItemMap(mod.fileName!) ??
-                  await extractUrlsFromJson(mod.directory),
+              ref.read(storageProvider).getModAssetLists(mod.fileName!) ??
+                  await _extractUrlsFromJson(mod.directory),
             );
             return updatedMod ?? mod;
           }
@@ -173,11 +177,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod getModData(Mod mod, String fileName, Map<String, String> jsonURLs) {
+  Mod _getModData(Mod mod, String fileName, Map<String, String> jsonURLs) {
     final imageFilePath =
-        path.join(ref.read(directoriesProvider).workshopDir, '$fileName.png');
+        path.join(path.dirname(mod.directory), '$fileName.png');
 
-    final assetLists = getAssetListsFromUrls(jsonURLs);
+    final assetLists = _getAssetListsFromUrls(jsonURLs);
 
     return Mod(
       directory: mod.directory,
@@ -191,13 +195,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
-  List<Asset> getAssetsByType(List<String> urls, AssetType type) {
+  List<Asset> _getAssetsByType(List<String> urls, AssetType type) {
     final filePaths = urls.map((url) {
-      final updatedUrl = replaceInUrl(
+      final updatedUrl = _replaceInUrl(
           url,
           'http://cloud-3.steamusercontent.com/',
           'https://steamusercontent-a.akamaihd.net/');
-      return (updatedUrl, getFilePath(updatedUrl, type));
+      return (updatedUrl, _getFilePath(updatedUrl, type));
     }).toList();
 
     final existenceChecks = filePaths
@@ -219,7 +223,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
-  (AssetLists, int, int) getAssetListsFromUrls(Map<String, String> data) {
+  (AssetLists, int, int) _getAssetListsFromUrls(Map<String, String> data) {
     Map<AssetType, List<String>> urlsByType = {
       for (var type in AssetType.values) type: [],
     };
@@ -234,7 +238,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
 
     final results = AssetType.values
-        .map((type) => getAssetsByType(urlsByType[type]!, type))
+        .map((type) => _getAssetsByType(urlsByType[type]!, type))
         .toList();
 
     final totalCount = data.length;
@@ -256,13 +260,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
-  Future<bool> doesJsonExist(String fileName) async {
-    final jsonPath =
-        path.joinAll([ref.read(directoriesProvider).workshopDir, fileName]);
-    return await File(jsonPath).exists();
-  }
-
-  String getFilePath(String url, AssetType type) {
+  String _getFilePath(String url, AssetType type) {
     String filePath = '';
     final fileNameFromURL = getFileNameFromURL(url);
     if (type == AssetType.image || type == AssetType.audio) {
@@ -290,7 +288,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     ref.read(selectedModProvider.notifier).state = item;
   }
 
-  String replaceInUrl(String url, String oldPart, String newPart) {
+  String _replaceInUrl(String url, String oldPart, String newPart) {
     if (url.contains(oldPart)) {
       return url.replaceAll(oldPart, newPart);
     }
@@ -298,7 +296,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   // Function to recursively extract URLs and their associated keys from the JSON structure
-  Map<String, String> extractUrlsWithReversedKeys(dynamic data,
+  Map<String, String> _extractUrlsWithReversedKeys(dynamic data,
       [String? parentKey]) {
     Map<String, String> urls = {};
 
@@ -312,14 +310,14 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         }
         // If the value is a Map or List, recurse into it
         else if (value is Map || value is List) {
-          urls.addAll(extractUrlsWithReversedKeys(value, key));
+          urls.addAll(_extractUrlsWithReversedKeys(value, key));
         }
       });
     }
     // If the data is a List, iterate through it and recurse into each element
     else if (data is List) {
       for (final item in data) {
-        urls.addAll(extractUrlsWithReversedKeys(item, parentKey ?? ''));
+        urls.addAll(_extractUrlsWithReversedKeys(item, parentKey ?? ''));
       }
     }
     // Filter urls where the value (key name) matches any subtype from any AssetType
@@ -328,7 +326,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   // Function to load and parse the JSON from a file
-  Future<Map<String, String>> extractUrlsFromJson(String filePath) async {
+  Future<Map<String, String>> _extractUrlsFromJson(String filePath) async {
     try {
       // Read the JSON file
       final file = File(filePath);
@@ -338,17 +336,17 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final decodedJson = jsonDecode(jsonString);
 
       // Extract URLs with reversed key-value relationships
-      Map<String, String> urls = extractUrlsWithReversedKeys(decodedJson);
+      Map<String, String> urls = _extractUrlsWithReversedKeys(decodedJson);
 
       return urls;
     } catch (e) {
-      debugPrint('Error reading or parsing the file: $e');
+      debugPrint('_extractUrlsFromJson error: $e');
     }
 
     return {};
   }
 
-  Future<List<String>> getJsonFilesInDirectory(String directoryPath) async {
+  Future<List<String>> _getJsonFilesInDirectory(String directoryPath) async {
     final List<String> jsonFilePaths = [];
 
     try {
@@ -371,12 +369,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       return jsonFilePaths;
     } catch (e) {
-      debugPrint('getJsonFilesInDirectory error: $e');
+      debugPrint('_getJsonFilesInDirectory error: $e');
       return jsonFilePaths;
     }
   }
 
-  Future<String?> getSaveNameFromJson(String filePath) async {
+  Future<String?> _getSaveNameFromJson(String filePath) async {
     try {
       final File file = File(filePath);
       final String jsonString = await file.readAsString();
@@ -388,7 +386,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       return null;
     } catch (e) {
-      debugPrint("getSaveNameFromJson error: $e");
+      debugPrint("_getSaveNameFromJson error: $e");
       return null;
     }
   }

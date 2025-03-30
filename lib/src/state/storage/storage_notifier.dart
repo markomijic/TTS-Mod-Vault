@@ -1,10 +1,14 @@
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart'
+    show SharedPreferences;
+import 'dart:convert' show jsonDecode, jsonEncode;
 
 class Storage {
   late final SharedPreferences _prefs;
   bool _initialized = false;
+
+  // Constants for storage keys
+  static const String updatedTimeSuffix = 'UpdatedTime';
+  static const String listsSuffix = 'Lists';
 
   Future<void> init() async {
     if (!_initialized) {
@@ -13,40 +17,34 @@ class Storage {
     }
   }
 
-  // Save item value
-  Future<bool> saveItem(String itemName, String value) async {
+  Future<bool> saveMod(String modName, String value) async {
     if (!_initialized) await init();
-    return await _prefs.setString(itemName, value);
+    return await _prefs.setString(modName, value);
   }
 
-  // Save item's updated time
-  Future<bool> saveItemUpdateTime(String itemName, int timestamp) async {
+  Future<bool> saveModUpdateTime(String modName, int timestamp) async {
     if (!_initialized) await init();
-    return await _prefs.setInt('${itemName}UpdatedTime', timestamp);
+    return await _prefs.setInt('$modName$updatedTimeSuffix', timestamp);
   }
 
-  // Save item's map data
-  Future<bool> saveItemMap(String itemName, Map<String, String> data) async {
+  Future<bool> saveModMap(String modName, Map<String, String> data) async {
     if (!_initialized) await init();
-    return await _prefs.setString('${itemName}List', jsonEncode(data));
+    return await _prefs.setString('$modName$listsSuffix', jsonEncode(data));
   }
 
-  // Get item value
-  String? getItem(String itemName) {
+  String? getMod(String modName) {
     if (!_initialized) return null;
-    return _prefs.getString(itemName);
+    return _prefs.getString(modName);
   }
 
-  // Get item's updated time
-  int? getItemUpdateTime(String itemName) {
+  int? getModUpdateTime(String modName) {
     if (!_initialized) return null;
-    return _prefs.getInt('${itemName}UpdatedTime');
+    return _prefs.getInt('$modName$updatedTimeSuffix');
   }
 
-  // Get item's map data
-  Map<String, String>? getItemMap(String itemName) {
+  Map<String, String>? getModAssetLists(String modName) {
     if (!_initialized) return null;
-    final jsonStr = _prefs.getString('${itemName}List');
+    final jsonStr = _prefs.getString('$modName$listsSuffix');
     if (jsonStr == null) return null;
 
     final Map<String, dynamic> decoded = jsonDecode(jsonStr);
@@ -54,28 +52,26 @@ class Storage {
     return decoded.map((key, value) => MapEntry(key, value.toString()));
   }
 
-  // Save all information for an item at once
-  Future<bool> saveAllItemData(String itemName, String value, int updateTime,
-      Map<String, String> data) async {
+  Future<bool> saveModData(
+      String modName, int updateTime, Map<String, String> data) async {
     if (!_initialized) await init();
 
     final results = await Future.wait([
-      saveItem(itemName, value),
-      saveItemUpdateTime(itemName, updateTime),
-      saveItemMap(itemName, data)
+      saveMod(modName, modName),
+      saveModUpdateTime(modName, updateTime),
+      saveModMap(modName, data)
     ]);
 
     return !results.contains(false);
   }
 
-  // Delete all information for an item
-  Future<bool> deleteItem(String itemName) async {
+  Future<bool> deleteMod(String modName) async {
     if (!_initialized) return false;
 
     final results = await Future.wait([
-      _prefs.remove(itemName),
-      _prefs.remove('${itemName}UpdatedTime'),
-      _prefs.remove('${itemName}List')
+      _prefs.remove(modName),
+      _prefs.remove('$modName$updatedTimeSuffix'),
+      _prefs.remove('$modName$listsSuffix')
     ]);
 
     return !results.contains(false);

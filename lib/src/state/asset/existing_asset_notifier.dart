@@ -25,7 +25,7 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
     for (final type in AssetType.values) {
       final directory = getDirectoryByType(directories, type);
 
-      final filenames = await getDirectoryFilenames(directory);
+      final filenames = await _getDirectoryFilenames(directory);
 
       // Assign filenames to the correct list based on type
       switch (type) {
@@ -56,7 +56,7 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
     );
   }
 
-  Future<List<String>> getDirectoryFilenames(String path) async {
+  Future<List<String>> _getDirectoryFilenames(String path) async {
     final directory = Directory(path);
     final List<String> filenames = await directory
         .list()
@@ -67,7 +67,7 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
 
   Future<void> updateAssetTypeList(AssetType type) async {
     final directory = getDirectoryByType(directories, type);
-    final filenames = await getDirectoryFilenames(directory);
+    final filenames = await _getDirectoryFilenames(directory);
 
     switch (type) {
       case AssetType.assetBundle:

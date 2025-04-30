@@ -13,28 +13,51 @@ class ProgressBar extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (downloadingType != null)
-          Text('Downloading ${downloadingType.label}'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (downloadingType != null)
+              Text('Downloading ${downloadingType.label}'),
+            Padding(
+              padding: const EdgeInsets.only(right: 6.0),
+              child: ElevatedButton(
+                onPressed: () async {
+                  await ref
+                      .read(downloadProvider.notifier)
+                      .cancelAllDownloads();
+                  await ref
+                      .read(modsProvider.notifier)
+                      .updateMod(ref.read(selectedModProvider)!.name);
+                  ref.read(selectedAssetProvider.notifier).resetState();
+                },
+                child: Text('Cancel'),
+              ),
+            )
+          ],
+        ), // ${downloadingType.label}'),
         SizedBox(height: 5),
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child: Stack(
-            children: [
-              FractionallySizedBox(
-                widthFactor: progress.clamp(0.0, 1.0),
-                child: Container(
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(32),
+        Padding(
+          padding: const EdgeInsets.only(right: 6.0),
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Stack(
+              children: [
+                FractionallySizedBox(
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(32),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

@@ -16,19 +16,43 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   final Ref ref;
   final Dio dio;
 
+  // Map to store active CancelTokens
+  final Map<String, CancelToken> _cancelTokens = {};
+
   DownloadNotifier(this.ref)
       : dio = Dio(),
         super(const DownloadState());
 
-/*   Future<void> downloadAllMods(
-    List<Mod> mods,
-    Future<void> Function(Mod mod) callback,
-  ) async {
-    for (final mod in mods) {
-      await downloadAllFiles(mod); 
-      await callback(mod);
+  // Cancel a specific download by URL
+/*   void cancelDownload(String url) {
+    if (_cancelTokens.containsKey(url)) {
+      _cancelTokens[url]?.cancel('Download cancelled by user');
+      _cancelTokens.remove(url);
     }
   } */
+
+  // Cancel all active downloads
+  Future<void> cancelAllDownloads() async {
+    for (var token in _cancelTokens.values) {
+      token.cancel('All downloads cancelled by user');
+    }
+    _cancelTokens.clear();
+
+    await ref.read(existingAssetListsProvider.notifier).loadAssetTypeLists();
+
+    // Reset the download state
+    state = state.copyWith(
+      isDownloading: false,
+      progress: null,
+      downloadingType: null,
+      errorMessage: 'Downloads cancelled',
+    );
+  }
+
+  // Check if a download is active
+  bool isDownloadActive(String url) {
+    return _cancelTokens.containsKey(url);
+  }
 
   Future<void> downloadAllFiles(Mod mod) async {
     if (mod.assetLists == null) {
@@ -116,6 +140,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         );
 
         await Future.wait(batch.map((url) async {
+          // Create a new CancelToken for this download
+          final cancelToken = CancelToken();
+          _cancelTokens[url] = cancelToken;
+
           try {
             final fileName = getFileNameFromURL(url);
             final directory =
@@ -126,12 +154,23 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
               await dio.download(
                 url,
                 tempPath,
+                cancelToken: cancelToken, // Use the cancel token
                 onReceiveProgress: (received, total) {
                   if (total <= 0 || batch.length > 1) return;
                   // Progress per file
                   state = state.copyWith(progress: received / total);
                 },
               );
+
+              // Check if download was cancelled before proceeding
+              if (cancelToken.isCancelled) {
+                // Clean up the temp file if it exists
+                final tempFile = File(tempPath);
+                if (await tempFile.exists()) {
+                  await tempFile.delete();
+                }
+                return;
+              }
 
               final bytes = await File(tempPath).readAsBytes();
               final extension = getExtensionByType(type, tempPath, bytes);
@@ -147,14 +186,37 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
               await dio.download(
                 url,
                 assetPath,
+                cancelToken: cancelToken, // Use the cancel token
                 onReceiveProgress: (received, total) {
                   if (total <= 0 || batch.length > 1) return;
                   // Progress per file
                   state = state.copyWith(progress: received / total);
                 },
               );
+
+              // Check if download was cancelled before proceeding
+              if (cancelToken.isCancelled) {
+                // Clean up the downloaded file if it exists
+                final file = File(assetPath);
+                if (await file.exists()) {
+                  await file.delete();
+                }
+                return;
+              }
             }
+
+            // Remove the token after successful download
+            _cancelTokens.remove(url);
           } catch (e) {
+            // Remove the token in case of error
+            _cancelTokens.remove(url);
+
+            // Handle cancellation specifically
+            if (e is DioException && e.type == DioExceptionType.cancel) {
+              debugPrint('Download cancelled for $url');
+              return; // Don't treat cancellation as an error
+            }
+
             debugPrint('Error occurred while downloading files: $e');
           }
         }));

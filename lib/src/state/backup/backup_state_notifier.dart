@@ -1,11 +1,10 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart'
-    show FilePicker, FilePickerResult, FileType;
+import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:archive/archive.dart'
     show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
-import 'package:path/path.dart' as p show basename, join;
+import 'package:path/path.dart' as p show basename, join, relative;
 import 'package:riverpod/riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;
@@ -20,12 +19,11 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
   Future<bool> importBackup() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['ttsmod'],
         allowMultiple: false,
       );
-
       if (result == null || result.files.isEmpty) {
         return false;
       }
@@ -57,6 +55,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
     } catch (e) {
       debugPrint('importBackup error: $e');
+      state = state.copyWith(importInProgress: false);
       return false;
     }
 
@@ -83,12 +82,20 @@ class BackupNotifier extends StateNotifier<BackupState> {
       state = state.copyWith(backupInprogress: true);
 
       final filePaths = <String>[];
+
+      // Add filepaths of assets
       for (final asset in allModAssets) {
         if (asset.fileExists &&
             asset.filePath != null &&
             asset.filePath!.isNotEmpty) {
           filePaths.add(asset.filePath!);
         }
+      }
+
+      // Add JSON and image filepaths
+      filePaths.add(mod.directory);
+      if (mod.imageFilePath != null && mod.imageFilePath!.isNotEmpty) {
+        filePaths.add(mod.imageFilePath!);
       }
 
       final archive = Archive();
@@ -103,8 +110,10 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
         try {
           final fileData = await file.readAsBytes();
-          final fileName = p.basename(filePath);
-          final archiveFile = ArchiveFile(fileName, fileData.length, fileData);
+          final relativePath =
+              p.relative(filePath, from: ref.read(directoriesProvider).ttsDir);
+          final archiveFile =
+              ArchiveFile(relativePath, fileData.length, fileData);
 
           archive.addFile(archiveFile);
         } catch (e) {
@@ -113,7 +122,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
 
       if (archive.files.isEmpty) {
-        throw Exception('No valid files to create backup');
+        throw Exception('No valid files to create a backup');
       }
 
       final backupFileName =

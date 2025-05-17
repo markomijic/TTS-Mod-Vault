@@ -149,7 +149,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final updatedMods = await Future.wait(
         state.value!.mods.map((mod) async {
           if (mod.name == modName) {
-            updatedMod = _getModData(
+            updatedMod = await _getModData(
               mod,
               mod.fileName!,
               ref.read(storageProvider).getModAssetLists(mod.fileName!) ??
@@ -177,9 +177,25 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod _getModData(Mod mod, String fileName, Map<String, String> jsonURLs) {
-    final imageFilePath =
+  Future<Mod> _getModData(
+      Mod mod, String fileName, Map<String, String> jsonURLs) async {
+    String? imageFilePath;
+
+    final imageWorkshopDir =
         path.join(path.dirname(mod.directory), '$fileName.png');
+    final workshopDirFile = File(imageWorkshopDir);
+
+    if (await workshopDirFile.exists()) {
+      imageFilePath = imageWorkshopDir;
+    } else {
+      final imageThumbnailsDir =
+          path.join(path.dirname(mod.directory), 'Thumbnails', '$fileName.png');
+      final thumbnailsDirFile = File(imageThumbnailsDir);
+
+      if (await thumbnailsDirFile.exists()) {
+        imageFilePath = imageThumbnailsDir;
+      }
+    }
 
     final assetLists = _getAssetListsFromUrls(jsonURLs);
 

@@ -62,14 +62,16 @@ class AssetsActionButtons extends HookConsumerWidget {
           child: const Text('Download all'),
         ),
         ElevatedButton(
-          onPressed: () async {
-            final result =
-                await ref.read(backupProvider.notifier).createBackup();
+          onPressed: actionInProgress
+              ? null
+              : () async {
+                  final result =
+                      await ref.read(backupProvider.notifier).createBackup();
 
-            if (result.isNotEmpty && context.mounted) {
-              showSnackBar(context, result);
-            }
-          },
+                  if (result.isNotEmpty && context.mounted) {
+                    showSnackBar(context, result);
+                  }
+                },
           child: const Text('Backup'),
         ),
       ],

@@ -1,19 +1,23 @@
 class BackupState {
   final bool importInProgress;
-  final bool backupInprogress;
+  final bool backupInProgress;
+  final String importFileName;
 
   const BackupState({
     this.importInProgress = false,
-    this.backupInprogress = false,
+    this.backupInProgress = false,
+    this.importFileName = "",
   });
 
   BackupState copyWith({
     bool? importInProgress,
-    bool? backupInprogress,
+    bool? backupInProgress,
+    String? importFileName,
   }) {
     return BackupState(
       importInProgress: importInProgress ?? this.importInProgress,
-      backupInprogress: backupInprogress ?? this.backupInprogress,
+      backupInProgress: backupInProgress ?? this.backupInProgress,
+      importFileName: importFileName ?? this.importFileName,
     );
   }
 }

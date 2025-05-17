@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show
+        downloadProvider,
+        modsProvider,
+        selectedAssetProvider,
+        selectedModProvider;
 
-class ProgressBar extends ConsumerWidget {
-  const ProgressBar({super.key});
+class DownloadProgressBar extends ConsumerWidget {
+  const DownloadProgressBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

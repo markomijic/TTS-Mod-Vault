@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/mods/components/assets_action_buttons.dart';
-import 'package:tts_mod_vault/src/mods/components/assets_list_section.dart';
-import 'package:tts_mod_vault/src/mods/components/progress_bar.dart';
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/assets_action_buttons.dart'
+    show AssetsActionButtons;
+import 'package:tts_mod_vault/src/mods/components/assets_list_section.dart'
+    show AssetsListSection;
+import 'package:tts_mod_vault/src/mods/components/progress_bar.dart'
+    show DownloadProgressBar;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetType;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show downloadProvider, selectedModProvider;
 
 class AssetsList extends HookConsumerWidget {
   const AssetsList({super.key});
@@ -13,6 +20,16 @@ class AssetsList extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedMod = ref.watch(selectedModProvider);
     final isDownloading = ref.watch(downloadProvider).isDownloading;
+
+    final selectedModHasAssets = useMemoized(
+      () {
+        if (selectedMod == null) {
+          return false;
+        }
+        return selectedMod.getAllAssets().isNotEmpty;
+      },
+      [selectedMod],
+    );
 
     return Column(
       children: [
@@ -82,7 +99,11 @@ class AssetsList extends HookConsumerWidget {
         if (selectedMod != null)
           SizedBox(
             height: 80,
-            child: isDownloading ? ProgressBar() : AssetsActionButtons(),
+            child: isDownloading
+                ? DownloadProgressBar()
+                : selectedModHasAssets
+                    ? AssetsActionButtons()
+                    : null,
           ),
       ],
     );

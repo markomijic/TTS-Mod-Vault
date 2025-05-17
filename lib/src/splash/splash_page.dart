@@ -96,7 +96,7 @@ class SplashPage extends HookConsumerWidget {
                 )
               : Text(
                   "Loading...",
-                  style: TextStyle(fontSize: 32),
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
         ),
       ),

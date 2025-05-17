@@ -4,7 +4,8 @@ import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:archive/archive.dart'
     show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
-import 'package:path/path.dart' as p show join, relative;
+import 'package:path/path.dart' as p
+    show basenameWithoutExtension, join, relative;
 import 'package:riverpod/riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;
@@ -33,7 +34,9 @@ class BackupNotifier extends StateNotifier<BackupState> {
         return false;
       }
 
-      state = state.copyWith(importInProgress: true);
+      state = state.copyWith(
+          importInProgress: true,
+          importFileName: p.basenameWithoutExtension(result.files.single.name));
 
       final bytes = await File(filePath).readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
@@ -55,11 +58,11 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
     } catch (e) {
       debugPrint('importBackup error: $e');
-      state = state.copyWith(importInProgress: false);
+      state = state.copyWith(importInProgress: false, importFileName: "");
       return false;
     }
 
-    state = state.copyWith(importInProgress: false);
+    state = state.copyWith(importInProgress: false, importFileName: "");
     return true;
   }
 
@@ -79,7 +82,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
         "Backup of ${mod.name} has been created in $saveDirectoryPath";
 
     try {
-      state = state.copyWith(backupInprogress: true);
+      state = state.copyWith(backupInProgress: true);
 
       final filePaths = <String>[];
 
@@ -135,7 +138,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       debugPrint('createBackup - error: ${e.toString()}');
       returnValue = e.toString();
     } finally {
-      state = state.copyWith(backupInprogress: false);
+      state = state.copyWith(backupInProgress: false);
     }
 
     return returnValue;

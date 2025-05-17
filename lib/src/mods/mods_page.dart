@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/mods/components/assets_list.dart';
-import 'package:tts_mod_vault/src/mods/components/mods_grid.dart';
-import 'package:tts_mod_vault/src/mods/components/toolbar.dart';
-import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
-import 'package:tts_mod_vault/src/utils.dart';
+import 'package:flutter_hooks/flutter_hooks.dart' show useEffect;
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show AsyncValueX, HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/assets_list.dart'
+    show AssetsList;
+import 'package:tts_mod_vault/src/mods/components/mods_grid.dart' show ModsGrid;
+import 'package:tts_mod_vault/src/mods/components/toolbar.dart' show Toolbar;
+import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
+    show CleanUpStatusEnum;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show backupProvider, cleanupProvider, modsProvider, selectedModProvider;
+import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
@@ -15,6 +19,8 @@ class ModsPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cleanUpNotifier = ref.watch(cleanupProvider.notifier);
     final cleanUpState = ref.watch(cleanupProvider);
+    final backupInProgress = ref.watch(backupProvider).backupInProgress;
+    final importInProgress = ref.watch(backupProvider).importInProgress;
     final mods = ref.watch(modsProvider);
 
     useEffect(() {
@@ -36,47 +42,67 @@ class ModsPage extends HookConsumerWidget {
 
     return SafeArea(
       child: Scaffold(
-        body: Column(
+        body: Stack(
           children: [
-            Container(
-              height: 50,
-              padding: const EdgeInsets.only(left: 12.0, bottom: 4),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Toolbar(),
-              ),
-            ),
-            Expanded(
-              child: mods.when(
-                data: (data) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: ModsGrid(mods: data.mods),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 1,
-                        child: AssetsList(),
-                      ),
-                    ],
-                  );
-                },
-                // TODO test and improve error handling
-                error: (e, st) => Center(
-                  child: Text('Error: $e'),
+            Column(
+              children: [
+                Container(
+                  height: 50,
+                  padding: const EdgeInsets.only(left: 12.0, bottom: 4),
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Toolbar(),
+                  ),
                 ),
-                loading: () => Center(
+                Expanded(
+                  child: mods.when(
+                    data: (data) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: ModsGrid(mods: data.mods),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: AssetsList(),
+                          ),
+                        ],
+                      );
+                    },
+                    // TODO test and improve error handling
+                    error: (e, st) => Center(
+                      child: Text('Error: $e'),
+                    ),
+                    loading: () => Center(
+                      child: Text(
+                        "Loading...",
+                        style: TextStyle(
+                            fontSize: 32, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (backupInProgress || importInProgress)
+              Container(
+                color: Colors.black.withAlpha(180),
+                child: Center(
                   child: Text(
-                    "Loading...",
-                    style: TextStyle(fontSize: 32),
+                    importInProgress
+                        ? "Import of ${ref.read(backupProvider).importFileName} in progress..."
+                        : "Backing up ${ref.read(selectedModProvider)!.name}",
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

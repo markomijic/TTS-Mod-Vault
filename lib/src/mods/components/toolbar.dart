@@ -6,7 +6,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         backupProvider,
         cleanupProvider,
-        directoriesProvider,
         existingAssetListsProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -32,13 +31,59 @@ class Toolbar extends ConsumerWidget {
       });
     }
 
+/* // Example usage in your app
+    void showSettingsDialog(BuildContext context) async {
+      try {
+        print('Loading settings...');
+        final currentSettings = await SettingsManager.loadSettings();
+        print('Settings loaded: ${currentSettings.toJson()}');
+
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => SettingsDialog(
+              initialSettings: currentSettings,
+              onSettingsSaved: (newSettings) {
+                // Apply settings to your app
+                print('Settings applied: ${newSettings.toJson()}');
+
+                // Show a message to confirm settings were applied
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Settings applied successfully'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+
+                // Example: Apply theme
+                // ThemeProvider.of(context).setDarkMode(newSettings.darkMode);
+
+                // Example: Apply font size
+                // YourAppState.of(context).updateFontSize(newSettings.fontSize);
+
+                // Example: Apply language
+                // LocalizationProvider.of(context).changeLanguage(newSettings.language);
+              },
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error showing settings dialog: $e');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error loading settings: ${e.toString()}')),
+          );
+        }
+      }
+    } */
+
     return Row(
       spacing: 10,
       children: [
-        ElevatedButton(
-          onPressed: null,
+        /*    ElevatedButton(
+          onPressed: () => showSettingsDialog(context),
           child: const Text('Settings'),
-        ),
+        ), */
         ElevatedButton(
           onPressed: actionInProgress
               ? null
@@ -81,8 +126,7 @@ class Toolbar extends ConsumerWidget {
           onPressed: actionInProgress
               ? null
               : () async {
-                  final backupResult = await backupNotifier
-                      .importBackup(ref.read(directoriesProvider).ttsDir);
+                  final backupResult = await backupNotifier.importBackup();
 
                   if (backupResult && context.mounted) {
                     showSnackBar(context, 'Import finished. Refreshing data...',

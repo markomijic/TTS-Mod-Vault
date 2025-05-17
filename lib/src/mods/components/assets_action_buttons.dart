@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:tts_mod_vault/src/utils.dart';
 
 class AssetsActionButtons extends HookConsumerWidget {
   const AssetsActionButtons({super.key});
@@ -61,7 +62,14 @@ class AssetsActionButtons extends HookConsumerWidget {
           child: const Text('Download all'),
         ),
         ElevatedButton(
-          onPressed: null,
+          onPressed: () async {
+            final result =
+                await ref.read(backupProvider.notifier).createBackup();
+
+            if (result.isNotEmpty && context.mounted) {
+              showSnackBar(context, result);
+            }
+          },
           child: const Text('Backup'),
         ),
       ],

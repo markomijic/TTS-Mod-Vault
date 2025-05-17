@@ -127,3 +127,27 @@ String getDirectoryByType(DirectoriesState directories, AssetType type) {
       return directories.pdfDir;
   }
 }
+
+String sanitizeFileName(String input) {
+  // Replace characters that are invalid in most file systems
+  final sanitized = input
+      .replaceAll(':', '_') // colon
+      .replaceAll('/', '_') // forward slash
+      .replaceAll('\\', '_') // backslash
+      .replaceAll('*', '_') // asterisk
+      .replaceAll('?', '_') // question mark
+      .replaceAll('"', '_') // double quote
+      .replaceAll('<', '_') // less than
+      .replaceAll('>', '_') // greater than
+      .replaceAll('|', '_'); // pipe
+/*       .replaceAll('\n', '_') // newline
+      .replaceAll('\r', '_') // carriage return
+      .replaceAll('\t', '_') // tab
+      .replaceAll('\0', '_'); // null character */
+
+  /* Trim leading/trailing whitespace and dots
+     (Leading dots can make files hidden on Unix systems,
+     trailing dots/spaces can cause issues on Windows)
+  */
+  return sanitized.trim().replaceAll(RegExp(r'^\.+|\.+$'), '');
+}

@@ -4,7 +4,7 @@ description: "Download and backup assets for your Tabletop Simulator mods"
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 0.6.1+1
+version: 0.6.2+1
 
 environment:
   sdk: ^3.5.4
@@ -26,7 +26,7 @@ dependencies:
   collection: ^1.19.0
   window_manager: ^0.4.3
   mime: ^2.0.0
-  file_picker: ^9.2.3
+  file_picker: ^10.1.9
   shared_preferences: ^2.3.5
   archive: ^4.0.5
 

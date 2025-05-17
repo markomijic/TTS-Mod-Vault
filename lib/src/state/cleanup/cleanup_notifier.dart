@@ -70,7 +70,7 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
 
         if (!referencedFilesUris.contains(filePath)) {
           state = state.copyWith(
-            filesToDelete: [...state.filesToDelete, filePath],
+            filesToDelete: [...state.filesToDelete, file.path],
           );
         }
       }

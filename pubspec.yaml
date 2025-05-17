@@ -1,10 +1,10 @@
 name: tts_mod_vault
-description: "Download and backup assets for your Tabletop Simulator mods."
+description: "Download and backup assets for your Tabletop Simulator mods"
 
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 0.4.0+1
+version: 0.6.0+1
 
 environment:
   sdk: ^3.5.4

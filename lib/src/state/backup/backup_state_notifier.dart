@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:archive/archive.dart'
     show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
-import 'package:path/path.dart' as p show basename, join, relative;
+import 'package:path/path.dart' as p show join, relative;
 import 'package:riverpod/riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;

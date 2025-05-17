@@ -1,10 +1,13 @@
-import 'dart:io';
+import 'dart:io' show Directory, File, FileSystemEntity;
 
-import 'package:riverpod/riverpod.dart';
-import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
-import 'package:path/path.dart' as path;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
+import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
+    show CleanUpState, CleanUpStatusEnum;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetType;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show directoriesProvider, modsProvider;
 
 class CleanupNotifier extends StateNotifier<CleanUpState> {
   final Ref ref;
@@ -27,8 +30,8 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
       for (final mod in mods) {
         mod.getAllAssets().forEach(
           (e) {
-            if (e.fileExists && e.filePath != null) {
-              referencedFiles.add(e.filePath!.toLowerCase());
+            if (e.fileExists && e.filePath != null && e.filePath!.isNotEmpty) {
+              referencedFiles.add(p.basenameWithoutExtension(e.filePath!));
             }
           },
         );
@@ -63,7 +66,7 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
 
     for (final file in files) {
       if (file is File) {
-        final filePath = path.normalize(file.path).toLowerCase();
+        final filePath = p.basenameWithoutExtension(file.path);
 
         if (!referencedFilesUris.contains(filePath)) {
           state = state.copyWith(

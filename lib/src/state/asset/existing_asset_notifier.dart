@@ -9,6 +9,7 @@ import 'package:tts_mod_vault/src/state/directories/directories_state.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetType;
 import 'package:tts_mod_vault/src/utils.dart' show getDirectoryByType;
+import 'package:path/path.dart' as p;
 
 class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
   final DirectoriesState directories;
@@ -60,7 +61,9 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
     final directory = Directory(path);
     final List<String> filenames = await directory
         .list()
-        .map((entity) => entity.path.split(Platform.pathSeparator).last)
+        .where((entity) =>
+            entity is File) // Filter to only include files, not directories
+        .map((entity) => p.basenameWithoutExtension(entity.path))
         .toList();
     return filenames;
   }

@@ -106,15 +106,23 @@ class ModsPage extends HookConsumerWidget {
                         ],
                       );
                     },
-                    // TODO test and improve error handling
                     error: (e, st) => Center(
-                      child: Text('Error: $e'),
+                      child: Text(
+                        'Something went wrong, please try restarting the application\nError: '
+                        '$e',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                     loading: () => Center(
                       child: Text(
-                        "Loading...",
+                        "Loading",
                         style: TextStyle(
-                            fontSize: 32, fontWeight: FontWeight.bold),
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -128,10 +136,10 @@ class ModsPage extends HookConsumerWidget {
                   child: Text(
                     backup.importInProgress
                         ? (backup.importFileName.isNotEmpty == true
-                            ? "Import of ${backup.importFileName} in progress..."
-                            : "Import in progress...")
+                            ? "Import of ${backup.importFileName} in progress"
+                            : "Import in progress")
                         : backup.backupInProgress
-                            ? "Backing up ${ref.read(selectedModProvider)?.name ?? 'Unknown'}"
+                            ? "Backing up ${ref.read(selectedModProvider)?.name ?? ''}"
                             : "",
                     style: TextStyle(
                       fontSize: 32,

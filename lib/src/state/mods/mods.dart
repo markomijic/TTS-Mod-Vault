@@ -25,7 +25,7 @@ import 'package:tts_mod_vault/src/utils.dart' show getFileNameFromURL;
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
   Future<ModsState> build() async {
-    return ModsState(mods: [], selectedMod: null);
+    return ModsState(mods: []);
   }
 
   void setLoading() {
@@ -146,14 +146,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         _setSelectedModByJsonFileName(allMods, modJsonFileName);
       }
 
-      state = AsyncValue.data(
-        ModsState(
-          mods: allMods,
-          selectedMod: null,
-        ),
-      );
+      state = AsyncValue.data(ModsState(mods: allMods));
 
       debugPrint('loadModsData END: ${DateTime.now()}');
+
       if (onDataLoaded != null) {
         onDataLoaded();
       }
@@ -186,12 +182,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         setSelectedMod(updatedMod!);
       }
 
-      state = AsyncValue.data(
-        state.value!.copyWith(
-          mods: updatedMods,
-          isLoading: false,
-        ),
-      );
+      state = AsyncValue.data(state.value!.copyWith(mods: updatedMods));
     } catch (e) {
       debugPrint('updateMod error: $e');
       state = AsyncValue.error(e, StackTrace.current);

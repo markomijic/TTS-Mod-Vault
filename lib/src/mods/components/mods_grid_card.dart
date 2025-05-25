@@ -64,7 +64,33 @@ class ModsGridCard extends HookConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-              if (mod.totalCount != null && mod.totalCount! > 0)
+              if (true) // TODO Replace 'true' later
+                Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Container(
+                    color: Colors.black.withAlpha(200),
+                    width: double.infinity,
+                    padding: EdgeInsets.all(4),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: "${mod.name} "),
+                          TextSpan(
+                            text: mod.totalCount != null && mod.totalCount! > 0
+                                ? "(${mod.totalExistsCount}/${mod.totalCount})"
+                                : "",
+                            style: TextStyle(
+                              color: mod.totalExistsCount == mod.totalCount
+                                  ? Colors.green
+                                  : Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (mod.totalCount != null && mod.totalCount! > 0)
                 Align(
                   alignment: Alignment.bottomRight,
                   child: Padding(
@@ -76,7 +102,7 @@ class ModsGridCard extends HookConsumerWidget {
                       ),
                       padding: EdgeInsets.all(4),
                       child: Text(
-                        '${mod.totalExistsCount}/${mod.totalCount}',
+                        "${mod.totalExistsCount}/${mod.totalCount}",
                         style: TextStyle(
                           color: mod.totalExistsCount == mod.totalCount
                               ? Colors.green

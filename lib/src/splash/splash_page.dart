@@ -77,8 +77,8 @@ class SplashPage extends HookConsumerWidget {
                               }
 
                               await localStorageNotifier.init();
-                              // TODO fix bug and uncomment
-                              //await stringsNotifier.loadStrings();
+                              await existingAssetListsNotifier
+                                  .loadAssetTypeLists();
                               await modsNotifier.loadModsData(
                                 onDataLoaded: () => Navigator.of(context)
                                     .pushReplacementNamed('/mods'),

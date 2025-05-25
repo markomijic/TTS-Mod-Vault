@@ -7,7 +7,7 @@ import 'package:archive/archive.dart'
     show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
 import 'package:path/path.dart' as p
     show basenameWithoutExtension, extension, join, normalize, relative, split;
-import 'package:riverpod/riverpod.dart' show Ref, StateNotifier;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'

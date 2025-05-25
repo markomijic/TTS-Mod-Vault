@@ -5,7 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show VoidCallback, debugPrint;
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
-import 'package:riverpod/riverpod.dart' show AsyncNotifier, AsyncValue;
+import 'package:hooks_riverpod/hooks_riverpod.dart'
+    show AsyncNotifier, AsyncValue;
 import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart'
     show AssetLists;
 import 'package:tts_mod_vault/src/state/asset/asset_model.dart' show Asset;

@@ -1,4 +1,4 @@
-import 'package:riverpod/riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
 import 'package:tts_mod_vault/src/state/asset/selected_asset.dart';

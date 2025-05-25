@@ -57,6 +57,11 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
 
   Future<List<String>> _getDirectoryFilenames(String path) async {
     final directory = Directory(path);
+
+    if (!directory.existsSync()) {
+      return [];
+    }
+
     final List<String> filenames = await directory
         .list()
         .where((entity) =>

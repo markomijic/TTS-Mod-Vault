@@ -48,11 +48,15 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final workshopDirJsonFilePaths = await _getJsonFilesInDirectory(
           ref.read(directoriesProvider).workshopDir);
 
-      final String jsonString =
-          await File(workShopFileInfosPath).readAsString();
-      final List<dynamic> jsonList = json.decode(jsonString);
+      List<Mod> jsonListMods = [];
 
-      final jsonListMods = jsonList.map((json) => Mod.fromJson(json)).toList();
+      if (await File(workShopFileInfosPath).exists()) {
+        final String jsonString =
+            await File(workShopFileInfosPath).readAsString();
+        final List<dynamic> jsonList = json.decode(jsonString);
+
+        jsonListMods = jsonList.map((json) => Mod.fromJson(json)).toList();
+      }
 
       for (final workshopDirJsonFilePath in workshopDirJsonFilePaths) {
         final workshopDirJsonFileName =

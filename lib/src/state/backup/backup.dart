@@ -120,9 +120,11 @@ class BackupNotifier extends StateNotifier<BackupState> {
         final List<FileSystemEntity> files = directory.listSync();
 
         mod.getAssetsByType(type).forEach((asset) {
-          final assetFile = files.firstWhereOrNull((f) => p
-              .basenameWithoutExtension(f.path)
-              .startsWith(p.basenameWithoutExtension(asset.filePath!)));
+          final assetFile = files.firstWhereOrNull((f) =>
+              asset.filePath != null &&
+              p
+                  .basenameWithoutExtension(f.path)
+                  .startsWith(p.basenameWithoutExtension(asset.filePath!)));
 
           if (assetFile != null && assetFile.path.isNotEmpty) {
             filePaths.add(p.normalize(assetFile.path));

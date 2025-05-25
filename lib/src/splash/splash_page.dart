@@ -26,7 +26,8 @@ class SplashPage extends HookConsumerWidget {
           await localStorageNotifier.init();
           await existingAssetListsNotifier.loadAssetTypeLists();
           await modsNotifier.loadModsData(
-            () => Navigator.of(context).pushReplacementNamed('/mods'),
+            onDataLoaded: () =>
+                Navigator.of(context).pushReplacementNamed('/mods'),
           );
         } else {
           ttsDirNotFound.value = true;
@@ -79,7 +80,7 @@ class SplashPage extends HookConsumerWidget {
                               // TODO fix bug and uncomment
                               //await stringsNotifier.loadStrings();
                               await modsNotifier.loadModsData(
-                                () => Navigator.of(context)
+                                onDataLoaded: () => Navigator.of(context)
                                     .pushReplacementNamed('/mods'),
                               );
                             });

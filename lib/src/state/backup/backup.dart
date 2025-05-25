@@ -6,7 +6,7 @@ import 'package:flutter/material.dart' show debugPrint;
 import 'package:archive/archive.dart'
     show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
 import 'package:path/path.dart' as p
-    show basenameWithoutExtension, join, normalize, relative;
+    show basenameWithoutExtension, extension, join, normalize, relative, split;
 import 'package:riverpod/riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;
@@ -23,7 +23,10 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
   Future<bool> importBackup() async {
     try {
-      state = state.copyWith(importInProgress: true);
+      state = state.copyWith(
+        importInProgress: true,
+        lastImportedJsonFileName: "",
+      );
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['ttsmod'],
@@ -53,6 +56,11 @@ class BackupNotifier extends StateNotifier<BackupState> {
           final data = file.content as List<int>;
           final outputFile = File('$targetDir/$filename');
 
+          if (isJsonFile(filename)) {
+            state = state.copyWith(
+                lastImportedJsonFileName: p.basenameWithoutExtension(filename));
+          }
+
           try {
             await outputFile.writeAsBytes(data);
           } catch (e) {
@@ -69,6 +77,19 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
     state = state.copyWith(importInProgress: false, importFileName: "");
     return true;
+  }
+
+  void resetLastImportedJsonFileName() {
+    state = state.copyWith(lastImportedJsonFileName: "");
+  }
+
+  bool isJsonFile(String inputPath) {
+    final filePath = p.normalize(inputPath);
+
+    final isJsonFile = p.extension(filePath).toLowerCase() == '.json';
+    final containsWorkshop = p.split(filePath).contains('Workshop');
+
+    return isJsonFile && containsWorkshop;
   }
 
   Future<String> createBackup() async {

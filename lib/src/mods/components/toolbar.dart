@@ -33,7 +33,10 @@ class Toolbar extends ConsumerWidget {
         await ref
             .read(existingAssetListsProvider.notifier)
             .loadAssetTypeLists();
-        await ref.read(modsProvider.notifier).loadModsData(null);
+        await ref.read(modsProvider.notifier).loadModsData(
+              modJsonFileName:
+                  ref.read(backupProvider).lastImportedJsonFileName,
+            );
       });
     }
 

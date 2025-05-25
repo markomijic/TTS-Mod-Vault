@@ -15,6 +15,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
+        backupProvider,
         directoriesProvider,
         existingAssetListsProvider,
         selectedModProvider,
@@ -31,7 +32,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     state = const AsyncValue.loading();
   }
 
-  Future<void> loadModsData(VoidCallback? onDataLoaded) async {
+  Future<void> loadModsData(
+      {VoidCallback? onDataLoaded, String modJsonFileName = ""}) async {
     debugPrint('loadModsData START: ${DateTime.now()}');
 
     setLoading();
@@ -139,6 +141,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         allMods.addAll(batchResults.whereType<Mod>());
       }
 
+      if (modJsonFileName.isNotEmpty) {
+        ref.read(backupProvider.notifier).resetLastImportedJsonFileName();
+        _setSelectedModByJsonFileName(allMods, modJsonFileName);
+      }
+
       state = AsyncValue.data(
         ModsState(
           mods: allMods,
@@ -176,7 +183,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       );
 
       if (updatedMod != null) {
-        selectItem(updatedMod!);
+        setSelectedMod(updatedMod!);
       }
 
       state = AsyncValue.data(
@@ -303,7 +310,17 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
-  Future<void> selectItem(Mod item) async {
+  Future<void> _setSelectedModByJsonFileName(
+      List<Mod> mods, String jsonFileName) async {
+    if (mods.isNotEmpty) {
+      final foundMod =
+          mods.firstWhereOrNull((mod) => mod.fileName == jsonFileName);
+
+      if (foundMod != null) setSelectedMod(foundMod);
+    }
+  }
+
+  void setSelectedMod(Mod item) {
     ref.read(selectedModProvider.notifier).state = item;
   }
 

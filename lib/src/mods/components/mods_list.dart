@@ -48,7 +48,7 @@ class ModsList extends ConsumerWidget {
               onTap: () {
                 if (actionInProgress) return;
 
-                ref.read(modsProvider.notifier).selectItem(mod);
+                ref.read(modsProvider.notifier).setSelectedMod(mod);
                 ref.read(selectedAssetProvider.notifier).resetState();
               },
             );

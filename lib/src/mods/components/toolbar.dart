@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
+import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -9,7 +10,12 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         existingAssetListsProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show showAlertDialog, showSnackBar;
+    show
+        checkForUpdatesOnGitHub,
+        getGitHubReleaseUrl,
+        openUrl,
+        showAlertDialog,
+        showSnackBar;
 
 class Toolbar extends ConsumerWidget {
   const Toolbar({super.key});
@@ -137,6 +143,39 @@ class Toolbar extends ConsumerWidget {
             }
           },
           child: const Text('Import backup'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            final newTagVersion = await checkForUpdatesOnGitHub();
+
+            if (newTagVersion.isNotEmpty) {
+              final packageInfo = await PackageInfo.fromPlatform();
+              final currentVersion = packageInfo.version;
+
+              if (!context.mounted) return;
+
+              showAlertDialog(context,
+                  "Your version: $currentVersion\nLatest version: $newTagVersion\n\nA new application version is available.\nWould you like to open the download page?",
+                  () async {
+                final url = getGitHubReleaseUrl(newTagVersion);
+                final result = await openUrl(url);
+                if (!result && context.mounted) {
+                  showSnackBar(context, "Failed to open url: $url");
+                }
+              });
+            }
+          },
+          child: const Text('Check for updates'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            final url = ""; // TODO replace with steam forum thread
+            final result = await openUrl(url);
+            if (!result && context.mounted) {
+              showSnackBar(context, "Failed to open url: $url");
+            }
+          },
+          child: const Text('Help / Feedback'),
         ),
         // HelpButton(),
 /*         ElevatedButton(

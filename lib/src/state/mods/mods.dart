@@ -19,8 +19,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         existingAssetListsProvider,
         selectedModProvider,
         storageProvider;
-import 'package:tts_mod_vault/src/utils.dart'
-    show getExtensionByType, getFileNameFromURL;
+import 'package:tts_mod_vault/src/utils.dart' show getFileNameFromURL;
 
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
@@ -194,25 +193,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
   Future<Mod> _getModData(
       Mod mod, String fileName, Map<String, String> jsonURLs) async {
-    String? imageFilePath;
-
-    final imageWorkshopDir =
-        path.join(path.dirname(mod.directory), '$fileName.png');
-    final workshopDirFile = File(imageWorkshopDir);
-
-    if (await workshopDirFile.exists()) {
-      imageFilePath = imageWorkshopDir;
-    } else {
-      final imageThumbnailsDir =
-          path.join(path.dirname(mod.directory), 'Thumbnails', '$fileName.png');
-      final thumbnailsDirFile = File(imageThumbnailsDir);
-
-      if (await thumbnailsDirFile.exists()) {
-        imageFilePath = imageThumbnailsDir;
-      }
-    }
-
-    final assetLists = await _getAssetListsFromUrls(jsonURLs);
+    final assetLists = _getAssetListsFromUrls(jsonURLs);
+    final imageFilePath = await _getImageFilePath(mod.directory, fileName);
 
     return Mod(
       directory: mod.directory,
@@ -224,6 +206,31 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       totalCount: assetLists.$2,
       totalExistsCount: assetLists.$3,
     );
+  }
+
+  Future<String?> _getImageFilePath(
+    String modDirectory,
+    String fileName,
+  ) async {
+    String? imageFilePath;
+
+    final imageWorkshopDir =
+        path.join(path.dirname(modDirectory), '$fileName.png');
+    final workshopDirFile = File(imageWorkshopDir);
+
+    if (await workshopDirFile.exists()) {
+      imageFilePath = imageWorkshopDir;
+    } else {
+      final imageThumbnailsDir =
+          path.join(path.dirname(modDirectory), 'Thumbnails', '$fileName.png');
+      final thumbnailsDirFile = File(imageThumbnailsDir);
+
+      if (await thumbnailsDirFile.exists()) {
+        imageFilePath = imageThumbnailsDir;
+      }
+    }
+
+    return imageFilePath;
   }
 
   List<Asset> _getAssetsByType(List<String> urls, AssetTypeEnum type) {
@@ -244,12 +251,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
 
     final existenceChecks = filePaths
-        .map((filePath) =>
-            ref
-                .read(existingAssetListsProvider.notifier)
-                .getAssetNameStartingWith(
-                    getFileNameFromURL(filePath.$1), type) !=
-            null)
+        .map((filePath) => ref
+            .read(existingAssetListsProvider.notifier)
+            .doesAssetFileExist(getFileNameFromURL(filePath.$1), type))
         .toList();
 
     return List.generate(

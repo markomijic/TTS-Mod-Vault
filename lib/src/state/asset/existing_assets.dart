@@ -90,27 +90,32 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
     }
   }
 
-  String? getAssetNameStartingWith(String prefix, AssetTypeEnum type) {
+  bool doesAssetFileExist(String assetFileName, AssetTypeEnum type) {
     switch (type) {
       case AssetTypeEnum.assetBundle:
-        return state.assetBundles
-            .firstWhereOrNull((element) => element.startsWith(prefix));
+        return state.assetBundles.firstWhereOrNull(
+                (element) => element.startsWith(assetFileName)) !=
+            null;
 
       case AssetTypeEnum.audio:
-        return state.audio
-            .firstWhereOrNull((element) => element.startsWith(prefix));
+        return state.audio.firstWhereOrNull(
+                (element) => element.startsWith(assetFileName)) !=
+            null;
 
       case AssetTypeEnum.image:
-        return state.images
-            .firstWhereOrNull((element) => element.startsWith(prefix));
+        return state.images.firstWhereOrNull(
+                (element) => element.startsWith(assetFileName)) !=
+            null;
 
       case AssetTypeEnum.model:
-        return state.models
-            .firstWhereOrNull((element) => element.startsWith(prefix));
+        return state.models.firstWhereOrNull(
+                (element) => element.startsWith(assetFileName)) !=
+            null;
 
       case AssetTypeEnum.pdf:
-        return state.pdfs
-            .firstWhereOrNull((element) => element.startsWith(prefix));
+        return state.pdfs.firstWhereOrNull(
+                (element) => element.startsWith(assetFileName)) !=
+            null;
     }
   }
 }

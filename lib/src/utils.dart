@@ -1,11 +1,16 @@
-import 'dart:io' show Directory, File, Platform, Process;
+import 'dart:io' show Directory, Platform, Process;
 import 'dart:ui' show ImageFilter;
+import 'dart:convert' show json;
 
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart' show lookupMimeType;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
+import 'package:url_launcher/url_launcher.dart'
+    show LaunchMode, canLaunchUrl, launchUrl;
+import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
 String getFileNameFromURL(String url) {
   // Keep only letters and numbers, remove everything else
@@ -155,4 +160,73 @@ Future<void> openFileInExplorer(String filePath) async {
   } catch (e) {
     debugPrint('Error opening file in explorer: $e');
   }
+}
+
+Future<bool> openUrl(String url) async {
+  final Uri uri = Uri.parse(url);
+
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    return true;
+  }
+
+  return false;
+}
+
+String getGitHubReleaseUrl(String newTagVersion) {
+  return "https://github.com/markomijic/TTS-Mod-Vault/releases/tag/v$newTagVersion";
+}
+
+Future<String> checkForUpdatesOnGitHub() async {
+  try {
+    // For PUBLIC repos
+    /*  final response = await http.get(
+      Uri.parse(
+          'https://api.github.com/repos/markomijic/TTS-Mod-Vault/releases/latest'),
+    ); */
+
+    // For PRIVATE repos
+    final response = await http.get(
+      Uri.parse(
+          'https://api.github.com/repos/markomijic/TTS-Mod-Vault/releases/latest'),
+      headers: {
+        'Authorization': 'Bearer TOKEN_HERE',
+        'Accept': 'application/vnd.github+json',
+      },
+    );
+
+    debugPrint("checkForUpdatesOnGitHub - code: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      final release = json.decode(response.body);
+      final latestVersion = release['tag_name'].replaceAll('v', '');
+
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+
+      if (_checkIfLatestVersionIsNewer(currentVersion, latestVersion)) {
+        return latestVersion;
+      }
+    }
+  } catch (e) {
+    debugPrint("checkForUpdatesOnGitHub - error: $e");
+  }
+
+  return "";
+}
+
+bool _checkIfLatestVersionIsNewer(String current, String latest) {
+  debugPrint("isNewerVersion - current: $current, latest: $latest");
+
+  List<int> currentParts = current.split('.').map(int.parse).toList();
+  List<int> latestParts = latest.split('.').map(int.parse).toList();
+
+  debugPrint(
+      "isNewerVersion - currentParts: $currentParts, latestParts: $latestParts");
+
+  for (int i = 0; i < 3; i++) {
+    if (latestParts[i] > currentParts[i]) return true;
+    if (latestParts[i] < currentParts[i]) return false;
+  }
+  return false;
 }

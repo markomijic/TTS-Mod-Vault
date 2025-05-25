@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useEffect;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, HookConsumerWidget, WidgetRef;
+import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 import 'package:tts_mod_vault/src/mods/components/assets_list.dart'
     show AssetsList;
 import 'package:tts_mod_vault/src/mods/components/mods_grid.dart' show ModsGrid;
@@ -10,7 +11,13 @@ import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show backupProvider, cleanupProvider, modsProvider, selectedModProvider;
-import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
+import 'package:tts_mod_vault/src/utils.dart'
+    show
+        checkForUpdatesOnGitHub,
+        getGitHubReleaseUrl,
+        openUrl,
+        showAlertDialog,
+        showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
@@ -38,6 +45,32 @@ class ModsPage extends HookConsumerWidget {
 
       return null;
     }, [cleanUpState]);
+
+    // Check for updates on initial opening of page
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        // TODO add a check if checking for updates at startup is enabled
+        final newTagVersion = await checkForUpdatesOnGitHub();
+
+        if (newTagVersion.isNotEmpty) {
+          final packageInfo = await PackageInfo.fromPlatform();
+          final currentVersion = packageInfo.version;
+
+          if (!context.mounted) return;
+
+          showAlertDialog(context,
+              "Your version: $currentVersion\nLatest version: $newTagVersion\n\nA new application version is available.\nWould you like to open the download page?",
+              () async {
+            final url = getGitHubReleaseUrl(newTagVersion);
+            final result = await openUrl(url);
+            if (!result && context.mounted) {
+              showSnackBar(context, "Failed to open url: $url");
+            }
+          });
+        }
+      });
+      return null;
+    }, []);
 
     return SafeArea(
       child: Scaffold(

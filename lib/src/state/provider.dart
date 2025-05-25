@@ -58,12 +58,8 @@ final actionInProgressProvider = Provider<bool>((ref) {
   final isDownloading = ref.watch(downloadProvider).isDownloading;
   final modsAsyncValue = ref.watch(modsProvider);
   final cleanUpStatus = ref.watch(cleanupProvider).status;
-  final importInProgress = ref.watch(backupProvider).importInProgress;
-  final backupInprogress = ref.watch(backupProvider).backupInProgress;
 
   return cleanUpStatus != CleanUpStatusEnum.idle ||
       isDownloading ||
-      modsAsyncValue is AsyncLoading ||
-      importInProgress ||
-      backupInprogress;
+      modsAsyncValue is AsyncLoading;
 });

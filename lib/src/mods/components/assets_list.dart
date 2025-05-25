@@ -6,6 +6,8 @@ import 'package:tts_mod_vault/src/mods/components/assets_action_buttons.dart'
     show AssetsActionButtons;
 import 'package:tts_mod_vault/src/mods/components/assets_list_section.dart'
     show AssetsListSection;
+import 'package:tts_mod_vault/src/mods/components/assets_tooltip.dart'
+    show AssetsTooltip;
 import 'package:tts_mod_vault/src/mods/components/progress_bar.dart'
     show DownloadProgressBar;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -43,12 +45,24 @@ class AssetsList extends HookConsumerWidget {
             ),
           ),
           alignment: Alignment.topLeft,
-          child: Text(
-            selectedMod != null ? selectedMod.name : 'Select a mod',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  selectedMod != null ? selectedMod.name : 'Select a mod',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: AssetsTooltip(),
+              ),
+            ],
           ),
         ),
         if (selectedMod != null && selectedMod.assetLists != null)

@@ -29,6 +29,8 @@ dependencies:
   file_picker: ^10.1.9
   shared_preferences: ^2.3.5
   archive: ^4.0.5
+  package_info_plus: ^8.3.0
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

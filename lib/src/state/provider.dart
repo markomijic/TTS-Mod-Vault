@@ -1,20 +1,20 @@
 import 'package:riverpod/riverpod.dart';
 import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart';
-import 'package:tts_mod_vault/src/state/asset/existing_asset_notifier.dart';
-import 'package:tts_mod_vault/src/state/asset/selected_asset_notifier.dart';
+import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
+import 'package:tts_mod_vault/src/state/asset/selected_asset.dart';
 import 'package:tts_mod_vault/src/state/asset/selected_asset_state.dart';
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
-import 'package:tts_mod_vault/src/state/backup/backup_state_notifier.dart';
-import 'package:tts_mod_vault/src/state/cleanup/cleanup_notifier.dart';
+import 'package:tts_mod_vault/src/state/backup/backup.dart';
+import 'package:tts_mod_vault/src/state/cleanup/cleanup.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
 import 'package:tts_mod_vault/src/state/directories/directories.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
-import 'package:tts_mod_vault/src/state/download/download_notifier.dart';
+import 'package:tts_mod_vault/src/state/download/download.dart';
 import 'package:tts_mod_vault/src/state/download/download_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
-import 'package:tts_mod_vault/src/state/mods/mods_notifier.dart';
-import 'package:tts_mod_vault/src/state/storage/storage_notifier.dart';
+import 'package:tts_mod_vault/src/state/mods/mods.dart';
+import 'package:tts_mod_vault/src/state/storage/storage.dart';
 
 final storageProvider = Provider((ref) => Storage());
 
@@ -24,10 +24,9 @@ final directoriesProvider =
 );
 
 final existingAssetListsProvider =
-    StateNotifierProvider<ExistingAssetsNotifier, AssetTypeLists>((ref) {
-  final directories = ref.watch(directoriesProvider);
-  return ExistingAssetsNotifier(directories);
-});
+    StateNotifierProvider<ExistingAssetsNotifier, AssetTypeLists>(
+  (ref) => ExistingAssetsNotifier(ref),
+);
 
 /* final modsProvider = StateNotifierProvider<ModsStateNotifier, ModsState>(
   (ref) => ModsStateNotifier(ref),

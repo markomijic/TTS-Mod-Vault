@@ -19,8 +19,7 @@ class ModsPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cleanUpNotifier = ref.watch(cleanupProvider.notifier);
     final cleanUpState = ref.watch(cleanupProvider);
-    final backupInProgress = ref.watch(backupProvider).backupInProgress;
-    final importInProgress = ref.watch(backupProvider).importInProgress;
+    final backup = ref.watch(backupProvider);
     final mods = ref.watch(modsProvider);
 
     useEffect(() {
@@ -88,14 +87,18 @@ class ModsPage extends HookConsumerWidget {
                 ),
               ],
             ),
-            if (backupInProgress || importInProgress)
+            if (backup.backupInProgress || backup.importInProgress)
               Container(
                 color: Colors.black.withAlpha(180),
                 child: Center(
                   child: Text(
-                    importInProgress
-                        ? "Import of ${ref.read(backupProvider).importFileName} in progress..."
-                        : "Backing up ${ref.read(selectedModProvider)!.name}",
+                    backup.importInProgress
+                        ? (backup.importFileName.isNotEmpty == true
+                            ? "Import of ${backup.importFileName} in progress..."
+                            : "Import in progress...")
+                        : backup.backupInProgress
+                            ? "Backing up ${ref.read(selectedModProvider)?.name ?? 'Unknown'}"
+                            : "",
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,

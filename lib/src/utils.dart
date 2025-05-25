@@ -1,9 +1,11 @@
-import 'dart:ui';
+import 'dart:io' show Directory, File, Platform, Process;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:mime/mime.dart';
-import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
+import 'package:mime/mime.dart' show lookupMimeType;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
+import 'package:path/path.dart' as p;
 
 String getFileNameFromURL(String url) {
   // Keep only letters and numbers, remove everything else
@@ -25,8 +27,8 @@ void showAlertDialog(
   String contentMessage,
   VoidCallback onConfirm, [
   VoidCallback? onCancel,
-]) {
-  showDialog(
+]) async {
+  final result = await showDialog<String>(
     context: context,
     builder: (BuildContext context) {
       return BackdropFilter(
@@ -35,20 +37,11 @@ void showAlertDialog(
           content: Text(contentMessage),
           actions: [
             TextButton(
-              onPressed: () {
-                if (onCancel != null) {
-                  onCancel();
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
+              onPressed: () => Navigator.of(context).pop('cancel'),
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Future.delayed(kThemeChangeDuration, () => onConfirm());
-              },
+              onPressed: () => Navigator.of(context).pop('confirm'),
               child: const Text('Confirm'),
             ),
           ],
@@ -56,28 +49,44 @@ void showAlertDialog(
       );
     },
   );
+
+  switch (result) {
+    case 'confirm':
+      Future.delayed(kThemeChangeDuration, () => onConfirm());
+      break;
+    case 'cancel':
+    case null:
+    default:
+      if (onCancel != null) {
+        onCancel();
+      }
+      break;
+  }
 }
 
 String getExtensionByType(
-  AssetType type, [
+  AssetTypeEnum type, [
   String filePath = '',
   List<int>? bytes,
 ]) {
   switch (type) {
-    case AssetType.assetBundle:
+    case AssetTypeEnum.assetBundle:
       return '.unity3d';
 
-    case AssetType.audio:
+    case AssetTypeEnum.audio:
       {
         final mimeType = lookupMimeType(filePath, headerBytes: bytes);
 
         switch (mimeType) {
           case 'audio/ogg':
+          case 'audio/vorbis':
             return '.ogg';
 
           case 'audio/wav':
+          case 'audio/vnd.wave':
             return '.wav';
 
+          case 'video/ogg':
           case 'video/ogv':
             return '.ogv';
 
@@ -87,7 +96,7 @@ String getExtensionByType(
         }
       }
 
-    case AssetType.image:
+    case AssetTypeEnum.image:
       {
         final mimeType = lookupMimeType(filePath, headerBytes: bytes);
 
@@ -101,30 +110,11 @@ String getExtensionByType(
         }
       }
 
-    case AssetType.model:
+    case AssetTypeEnum.model:
       return '.obj';
 
-    case AssetType.pdf:
-      return '.pdf';
-  }
-}
-
-String getDirectoryByType(DirectoriesState directories, AssetType type) {
-  switch (type) {
-    case AssetType.assetBundle:
-      return directories.assetBundlesDir;
-
-    case AssetType.audio:
-      return directories.audioDir;
-
-    case AssetType.image:
-      return directories.imagesDir;
-
-    case AssetType.model:
-      return directories.modelsDir;
-
-    case AssetType.pdf:
-      return directories.pdfDir;
+    case AssetTypeEnum.pdf:
+      return '.PDF';
   }
 }
 
@@ -150,4 +140,19 @@ String sanitizeFileName(String input) {
      trailing dots/spaces can cause issues on Windows)
   */
   return sanitized.trim().replaceAll(RegExp(r'^\.+|\.+$'), '');
+}
+
+Future<void> openFileInExplorer(String filePath) async {
+  try {
+    if (Platform.isWindows) {
+      await Process.run('explorer.exe', ['/select,', filePath]);
+    } else if (Platform.isMacOS) {
+      await Process.run('open', ['-R', filePath]);
+    } else if (Platform.isLinux) {
+      final directory = Directory(p.dirname(filePath));
+      await Process.run('xdg-open', [directory.path]);
+    }
+  } catch (e) {
+    debugPrint('Error opening file in explorer: $e');
+  }
 }

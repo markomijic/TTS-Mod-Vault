@@ -3,13 +3,14 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show VoidCallback, debugPrint;
+import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod/riverpod.dart' show AsyncNotifier, AsyncValue;
 import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart'
     show AssetLists;
 import 'package:tts_mod_vault/src/state/asset/asset_model.dart' show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
-    show AssetType;
+    show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -19,7 +20,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider,
         storageProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getDirectoryByType, getExtensionByType, getFileNameFromURL;
+    show getExtensionByType, getFileNameFromURL;
 
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
@@ -77,57 +78,71 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       // Sort Mods alphabetically
       jsonListMods.sort((a, b) => a.name.compareTo(b.name));
 
-      // Process items concurrently
-      final mods = await Future.wait(
-        jsonListMods.map((item) async {
-          try {
-            if (await File(path.normalize(item.directory)).exists()) {
-              final fileName = path.basenameWithoutExtension(item.directory);
-              Map<String, String>? jsonURLs;
+      // Process mods in groups of batch size at most
+      const int batchSize = 5;
+      final List<Mod> allMods = [];
 
-              jsonURLs = ref.read(storageProvider).getModAssetLists(fileName) ??
-                  await _extractUrlsFromJson(item.directory);
+      for (int i = 0; i < jsonListMods.length; i += batchSize) {
+        final batch = jsonListMods.skip(i).take(batchSize).toList();
+        debugPrint('loadModsData - processing batch of size: ${batch.length}');
 
-              final mod = _getModData(item, fileName, jsonURLs);
+        final batchResults = await Future.wait(
+          batch.map((item) async {
+            try {
+              if (await File(path.normalize(item.directory)).exists()) {
+                final jsonFileName =
+                    path.basenameWithoutExtension(item.directory);
+                final storage = ref.read(storageProvider);
 
-              final modUpdateTimeChanged =
-                  ref.read(storageProvider).getModUpdateTime(fileName) !=
-                      item.updateTime;
+                // Get cached data
+                final cachedMod = storage.getMod(jsonFileName);
+                final cachedUpdateTime = storage.getModUpdateTime(jsonFileName);
+                final cachedAssetLists = storage.getModAssetLists(jsonFileName);
 
-              if (modUpdateTimeChanged) {
-                await ref.read(storageProvider).deleteMod(fileName);
+                // Check if update is needed
+                final updateTimeChanged = cachedUpdateTime != item.updateTime;
+                final needsRefresh = cachedMod == null || updateTimeChanged;
+
+                Map<String, String>? jsonURLs;
+
+                if (needsRefresh) {
+                  jsonURLs = cachedAssetLists ??
+                      await _extractUrlsFromJson(item.directory);
+
+                  if (updateTimeChanged) {
+                    await storage.deleteMod(jsonFileName);
+                  }
+
+                  await storage.saveModData(
+                      jsonFileName, item.updateTime, jsonURLs);
+                } else {
+                  jsonURLs = cachedAssetLists;
+                }
+
+                // Uncomment this to delete all stored mod data
+                // await storage.deleteMod(jsonFileName);
+
+                return _getModData(
+                    item, jsonFileName, jsonURLs ?? <String, String>{});
+              } else {
+                debugPrint('loadModsData - missing JSON: ${item.directory}');
+                return null;
               }
-
-              final modDoesNotHaveDataCached =
-                  ref.read(storageProvider).getMod(fileName) == null;
-
-              if (modDoesNotHaveDataCached || modUpdateTimeChanged) {
-                await ref.read(storageProvider).saveModData(
-                      fileName,
-                      item.updateTime,
-                      jsonURLs,
-                    );
-              }
-              // Uncomment to delete all cached mod data
-              /*   else {
-                await ref.read(storageProvider).deleteItem(fileName);
-              } */
-
-              return mod;
-            } else {
-              debugPrint('loadModsData - missing JSON: ${item.directory}');
+            } catch (e) {
+              debugPrint(
+                  'loadModsData - error processing item: ${e.toString()}');
               return null;
             }
-          } catch (e) {
-            debugPrint('loadModsData - error processing item: ${e.toString()}');
-            return null;
-          }
-        }),
-      );
+          }),
+        );
+
+        // Add non-null results from this batch
+        allMods.addAll(batchResults.whereType<Mod>());
+      }
 
       state = AsyncValue.data(
         ModsState(
-          mods: mods.whereType<Mod>().toList(), // Filter out null mods
+          mods: allMods,
           selectedMod: null,
         ),
       );
@@ -197,7 +212,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
     }
 
-    final assetLists = _getAssetListsFromUrls(jsonURLs);
+    final assetLists = await _getAssetListsFromUrls(jsonURLs);
 
     return Mod(
       directory: mod.directory,
@@ -211,14 +226,22 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
-  List<Asset> _getAssetsByType(List<String> urls, AssetType type) {
-    final filePaths = urls.map((url) {
+  List<Asset> _getAssetsByType(List<String> urls, AssetTypeEnum type) {
+    final filePaths = <(String, String)>[];
+
+    for (final url in urls) {
       final updatedUrl = _replaceInUrl(
           url,
           'http://cloud-3.steamusercontent.com/',
           'https://steamusercontent-a.akamaihd.net/');
-      return (updatedUrl, _getFilePath(updatedUrl, type));
-    }).toList();
+
+      final filePath = path.joinAll([
+        ref.read(directoriesProvider.notifier).getDirectoryByType(type),
+        getFileNameFromURL(updatedUrl),
+      ]);
+
+      filePaths.add((updatedUrl, filePath));
+    }
 
     final existenceChecks = filePaths
         .map((filePath) =>
@@ -240,12 +263,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   (AssetLists, int, int) _getAssetListsFromUrls(Map<String, String> data) {
-    Map<AssetType, List<String>> urlsByType = {
-      for (var type in AssetType.values) type: [],
+    Map<AssetTypeEnum, List<String>> urlsByType = {
+      for (final type in AssetTypeEnum.values) type: [],
     };
 
     for (final element in data.entries) {
-      for (final assetType in AssetType.values) {
+      for (final assetType in AssetTypeEnum.values) {
         if (assetType.subtypes.contains(element.value)) {
           urlsByType[assetType]!.add(element.key);
           break;
@@ -253,7 +276,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
     }
 
-    final results = AssetType.values
+    final results = AssetTypeEnum.values
         .map((type) => _getAssetsByType(urlsByType[type]!, type))
         .toList();
 
@@ -274,30 +297,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       totalCount,
       existingFilesCount,
     );
-  }
-
-  String _getFilePath(String url, AssetType type) {
-    String filePath = '';
-    final fileNameFromURL = getFileNameFromURL(url);
-    if (type == AssetType.image || type == AssetType.audio) {
-      final fileExists = ref
-          .read(existingAssetListsProvider.notifier)
-          .getAssetNameStartingWith(fileNameFromURL, type);
-
-      if (fileExists != null) {
-        filePath = path.joinAll([
-          type == AssetType.image
-              ? ref.read(directoriesProvider).imagesDir
-              : ref.read(directoriesProvider).audioDir,
-          fileExists
-        ]);
-      }
-    }
-
-    return path.joinAll([
-      getDirectoryByType(ref.read(directoriesProvider), type),
-      fileNameFromURL + getExtensionByType(type, filePath),
-    ]);
   }
 
   Future<void> selectItem(Mod item) async {
@@ -337,8 +336,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
     }
     // Filter urls where the value (key name) matches any subtype from any AssetType
-    return Map.fromEntries(urls.entries.where((entry) =>
-        AssetType.values.any((type) => type.subtypes.contains(entry.value))));
+    return Map.fromEntries(urls.entries.where((entry) => AssetTypeEnum.values
+        .any((type) => type.subtypes.contains(entry.value))));
   }
 
   // Function to load and parse the JSON from a file

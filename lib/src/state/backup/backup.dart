@@ -1,14 +1,17 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:archive/archive.dart'
     show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
 import 'package:path/path.dart' as p
-    show basenameWithoutExtension, join, relative;
+    show basenameWithoutExtension, join, normalize, relative;
 import 'package:riverpod/riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, selectedModProvider;
 import 'package:tts_mod_vault/src/utils.dart' show sanitizeFileName;
@@ -20,22 +23,24 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
   Future<bool> importBackup() async {
     try {
+      state = state.copyWith(importInProgress: true);
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['ttsmod'],
         allowMultiple: false,
       );
       if (result == null || result.files.isEmpty) {
+        state = state.copyWith(importInProgress: false);
         return false;
       }
 
       final filePath = result.files.single.path!;
       if (filePath.isEmpty) {
+        state = state.copyWith(importInProgress: false);
         return false;
       }
 
       state = state.copyWith(
-          importInProgress: true,
           importFileName: p.basenameWithoutExtension(result.files.single.name));
 
       final bytes = await File(filePath).readAsBytes();
@@ -72,27 +77,36 @@ class BackupNotifier extends StateNotifier<BackupState> {
       return 'Select a mod to create a backup';
     }
 
+    state = state.copyWith(backupInProgress: true);
     final saveDirectoryPath = await FilePicker.platform.getDirectoryPath();
     if (saveDirectoryPath == null) {
+      state = state.copyWith(backupInProgress: false);
       return "";
     }
 
-    final allModAssets = mod.getAllAssets();
     String returnValue =
         "Backup of ${mod.name} has been created in $saveDirectoryPath";
 
     try {
-      state = state.copyWith(backupInProgress: true);
-
+      // Add filepaths of assets
       final filePaths = <String>[];
 
-      // Add filepaths of assets
-      for (final asset in allModAssets) {
-        if (asset.fileExists &&
-            asset.filePath != null &&
-            asset.filePath!.isNotEmpty) {
-          filePaths.add(asset.filePath!);
-        }
+      for (final type in AssetTypeEnum.values) {
+        final directory = Directory(
+            ref.read(directoriesProvider.notifier).getDirectoryByType(type));
+        if (!await directory.exists()) continue;
+
+        final List<FileSystemEntity> files = directory.listSync();
+
+        mod.getAssetsByType(type).forEach((asset) {
+          final assetFile = files.firstWhereOrNull((f) => p
+              .basenameWithoutExtension(f.path)
+              .startsWith(p.basenameWithoutExtension(asset.filePath!)));
+
+          if (assetFile != null && assetFile.path.isNotEmpty) {
+            filePaths.add(p.normalize(assetFile.path));
+          }
+        });
       }
 
       // Add JSON and image filepaths
@@ -107,7 +121,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
         final file = File(filePath);
 
         if (!await file.exists()) {
-          debugPrint('createBackup - file does not exist: $filePath');
+          debugPrint('createBackup - ${mod.name} does not exist: $filePath');
           continue;
         }
 

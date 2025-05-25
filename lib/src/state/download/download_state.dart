@@ -4,7 +4,7 @@ class DownloadState {
   final bool isDownloading;
   final double progress;
   final String? errorMessage;
-  final AssetType? downloadingType;
+  final AssetTypeEnum? downloadingType;
 
   const DownloadState({
     this.isDownloading = false,
@@ -17,7 +17,7 @@ class DownloadState {
     bool? isDownloading,
     double? progress,
     String? errorMessage,
-    AssetType? downloadingType,
+    AssetTypeEnum? downloadingType,
   }) {
     return DownloadState(
       isDownloading: isDownloading ?? this.isDownloading,

@@ -1,11 +1,12 @@
 import 'dart:io' show Directory, File, FileSystemEntity;
 
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpState, CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
-    show AssetType;
+    show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, modsProvider;
 
@@ -24,23 +25,30 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
         filesToDelete: [],
       );
 
+      final mods = ref.read(modsProvider).value?.mods;
+
+      if (mods == null || mods.isEmpty) {
+        throw "No mods available, cancelling cleanup";
+      }
+
       final Set<String> referencedFiles = {};
-      final mods = ref.read(modsProvider).value!.mods;
+      for (final assetType in AssetTypeEnum.values) {
+        referencedFiles.clear();
+        for (final mod in mods) {
+          mod.getAssetsByType(assetType).forEach(
+            (e) {
+              if (e.fileExists &&
+                  e.filePath != null &&
+                  e.filePath!.isNotEmpty) {
+                referencedFiles.add(p.basenameWithoutExtension(e.filePath!));
+              }
+            },
+          );
+        }
 
-      for (final mod in mods) {
-        mod.getAllAssets().forEach(
-          (e) {
-            if (e.fileExists && e.filePath != null && e.filePath!.isNotEmpty) {
-              referencedFiles.add(p.basenameWithoutExtension(e.filePath!));
-            }
-          },
-        );
+        await _processDirectory(assetType, referencedFiles);
       }
-
-      for (final asset in AssetType.values) {
-        await _processDirectory(asset, referencedFiles);
-      }
-
+      referencedFiles.clear();
       state = state.copyWith(
           status: state.filesToDelete.isNotEmpty
               ? CleanUpStatusEnum.awaitingConfirmation
@@ -56,13 +64,14 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
   }
 
   Future<void> _processDirectory(
-    AssetType type,
+    AssetTypeEnum type,
     Set<String> referencedFilesUris,
   ) async {
-    final directory = Directory(_getDirectoryByType(type));
-    if (!directory.existsSync()) return;
+    final directory = Directory(
+        ref.read(directoriesProvider.notifier).getDirectoryByType(type));
+    if (!await directory.exists()) return;
 
-    final List<FileSystemEntity> files = directory.listSync(recursive: true);
+    final List<FileSystemEntity> files = directory.listSync();
 
     for (final file in files) {
       if (file is File) {
@@ -75,6 +84,9 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
         }
       }
     }
+
+    debugPrint(
+        '_processDirectory - processed ${type.name}, total files to delete is now: ${state.filesToDelete.length}');
   }
 
   Future<void> executeDelete() async {
@@ -85,7 +97,7 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
 
       for (final filePath in state.filesToDelete) {
         final file = File(filePath);
-        if (file.existsSync()) {
+        if (await file.exists()) {
           await file.delete();
         }
       }
@@ -104,20 +116,5 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
 
   void resetState() {
     state = const CleanUpState();
-  }
-
-  String _getDirectoryByType(AssetType type) {
-    switch (type) {
-      case AssetType.assetBundle:
-        return ref.read(directoriesProvider).assetBundlesDir;
-      case AssetType.audio:
-        return ref.read(directoriesProvider).audioDir;
-      case AssetType.image:
-        return ref.read(directoriesProvider).imagesDir;
-      case AssetType.model:
-        return ref.read(directoriesProvider).modelsDir;
-      case AssetType.pdf:
-        return ref.read(directoriesProvider).pdfDir;
-    }
   }
 }

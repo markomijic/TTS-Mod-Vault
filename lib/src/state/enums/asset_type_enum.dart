@@ -1,4 +1,4 @@
-enum AssetType {
+enum AssetTypeEnum {
   assetBundle('AssetBundles', [
     'AssetbundleSecondaryURL',
     'AssetbundleURL',
@@ -34,5 +34,5 @@ enum AssetType {
   final String label;
   final List<String> subtypes;
 
-  const AssetType(this.label, this.subtypes);
+  const AssetTypeEnum(this.label, this.subtypes);
 }

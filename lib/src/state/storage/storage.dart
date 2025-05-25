@@ -1,9 +1,9 @@
 import 'package:shared_preferences/shared_preferences.dart'
-    show SharedPreferences;
+    show SharedPreferencesWithCache, SharedPreferencesWithCacheOptions;
 import 'dart:convert' show jsonDecode, jsonEncode;
 
 class Storage {
-  late final SharedPreferences _prefs;
+  late final SharedPreferencesWithCache _prefs;
   bool _initialized = false;
 
   // Constants for storage keys
@@ -12,22 +12,27 @@ class Storage {
 
   Future<void> init() async {
     if (!_initialized) {
-      _prefs = await SharedPreferences.getInstance();
+      final SharedPreferencesWithCache prefsWithCache =
+          await SharedPreferencesWithCache.create(
+        cacheOptions: const SharedPreferencesWithCacheOptions(),
+      );
+
+      _prefs = prefsWithCache;
       _initialized = true;
     }
   }
 
-  Future<bool> saveMod(String modName, String value) async {
+  Future<void> saveMod(String modName, String value) async {
     if (!_initialized) await init();
     return await _prefs.setString(modName, value);
   }
 
-  Future<bool> saveModUpdateTime(String modName, int timestamp) async {
+  Future<void> saveModUpdateTime(String modName, int timestamp) async {
     if (!_initialized) await init();
     return await _prefs.setInt('$modName$updatedTimeSuffix', timestamp);
   }
 
-  Future<bool> saveModMap(String modName, Map<String, String> data) async {
+  Future<void> saveModMap(String modName, Map<String, String> data) async {
     if (!_initialized) await init();
     return await _prefs.setString('$modName$listsSuffix', jsonEncode(data));
   }
@@ -42,13 +47,12 @@ class Storage {
     return _prefs.getInt('$modName$updatedTimeSuffix');
   }
 
-  Map<String, String>? getModAssetLists(String modName) {
+  Map<String, String>? getModAssetLists(String jsonFileName) {
     if (!_initialized) return null;
-    final jsonStr = _prefs.getString('$modName$listsSuffix');
+    final jsonStr = _prefs.getString('$jsonFileName$listsSuffix');
     if (jsonStr == null) return null;
 
     final Map<String, dynamic> decoded = jsonDecode(jsonStr);
-
     return decoded.map((key, value) => MapEntry(key, value.toString()));
   }
 

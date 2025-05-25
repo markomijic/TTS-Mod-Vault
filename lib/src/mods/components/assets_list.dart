@@ -9,7 +9,7 @@ import 'package:tts_mod_vault/src/mods/components/assets_list_section.dart'
 import 'package:tts_mod_vault/src/mods/components/progress_bar.dart'
     show DownloadProgressBar;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
-    show AssetType;
+    show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show downloadProvider, selectedModProvider;
 
@@ -61,35 +61,35 @@ class AssetsList extends HookConsumerWidget {
                   // Asset Bundles Column
                   if (selectedMod.assetLists!.assetBundles.isNotEmpty)
                     AssetsListSection(
-                      type: AssetType.assetBundle,
+                      type: AssetTypeEnum.assetBundle,
                       assets: selectedMod.assetLists!.assetBundles,
                     ),
 
                   // Audio Column
                   if (selectedMod.assetLists!.audio.isNotEmpty)
                     AssetsListSection(
-                      type: AssetType.audio,
+                      type: AssetTypeEnum.audio,
                       assets: selectedMod.assetLists!.audio,
                     ),
 
                   // Images Column
                   if (selectedMod.assetLists!.images.isNotEmpty)
                     AssetsListSection(
-                      type: AssetType.image,
+                      type: AssetTypeEnum.image,
                       assets: selectedMod.assetLists!.images,
                     ),
 
                   // Models Column
                   if (selectedMod.assetLists!.models.isNotEmpty)
                     AssetsListSection(
-                      type: AssetType.model,
+                      type: AssetTypeEnum.model,
                       assets: selectedMod.assetLists!.models,
                     ),
 
                   // PDF Column
                   if (selectedMod.assetLists!.pdf.isNotEmpty)
                     AssetsListSection(
-                      type: AssetType.pdf,
+                      type: AssetTypeEnum.pdf,
                       assets: selectedMod.assetLists!.pdf,
                     ),
                 ],

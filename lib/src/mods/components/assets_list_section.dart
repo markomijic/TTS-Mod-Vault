@@ -6,7 +6,7 @@ import 'package:tts_mod_vault/src/mods/components/assets_url.dart'
     show AssetsUrl;
 import 'package:tts_mod_vault/src/state/asset/asset_model.dart' show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
-    show AssetType;
+    show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -16,7 +16,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider;
 
 class AssetsListSection extends HookConsumerWidget {
-  final AssetType type;
+  final AssetTypeEnum type;
   final List<Asset> assets;
 
   const AssetsListSection({

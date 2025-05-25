@@ -1,20 +1,18 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart' show StateNotifier;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart'
     show AssetTypeLists;
-import 'package:tts_mod_vault/src/state/directories/directories_state.dart'
-    show DirectoriesState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
-    show AssetType;
-import 'package:tts_mod_vault/src/utils.dart' show getDirectoryByType;
+    show AssetTypeEnum;
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 
 class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
-  final DirectoriesState directories;
+  final Ref ref;
 
-  ExistingAssetsNotifier(this.directories) : super(AssetTypeLists.empty());
+  ExistingAssetsNotifier(this.ref) : super(AssetTypeLists.empty());
 
   Future<void> loadAssetTypeLists() async {
     final assetBundles = <String>[];
@@ -23,26 +21,26 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
     final models = <String>[];
     final pdfs = <String>[];
 
-    for (final type in AssetType.values) {
-      final directory = getDirectoryByType(directories, type);
+    for (final type in AssetTypeEnum.values) {
+      final directory =
+          ref.read(directoriesProvider.notifier).getDirectoryByType(type);
 
       final filenames = await _getDirectoryFilenames(directory);
 
-      // Assign filenames to the correct list based on type
       switch (type) {
-        case AssetType.assetBundle:
+        case AssetTypeEnum.assetBundle:
           assetBundles.addAll(filenames);
           break;
-        case AssetType.audio:
+        case AssetTypeEnum.audio:
           audio.addAll(filenames);
           break;
-        case AssetType.image:
+        case AssetTypeEnum.image:
           images.addAll(filenames);
           break;
-        case AssetType.model:
+        case AssetTypeEnum.model:
           models.addAll(filenames);
           break;
-        case AssetType.pdf:
+        case AssetTypeEnum.pdf:
           pdfs.addAll(filenames);
           break;
       }
@@ -68,48 +66,49 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
     return filenames;
   }
 
-  Future<void> updateAssetTypeList(AssetType type) async {
-    final directory = getDirectoryByType(directories, type);
+  Future<void> updateAssetTypeList(AssetTypeEnum type) async {
+    final directory =
+        ref.read(directoriesProvider.notifier).getDirectoryByType(type);
     final filenames = await _getDirectoryFilenames(directory);
 
     switch (type) {
-      case AssetType.assetBundle:
+      case AssetTypeEnum.assetBundle:
         state = state.copyWith(assetBundles: filenames);
         break;
-      case AssetType.audio:
+      case AssetTypeEnum.audio:
         state = state.copyWith(audio: filenames);
         break;
-      case AssetType.image:
+      case AssetTypeEnum.image:
         state = state.copyWith(images: filenames);
         break;
-      case AssetType.model:
+      case AssetTypeEnum.model:
         state = state.copyWith(models: filenames);
         break;
-      case AssetType.pdf:
+      case AssetTypeEnum.pdf:
         state = state.copyWith(pdfs: filenames);
         break;
     }
   }
 
-  String? getAssetNameStartingWith(String prefix, AssetType type) {
+  String? getAssetNameStartingWith(String prefix, AssetTypeEnum type) {
     switch (type) {
-      case AssetType.assetBundle:
+      case AssetTypeEnum.assetBundle:
         return state.assetBundles
             .firstWhereOrNull((element) => element.startsWith(prefix));
 
-      case AssetType.audio:
+      case AssetTypeEnum.audio:
         return state.audio
             .firstWhereOrNull((element) => element.startsWith(prefix));
 
-      case AssetType.image:
+      case AssetTypeEnum.image:
         return state.images
             .firstWhereOrNull((element) => element.startsWith(prefix));
 
-      case AssetType.model:
+      case AssetTypeEnum.model:
         return state.models
             .firstWhereOrNull((element) => element.startsWith(prefix));
 
-      case AssetType.pdf:
+      case AssetTypeEnum.pdf:
         return state.pdfs
             .firstWhereOrNull((element) => element.startsWith(prefix));
     }

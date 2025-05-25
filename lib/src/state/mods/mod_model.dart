@@ -1,5 +1,6 @@
 import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart';
 import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
 class Mod {
   final String directory;
@@ -40,5 +41,22 @@ class Mod {
       ...assetLists!.models,
       ...assetLists!.pdf,
     ];
+  }
+
+  List<Asset> getAssetsByType(AssetTypeEnum type) {
+    if (assetLists == null) return [];
+
+    switch (type) {
+      case AssetTypeEnum.assetBundle:
+        return assetLists?.assetBundles ?? [];
+      case AssetTypeEnum.audio:
+        return assetLists?.audio ?? [];
+      case AssetTypeEnum.image:
+        return assetLists?.images ?? [];
+      case AssetTypeEnum.model:
+        return assetLists?.models ?? [];
+      case AssetTypeEnum.pdf:
+        return assetLists?.pdf ?? [];
+    }
   }
 }

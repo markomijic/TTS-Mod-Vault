@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:riverpod/riverpod.dart';
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
 
 import 'directories_state.dart';
 import 'package:path/path.dart' as path;
@@ -66,5 +68,20 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     return Future.wait(requiredFolders
             .map((folder) => Directory(path.join(ttsDir, folder)).exists()))
         .then((exists) => exists.every((e) => e));
+  }
+
+  String getDirectoryByType(AssetTypeEnum type) {
+    switch (type) {
+      case AssetTypeEnum.assetBundle:
+        return state.assetBundlesDir;
+      case AssetTypeEnum.audio:
+        return state.audioDir;
+      case AssetTypeEnum.image:
+        return state.imagesDir;
+      case AssetTypeEnum.model:
+        return state.modelsDir;
+      case AssetTypeEnum.pdf:
+        return state.pdfDir;
+    }
   }
 }

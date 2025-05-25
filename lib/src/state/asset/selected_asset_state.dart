@@ -3,7 +3,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
 class SelectedAssetState {
   final Asset asset;
-  final AssetType type;
+  final AssetTypeEnum type;
 
   const SelectedAssetState({
     required this.asset,

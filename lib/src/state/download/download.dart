@@ -8,7 +8,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 import 'package:tts_mod_vault/src/state/provider.dart';
 import 'package:tts_mod_vault/src/utils.dart'
-    show getDirectoryByType, getExtensionByType, getFileNameFromURL;
+    show getExtensionByType, getFileNameFromURL;
 import 'download_state.dart';
 import 'package:path/path.dart' as path;
 
@@ -65,7 +65,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
-      type: AssetType.assetBundle,
+      type: AssetTypeEnum.assetBundle,
     );
 
     await downloadFiles(
@@ -74,7 +74,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
-      type: AssetType.audio,
+      type: AssetTypeEnum.audio,
     );
 
     await downloadFiles(
@@ -83,7 +83,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
-      type: AssetType.image,
+      type: AssetTypeEnum.image,
     );
 
     await downloadFiles(
@@ -92,7 +92,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
-      type: AssetType.model,
+      type: AssetTypeEnum.model,
     );
 
     await downloadFiles(
@@ -101,7 +101,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
-      type: AssetType.pdf,
+      type: AssetTypeEnum.pdf,
     );
 
     await ref.read(existingAssetListsProvider.notifier).loadAssetTypeLists();
@@ -116,7 +116,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<void> downloadFiles({
     required String modName,
     required List<String> urls,
-    required AssetType type,
+    required AssetTypeEnum type,
     bool downloadingAllFiles = true,
   }) async {
     if (urls.isEmpty) {
@@ -147,9 +147,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           try {
             final fileName = getFileNameFromURL(url);
             final directory =
-                getDirectoryByType(ref.read(directoriesProvider), type);
+                ref.read(directoriesProvider.notifier).getDirectoryByType(type);
 
-            if (type == AssetType.image || type == AssetType.audio) {
+            if (type == AssetTypeEnum.image || type == AssetTypeEnum.audio) {
               final tempPath = path.join(directory, '${fileName}_temp');
               await dio.download(
                 url,

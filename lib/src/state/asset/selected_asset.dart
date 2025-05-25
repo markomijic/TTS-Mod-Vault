@@ -6,7 +6,7 @@ import 'package:tts_mod_vault/src/state/asset/selected_asset_state.dart';
 class SelectedAssetNotifier extends StateNotifier<SelectedAssetState?> {
   SelectedAssetNotifier() : super(null);
 
-  void setAsset(Asset asset, AssetType type) {
+  void setAsset(Asset asset, AssetTypeEnum type) {
     if (asset == state?.asset || asset.fileExists) {
       state = null;
       return;

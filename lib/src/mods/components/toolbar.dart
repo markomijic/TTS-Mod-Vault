@@ -99,7 +99,6 @@ class Toolbar extends ConsumerWidget {
                           },
                           () {
                             cleanupNotifier.resetState();
-                            Navigator.of(context).pop();
                           },
                         );
                       } else {
@@ -123,20 +122,23 @@ class Toolbar extends ConsumerWidget {
           child: const Text('Refresh'),
         ),
         ElevatedButton(
-          onPressed: actionInProgress
-              ? null
-              : () async {
-                  final backupResult = await backupNotifier.importBackup();
+          onPressed: () async {
+            if (actionInProgress) {
+              return;
+            }
 
-                  if (backupResult && context.mounted) {
-                    showSnackBar(context, 'Import finished. Refreshing data...',
-                        Duration(seconds: 1));
-                    Future.delayed(
-                        kThemeChangeDuration, () async => await refreshData());
-                  }
-                },
+            final backupResult = await backupNotifier.importBackup();
+
+            if (backupResult && context.mounted) {
+              showSnackBar(context, 'Import finished. Refreshing data...',
+                  Duration(seconds: 1));
+              Future.delayed(
+                  kThemeChangeDuration, () async => await refreshData());
+            }
+          },
           child: const Text('Import backup'),
         ),
+        // HelpButton(),
 /*         ElevatedButton(
           onPressed: null,
           /*    onPressed: () {

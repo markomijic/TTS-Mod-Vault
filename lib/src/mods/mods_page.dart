@@ -81,6 +81,7 @@ class ModsPage extends HookConsumerWidget {
                 Container(
                   height: 50,
                   padding: const EdgeInsets.only(left: 12.0, bottom: 4),
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   child: Align(
                     alignment: Alignment.bottomLeft,
                     child: Toolbar(),

@@ -183,7 +183,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
               ref.read(storageProvider).getModAssetLists(mod.fileName!) ??
                   await _extractUrlsFromJson(mod.directory),
             );
-            return updatedMod ?? mod;
+
+            if (updatedMod != null) return updatedMod!;
           }
           return mod;
         }).toList(),

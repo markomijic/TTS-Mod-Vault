@@ -18,7 +18,8 @@ import 'package:tts_mod_vault/src/utils.dart'
         checkForUpdatesOnGitHub,
         getGitHubReleaseUrl,
         openUrl,
-        showAlertDialog,
+        showConfirmDialog,
+        showDownloadDialog,
         showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
@@ -60,15 +61,7 @@ class ModsPage extends HookConsumerWidget {
 
           if (!context.mounted) return;
 
-          showAlertDialog(context,
-              "Your version: $currentVersion\nLatest version: $newTagVersion\n\nA new application version is available.\nWould you like to open the download page?",
-              () async {
-            final url = getGitHubReleaseUrl(newTagVersion);
-            final result = await openUrl(url);
-            if (!result && context.mounted) {
-              showSnackBar(context, "Failed to open url: $url");
-            }
-          });
+          showDownloadDialog(context, currentVersion, newTagVersion);
         }
       });
       return null;

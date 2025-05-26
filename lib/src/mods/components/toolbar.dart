@@ -14,7 +14,8 @@ import 'package:tts_mod_vault/src/utils.dart'
         checkForUpdatesOnGitHub,
         getGitHubReleaseUrl,
         openUrl,
-        showAlertDialog,
+        showConfirmDialog,
+        showDownloadDialog,
         showSnackBar;
 
 class Toolbar extends ConsumerWidget {
@@ -94,7 +95,7 @@ class Toolbar extends ConsumerWidget {
                   await cleanupNotifier.startCleanup(
                     (count) {
                       if (count > 0) {
-                        showAlertDialog(
+                        showConfirmDialog(
                           context,
                           '$count files found that are not used by any of your mods.\nAre you sure you want to delete them?',
                           () async {
@@ -115,7 +116,7 @@ class Toolbar extends ConsumerWidget {
         ElevatedButton(
           onPressed: actionInProgress
               ? null
-              : () => showAlertDialog(
+              : () => showConfirmDialog(
                     context,
                     'Are you sure you want to refresh data for all mods?',
                     () async {
@@ -151,15 +152,7 @@ class Toolbar extends ConsumerWidget {
 
               if (!context.mounted) return;
 
-              showAlertDialog(context,
-                  "Your version: $currentVersion\nLatest version: $newTagVersion\n\nA new application version is available.\nWould you like to open the download page?",
-                  () async {
-                final url = getGitHubReleaseUrl(newTagVersion);
-                final result = await openUrl(url);
-                if (!result && context.mounted) {
-                  showSnackBar(context, "Failed to open url: $url");
-                }
-              });
+              showDownloadDialog(context, currentVersion, newTagVersion);
             }
           },
           child: const Text('Check for updates'),

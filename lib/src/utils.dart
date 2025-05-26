@@ -30,7 +30,7 @@ void showSnackBar(BuildContext context, String message, [Duration? duration]) {
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 
-void showAlertDialog(
+void showConfirmDialog(
   BuildContext context,
   String contentMessage,
   VoidCallback onConfirm, [
@@ -68,6 +68,68 @@ void showAlertDialog(
       if (onCancel != null) {
         onCancel();
       }
+      break;
+  }
+}
+
+void showDownloadDialog(
+  BuildContext context,
+  String currentVersion,
+  String latestVersion,
+) async {
+  final result = await showDialog<String>(
+    context: context,
+    builder: (BuildContext context) {
+      return BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+        child: AlertDialog(
+          content: Text(
+            "Your version: $currentVersion\nLatest version: $latestVersion\n\nA new application version is available.\nWould you like to open the download page?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('cancel'),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('github'),
+              child: const Text('Download from GitHub'),
+            ),
+            /*            TextButton(
+              onPressed: () => Navigator.of(context).pop('nexusmods'),
+              child: const Text('Download from Nexus Mods'),
+            ), */
+          ],
+        ),
+      );
+    },
+  );
+
+  switch (result) {
+    case 'github':
+      Future.delayed(kThemeChangeDuration, () async {
+        final url = getGitHubReleaseUrl(latestVersion);
+        final result = await openUrl(url);
+        if (!result && context.mounted) {
+          showSnackBar(context, "Failed to open url: $url");
+        }
+      });
+      break;
+
+    case 'nexusmods':
+      // TODO Update with URL for nexus mods
+      Future.delayed(kThemeChangeDuration, () async {
+        final url = getGitHubReleaseUrl("0.7.1");
+        final result = await openUrl(url);
+        if (!result && context.mounted) {
+          showSnackBar(context, "Failed to open url: $url");
+        }
+      });
+      break;
+
+    case 'cancel':
+    case null:
+    default:
       break;
   }
 }

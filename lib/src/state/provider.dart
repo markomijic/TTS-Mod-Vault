@@ -16,6 +16,8 @@ import 'package:tts_mod_vault/src/state/loader/loader_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mods.dart';
+import 'package:tts_mod_vault/src/state/settings/settings.dart';
+import 'package:tts_mod_vault/src/state/settings/settings_state.dart';
 import 'package:tts_mod_vault/src/state/storage/storage.dart';
 
 final storageProvider = Provider((ref) => Storage());
@@ -54,6 +56,10 @@ final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanUpState>(
 
 final backupProvider = StateNotifierProvider<BackupNotifier, BackupState>(
   (ref) => BackupNotifier(ref),
+);
+
+final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
+  (ref) => SettingsNotifier(ref),
 );
 
 final actionInProgressProvider = Provider<bool>((ref) {

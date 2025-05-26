@@ -13,6 +13,7 @@ class ModsGridCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
     final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedMod = ref.watch(selectedModProvider);
 
@@ -64,7 +65,7 @@ class ModsGridCard extends HookConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-              if (true) // TODO Replace 'true' later
+              if (showTitleOnCards)
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Container(

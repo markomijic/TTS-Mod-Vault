@@ -104,7 +104,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
                 final storage = ref.read(storageProvider);
 
                 // Get cached data
-                final cachedMod = storage.getMod(jsonFileName);
+                final cachedMod = storage.getModName(jsonFileName);
                 final cachedUpdateTime = storage.getModUpdateTime(jsonFileName);
                 final cachedAssetLists = storage.getModAssetLists(jsonFileName);
 

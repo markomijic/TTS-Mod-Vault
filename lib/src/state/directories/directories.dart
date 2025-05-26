@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' show Directory, Platform;
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
@@ -12,7 +13,9 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
 
   DirectoriesNotifier(this.ref) : super(DirectoriesState.empty());
 
-  void initTtsDirectory() {
+  void initializeDirectories() {
+    debugPrint("initializeDirectories");
+
     final ttsDir =
         ref.read(storageProvider).getTtsDir() ?? _getDefaultTtsDirectory();
     state = DirectoriesState.fromTtsDir(ttsDir);

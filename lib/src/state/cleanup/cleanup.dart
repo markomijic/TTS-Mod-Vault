@@ -9,6 +9,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, modsProvider;
+import 'package:tts_mod_vault/src/utils.dart';
 
 class CleanupNotifier extends StateNotifier<CleanUpState> {
   final Ref ref;
@@ -75,7 +76,13 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
 
     for (final file in files) {
       if (file is File) {
-        final filePath = p.basenameWithoutExtension(file.path);
+        String filePath = p.basenameWithoutExtension(file.path);
+
+        // In case of old url naming scheme rename to new url to match existing assets lists
+        if (filePath.startsWith(getFileNameFromURL(oldUrl))) {
+          filePath = filePath.replaceFirst(
+              getFileNameFromURL(oldUrl), getFileNameFromURL(newUrl));
+        }
 
         if (!referencedFilesUris.contains(filePath)) {
           state = state.copyWith(

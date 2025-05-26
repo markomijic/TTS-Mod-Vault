@@ -12,7 +12,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
 import 'package:tts_mod_vault/src/utils.dart'
     show
         checkForUpdatesOnGitHub,
-        getGitHubReleaseUrl,
         openUrl,
         showConfirmDialog,
         showDownloadDialog,
@@ -35,59 +34,14 @@ class Toolbar extends ConsumerWidget {
       });
     }
 
-/* // Example usage in your app
-    void showSettingsDialog(BuildContext context) async {
-      try {
-        print('Loading settings...');
-        final currentSettings = await SettingsManager.loadSettings();
-        print('Settings loaded: ${currentSettings.toJson()}');
-
-        if (context.mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => SettingsDialog(
-              initialSettings: currentSettings,
-              onSettingsSaved: (newSettings) {
-                // Apply settings to your app
-                print('Settings applied: ${newSettings.toJson()}');
-
-                // Show a message to confirm settings were applied
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Settings applied successfully'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-
-                // Example: Apply theme
-                // ThemeProvider.of(context).setDarkMode(newSettings.darkMode);
-
-                // Example: Apply font size
-                // YourAppState.of(context).updateFontSize(newSettings.fontSize);
-
-                // Example: Apply language
-                // LocalizationProvider.of(context).changeLanguage(newSettings.language);
-              },
-            ),
-          );
-        }
-      } catch (e) {
-        print('Error showing settings dialog: $e');
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error loading settings: ${e.toString()}')),
-          );
-        }
-      }
-    } */
-
     return Row(
       spacing: 10,
       children: [
-        /*    ElevatedButton(
-          onPressed: () => showSettingsDialog(context),
+        // TODO RESELECT TTS DIR
+        ElevatedButton(
+          onPressed: () => print('lol hello'),
           child: const Text('Settings'),
-        ), */
+        ),
         ElevatedButton(
           onPressed: actionInProgress
               ? null
@@ -167,22 +121,6 @@ class Toolbar extends ConsumerWidget {
           },
           child: const Text('Help / Feedback'),
         ),
-/*         ElevatedButton(
-          onPressed: null,
-          /*    onPressed: () {
-                ref.read(downloadProvider.notifier).downloadAllMods(
-                  ref.read(modsProvider).mods,
-                  (mod) async {
-                    await ref.read(modsProvider.notifier).updateMod(mod.name);
-                  },
-                );
-              }, */
-          child: const Text('Download all mods'),
-        ),
-        ElevatedButton(
-          onPressed: null,
-          child: const Text('Backup all mods'),
-        ), */
       ],
     );
   }

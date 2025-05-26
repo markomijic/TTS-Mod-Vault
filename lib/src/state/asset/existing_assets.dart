@@ -9,7 +9,8 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
-import 'package:tts_mod_vault/src/utils.dart';
+import 'package:tts_mod_vault/src/utils.dart'
+    show getFileNameFromURL, newUrl, oldUrl;
 
 class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsLists> {
   final Ref ref;
@@ -17,14 +18,14 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsLists> {
   ExistingAssetsNotifier(this.ref) : super(ExistingAssetsLists.empty());
 
   Future<void> loadExistingAssetsLists() async {
+    debugPrint('loadExistingAssetsLists');
+
     for (final type in AssetTypeEnum.values) {
       await setExistingAssetsListByType(type);
     }
   }
 
   Future<void> setExistingAssetsListByType(AssetTypeEnum type) async {
-    debugPrint('setExistingAssetsListByType - ${type.label}');
-
     final directory =
         ref.read(directoriesProvider.notifier).getDirectoryByType(type);
     final filenames = await _getDirectoryFilenames(directory);

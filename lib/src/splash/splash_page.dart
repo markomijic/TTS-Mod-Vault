@@ -8,7 +8,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:tts_mod_vault/src/mods/components/error_message.dart'
     show ErrorMessage;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, loaderProvider, modsProvider, storageProvider;
+    show
+        directoriesProvider,
+        loaderProvider,
+        modsProvider,
+        settingsProvider,
+        storageProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class SplashPage extends HookConsumerWidget {
@@ -23,9 +28,10 @@ class SplashPage extends HookConsumerWidget {
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        // Initialize storage and TTS Directory
-        await ref.read(storageProvider).init();
-        directoriesNotifier.initTtsDirectory();
+        // Initialize storage, TTS Directory and Settings before loading mod data
+        await ref.read(storageProvider).initializeStorage();
+        await ref.read(settingsProvider.notifier).initializeSettings();
+        directoriesNotifier.initializeDirectories();
 
         // Load existing assets lists and mods data if TTS Directory exists
         await loaderNotifier.loadAppData(

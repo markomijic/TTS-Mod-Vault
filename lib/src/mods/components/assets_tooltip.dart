@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 
 class AssetsTooltip extends StatelessWidget {
@@ -35,26 +37,32 @@ class AssetsTooltip extends StatelessWidget {
           ),
           TextSpan(
               text:
-                  ' - asset URL has been selected and can be downloaded with the "Download" button\n\n'),
-          TextSpan(text: 'Tap on '),
+                  ' - asset URL has been selected and can be downloaded using the "Download" button\n\n'),
+          TextSpan(text: 'Click a '),
           TextSpan(
             text: 'red URL',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
           ),
-          TextSpan(text: ' to select it, tap on '),
+          TextSpan(text: ' to select it. Click a '),
           TextSpan(
             text: 'blue URL',
             style:
                 TextStyle(fontWeight: FontWeight.bold, color: Colors.lightBlue),
           ),
-          TextSpan(text: ' to deselect it\nDouble tap on '),
+          TextSpan(text: ' to deselect it.\nDouble-click a '),
           TextSpan(
             text: 'green URL',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
           ),
           TextSpan(
-              text:
-                  ' to open the file in the file explorer\nPress and hold any URL to copy it to clipboard\nBackup button will create a backup even if some files are missing'),
+            text: Platform.isLinux
+                ? ' to open the folder containing the file in the file explorer.\n'
+                : ' to open the file in the file explorer.\n',
+          ),
+          TextSpan(
+            text:
+                'Click and hold any URL to copy it to the clipboard.\n\nThe Backup button will create a backup even if some files are missing.',
+          ),
         ],
       ),
       child: Icon(

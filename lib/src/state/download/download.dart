@@ -16,7 +16,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         existingAssetListsProvider,
         modsProvider,
         selectedAssetProvider,
-        selectedModProvider;
+        selectedModProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show getExtensionByType, getFileNameFromURL;
 
@@ -147,7 +148,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         downloadingType: type,
       );
 
-      final int batchSize = 5; // TODO set from settings
+      final int batchSize = ref.read(settingsProvider).concurrentDownloads;
 
       for (int i = 0; i < urls.length; i += batchSize) {
         final batch = urls.sublist(

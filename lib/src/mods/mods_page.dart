@@ -8,25 +8,26 @@ import 'package:tts_mod_vault/src/mods/components/assets_list.dart'
 import 'package:tts_mod_vault/src/mods/components/error_message.dart'
     show ErrorMessage;
 import 'package:tts_mod_vault/src/mods/components/mods_grid.dart' show ModsGrid;
+import 'package:tts_mod_vault/src/mods/components/mods_list.dart' show ModsList;
 import 'package:tts_mod_vault/src/mods/components/toolbar.dart' show Toolbar;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show backupProvider, cleanupProvider, modsProvider, selectedModProvider;
-import 'package:tts_mod_vault/src/utils.dart'
     show
-        checkForUpdatesOnGitHub,
-        getGitHubReleaseUrl,
-        openUrl,
-        showConfirmDialog,
-        showDownloadDialog,
-        showSnackBar;
+        backupProvider,
+        cleanupProvider,
+        modsProvider,
+        selectedModProvider,
+        settingsProvider;
+import 'package:tts_mod_vault/src/utils.dart'
+    show checkForUpdatesOnGitHub, showDownloadDialog, showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final useModsListView = ref.watch(settingsProvider).useModsListView;
     final cleanUpNotifier = ref.watch(cleanupProvider.notifier);
     final cleanUpState = ref.watch(cleanupProvider);
     final backup = ref.watch(backupProvider);
@@ -52,7 +53,8 @@ class ModsPage extends HookConsumerWidget {
     // Check for updates on initial opening of page
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        // TODO add a check if checking for updates at startup is enabled
+        if (!ref.read(settingsProvider).checkForUpdatesOnStart) return;
+
         final newTagVersion = await checkForUpdatesOnGitHub();
 
         if (newTagVersion.isNotEmpty) {
@@ -91,7 +93,9 @@ class ModsPage extends HookConsumerWidget {
                             flex: 2,
                             child: Padding(
                               padding: const EdgeInsets.all(8),
-                              child: ModsGrid(mods: data.mods),
+                              child: useModsListView
+                                  ? ModsList(mods: data.mods)
+                                  : ModsGrid(mods: data.mods),
                             ),
                           ),
                           Expanded(

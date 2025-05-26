@@ -1,11 +1,11 @@
-class AssetTypeLists {
+class ExistingAssetsLists {
   final List<String> assetBundles;
   final List<String> audio;
   final List<String> images;
   final List<String> models;
   final List<String> pdfs;
 
-  AssetTypeLists({
+  ExistingAssetsLists({
     required this.assetBundles,
     required this.audio,
     required this.images,
@@ -13,21 +13,21 @@ class AssetTypeLists {
     required this.pdfs,
   });
 
-  AssetTypeLists.empty()
+  ExistingAssetsLists.empty()
       : assetBundles = [],
         audio = [],
         images = [],
         models = [],
         pdfs = [];
 
-  AssetTypeLists copyWith({
+  ExistingAssetsLists copyWith({
     List<String>? assetBundles,
     List<String>? audio,
     List<String>? images,
     List<String>? models,
     List<String>? pdfs,
   }) {
-    return AssetTypeLists(
+    return ExistingAssetsLists(
       assetBundles: assetBundles ?? this.assetBundles,
       audio: audio ?? this.audio,
       images: images ?? this.images,

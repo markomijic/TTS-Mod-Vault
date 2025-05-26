@@ -24,7 +24,7 @@ final directoriesProvider =
 );
 
 final existingAssetListsProvider =
-    StateNotifierProvider<ExistingAssetsNotifier, AssetTypeLists>(
+    StateNotifierProvider<ExistingAssetsNotifier, ExistingAssetsLists>(
   (ref) => ExistingAssetsNotifier(ref),
 );
 

@@ -1,15 +1,25 @@
-import 'dart:io';
+import 'dart:io' show File;
 
-import 'package:dio/dio.dart';
-import 'package:flutter/widgets.dart';
-
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
-import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:dio/dio.dart'
+    show CancelToken, Dio, DioException, DioExceptionType;
+import 'package:flutter/material.dart' show debugPrint;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
+import 'package:tts_mod_vault/src/state/download/download_state.dart'
+    show DownloadState;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show
+        directoriesProvider,
+        downloadProvider,
+        existingAssetListsProvider,
+        modsProvider,
+        selectedAssetProvider,
+        selectedModProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show getExtensionByType, getFileNameFromURL;
-import 'download_state.dart';
+
 import 'package:path/path.dart' as path;
 
 class DownloadNotifier extends StateNotifier<DownloadState> {
@@ -23,35 +33,32 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       : dio = Dio(),
         super(const DownloadState());
 
-  // Cancel a specific download by URL
-/*   void cancelDownload(String url) {
-    if (_cancelTokens.containsKey(url)) {
-      _cancelTokens[url]?.cancel('Download cancelled by user');
-      _cancelTokens.remove(url);
+  Future<void> handleCancelDownloadsButton() async {
+    await ref.read(downloadProvider.notifier)._cancelAllDownloads();
+    if (ref.read(selectedModProvider) != null) {
+      await ref
+          .read(modsProvider.notifier)
+          .updateMod(ref.read(selectedModProvider)!.name);
     }
-  } */
+    ref.read(selectedAssetProvider.notifier).resetState();
+  }
 
-  // Cancel all active downloads
-  Future<void> cancelAllDownloads() async {
-    for (var token in _cancelTokens.values) {
+  Future<void> _cancelAllDownloads() async {
+    for (final token in _cancelTokens.values) {
       token.cancel('All downloads cancelled by user');
     }
     _cancelTokens.clear();
 
-    await ref.read(existingAssetListsProvider.notifier).loadAssetTypeLists();
+    await ref
+        .read(existingAssetListsProvider.notifier)
+        .loadExistingAssetsLists();
 
-    // Reset the download state
     state = state.copyWith(
       isDownloading: false,
       progress: null,
       downloadingType: null,
       errorMessage: 'Downloads cancelled',
     );
-  }
-
-  // Check if a download is active
-  bool isDownloadActive(String url) {
-    return _cancelTokens.containsKey(url);
   }
 
   Future<void> downloadAllFiles(Mod mod) async {
@@ -104,7 +111,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       type: AssetTypeEnum.pdf,
     );
 
-    await ref.read(existingAssetListsProvider.notifier).loadAssetTypeLists();
+    await ref
+        .read(existingAssetListsProvider.notifier)
+        .loadExistingAssetsLists();
 
     state = state.copyWith(
       isDownloading: false,
@@ -231,7 +240,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       if (!downloadingAllFiles) {
         await ref
             .read(existingAssetListsProvider.notifier)
-            .updateAssetTypeList(type);
+            .updateExistingAssetsListByType(type);
         state = state.copyWith(
           isDownloading: false,
           progress: null,

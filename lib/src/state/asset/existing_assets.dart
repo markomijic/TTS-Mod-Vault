@@ -1,20 +1,20 @@
-import 'dart:io';
+import 'dart:io' show Directory, File;
 
 import 'package:collection/collection.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart'
-    show AssetTypeLists;
+    show ExistingAssetsLists;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 
-class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
+class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsLists> {
   final Ref ref;
 
-  ExistingAssetsNotifier(this.ref) : super(AssetTypeLists.empty());
+  ExistingAssetsNotifier(this.ref) : super(ExistingAssetsLists.empty());
 
-  Future<void> loadAssetTypeLists() async {
+  Future<void> loadExistingAssetsLists() async {
     final assetBundles = <String>[];
     final audio = <String>[];
     final images = <String>[];
@@ -46,7 +46,7 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
       }
     }
 
-    state = AssetTypeLists(
+    state = ExistingAssetsLists(
       assetBundles: assetBundles,
       audio: audio,
       images: images,
@@ -64,14 +64,14 @@ class ExistingAssetsNotifier extends StateNotifier<AssetTypeLists> {
 
     final List<String> filenames = await directory
         .list()
-        .where((entity) =>
-            entity is File) // Filter to only include files, not directories
+        // Filter to only include files, not directories
+        .where((entity) => entity is File)
         .map((entity) => p.basenameWithoutExtension(entity.path))
         .toList();
     return filenames;
   }
 
-  Future<void> updateAssetTypeList(AssetTypeEnum type) async {
+  Future<void> updateExistingAssetsListByType(AssetTypeEnum type) async {
     final directory =
         ref.read(directoriesProvider.notifier).getDirectoryByType(type);
     final filenames = await _getDirectoryFilenames(directory);

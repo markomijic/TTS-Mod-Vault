@@ -32,7 +32,7 @@ class Toolbar extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await ref
             .read(existingAssetListsProvider.notifier)
-            .loadAssetTypeLists();
+            .loadExistingAssetsLists();
         await ref.read(modsProvider.notifier).loadModsData(
               modJsonFileName:
                   ref.read(backupProvider).lastImportedJsonFileName,

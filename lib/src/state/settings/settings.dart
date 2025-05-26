@@ -14,26 +14,29 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> initializeSettings() async {
     final settingsJson = ref.read(storageProvider).getSettings();
 
+    SettingsState newState = SettingsState();
+
     if (settingsJson != null) {
       try {
-        state = SettingsState.fromJson(settingsJson);
+        newState = SettingsState.fromJson(settingsJson);
         debugPrint('Loaded settings from json');
       } catch (e) {
         debugPrint('Failed to load settings from json: $e');
-        state = SettingsState();
+        newState = SettingsState();
       }
     }
 
-    debugPrint('initializeSettings - ${json.encode(state.toJson())}');
-    saveSettings(state);
+    debugPrint('initializeSettings - ${json.encode(newState.toJson())}');
+    saveSettings(newState);
   }
 
   Future<void> saveSettings(SettingsState newState) async {
+    state = newState;
     await ref.read(storageProvider).saveSettings(newState);
   }
 
   Future<void> resetToDefaultSettings() async {
-    state = const SettingsState();
-    await saveSettings(state);
+    SettingsState newState = const SettingsState();
+    await saveSettings(newState);
   }
 }

@@ -51,7 +51,7 @@ class App extends StatelessWidget {
         filled: true,
         fillColor: Colors.black87,
         focusedBorder:
-            OutlineInputBorder(borderSide: BorderSide(color: Colors.blue)),
+            OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
         enabledBorder:
             OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
         labelStyle: TextStyle(color: Colors.white),

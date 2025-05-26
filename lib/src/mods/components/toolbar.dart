@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
+import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
+    show SettingsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -39,7 +41,13 @@ class Toolbar extends ConsumerWidget {
       children: [
         // TODO RESELECT TTS DIR
         ElevatedButton(
-          onPressed: () => print('lol hello'),
+          onPressed: actionInProgress
+              ? null
+              : () => showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return SettingsDialog();
+                  }),
           child: const Text('Settings'),
         ),
         ElevatedButton(

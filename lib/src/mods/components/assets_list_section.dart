@@ -78,7 +78,7 @@ class AssetsListSection extends HookConsumerWidget {
                         final name = selectedMod.name;
                         await downloadNotifier.downloadFiles(
                           modName: name,
-                          urls: urls,
+                          modAssetListUrls: urls,
                           type: type,
                           downloadingAllFiles: false,
                         );

@@ -68,7 +68,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     await downloadFiles(
       modName: mod.name,
-      urls: mod.assetLists!.assetBundles
+      modAssetListUrls: mod.assetLists!.assetBundles
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
@@ -77,7 +77,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     await downloadFiles(
       modName: mod.name,
-      urls: mod.assetLists!.audio
+      modAssetListUrls: mod.assetLists!.audio
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
@@ -86,7 +86,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     await downloadFiles(
       modName: mod.name,
-      urls: mod.assetLists!.images
+      modAssetListUrls: mod.assetLists!.images
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
@@ -95,7 +95,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     await downloadFiles(
       modName: mod.name,
-      urls: mod.assetLists!.models
+      modAssetListUrls: mod.assetLists!.models
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
@@ -104,7 +104,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     await downloadFiles(
       modName: mod.name,
-      urls: mod.assetLists!.pdf
+      modAssetListUrls: mod.assetLists!.pdf
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
@@ -124,13 +124,20 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   Future<void> downloadFiles({
     required String modName,
-    required List<String> urls,
+    required List<String> modAssetListUrls,
     required AssetTypeEnum type,
     bool downloadingAllFiles = true,
   }) async {
-    if (urls.isEmpty) {
+    if (modAssetListUrls.isEmpty) {
       return;
     }
+
+    final urls = modAssetListUrls.where((url) {
+      final fileName = getFileNameFromURL(url);
+      return !ref
+          .read(existingAssetListsProvider.notifier)
+          .doesAssetFileExist(fileName, type);
+    }).toList();
 
     try {
       state = state.copyWith(

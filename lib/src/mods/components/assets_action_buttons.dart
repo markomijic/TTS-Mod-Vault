@@ -45,7 +45,7 @@ class AssetsActionButtons extends HookConsumerWidget {
               ? () async {
                   await downloadNotifier.downloadFiles(
                     modName: selectedMod.name,
-                    urls: [selectedAsset.asset.url],
+                    modAssetListUrls: [selectedAsset.asset.url],
                     type: selectedAsset.type,
                     downloadingAllFiles: false,
                   );

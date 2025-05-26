@@ -7,7 +7,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         backupProvider,
         cleanupProvider,
-        existingAssetListsProvider,
         loaderProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'

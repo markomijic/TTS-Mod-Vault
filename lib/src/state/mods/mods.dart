@@ -248,6 +248,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final filePaths = <(String, String)>[];
 
     for (final url in urls) {
+      if (url.startsWith("file:///")) continue;
+
       final updatedUrl = _replaceInUrl(url, oldUrl, newUrl);
 
       final filePath = path.joinAll([
@@ -265,7 +267,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         .toList();
 
     return List.generate(
-      urls.length,
+      filePaths.length,
       (i) => Asset(
         url: filePaths[i].$1,
         fileExists: existenceChecks[i],
@@ -292,7 +294,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         .map((type) => _getAssetsByType(urlsByType[type]!, type))
         .toList();
 
-    final totalCount = data.length;
+    final totalCount = results.expand((list) => list).length;
     final existingFilesCount = results
         .expand((list) => list)
         .where((asset) => asset.fileExists)

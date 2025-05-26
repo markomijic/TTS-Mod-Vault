@@ -1,20 +1,24 @@
 import 'dart:io';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
+import 'package:tts_mod_vault/src/state/provider.dart' show storageProvider;
 
-import 'directories_state.dart';
+import 'directories_state.dart' show DirectoriesState;
 import 'package:path/path.dart' as path;
 
 class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
-  DirectoriesNotifier() : super(_initializeState());
+  final Ref ref;
 
-  static DirectoriesState _initializeState() {
-    final ttsDir = _getDefaultTtsDirectory();
-    return DirectoriesState.fromTtsDir(ttsDir);
+  DirectoriesNotifier(this.ref) : super(DirectoriesState.empty());
+
+  void initTtsDirectory() {
+    final ttsDir =
+        ref.read(storageProvider).getTtsDir() ?? _getDefaultTtsDirectory();
+    state = DirectoriesState.fromTtsDir(ttsDir);
   }
 
-  static String _getDefaultTtsDirectory() {
+  String _getDefaultTtsDirectory() {
     final String userHome = _getUserHome();
 
     if (Platform.isWindows) {
@@ -43,7 +47,7 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     return path.joinAll([userHome, '.local', 'share', 'Tabletop Simulator']);
   }
 
-  static String _getUserHome() {
+  String _getUserHome() {
     if (Platform.isWindows) {
       return Platform.environment['USERPROFILE'] ?? '';
     }
@@ -56,7 +60,15 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
 
   Future<bool> checkIfTtsDirectoryExists() async {
     try {
-      return Directory(state.ttsDir).exists();
+      final result = await Directory(state.ttsDir).exists();
+
+      if (result) {
+        ref.read(storageProvider).saveTtsDir(state.ttsDir);
+      } else {
+        await ref.read(storageProvider).deleteTTSDir();
+      }
+
+      return result;
     } catch (e) {
       return false;
     }

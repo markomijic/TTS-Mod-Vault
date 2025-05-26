@@ -5,6 +5,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 import 'package:tts_mod_vault/src/mods/components/assets_list.dart'
     show AssetsList;
+import 'package:tts_mod_vault/src/mods/components/error_message.dart'
+    show ErrorMessage;
 import 'package:tts_mod_vault/src/mods/components/mods_grid.dart' show ModsGrid;
 import 'package:tts_mod_vault/src/mods/components/toolbar.dart' show Toolbar;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
@@ -107,14 +109,7 @@ class ModsPage extends HookConsumerWidget {
                       );
                     },
                     error: (e, st) => Center(
-                      child: Text(
-                        'Something went wrong, please try restarting the application\nError: '
-                        '$e',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: ErrorMessage(e: e),
                     ),
                     loading: () => Center(
                       child: Text(

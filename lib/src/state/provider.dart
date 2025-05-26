@@ -11,6 +11,8 @@ import 'package:tts_mod_vault/src/state/directories/directories.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/download/download.dart';
 import 'package:tts_mod_vault/src/state/download/download_state.dart';
+import 'package:tts_mod_vault/src/state/loader/loader.dart';
+import 'package:tts_mod_vault/src/state/loader/loader_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mods.dart';
@@ -20,7 +22,7 @@ final storageProvider = Provider((ref) => Storage());
 
 final directoriesProvider =
     StateNotifierProvider<DirectoriesNotifier, DirectoriesState>(
-  (ref) => DirectoriesNotifier(),
+  (ref) => DirectoriesNotifier(ref),
 );
 
 final existingAssetListsProvider =
@@ -28,9 +30,9 @@ final existingAssetListsProvider =
   (ref) => ExistingAssetsNotifier(ref),
 );
 
-/* final modsProvider = StateNotifierProvider<ModsStateNotifier, ModsState>(
-  (ref) => ModsStateNotifier(ref),
-); */
+final loaderProvider = StateNotifierProvider<LoaderNotifier, LoaderState>(
+  (ref) => LoaderNotifier(ref),
+);
 
 final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
     () => ModsStateNotifier());

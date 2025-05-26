@@ -33,8 +33,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     state = const AsyncValue.loading();
   }
 
-  Future<void> loadModsData(
-      {VoidCallback? onDataLoaded, String modJsonFileName = ""}) async {
+  Future<void> loadModsData({
+    VoidCallback? onDataLoaded,
+    String modJsonFileName = "",
+  }) async {
     debugPrint('loadModsData START: ${DateTime.now()}');
 
     setLoading();
@@ -146,6 +148,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         allMods.addAll(batchResults.whereType<Mod>());
       }
 
+      if (ref.read(selectedModProvider) != null) {
+        setSelectedMod(null);
+      }
+
       if (modJsonFileName.isNotEmpty) {
         ref.read(backupProvider.notifier).resetLastImportedJsonFileName();
         _setSelectedModByJsonFileName(allMods, modJsonFileName);
@@ -170,7 +176,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       final updatedMods = await Future.wait(
         state.value!.mods.map((mod) async {
-          if (mod.name == modName) {
+          if (mod.name == modName && mod.fileName != null) {
             updatedMod = await _getModData(
               mod,
               mod.fileName!,
@@ -316,7 +322,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  void setSelectedMod(Mod item) {
+  void setSelectedMod(Mod? item) {
     ref.read(selectedModProvider.notifier).state = item;
   }
 

@@ -8,6 +8,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         cleanupProvider,
         existingAssetListsProvider,
+        loaderProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
@@ -30,13 +31,7 @@ class Toolbar extends ConsumerWidget {
       ref.read(modsProvider.notifier).setLoading();
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await ref
-            .read(existingAssetListsProvider.notifier)
-            .loadExistingAssetsLists();
-        await ref.read(modsProvider.notifier).loadModsData(
-              modJsonFileName:
-                  ref.read(backupProvider).lastImportedJsonFileName,
-            );
+        await ref.read(loaderProvider.notifier).refreshAppData();
       });
     }
 
@@ -180,7 +175,6 @@ class Toolbar extends ConsumerWidget {
           },
           child: const Text('Help / Feedback'),
         ),
-        // HelpButton(),
 /*         ElevatedButton(
           onPressed: null,
           /*    onPressed: () {

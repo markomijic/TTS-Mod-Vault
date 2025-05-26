@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:shared_preferences/shared_preferences.dart'
     show SharedPreferencesWithCache, SharedPreferencesWithCacheOptions;
 import 'dart:convert' show jsonDecode, jsonEncode;
@@ -9,6 +10,7 @@ class Storage {
   // Constants for storage keys
   static const String updatedTimeSuffix = 'UpdatedTime';
   static const String listsSuffix = 'Lists';
+  static const String ttsDir = 'TTSDir';
 
   Future<void> init() async {
     if (!_initialized) {
@@ -20,6 +22,11 @@ class Storage {
       _prefs = prefsWithCache;
       _initialized = true;
     }
+  }
+
+  Future<void> saveTtsDir(String value) async {
+    if (!_initialized) await init();
+    return await _prefs.setString(ttsDir, value);
   }
 
   Future<void> saveMod(String modName, String value) async {
@@ -35,6 +42,11 @@ class Storage {
   Future<void> saveModMap(String modName, Map<String, String> data) async {
     if (!_initialized) await init();
     return await _prefs.setString('$modName$listsSuffix', jsonEncode(data));
+  }
+
+  String? getTtsDir() {
+    if (!_initialized) return null;
+    return _prefs.getString(ttsDir);
   }
 
   String? getMod(String modName) {
@@ -79,5 +91,17 @@ class Storage {
     ]);
 
     return !results.contains(false);
+  }
+
+  Future<bool> deleteTTSDir() async {
+    if (!_initialized) return false;
+
+    try {
+      await _prefs.remove(ttsDir);
+      return true;
+    } catch (e) {
+      debugPrint('deleteTTSDir - $e');
+      return false;
+    }
   }
 }

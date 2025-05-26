@@ -35,4 +35,19 @@ class DirectoriesState {
       pdfDir: '$modsDir/PDF',
     );
   }
+
+  factory DirectoriesState.empty() {
+    const emptyPath = '';
+    return const DirectoriesState(
+      ttsDir: emptyPath,
+      savesDir: emptyPath,
+      workshopDir: emptyPath,
+      modsDir: emptyPath,
+      assetBundlesDir: emptyPath,
+      audioDir: emptyPath,
+      imagesDir: emptyPath,
+      modelsDir: emptyPath,
+      pdfDir: emptyPath,
+    );
+  }
 }

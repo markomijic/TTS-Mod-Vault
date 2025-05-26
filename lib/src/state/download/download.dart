@@ -247,7 +247,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       if (!downloadingAllFiles) {
         await ref
             .read(existingAssetListsProvider.notifier)
-            .updateExistingAssetsListByType(type);
+            .setExistingAssetsListByType(type);
         state = state.copyWith(
           isDownloading: false,
           progress: null,

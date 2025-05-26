@@ -12,6 +12,9 @@ import 'package:url_launcher/url_launcher.dart'
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
+const oldUrl = 'http://cloud-3.steamusercontent.com/';
+const newUrl = 'https://steamusercontent-a.akamaihd.net/';
+
 String getFileNameFromURL(String url) {
   // Keep only letters and numbers, remove everything else
   return url.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');

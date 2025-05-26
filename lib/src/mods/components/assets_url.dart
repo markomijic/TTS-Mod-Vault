@@ -12,7 +12,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, selectedAssetProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show openFileInExplorer, showSnackBar;
+    show getFileNameFromURL, newUrl, oldUrl, openFileInExplorer, showSnackBar;
 
 class AssetsUrl extends ConsumerWidget {
   final Asset asset;
@@ -45,9 +45,18 @@ class AssetsUrl extends ConsumerWidget {
               if (!await directory.exists()) return;
 
               final List<FileSystemEntity> files = directory.listSync();
-              final fileToOpen = files.firstWhereOrNull((ele) => p
-                  .basenameWithoutExtension(ele.path)
-                  .startsWith(p.basenameWithoutExtension(asset.filePath!)));
+
+              final fileToOpen = files.firstWhereOrNull((file) {
+                final name = p.basenameWithoutExtension(file.path);
+
+                final newUrlBase = p.basenameWithoutExtension(asset.filePath!);
+                // Check if file exists under old url naming scheme
+                final oldUrlbase = newUrlBase.replaceFirst(
+                    getFileNameFromURL(newUrl), getFileNameFromURL(oldUrl));
+
+                return name.startsWith(newUrlBase) ||
+                    name.startsWith(oldUrlbase);
+              });
 
               if (fileToOpen != null) {
                 openFileInExplorer(p.normalize(fileToOpen.path));

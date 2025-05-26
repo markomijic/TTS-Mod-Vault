@@ -21,7 +21,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         existingAssetListsProvider,
         selectedModProvider,
         storageProvider;
-import 'package:tts_mod_vault/src/utils.dart' show getFileNameFromURL;
+import 'package:tts_mod_vault/src/utils.dart'
+    show getFileNameFromURL, newUrl, oldUrl;
 
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
@@ -247,10 +248,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final filePaths = <(String, String)>[];
 
     for (final url in urls) {
-      final updatedUrl = _replaceInUrl(
-          url,
-          'http://cloud-3.steamusercontent.com/',
-          'https://steamusercontent-a.akamaihd.net/');
+      final updatedUrl = _replaceInUrl(url, oldUrl, newUrl);
 
       final filePath = path.joinAll([
         ref.read(directoriesProvider.notifier).getDirectoryByType(type),

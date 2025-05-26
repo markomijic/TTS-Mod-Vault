@@ -14,7 +14,8 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, selectedModProvider;
-import 'package:tts_mod_vault/src/utils.dart' show sanitizeFileName;
+import 'package:tts_mod_vault/src/utils.dart'
+    show getFileNameFromURL, newUrl, oldUrl, sanitizeFileName;
 
 class BackupNotifier extends StateNotifier<BackupState> {
   final Ref ref;
@@ -120,11 +121,20 @@ class BackupNotifier extends StateNotifier<BackupState> {
         final List<FileSystemEntity> files = directory.listSync();
 
         mod.getAssetsByType(type).forEach((asset) {
-          final assetFile = files.firstWhereOrNull((f) =>
-              asset.filePath != null &&
-              p
-                  .basenameWithoutExtension(f.path)
-                  .startsWith(p.basenameWithoutExtension(asset.filePath!)));
+          final assetFile = files.firstWhereOrNull((file) {
+            if (asset.filePath == null) return false;
+
+            final name = p.basenameWithoutExtension(file.path);
+            final newUrlBase = p.basenameWithoutExtension(asset.filePath!);
+
+            // Check if file exists under old url naming scheme
+            final oldUrlBase = newUrlBase.replaceFirst(
+              getFileNameFromURL(newUrl),
+              getFileNameFromURL(oldUrl),
+            );
+
+            return name.startsWith(newUrlBase) || name.startsWith(oldUrlBase);
+          });
 
           if (assetFile != null && assetFile.path.isNotEmpty) {
             filePaths.add(p.normalize(assetFile.path));

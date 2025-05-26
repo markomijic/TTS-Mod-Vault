@@ -1,6 +1,7 @@
 import 'dart:io' show Directory, File;
 
 import 'package:collection/collection.dart';
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart'
     show ExistingAssetsLists;
@@ -8,6 +9,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
+import 'package:tts_mod_vault/src/utils.dart';
 
 class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsLists> {
   final Ref ref;
@@ -15,63 +17,14 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsLists> {
   ExistingAssetsNotifier(this.ref) : super(ExistingAssetsLists.empty());
 
   Future<void> loadExistingAssetsLists() async {
-    final assetBundles = <String>[];
-    final audio = <String>[];
-    final images = <String>[];
-    final models = <String>[];
-    final pdfs = <String>[];
-
     for (final type in AssetTypeEnum.values) {
-      final directory =
-          ref.read(directoriesProvider.notifier).getDirectoryByType(type);
-
-      final filenames = await _getDirectoryFilenames(directory);
-
-      switch (type) {
-        case AssetTypeEnum.assetBundle:
-          assetBundles.addAll(filenames);
-          break;
-        case AssetTypeEnum.audio:
-          audio.addAll(filenames);
-          break;
-        case AssetTypeEnum.image:
-          images.addAll(filenames);
-          break;
-        case AssetTypeEnum.model:
-          models.addAll(filenames);
-          break;
-        case AssetTypeEnum.pdf:
-          pdfs.addAll(filenames);
-          break;
-      }
+      await setExistingAssetsListByType(type);
     }
-
-    state = ExistingAssetsLists(
-      assetBundles: assetBundles,
-      audio: audio,
-      images: images,
-      models: models,
-      pdfs: pdfs,
-    );
   }
 
-  Future<List<String>> _getDirectoryFilenames(String path) async {
-    final directory = Directory(path);
+  Future<void> setExistingAssetsListByType(AssetTypeEnum type) async {
+    debugPrint('setExistingAssetsListByType - ${type.label}');
 
-    if (!directory.existsSync()) {
-      return [];
-    }
-
-    final List<String> filenames = await directory
-        .list()
-        // Filter to only include files, not directories
-        .where((entity) => entity is File)
-        .map((entity) => p.basenameWithoutExtension(entity.path))
-        .toList();
-    return filenames;
-  }
-
-  Future<void> updateExistingAssetsListByType(AssetTypeEnum type) async {
     final directory =
         ref.read(directoriesProvider.notifier).getDirectoryByType(type);
     final filenames = await _getDirectoryFilenames(directory);
@@ -93,6 +46,31 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsLists> {
         state = state.copyWith(pdfs: filenames);
         break;
     }
+  }
+
+  Future<List<String>> _getDirectoryFilenames(String path) async {
+    final directory = Directory(path);
+
+    if (!directory.existsSync()) {
+      return [];
+    }
+
+    final List<String> filenames = await directory
+        .list()
+        // Filter to only include files, not directories
+        .where((entity) => entity is File)
+        .map((entity) => p.basenameWithoutExtension(entity.path))
+        .toList();
+
+    // In case of old files named using old url, remap them to the new url for the existing assets list
+    return filenames.map((filename) {
+      if (filename.startsWith(getFileNameFromURL(oldUrl))) {
+        return filename.replaceFirst(
+            getFileNameFromURL(oldUrl), getFileNameFromURL(newUrl));
+      }
+
+      return filename;
+    }).toList();
   }
 
   bool doesAssetFileExist(String assetFileName, AssetTypeEnum type) {

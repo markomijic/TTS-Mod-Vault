@@ -15,6 +15,57 @@ import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 const oldUrl = 'http://cloud-3.steamusercontent.com/';
 const newUrl = 'https://steamusercontent-a.akamaihd.net/';
 
+final ThemeData darkTheme = ThemeData(
+  brightness: Brightness.dark,
+  primaryColor: Colors.black,
+  scaffoldBackgroundColor: Color(0xFF141218),
+  appBarTheme: AppBarTheme(
+    backgroundColor: Colors.black,
+    foregroundColor: Colors.white,
+  ),
+  colorScheme: ColorScheme.dark(
+    primary: Colors.black,
+    secondary: Colors.white,
+    error: Colors.red,
+    tertiary: Colors.blue,
+  ),
+  textTheme: TextTheme(
+    bodyLarge: TextStyle(color: Colors.white),
+    bodyMedium: TextStyle(color: Colors.white),
+    bodySmall: TextStyle(color: Colors.white),
+  ),
+  iconTheme: IconThemeData(color: Colors.white),
+  floatingActionButtonTheme: FloatingActionButtonThemeData(
+    backgroundColor: Colors.red,
+    foregroundColor: Colors.white,
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+    ),
+  ),
+  outlinedButtonTheme: OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(
+      foregroundColor: Colors.white,
+      side: BorderSide(color: Colors.white),
+    ),
+  ),
+  textButtonTheme: TextButtonThemeData(
+    style: TextButton.styleFrom(foregroundColor: Colors.blue),
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: Colors.black87,
+    focusedBorder:
+        OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+    enabledBorder:
+        OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+    labelStyle: TextStyle(color: Colors.white),
+    hintStyle: TextStyle(color: Colors.white60),
+  ),
+);
+
 String getFileNameFromURL(String url) {
   // Keep only letters and numbers, remove everything else
   return url.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
@@ -214,6 +265,8 @@ Future<void> openFileInExplorer(String filePath) async {
 }
 
 Future<bool> openUrl(String url) async {
+  if (url.isEmpty) return false;
+
   final Uri uri = Uri.parse(url);
 
   if (await canLaunchUrl(uri)) {

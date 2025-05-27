@@ -10,9 +10,8 @@ void main() async {
   await windowManager.ensureInitialized();
 
   WindowOptions windowOptions = const WindowOptions(
-    size: Size(double.infinity, double.infinity),
     minimumSize: Size(1280, 720),
-    title: 'TTS Mod Vault 1.0.0-dev',
+    title: 'TTS Mod Vault 1.0.0-dev3',
     center: true,
   );
 

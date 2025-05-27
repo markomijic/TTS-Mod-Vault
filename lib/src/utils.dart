@@ -92,13 +92,9 @@ void showDownloadDialog(
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop('github'),
-              child: const Text('Download from GitHub'),
+              onPressed: () => Navigator.of(context).pop('download'),
+              child: const Text('Open download page'),
             ),
-            /*            TextButton(
-              onPressed: () => Navigator.of(context).pop('nexusmods'),
-              child: const Text('Download from Nexus Mods'),
-            ), */
           ],
         ),
       );
@@ -106,20 +102,10 @@ void showDownloadDialog(
   );
 
   switch (result) {
-    case 'github':
-      Future.delayed(kThemeChangeDuration, () async {
-        final url = getGitHubReleaseUrl(latestVersion);
-        final result = await openUrl(url);
-        if (!result && context.mounted) {
-          showSnackBar(context, "Failed to open: $url");
-        }
-      });
-      break;
-
-    case 'nexusmods':
+    case 'download':
       // TODO Update with URL for nexus mods
       Future.delayed(kThemeChangeDuration, () async {
-        final url = getGitHubReleaseUrl("0.7.1");
+        final url = getGitHubReleaseUrl(latestVersion);
         final result = await openUrl(url);
         if (!result && context.mounted) {
           showSnackBar(context, "Failed to open: $url");
@@ -244,21 +230,20 @@ String getGitHubReleaseUrl(String newTagVersion) {
 
 Future<String> checkForUpdatesOnGitHub() async {
   try {
-    // For PUBLIC repos
-    /*  final response = await http.get(
+    final response = await http.get(
       Uri.parse(
           'https://api.github.com/repos/markomijic/TTS-Mod-Vault/releases/latest'),
-    ); */
+    );
 
-    // For PRIVATE repos
-    final response = await http.get(
+    // For private repository
+    /* final response = await http.get(
       Uri.parse(
           'https://api.github.com/repos/markomijic/TTS-Mod-Vault/releases/latest'),
       headers: {
         'Authorization': 'Bearer TOKEN_HERE',
         'Accept': 'application/vnd.github+json',
       },
-    );
+    ); */
 
     debugPrint("checkForUpdatesOnGitHub - code: ${response.statusCode}");
 
@@ -281,13 +266,14 @@ Future<String> checkForUpdatesOnGitHub() async {
 }
 
 bool _checkIfLatestVersionIsNewer(String current, String latest) {
-  debugPrint("isNewerVersion - current: $current, latest: $latest");
+  debugPrint(
+      "_checkIfLatestVersionIsNewer - current: $current, latest: $latest");
 
   List<int> currentParts = current.split('.').map(int.parse).toList();
   List<int> latestParts = latest.split('.').map(int.parse).toList();
 
   debugPrint(
-      "isNewerVersion - currentParts: $currentParts, latestParts: $latestParts");
+      "_checkIfLatestVersionIsNewer - currentParts: $currentParts, latestParts: $latestParts");
 
   for (int i = 0; i < 3; i++) {
     if (latestParts[i] > currentParts[i]) return true;

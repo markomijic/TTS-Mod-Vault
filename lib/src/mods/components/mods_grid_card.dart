@@ -73,10 +73,10 @@ class ModsGridCard extends HookConsumerWidget {
                     child: Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: "${mod.name} "),
+                          TextSpan(text: mod.name),
                           TextSpan(
                             text: mod.totalCount != null && mod.totalCount! > 0
-                                ? "(${mod.totalExistsCount}/${mod.totalCount})"
+                                ? "\n(${mod.totalExistsCount}/${mod.totalCount})"
                                 : "",
                             style: TextStyle(
                               color: mod.totalExistsCount == mod.totalCount

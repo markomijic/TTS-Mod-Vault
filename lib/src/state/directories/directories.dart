@@ -22,6 +22,8 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
   }
 
   String _getDefaultTtsDirectory() {
+    debugPrint("_getDefaultTtsDirectory");
+
     final String userHome = _getUserHome();
 
     if (Platform.isWindows) {
@@ -57,32 +59,28 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     return Platform.environment['HOME'] ?? '';
   }
 
-  void updateTtsDirectory(String newTtsDir) {
-    state = DirectoriesState.fromTtsDir(newTtsDir);
+  Future<void> _saveNewTtsDirectory(String ttsDir) async {
+    state = DirectoriesState.fromTtsDir(ttsDir);
+    await ref.read(storageProvider).saveTtsDir(ttsDir);
   }
 
-  Future<bool> checkIfTtsDirectoryExists() async {
-    try {
-      final result = await Directory(state.ttsDir).exists();
+  Future<bool> isTtsDirectoryValid(String ttsDir) async {
+    final mainDirectoryResult = await Directory(ttsDir).exists();
 
-      if (result) {
-        ref.read(storageProvider).saveTtsDir(state.ttsDir);
-      } else {
-        await ref.read(storageProvider).deleteTTSDir();
-      }
+    if (!mainDirectoryResult) return false;
 
-      return result;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<bool> checkIfTtsDirectoryFoldersExist(String ttsDir) {
-    final requiredFolders = ['Mods', 'Saves', 'DLC', 'Screenshots'];
-
-    return Future.wait(requiredFolders
-            .map((folder) => Directory(path.join(ttsDir, folder)).exists()))
+    final mainTtsDirectoriesResult = await Future.wait([
+      'Mods',
+      'Saves',
+      'DLC',
+      'Screenshots'
+    ].map((folder) => Directory(path.join(ttsDir, folder)).exists()))
         .then((exists) => exists.every((e) => e));
+
+    if (!mainTtsDirectoriesResult) return false;
+
+    await _saveNewTtsDirectory(ttsDir);
+    return true;
   }
 
   String getDirectoryByType(AssetTypeEnum type) {

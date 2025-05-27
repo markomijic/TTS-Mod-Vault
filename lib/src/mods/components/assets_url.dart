@@ -149,7 +149,7 @@ class AssetsUrl extends HookConsumerWidget {
             case ContextMenuActionEnum.openInBrowser:
               final result = await openUrl(asset.url);
               if (!result && context.mounted) {
-                showSnackBar(context, "Failed to open url: $asset.url");
+                showSnackBar(context, "Failed to open: ${asset.url}");
               }
               break;
 

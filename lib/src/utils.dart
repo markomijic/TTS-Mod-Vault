@@ -111,7 +111,7 @@ void showDownloadDialog(
         final url = getGitHubReleaseUrl(latestVersion);
         final result = await openUrl(url);
         if (!result && context.mounted) {
-          showSnackBar(context, "Failed to open url: $url");
+          showSnackBar(context, "Failed to open: $url");
         }
       });
       break;
@@ -122,7 +122,7 @@ void showDownloadDialog(
         final url = getGitHubReleaseUrl("0.7.1");
         final result = await openUrl(url);
         if (!result && context.mounted) {
-          showSnackBar(context, "Failed to open url: $url");
+          showSnackBar(context, "Failed to open: $url");
         }
       });
       break;

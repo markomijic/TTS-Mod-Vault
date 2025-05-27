@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
+import 'package:tts_mod_vault/src/mods/components/help_and_feedback_button.dart'
+    show HelpAndFeedbackButton;
 import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -32,14 +34,13 @@ class Toolbar extends ConsumerWidget {
       ref.read(modsProvider.notifier).setLoading();
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await ref.read(loaderProvider.notifier).refreshAppData();
+        await ref.read(loaderProvider).refreshAppData();
       });
     }
 
     return Row(
       spacing: 10,
       children: [
-        // TODO RESELECT TTS DIR
         ElevatedButton(
           onPressed: actionInProgress
               ? null
@@ -123,16 +124,7 @@ class Toolbar extends ConsumerWidget {
           },
           child: const Text('Check for updates'),
         ),
-        ElevatedButton(
-          onPressed: () async {
-            final url = ""; // TODO replace with steam forum thread
-            final result = await openUrl(url);
-            if (!result && context.mounted) {
-              showSnackBar(context, "Failed to open url: $url");
-            }
-          },
-          child: const Text('Help / Feedback'),
-        ),
+        HelpAndFeedbackButton(),
       ],
     );
   }

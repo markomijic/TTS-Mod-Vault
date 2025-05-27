@@ -1,5 +1,6 @@
 import 'dart:ui' show ImageFilter;
 
+import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show FilteringTextInputFormatter, LengthLimitingTextInputFormatter;
@@ -7,7 +8,8 @@ import 'package:flutter_hooks/flutter_hooks.dart'
     show useFocusNode, useState, useTextEditingController;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show directoriesProvider, loaderProvider, modsProvider, settingsProvider;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
     show SettingsState;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
@@ -94,52 +96,94 @@ class SettingsDialog extends HookConsumerWidget {
                       value ?? checkForUpdatesOnStartBox.value;
                 },
               ),
-              SizedBox(height: 16),
-              Row(
-                spacing: 8,
-                children: [
-                  Text(
-                    'Number of concurrent downloads (default: 5)',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(
-                    width: 50,
-                    child: TextField(
-                      textAlign: TextAlign.center,
-                      controller: textFieldController,
-                      cursorColor: Colors.white,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(2),
-                      ],
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
-                      focusNode: textFieldFocusNode,
-                      onChanged: (value) {
-                        final num = int.tryParse(value);
-                        if (value.startsWith("0")) {
-                          // Reset to 1 if user enters 0
-                          textFieldController.text = '1';
-                          textFieldController.selection =
-                              TextSelection.fromPosition(
-                            TextPosition(
-                                offset: textFieldController.text.length),
-                          );
-                          numberValue.value = 1;
-                        } else if (num != null && num >= 1 && num <= 99) {
-                          numberValue.value = num;
-                        }
-                      },
+              SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: Row(
+                  spacing: 8,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Number of concurrent downloads (default: 5)',
+                      style: TextStyle(fontSize: 16),
                     ),
-                  ),
-                ],
+                    SizedBox(
+                      width: 50,
+                      child: TextField(
+                        textAlign: TextAlign.center,
+                        controller: textFieldController,
+                        cursorColor: Colors.white,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(2),
+                        ],
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        focusNode: textFieldFocusNode,
+                        onChanged: (value) {
+                          final num = int.tryParse(value);
+                          if (value.startsWith("0")) {
+                            // Reset to 1 if user enters 0
+                            textFieldController.text = '1';
+                            textFieldController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(
+                                  offset: textFieldController.text.length),
+                            );
+                            numberValue.value = 1;
+                          } else if (num != null && num >= 1 && num <= 99) {
+                            numberValue.value = num;
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
         actions: [
+          Tooltip(
+            message:
+                'A valid Tabletop Simulator directory should contain folders: DLC, Mods, Saves and Screenshots.\nData will be refreshed upon selecting a valid directory.',
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.white, width: 2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: TextStyle(color: Colors.black),
+            child: ElevatedButton(
+              onPressed: () async {
+                String? ttsDir = await FilePicker.platform.getDirectoryPath();
+
+                if (ttsDir == null) return;
+
+                WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  if (!await ref
+                      .read(directoriesProvider.notifier)
+                      .isTtsDirectoryValid(ttsDir)) {
+                    if (context.mounted) {
+                      showSnackBar(
+                        context,
+                        'Invalid Tabletop Simulator directory',
+                      );
+                    }
+                    return;
+                  }
+
+                  ref.read(modsProvider.notifier).setLoading();
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    await ref.read(loaderProvider).refreshAppData();
+                  });
+                });
+              },
+              child: Text('Re-select TTS Directory'),
+            ),
+          ),
           ElevatedButton(
             onPressed: () async {
               await ref

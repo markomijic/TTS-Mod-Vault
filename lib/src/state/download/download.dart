@@ -133,7 +133,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
 
     if (state.cancelledDownloads) {
-      print('ovdje a nes ni ovdje');
       return;
     }
 
@@ -155,7 +154,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
       for (int i = 0; i < urls.length; i += batchSize) {
         if (state.cancelledDownloads) {
-          print('ovdje e nes ni iz ovog loopa');
           continue;
         }
 
@@ -171,7 +169,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
           try {
             if (state.cancelledDownloads) {
-              print('ovdje e nes');
               _cancelTokens.remove(url);
               return;
             }

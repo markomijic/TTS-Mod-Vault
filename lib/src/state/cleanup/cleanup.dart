@@ -66,7 +66,7 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
 
   Future<void> _processDirectory(
     AssetTypeEnum type,
-    Set<String> referencedFilesUris,
+    Set<String> referencedFileNames,
   ) async {
     final directory = Directory(
         ref.read(directoriesProvider.notifier).getDirectoryByType(type));
@@ -76,15 +76,27 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
 
     for (final file in files) {
       if (file is File) {
-        String filePath = p.basenameWithoutExtension(file.path);
+        String fileName = p.basenameWithoutExtension(file.path);
 
         // In case of old url naming scheme rename to new url to match existing assets lists
-        if (filePath.startsWith(getFileNameFromURL(oldUrl))) {
-          filePath = filePath.replaceFirst(
+        if (fileName.startsWith(getFileNameFromURL(oldUrl))) {
+          final originalFileName = fileName;
+
+          fileName = fileName.replaceFirst(
               getFileNameFromURL(oldUrl), getFileNameFromURL(newUrl));
+
+          // Check if old url file has a duplicate with new url file
+          final newUrlFilepath =
+              file.path.replaceFirst(originalFileName, fileName);
+          if (await File(newUrlFilepath).exists()) {
+            state = state.copyWith(
+              filesToDelete: [...state.filesToDelete, file.path],
+            );
+            continue;
+          }
         }
 
-        if (!referencedFilesUris.contains(filePath)) {
+        if (!referencedFileNames.contains(fileName)) {
           state = state.copyWith(
             filesToDelete: [...state.filesToDelete, file.path],
           );

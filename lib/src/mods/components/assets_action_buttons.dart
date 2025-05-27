@@ -8,7 +8,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         downloadProvider,
         modsProvider,
-        selectedAssetProvider,
         selectedModProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
@@ -29,9 +28,7 @@ class AssetsActionButtons extends HookConsumerWidget {
       return SizedBox.shrink();
     }
 
-    final selectedAsset = ref.watch(selectedAssetProvider);
-    final selectedAssetNotifier = ref.watch(selectedAssetProvider.notifier);
-    final modsLibraryNotifier = ref.watch(modsProvider.notifier);
+    final modsNotifier = ref.watch(modsProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
 
@@ -41,32 +38,13 @@ class AssetsActionButtons extends HookConsumerWidget {
       spacing: 10,
       children: [
         ElevatedButton(
-          onPressed: selectedAsset != null && !actionInProgress
-              ? () async {
-                  await downloadNotifier.downloadFiles(
-                    modName: selectedMod.name,
-                    modAssetListUrls: [selectedAsset.asset.url],
-                    type: selectedAsset.type,
-                    downloadingAllFiles: false,
-                  );
-                  await modsLibraryNotifier.updateMod(selectedMod.name);
-                  selectedAssetNotifier.resetState();
-                }
-              : null,
-          child: Text('Download',
-              style: TextStyle(
-                color: selectedAsset != null ? Colors.black : null,
-              )),
-        ),
-        ElevatedButton(
           onPressed: hasMissingFiles && !actionInProgress
               ? () async {
                   await downloadNotifier.downloadAllFiles(selectedMod);
-                  await modsLibraryNotifier.updateMod(selectedMod.name);
-                  selectedAssetNotifier.resetState();
+                  await modsNotifier.updateMod(selectedMod.name);
                 }
               : null,
-          child: const Text('Download all'),
+          child: const Text('Download'),
         ),
         ElevatedButton(
           onPressed: () async {

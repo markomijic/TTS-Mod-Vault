@@ -15,7 +15,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         downloadProvider,
         existingAssetListsProvider,
         modsProvider,
-        selectedAssetProvider,
         selectedModProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -41,10 +40,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .read(modsProvider.notifier)
           .updateMod(ref.read(selectedModProvider)!.name);
     }
-    ref.read(selectedAssetProvider.notifier).resetState();
   }
 
   Future<void> _cancelAllDownloads() async {
+    state = state.copyWith(
+      isDownloading: false,
+      cancelledDownloads: true,
+      progress: null,
+      downloadingType: null,
+    );
+
     for (final token in _cancelTokens.values) {
       token.cancel('All downloads cancelled by user');
     }
@@ -53,13 +58,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     await ref
         .read(existingAssetListsProvider.notifier)
         .loadExistingAssetsLists();
-
-    state = state.copyWith(
-      isDownloading: false,
-      progress: null,
-      downloadingType: null,
-      errorMessage: 'Downloads cancelled',
-    );
   }
 
   Future<void> downloadAllFiles(Mod mod) async {
@@ -120,6 +118,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       isDownloading: false,
       progress: null,
       downloadingType: null,
+      cancelledDownloads: false,
     );
   }
 
@@ -130,6 +129,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     bool downloadingAllFiles = true,
   }) async {
     if (modAssetListUrls.isEmpty) {
+      return;
+    }
+
+    if (state.cancelledDownloads) {
+      print('ovdje a nes ni ovdje');
       return;
     }
 
@@ -144,13 +148,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       state = state.copyWith(
         isDownloading: true,
         progress: 0.0,
-        errorMessage: null,
         downloadingType: type,
       );
 
       final int batchSize = ref.read(settingsProvider).concurrentDownloads;
 
       for (int i = 0; i < urls.length; i += batchSize) {
+        if (state.cancelledDownloads) {
+          print('ovdje e nes ni iz ovog loopa');
+          continue;
+        }
+
         final batch = urls.sublist(
           i,
           i + batchSize > urls.length ? urls.length : i + batchSize,
@@ -162,6 +170,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           _cancelTokens[url] = cancelToken;
 
           try {
+            if (state.cancelledDownloads) {
+              print('ovdje e nes');
+              _cancelTokens.remove(url);
+              return;
+            }
+
             final fileName = getFileNameFromURL(url);
             final directory =
                 ref.read(directoriesProvider.notifier).getDirectoryByType(type);
@@ -253,13 +267,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           isDownloading: false,
           progress: null,
           downloadingType: null,
+          cancelledDownloads: false,
         );
       }
     } catch (e) {
-      state = state.copyWith(
-        isDownloading: false,
-        errorMessage: e.toString(),
-      );
+      state = state.copyWith(isDownloading: false);
     }
   }
 }

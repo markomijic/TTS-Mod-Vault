@@ -1,15 +1,15 @@
-import 'dart:convert';
-import 'dart:io';
+import 'dart:convert' show json, jsonDecode;
+import 'dart:io' show Directory, File, FileSystemEntity;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show VoidCallback, debugPrint;
-import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncNotifier, AsyncValue;
-import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart'
+import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart'
     show AssetLists;
-import 'package:tts_mod_vault/src/state/asset/asset_model.dart' show Asset;
+import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
+    show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
@@ -48,7 +48,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         'WorkshopFileInfos.json',
       );
 
-      final workshopDirJsonFilePaths = await _getJsonFilesInDirectory(
+      final workshopJsonsPaths = await _getJsonFilesInDirectory(
           ref.read(directoriesProvider).workshopDir);
 
       List<Mod> jsonListMods = [];
@@ -61,22 +61,21 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         jsonListMods = jsonList.map((json) => Mod.fromJson(json)).toList();
       }
 
-      for (final workshopDirJsonFilePath in workshopDirJsonFilePaths) {
-        final workshopDirJsonFileName =
-            path.basenameWithoutExtension(workshopDirJsonFilePath);
+      for (final jsonPath in workshopJsonsPaths) {
+        final workshopJsonFileName = path.basenameWithoutExtension(jsonPath);
 
-        if (workshopDirJsonFileName == "WorkshopFileInfos") continue;
+        if (workshopJsonFileName == "WorkshopFileInfos") continue;
 
         final modIsInJsonList = jsonListMods.firstWhereOrNull((jsonItem) =>
             path.basenameWithoutExtension(jsonItem.directory) ==
-            workshopDirJsonFileName);
+            workshopJsonFileName);
 
         if (modIsInJsonList == null) {
-          final saveName = await _getSaveNameFromJson(workshopDirJsonFilePath);
+          final saveName = await _getSaveNameFromJson(jsonPath);
 
           if (saveName != null && saveName.isNotEmpty) {
             jsonListMods.add(Mod(
-              directory: workshopDirJsonFilePath,
+              directory: jsonPath,
               name: saveName,
               updateTime: 0,
             ));
@@ -149,8 +148,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         allMods.addAll(batchResults.whereType<Mod>());
       }
 
-      if (ref.read(selectedModProvider) != null) {
-        setSelectedMod(null);
+      final selectedMod = ref.read(selectedModProvider);
+      if (selectedMod != null) {
+        final updatedSelectedMod =
+            allMods.firstWhereOrNull((m) => m.fileName == selectedMod.fileName);
+        setSelectedMod(updatedSelectedMod);
       }
 
       if (modJsonFileName.isNotEmpty) {
@@ -364,19 +366,18 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         .any((type) => type.subtypes.contains(entry.value))));
   }
 
-  // Function to load and parse the JSON from a file
+  // Load and parse the JSON from a file
   Future<Map<String, String>> _extractUrlsFromJson(String filePath) async {
     try {
-      // Read the JSON file
       final file = File(filePath);
-      final jsonString = await file.readAsString();
+      if (!await file.exists()) {
+        return {};
+      }
 
-      // Parse the JSON string into a Dart object (Map or List depending on your structure)
+      final jsonString = await file.readAsString();
       final decodedJson = jsonDecode(jsonString);
 
-      // Extract URLs with reversed key-value relationships
       Map<String, String> urls = _extractUrlsWithReversedKeys(decodedJson);
-
       return urls;
     } catch (e) {
       debugPrint('_extractUrlsFromJson error: $e');
@@ -389,7 +390,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final List<String> jsonFilePaths = [];
 
     try {
-      final Directory directory = Directory(directoryPath);
+      final directory = Directory(directoryPath);
 
       if (!await directory.exists()) {
         return jsonFilePaths;

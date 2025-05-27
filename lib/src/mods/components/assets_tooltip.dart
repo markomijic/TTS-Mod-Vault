@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 
 class AssetsTooltip extends StatelessWidget {
@@ -20,54 +18,46 @@ class AssetsTooltip extends StatelessWidget {
           height: 1.5,
         ),
         children: [
+          // Status indicators
           TextSpan(
-            text: 'Red URL',
+            text: 'Asset Status:\n',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(
+            text: '• Red',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
           ),
-          TextSpan(text: ' - asset is not downloaded\n'),
+          TextSpan(text: ' - Not downloaded\n'),
           TextSpan(
-            text: 'Green URL',
+            text: '• Green',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
           ),
-          TextSpan(text: ' - asset is downloaded\n'),
+          TextSpan(text: ' - Downloaded\n'),
           TextSpan(
-            text: 'Blue URL',
+            text: '• Blue',
             style:
                 TextStyle(fontWeight: FontWeight.bold, color: Colors.lightBlue),
           ),
+          TextSpan(text: ' - Selected (right-clicked)\n\n'),
+
+          // Actions
+          TextSpan(
+            text: 'Actions:\n',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(text: '• Right-click any URL for asset options\n'),
           TextSpan(
               text:
-                  ' - asset URL has been selected and can be downloaded using the "Download" button\n\n'),
-          TextSpan(text: 'Click a '),
+                  '• Download button: Try to download all missing asset files\n'),
+          TextSpan(text: '• Cancel button: Cancel all downloads\n'),
           TextSpan(
-            text: 'red URL',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-          ),
-          TextSpan(text: ' to select it. Click a '),
-          TextSpan(
-            text: 'blue URL',
-            style:
-                TextStyle(fontWeight: FontWeight.bold, color: Colors.lightBlue),
-          ),
-          TextSpan(text: ' to deselect it.\nDouble-click a '),
-          TextSpan(
-            text: 'green URL',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-          ),
-          TextSpan(
-            text: Platform.isLinux
-                ? ' to open the folder containing the file in the file explorer.\n'
-                : ' to open the file in the file explorer.\n',
-          ),
-          TextSpan(
-            text:
-                'Click and hold any URL to copy it to the clipboard.\n\nThe Backup button will create a backup even if some files are missing.',
-          ),
+              text:
+                  '• Backup button: Create backup (even with missing asset files)'),
         ],
       ),
       child: Icon(
         Icons.help_outline,
-        size: 24,
+        size: 26,
       ),
     );
   }

@@ -14,7 +14,6 @@ class ModsGridCard extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
-    final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedMod = ref.watch(selectedModProvider);
 
     final isHovered = useState(false);
@@ -30,10 +29,9 @@ class ModsGridCard extends HookConsumerWidget {
       onExit: (_) => isHovered.value = false,
       child: GestureDetector(
         onTap: () {
-          if (actionInProgress) return;
+          if (ref.read(actionInProgressProvider)) return;
 
           ref.read(modsProvider.notifier).setSelectedMod(mod);
-          ref.read(selectedAssetProvider.notifier).resetState();
         },
         child: Container(
           decoration: BoxDecoration(

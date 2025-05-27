@@ -1,8 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart';
+import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
-import 'package:tts_mod_vault/src/state/asset/selected_asset.dart';
-import 'package:tts_mod_vault/src/state/asset/selected_asset_state.dart';
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
 import 'package:tts_mod_vault/src/state/backup/backup.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup.dart';
@@ -28,7 +26,7 @@ final directoriesProvider =
 );
 
 final existingAssetListsProvider =
-    StateNotifierProvider<ExistingAssetsNotifier, ExistingAssetsLists>(
+    StateNotifierProvider<ExistingAssetsNotifier, ExistingAssetsListsState>(
   (ref) => ExistingAssetsNotifier(ref),
 );
 
@@ -40,11 +38,6 @@ final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
     () => ModsStateNotifier());
 
 final selectedModProvider = StateProvider<Mod?>((ref) => null);
-
-final selectedAssetProvider =
-    StateNotifierProvider<SelectedAssetNotifier, SelectedAssetState?>(
-  (ref) => SelectedAssetNotifier(),
-);
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),

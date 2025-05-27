@@ -9,6 +9,7 @@ class DownloadProgressBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final downloadingType = ref.watch(downloadProvider).downloadingType;
+    final canceling = ref.watch(downloadProvider).cancelledDownloads;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -17,19 +18,28 @@ class DownloadProgressBar extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            if (downloadingType != null)
-              Text('Downloading ${downloadingType.label}'),
-            Padding(
-              padding: const EdgeInsets.only(right: 6.0),
-              child: ElevatedButton(
-                onPressed: () async {
-                  await ref
-                      .read(downloadProvider.notifier)
-                      .handleCancelDownloadsButton();
-                },
-                child: Text('Cancel'),
+            if (downloadingType != null && !canceling)
+              Text(
+                'Downloading ${downloadingType.label}',
+                style: TextStyle(fontSize: 16),
               ),
-            )
+            if (canceling)
+              Text(
+                'Cancelling downloads',
+                style: TextStyle(fontSize: 16),
+              ),
+            if (!canceling)
+              Padding(
+                padding: const EdgeInsets.only(right: 6.0),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await ref
+                        .read(downloadProvider.notifier)
+                        .handleCancelDownloadsButton();
+                  },
+                  child: Text('Cancel'),
+                ),
+              )
           ],
         ),
         Padding(

@@ -4,7 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/assets_url.dart'
     show AssetsUrl;
-import 'package:tts_mod_vault/src/state/asset/asset_model.dart' show Asset;
+import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
+    show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -12,7 +13,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         downloadProvider,
         modsProvider,
-        selectedAssetProvider,
         selectedModProvider;
 
 class AssetsListSection extends HookConsumerWidget {
@@ -27,7 +27,6 @@ class AssetsListSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedAssetNotifier = ref.watch(selectedAssetProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedMod = ref.watch(selectedModProvider);
@@ -84,8 +83,6 @@ class AssetsListSection extends HookConsumerWidget {
                         );
 
                         await ref.read(modsProvider.notifier).updateMod(name);
-
-                        selectedAssetNotifier.resetState();
                       },
                       child: Icon(Icons.download, size: 20),
                     ),

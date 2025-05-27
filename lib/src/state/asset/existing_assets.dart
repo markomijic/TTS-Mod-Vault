@@ -3,8 +3,8 @@ import 'dart:io' show Directory, File;
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
-import 'package:tts_mod_vault/src/state/asset/asset_type_lists.dart'
-    show ExistingAssetsLists;
+import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart'
+    show ExistingAssetsListsState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
@@ -12,10 +12,10 @@ import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show getFileNameFromURL, newUrl, oldUrl;
 
-class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsLists> {
+class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
   final Ref ref;
 
-  ExistingAssetsNotifier(this.ref) : super(ExistingAssetsLists.empty());
+  ExistingAssetsNotifier(this.ref) : super(ExistingAssetsListsState.empty());
 
   Future<void> loadExistingAssetsLists() async {
     debugPrint('loadExistingAssetsLists');

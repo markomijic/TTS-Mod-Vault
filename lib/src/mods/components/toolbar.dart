@@ -115,6 +115,10 @@ class Toolbar extends ConsumerWidget {
               if (!context.mounted) return;
 
               showDownloadDialog(context, currentVersion, newTagVersion);
+            } else {
+              if (context.mounted) {
+                showSnackBar(context, 'No new updates found');
+              }
             }
           },
           child: const Text('Check for updates'),

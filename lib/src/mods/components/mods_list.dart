@@ -3,11 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, HookConsumer, WidgetRef;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        actionInProgressProvider,
-        modsProvider,
-        selectedAssetProvider,
-        selectedModProvider;
+    show actionInProgressProvider, modsProvider, selectedModProvider;
 
 class ModsList extends ConsumerWidget {
   final List<Mod> mods;
@@ -23,7 +19,6 @@ class ModsList extends ConsumerWidget {
 
         return HookConsumer(
           builder: (context, ref, child) {
-            final actionInProgress = ref.watch(actionInProgressProvider);
             final selectedMod = ref.watch(selectedModProvider);
 
             return ListTile(
@@ -46,10 +41,9 @@ class ModsList extends ConsumerWidget {
               ),
               shape: Border.all(color: Colors.white, width: 2),
               onTap: () {
-                if (actionInProgress) return;
+                if (ref.read(actionInProgressProvider)) return;
 
                 ref.read(modsProvider.notifier).setSelectedMod(mod);
-                ref.read(selectedAssetProvider.notifier).resetState();
               },
             );
           },

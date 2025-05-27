@@ -1,5 +1,5 @@
-import 'package:tts_mod_vault/src/state/asset/asset_lists_model.dart';
-import 'package:tts_mod_vault/src/state/asset/asset_model.dart';
+import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart';
+import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
 class Mod {

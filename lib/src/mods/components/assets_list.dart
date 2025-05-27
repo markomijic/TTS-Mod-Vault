@@ -8,7 +8,7 @@ import 'package:tts_mod_vault/src/mods/components/assets_list_section.dart'
     show AssetsListSection;
 import 'package:tts_mod_vault/src/mods/components/assets_tooltip.dart'
     show AssetsTooltip;
-import 'package:tts_mod_vault/src/mods/components/progress_bar.dart'
+import 'package:tts_mod_vault/src/mods/components/download_progress_bar.dart'
     show DownloadProgressBar;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
@@ -22,6 +22,7 @@ class AssetsList extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedMod = ref.watch(selectedModProvider);
     final isDownloading = ref.watch(downloadProvider).isDownloading;
+    final cancelledDownloads = ref.watch(downloadProvider).cancelledDownloads;
 
     final selectedModHasAssets = useMemoized(
       () {
@@ -113,7 +114,7 @@ class AssetsList extends HookConsumerWidget {
         if (selectedMod != null)
           SizedBox(
             height: 80,
-            child: isDownloading
+            child: cancelledDownloads || isDownloading
                 ? DownloadProgressBar()
                 : selectedModHasAssets
                     ? AssetsActionButtons()

@@ -1,11 +1,11 @@
-class ExistingAssetsLists {
+class ExistingAssetsListsState {
   final List<String> assetBundles;
   final List<String> audio;
   final List<String> images;
   final List<String> models;
   final List<String> pdfs;
 
-  ExistingAssetsLists({
+  ExistingAssetsListsState({
     required this.assetBundles,
     required this.audio,
     required this.images,
@@ -13,21 +13,21 @@ class ExistingAssetsLists {
     required this.pdfs,
   });
 
-  ExistingAssetsLists.empty()
+  ExistingAssetsListsState.empty()
       : assetBundles = [],
         audio = [],
         images = [],
         models = [],
         pdfs = [];
 
-  ExistingAssetsLists copyWith({
+  ExistingAssetsListsState copyWith({
     List<String>? assetBundles,
     List<String>? audio,
     List<String>? images,
     List<String>? models,
     List<String>? pdfs,
   }) {
-    return ExistingAssetsLists(
+    return ExistingAssetsListsState(
       assetBundles: assetBundles ?? this.assetBundles,
       audio: audio ?? this.audio,
       images: images ?? this.images,

@@ -87,6 +87,15 @@ class ModsPage extends HookConsumerWidget {
                 Expanded(
                   child: mods.when(
                     data: (data) {
+                      if (data.mods.isEmpty) {
+                        return Center(
+                          child: Text(
+                              style: TextStyle(fontSize: 26),
+                              textAlign: TextAlign.center,
+                              "You don't seem to have any mods!\nSubscribe to some on the Steam workshop and then run Tabletop Simulator atleast once before restarting TTS Mod Vault!"),
+                        );
+                      }
+
                       return Row(
                         children: [
                           Expanded(

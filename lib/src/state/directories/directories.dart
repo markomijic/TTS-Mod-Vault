@@ -97,4 +97,15 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
         return state.pdfDir;
     }
   }
+
+  String? getRawDirectoryByType(AssetTypeEnum type) {
+    switch (type) {
+      case AssetTypeEnum.image:
+        return state.imagesRawDir;
+      case AssetTypeEnum.model:
+        return state.modelsRawDir;
+      default:
+        return null;
+    }
+  }
 }

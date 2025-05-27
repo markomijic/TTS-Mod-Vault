@@ -47,7 +47,25 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
           );
         }
 
-        await _processDirectory(assetType, referencedFiles);
+        final directory = Directory(ref
+            .read(directoriesProvider.notifier)
+            .getDirectoryByType(assetType));
+        if (await directory.exists()) {
+          await _processDirectory(directory, referencedFiles);
+        }
+
+        if (assetType == AssetTypeEnum.image ||
+            assetType == AssetTypeEnum.model) {
+          final rawDirPath = ref
+              .read(directoriesProvider.notifier)
+              .getRawDirectoryByType(assetType);
+          if (rawDirPath == null) continue;
+
+          final directory = Directory(rawDirPath);
+          if (!await directory.exists()) continue;
+
+          await _processDirectory(directory, referencedFiles);
+        }
       }
       referencedFiles.clear();
       state = state.copyWith(
@@ -65,18 +83,17 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
   }
 
   Future<void> _processDirectory(
-    AssetTypeEnum type,
+    Directory directory,
     Set<String> referencedFileNames,
   ) async {
-    final directory = Directory(
-        ref.read(directoriesProvider.notifier).getDirectoryByType(type));
-    if (!await directory.exists()) return;
-
     final List<FileSystemEntity> files = directory.listSync();
 
     for (final file in files) {
       if (file is File) {
         String fileName = p.basenameWithoutExtension(file.path);
+
+        // Ignore rawt/rawm files that are not from URL download
+        if (fileName.startsWith("file")) continue;
 
         // In case of old url naming scheme rename to new url to match existing assets lists
         if (fileName.startsWith(getFileNameFromURL(oldUrl))) {
@@ -105,7 +122,7 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
     }
 
     debugPrint(
-        '_processDirectory - processed ${type.name}, total files to delete is now: ${state.filesToDelete.length}');
+        'Processed ${directory.path}, total files to delete is now: ${state.filesToDelete.length}');
   }
 
   Future<void> executeDelete() async {

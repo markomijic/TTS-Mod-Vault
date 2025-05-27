@@ -158,28 +158,15 @@ class SettingsDialog extends HookConsumerWidget {
             child: ElevatedButton(
               onPressed: () async {
                 String? ttsDir = await FilePicker.platform.getDirectoryPath();
-
                 if (ttsDir == null) return;
 
-                WidgetsBinding.instance.addPostFrameCallback((_) async {
-                  if (!await ref
-                      .read(directoriesProvider.notifier)
-                      .isTtsDirectoryValid(ttsDir)) {
-                    if (context.mounted) {
-                      showSnackBar(
-                        context,
-                        'Invalid Tabletop Simulator directory',
-                      );
-                    }
-                    return;
-                  }
-
+                if (await ref
+                    .read(directoriesProvider.notifier)
+                    .isTtsDirectoryValid(ttsDir)) {
                   ref.read(modsProvider.notifier).setLoading();
-
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    await ref.read(loaderProvider).refreshAppData();
-                  });
-                });
+                  ref.read(loaderProvider).refreshAppData();
+                  if (context.mounted) Navigator.pop(context);
+                }
               },
               child: Text('Re-select TTS Directory'),
             ),
@@ -205,6 +192,7 @@ class SettingsDialog extends HookConsumerWidget {
               final inputValue = int.tryParse(textFieldController.text);
               if (inputValue == null || inputValue < 1 || inputValue > 99) {
                 showSnackBar(context, 'Please enter a number between 1 and 99');
+                if (context.mounted) Navigator.pop(context);
                 return;
               }
 

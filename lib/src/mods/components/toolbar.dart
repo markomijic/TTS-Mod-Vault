@@ -16,7 +16,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
 import 'package:tts_mod_vault/src/utils.dart'
     show
         checkForUpdatesOnGitHub,
-        openUrl,
         showConfirmDialog,
         showDownloadDialog,
         showSnackBar;
@@ -69,7 +68,7 @@ class Toolbar extends ConsumerWidget {
                           },
                         );
                       } else {
-                        showSnackBar(context, 'No files found to delete.');
+                        showSnackBar(context, 'No files found to delete');
                       }
                     },
                   );

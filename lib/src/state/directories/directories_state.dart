@@ -6,7 +6,9 @@ class DirectoriesState {
   final String assetBundlesDir;
   final String audioDir;
   final String imagesDir;
+  final String imagesRawDir;
   final String modelsDir;
+  final String modelsRawDir;
   final String pdfDir;
 
   const DirectoriesState({
@@ -17,7 +19,9 @@ class DirectoriesState {
     required this.assetBundlesDir,
     required this.audioDir,
     required this.imagesDir,
+    required this.imagesRawDir,
     required this.modelsDir,
+    required this.modelsRawDir,
     required this.pdfDir,
   });
 
@@ -31,7 +35,9 @@ class DirectoriesState {
       assetBundlesDir: '$modsDir/Assetbundles',
       audioDir: '$modsDir/Audio',
       imagesDir: '$modsDir/Images',
+      imagesRawDir: '$modsDir/Images Raw',
       modelsDir: '$modsDir/Models',
+      modelsRawDir: '$modsDir/Models Raw',
       pdfDir: '$modsDir/PDF',
     );
   }
@@ -46,7 +52,9 @@ class DirectoriesState {
       assetBundlesDir: emptyPath,
       audioDir: emptyPath,
       imagesDir: emptyPath,
+      imagesRawDir: emptyPath,
       modelsDir: emptyPath,
+      modelsRawDir: emptyPath,
       pdfDir: emptyPath,
     );
   }

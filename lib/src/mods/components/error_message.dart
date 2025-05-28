@@ -3,7 +3,7 @@ import 'dart:io' show exit;
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/mods/components/help_and_feedback_button.dart'
+import 'package:tts_mod_vault/src/mods/components/components.dart'
     show HelpAndFeedbackButton;
 
 class ErrorMessage extends ConsumerWidget {

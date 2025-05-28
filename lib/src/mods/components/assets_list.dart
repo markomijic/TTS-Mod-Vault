@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/mods/components/assets_action_buttons.dart'
-    show AssetsActionButtons;
-import 'package:tts_mod_vault/src/mods/components/assets_list_section.dart'
-    show AssetsListSection;
-import 'package:tts_mod_vault/src/mods/components/assets_tooltip.dart'
-    show AssetsTooltip;
-import 'package:tts_mod_vault/src/mods/components/download_progress_bar.dart'
-    show DownloadProgressBar;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show
+        AssetsActionButtons,
+        AssetsListSection,
+        AssetsTooltip,
+        DownloadProgressBar;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'

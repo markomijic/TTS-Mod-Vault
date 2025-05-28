@@ -125,7 +125,7 @@ void showConfirmDialog(
   }
 }
 
-void showDownloadDialog(
+Future<void> showDownloadDialog(
   BuildContext context,
   String currentVersion,
   String latestVersion,
@@ -319,7 +319,6 @@ Future<String> checkForUpdatesOnGitHub() async {
 }
 
 bool _checkIfLatestVersionIsNewer(String current, String latest) {
-  return true;
   debugPrint(
       "_checkIfLatestVersionIsNewer - current: $current, latest: $latest");
 

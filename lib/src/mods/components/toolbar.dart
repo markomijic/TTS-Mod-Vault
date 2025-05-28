@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
-import 'package:tts_mod_vault/src/mods/components/help_and_feedback_button.dart'
+import 'package:tts_mod_vault/src/mods/components/components.dart'
     show HelpAndFeedbackButton;
 import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
@@ -114,7 +114,7 @@ class Toolbar extends ConsumerWidget {
 
               if (!context.mounted) return;
 
-              showDownloadDialog(context, currentVersion, newTagVersion);
+              await showDownloadDialog(context, currentVersion, newTagVersion);
             } else {
               if (context.mounted) {
                 showSnackBar(context, 'No new updates found');

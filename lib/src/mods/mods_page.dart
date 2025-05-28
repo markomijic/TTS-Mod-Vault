@@ -2,14 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useEffect;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, HookConsumerWidget, WidgetRef;
-import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
-import 'package:tts_mod_vault/src/mods/components/assets_list.dart'
-    show AssetsList;
-import 'package:tts_mod_vault/src/mods/components/error_message.dart'
-    show ErrorMessage;
-import 'package:tts_mod_vault/src/mods/components/mods_grid.dart' show ModsGrid;
-import 'package:tts_mod_vault/src/mods/components/mods_list.dart' show ModsList;
-import 'package:tts_mod_vault/src/mods/components/toolbar.dart' show Toolbar;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show AssetsList, ErrorMessage, ModsGrid, ModsList, Toolbar;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -19,8 +13,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         selectedModProvider,
         settingsProvider;
-import 'package:tts_mod_vault/src/utils.dart'
-    show checkForUpdatesOnGitHub, showDownloadDialog, showSnackBar;
+import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
@@ -49,25 +42,6 @@ class ModsPage extends HookConsumerWidget {
 
       return null;
     }, [cleanUpState]);
-
-    // Check for updates on initial opening of page
-    useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!ref.read(settingsProvider).checkForUpdatesOnStart) return;
-
-        final newTagVersion = await checkForUpdatesOnGitHub();
-
-        if (newTagVersion.isNotEmpty) {
-          final packageInfo = await PackageInfo.fromPlatform();
-          final currentVersion = packageInfo.version;
-
-          if (!context.mounted) return;
-
-          showDownloadDialog(context, currentVersion, newTagVersion);
-        }
-      });
-      return null;
-    }, []);
 
     return SafeArea(
       child: Scaffold(

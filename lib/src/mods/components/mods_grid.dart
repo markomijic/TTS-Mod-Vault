@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/mods/components/mods_grid_card.dart'
+import 'package:tts_mod_vault/src/mods/components/components.dart'
     show ModsGridCard;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 

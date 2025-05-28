@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useEffect, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/mods/components/error_message.dart'
+import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
     show ErrorMessage;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -14,7 +15,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         settingsProvider,
         storageProvider;
-import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
+import 'package:tts_mod_vault/src/utils.dart'
+    show checkForUpdatesOnGitHub, showDownloadDialog, showSnackBar;
 
 class SplashPage extends HookConsumerWidget {
   const SplashPage({super.key});
@@ -29,14 +31,28 @@ class SplashPage extends HookConsumerWidget {
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        // Initialize storage, TTS Directory and Settings before loading mod data
+        // Initialize storage, TTS Data Directory and Settings
         await ref.read(storageProvider).initializeStorage();
         await ref.read(settingsProvider.notifier).initializeSettings();
         directoriesNotifier.initializeDirectories();
 
+        // Check for updates on start
+        if (ref.read(settingsProvider).checkForUpdatesOnStart) {
+          final newTagVersion = await checkForUpdatesOnGitHub();
+
+          if (newTagVersion.isNotEmpty) {
+            final packageInfo = await PackageInfo.fromPlatform();
+            final currentVersion = packageInfo.version;
+
+            if (context.mounted) {
+              await showDownloadDialog(context, currentVersion, newTagVersion);
+            }
+          }
+        }
+
+        // Load existing assets lists and mods data if TTS Data Directories exist
         if (await directoriesNotifier
             .isTtsDirectoryValid(ref.read(directoriesProvider).ttsDir)) {
-          // Load existing assets lists and mods data if TTS Directories exist
           await loaderNotifier.loadAppData(
             () => Navigator.of(context).pushReplacementNamed('/mods'),
           );
@@ -65,7 +81,7 @@ class SplashPage extends HookConsumerWidget {
                       spacing: 10,
                       children: [
                         Text(
-                          'Tabletop Simulator directory has not been found, please locate it manually.\nIt should contain folders: DLC, Mods, Saves, Screenshots.',
+                          'Tabletop Simulator data directory has not been found, please locate it manually.\nIt should contain folders: DLC, Mods, Saves, Screenshots.',
                           textAlign: TextAlign.center,
                         ),
                         Row(
@@ -79,6 +95,7 @@ class SplashPage extends HookConsumerWidget {
                                   ttsDir = await FilePicker.platform
                                       .getDirectoryPath();
                                 } catch (e) {
+                                  debugPrint("File picker error $e");
                                   if (context.mounted) {
                                     showSnackBar(
                                         context, "Failed to open file picker");
@@ -99,7 +116,7 @@ class SplashPage extends HookConsumerWidget {
                                     if (context.mounted) {
                                       showSnackBar(
                                         context,
-                                        'Invalid Tabletop Simulator directory',
+                                        'Invalid Tabletop Simulator data directory',
                                       );
                                     }
                                     return;

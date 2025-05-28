@@ -148,7 +148,7 @@ class SettingsDialog extends HookConsumerWidget {
         actions: [
           Tooltip(
             message:
-                'A valid Tabletop Simulator directory should contain folders: DLC, Mods, Saves and Screenshots.\nData will be refreshed upon selecting a valid directory.',
+                'A valid Tabletop Simulator data directory should contain folders: DLC, Mods, Saves and Screenshots.\nData will be refreshed upon selecting a valid directory.',
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: Colors.white, width: 2),
@@ -161,6 +161,7 @@ class SettingsDialog extends HookConsumerWidget {
                 try {
                   ttsDir = await FilePicker.platform.getDirectoryPath();
                 } catch (e) {
+                  debugPrint("File picker error $e");
                   if (context.mounted) {
                     showSnackBar(context, "Failed to open file picker");
                     Navigator.pop(context);

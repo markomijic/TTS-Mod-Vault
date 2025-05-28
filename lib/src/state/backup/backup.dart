@@ -1,7 +1,8 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
+import 'package:file_picker/file_picker.dart'
+    show FilePicker, FilePickerResult, FileType;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:archive/archive.dart'
     show Archive, ArchiveFile, ZipDecoder, ZipEncoder;
@@ -28,11 +29,19 @@ class BackupNotifier extends StateNotifier<BackupState> {
         importInProgress: true,
         lastImportedJsonFileName: "",
       );
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['ttsmod'],
-        allowMultiple: false,
-      );
+
+      FilePickerResult? result;
+      try {
+        result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['ttsmod'],
+          allowMultiple: false,
+        );
+      } catch (e) {
+        debugPrint("importBackup - file picker error: $e");
+        return false;
+      }
+
       if (result == null || result.files.isEmpty) {
         state = state.copyWith(importInProgress: false);
         return false;

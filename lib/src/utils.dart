@@ -12,8 +12,10 @@ import 'package:url_launcher/url_launcher.dart'
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
-const oldUrl = 'http://cloud-3.steamusercontent.com/';
-const newUrl = 'https://steamusercontent-a.akamaihd.net/';
+const oldUrl = "http://cloud-3.steamusercontent.com/";
+const newUrl = "https://steamusercontent-a.akamaihd.net/";
+const downloadPageUrl =
+    "https://www.nexusmods.com/tabletopsimulator/mods/426?tab=files";
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
@@ -154,12 +156,10 @@ void showDownloadDialog(
 
   switch (result) {
     case 'download':
-      // TODO Update with URL for nexus mods
       Future.delayed(kThemeChangeDuration, () async {
-        final url = getGitHubReleaseUrl(latestVersion);
-        final result = await openUrl(url);
+        final result = await openUrl(downloadPageUrl);
         if (!result && context.mounted) {
-          showSnackBar(context, "Failed to open: $url");
+          showSnackBar(context, "Failed to open: $downloadPageUrl");
         }
       });
       break;
@@ -319,6 +319,7 @@ Future<String> checkForUpdatesOnGitHub() async {
 }
 
 bool _checkIfLatestVersionIsNewer(String current, String latest) {
+  return true;
   debugPrint(
       "_checkIfLatestVersionIsNewer - current: $current, latest: $latest");
 

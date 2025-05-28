@@ -74,8 +74,18 @@ class SplashPage extends HookConsumerWidget {
                           children: [
                             ElevatedButton(
                               onPressed: () async {
-                                String? ttsDir = await FilePicker.platform
-                                    .getDirectoryPath();
+                                String? ttsDir;
+                                try {
+                                  ttsDir = await FilePicker.platform
+                                      .getDirectoryPath();
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    showSnackBar(
+                                        context, "Failed to open file picker");
+                                    Navigator.pop(context);
+                                  }
+                                  return;
+                                }
 
                                 if (ttsDir == null) return;
                                 showTtsDirNotFound.value = false;
@@ -83,7 +93,7 @@ class SplashPage extends HookConsumerWidget {
                                 WidgetsBinding.instance
                                     .addPostFrameCallback((_) async {
                                   if (!await directoriesNotifier
-                                      .isTtsDirectoryValid(ttsDir)) {
+                                      .isTtsDirectoryValid(ttsDir!)) {
                                     showTtsDirNotFound.value = true;
 
                                     if (context.mounted) {

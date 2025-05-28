@@ -157,7 +157,17 @@ class SettingsDialog extends HookConsumerWidget {
             textStyle: TextStyle(color: Colors.black),
             child: ElevatedButton(
               onPressed: () async {
-                String? ttsDir = await FilePicker.platform.getDirectoryPath();
+                String? ttsDir;
+                try {
+                  ttsDir = await FilePicker.platform.getDirectoryPath();
+                } catch (e) {
+                  if (context.mounted) {
+                    showSnackBar(context, "Failed to open file picker");
+                    Navigator.pop(context);
+                  }
+                  return;
+                }
+
                 if (ttsDir == null) return;
 
                 if (await ref

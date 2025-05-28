@@ -10,7 +10,8 @@ class HelpAndFeedbackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () async {
-        final url = ""; // TODO replace with steam forum thread
+        final url =
+            "https://steamcommunity.com/app/286160/discussions/0/591772542952298985/";
         final result = await openUrl(url);
         if (!result && context.mounted) {
           showSnackBar(context, "Failed to open: $url");

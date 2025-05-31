@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'dart:convert' show json;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
@@ -14,8 +15,8 @@ import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
 const oldUrl = "http://cloud-3.steamusercontent.com/";
 const newUrl = "https://steamusercontent-a.akamaihd.net/";
-const downloadPageUrl =
-    "https://www.nexusmods.com/tabletopsimulator/mods/426?tab=files";
+const nexusModsDownloadPageUrl =
+    "https://www.nexusmods.com/tabletopsimulator/mods/426";
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
@@ -145,8 +146,12 @@ Future<void> showDownloadDialog(
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop('download'),
-              child: const Text('Open download page'),
+              onPressed: () => Navigator.of(context).pop('nexusmods'),
+              child: const Text('Download from Nexus Mods'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('github'),
+              child: const Text('Download from GitHub'),
             ),
           ],
         ),
@@ -155,11 +160,21 @@ Future<void> showDownloadDialog(
   );
 
   switch (result) {
-    case 'download':
+    case 'nexusmods':
       Future.delayed(kThemeChangeDuration, () async {
-        final result = await openUrl(downloadPageUrl);
+        final result = await openUrl(nexusModsDownloadPageUrl);
         if (!result && context.mounted) {
-          showSnackBar(context, "Failed to open: $downloadPageUrl");
+          showSnackBar(context, "Failed to open: $nexusModsDownloadPageUrl");
+        }
+      });
+      break;
+
+    case 'github':
+      Future.delayed(kThemeChangeDuration, () async {
+        final url = getGitHubReleaseUrl(latestVersion);
+        final result = await openUrl(url);
+        if (!result && context.mounted) {
+          showSnackBar(context, "Failed to open: $url");
         }
       });
       break;
@@ -333,4 +348,17 @@ bool _checkIfLatestVersionIsNewer(String current, String latest) {
     if (latestParts[i] < currentParts[i]) return false;
   }
   return false;
+}
+
+String dateTimeToUnixTimestamp(String dateString) {
+  DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
+  DateTime dateTime = format.parse(dateString);
+  return (dateTime.millisecondsSinceEpoch / 1000).floor().toString();
+}
+
+String unixTimestampToDateTime(String unixTimestamp) {
+  int timestamp = int.parse(unixTimestamp);
+  DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+  DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
+  return format.format(dateTime);
 }

@@ -11,7 +11,7 @@ class Storage {
   bool _initialized = false;
 
   // Constants for storage keys
-  static const String updatedTimeSuffix = 'UpdatedTime';
+  static const String dateTimeStampSuffix = 'DateTimeStamp';
   static const String listsSuffix = 'Lists';
   static const String ttsDirKey = 'TTSDir';
   static const String settingsKey = 'TTSModVaultSettings';
@@ -76,9 +76,9 @@ class Storage {
     return await _prefs.setString(modName, value);
   }
 
-  Future<void> saveModUpdateTime(String modName, int timestamp) async {
+  Future<void> saveModDateTimeStamp(String modName, String timestamp) async {
     if (!_initialized) await initializeStorage();
-    return await _prefs.setInt('$modName$updatedTimeSuffix', timestamp);
+    return await _prefs.setString('$modName$dateTimeStampSuffix', timestamp);
   }
 
   Future<void> saveModMap(String modName, Map<String, String> data) async {
@@ -91,9 +91,9 @@ class Storage {
     return _prefs.getString(modName);
   }
 
-  int? getModUpdateTime(String modName) {
+  String? getModDateTimeStamp(String modName) {
     if (!_initialized) return null;
-    return _prefs.getInt('$modName$updatedTimeSuffix');
+    return _prefs.getString('$modName$dateTimeStampSuffix');
   }
 
   Map<String, String>? getModAssetLists(String jsonFileName) {
@@ -107,14 +107,14 @@ class Storage {
 
   Future<void> saveModData(
     String modName,
-    int updateTime,
+    String dateTimeStamp,
     Map<String, String> data,
   ) async {
     if (!_initialized) await initializeStorage();
 
     await Future.wait([
       saveMod(modName, modName),
-      saveModUpdateTime(modName, updateTime),
+      saveModDateTimeStamp(modName, dateTimeStamp),
       saveModMap(modName, data)
     ]);
   }
@@ -124,7 +124,7 @@ class Storage {
 
     await Future.wait([
       _prefs.remove(modName),
-      _prefs.remove('$modName$updatedTimeSuffix'),
+      _prefs.remove('$modName$dateTimeStampSuffix'),
       _prefs.remove('$modName$listsSuffix')
     ]);
   }

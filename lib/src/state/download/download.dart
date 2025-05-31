@@ -38,7 +38,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (ref.read(selectedModProvider) != null) {
       await ref
           .read(modsProvider.notifier)
-          .updateMod(ref.read(selectedModProvider)!.name);
+          .updateModBySaveName(ref.read(selectedModProvider)!.saveName);
     }
   }
 
@@ -66,7 +66,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
 
     await downloadFiles(
-      modName: mod.name,
+      modName: mod.saveName,
       modAssetListUrls: mod.assetLists!.assetBundles
           .where((e) => !e.fileExists)
           .map((e) => e.url)
@@ -75,7 +75,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     );
 
     await downloadFiles(
-      modName: mod.name,
+      modName: mod.saveName,
       modAssetListUrls: mod.assetLists!.audio
           .where((e) => !e.fileExists)
           .map((e) => e.url)
@@ -84,7 +84,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     );
 
     await downloadFiles(
-      modName: mod.name,
+      modName: mod.saveName,
       modAssetListUrls: mod.assetLists!.images
           .where((e) => !e.fileExists)
           .map((e) => e.url)
@@ -93,7 +93,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     );
 
     await downloadFiles(
-      modName: mod.name,
+      modName: mod.saveName,
       modAssetListUrls: mod.assetLists!.models
           .where((e) => !e.fileExists)
           .map((e) => e.url)
@@ -102,7 +102,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     );
 
     await downloadFiles(
-      modName: mod.name,
+      modName: mod.saveName,
       modAssetListUrls: mod.assetLists!.pdf
           .where((e) => !e.fileExists)
           .map((e) => e.url)

@@ -148,7 +148,7 @@ class SettingsDialog extends HookConsumerWidget {
         actions: [
           Tooltip(
             message:
-                'A valid Tabletop Simulator data directory should contain folders: DLC, Mods, Saves and Screenshots.\nData will be refreshed upon selecting a valid directory.',
+                'A valid Tabletop Simulator data directory must contain folders: DLC, Mods, Saves and Screenshots.\nData will be refreshed upon selecting a valid directory.',
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: Colors.white, width: 2),

@@ -63,7 +63,7 @@ class ModsGridCard extends HookConsumerWidget {
                       color: Colors.blueGrey,
                       alignment: Alignment.center,
                       child: Text(
-                        mod.name,
+                        mod.saveName,
                         textAlign: TextAlign.center,
                         maxLines: 5,
                         overflow: TextOverflow.ellipsis,
@@ -79,7 +79,7 @@ class ModsGridCard extends HookConsumerWidget {
                     child: Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: mod.name),
+                          TextSpan(text: mod.saveName),
                           TextSpan(
                             text: mod.totalCount != null && mod.totalCount! > 0
                                 ? "\n(${mod.totalExistsCount}/${mod.totalCount})"

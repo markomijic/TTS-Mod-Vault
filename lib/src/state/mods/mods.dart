@@ -1,4 +1,4 @@
-import 'dart:convert' show json, jsonDecode;
+import 'dart:convert' show jsonDecode;
 import 'dart:io' show Directory, File, FileSystemEntity;
 
 import 'package:collection/collection.dart';
@@ -22,7 +22,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider,
         storageProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getFileNameFromURL, newUrl, oldUrl;
+    show dateTimeToUnixTimestamp, getFileNameFromURL, newUrl, oldUrl;
 
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
@@ -43,48 +43,35 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     setLoading();
 
     try {
-      final workShopFileInfosPath = path.join(
-        ref.read(directoriesProvider).workshopDir,
-        'WorkshopFileInfos.json',
-      );
-
       final workshopJsonsPaths = await _getJsonFilesInDirectory(
           ref.read(directoriesProvider).workshopDir);
 
       List<Mod> jsonListMods = [];
 
-      if (await File(workShopFileInfosPath).exists()) {
-        final String jsonString =
-            await File(workShopFileInfosPath).readAsString();
-        final List<dynamic> jsonList = json.decode(jsonString);
-
-        jsonListMods = jsonList.map((json) => Mod.fromJson(json)).toList();
-      }
-
       for (final jsonPath in workshopJsonsPaths) {
-        final workshopJsonFileName = path.basenameWithoutExtension(jsonPath);
+        final jsonFileName = path.basenameWithoutExtension(jsonPath);
 
-        if (workshopJsonFileName == "WorkshopFileInfos") continue;
+        if (jsonFileName == "WorkshopFileInfos") continue;
 
-        final modIsInJsonList = jsonListMods.firstWhereOrNull((jsonItem) =>
-            path.basenameWithoutExtension(jsonItem.directory) ==
-            workshopJsonFileName);
+        final File file = File(jsonPath);
+        final String jsonString = await file.readAsString();
+        final Map<String, dynamic> jsonData = jsonDecode(jsonString);
 
-        if (modIsInJsonList == null) {
-          final saveName = await _getSaveNameFromJson(jsonPath);
+        final saveName = await _getSaveNameFromJson(jsonData);
+        final dateTimeStamp = await _getDateTimeStampFromJson(jsonData);
 
-          if (saveName != null && saveName.isNotEmpty) {
-            jsonListMods.add(Mod(
-              directory: jsonPath,
-              name: saveName,
-              updateTime: 0,
-            ));
-          }
+        if (saveName != null && saveName.isNotEmpty) {
+          jsonListMods.add(Mod(
+            jsonFilePath: jsonPath,
+            saveName: saveName,
+            dateTimeStamp: dateTimeStamp,
+            jsonFileName: jsonFileName,
+          ));
         }
       }
 
       // Sort Mods alphabetically
-      jsonListMods.sort((a, b) => a.name.compareTo(b.name));
+      jsonListMods.sort((a, b) => a.saveName.compareTo(b.saveName));
 
       // Process mods in groups of batch size at most
       const int batchSize = 5;
@@ -95,34 +82,33 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         debugPrint('loadModsData - processing batch of size: ${batch.length}');
 
         final batchResults = await Future.wait(
-          batch.map((item) async {
+          batch.map((mod) async {
             try {
-              if (await File(path.normalize(item.directory)).exists()) {
-                final jsonFileName =
-                    path.basenameWithoutExtension(item.directory);
+              if (await File(mod.jsonFilePath).exists()) {
                 final storage = ref.read(storageProvider);
 
                 // Get cached data
-                final cachedMod = storage.getModName(jsonFileName);
-                final cachedUpdateTime = storage.getModUpdateTime(jsonFileName);
-                final cachedAssetLists = storage.getModAssetLists(jsonFileName);
+                final cachedMod = storage.getModName(mod.jsonFileName);
+                final cachedUpdateTime =
+                    storage.getModDateTimeStamp(mod.jsonFileName);
+                final cachedAssetLists =
+                    storage.getModAssetLists(mod.jsonFileName);
 
                 // Check if update is needed
-                final updateTimeChanged = cachedUpdateTime != item.updateTime;
+                final updateTimeChanged = cachedUpdateTime != mod.dateTimeStamp;
                 final needsRefresh = cachedMod == null || updateTimeChanged;
 
                 Map<String, String>? jsonURLs;
 
                 if (needsRefresh) {
-                  jsonURLs = cachedAssetLists ??
-                      await _extractUrlsFromJson(item.directory);
+                  jsonURLs = await _extractUrlsFromJson(mod.jsonFilePath);
 
                   if (updateTimeChanged) {
-                    await storage.deleteMod(jsonFileName);
+                    await storage.deleteMod(mod.jsonFileName);
                   }
 
                   await storage.saveModData(
-                      jsonFileName, item.updateTime, jsonURLs);
+                      mod.jsonFileName, mod.dateTimeStamp ?? '', jsonURLs);
                 } else {
                   jsonURLs = cachedAssetLists;
                 }
@@ -130,10 +116,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
                 // Uncomment this to delete all stored mod data
                 // await storage.deleteMod(jsonFileName);
 
-                return _getModData(
-                    item, jsonFileName, jsonURLs ?? <String, String>{});
+                return _getModData(mod, jsonURLs ?? <String, String>{});
               } else {
-                debugPrint('loadModsData - missing JSON: ${item.directory}');
+                debugPrint('loadModsData - missing JSON: ${mod.jsonFilePath}');
                 return null;
               }
             } catch (e) {
@@ -150,9 +135,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       final selectedMod = ref.read(selectedModProvider);
       if (selectedMod != null) {
-        final updatedSelectedMod =
-            allMods.firstWhereOrNull((m) => m.fileName == selectedMod.fileName);
-        setSelectedMod(updatedSelectedMod);
+        setSelectedMod(allMods.firstWhereOrNull(
+            (m) => m.jsonFilePath == selectedMod.jsonFilePath));
       }
 
       if (modJsonFileName.isNotEmpty) {
@@ -173,18 +157,17 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<void> updateMod(String modName) async {
+  Future<void> updateModBySaveName(String modName) async {
     try {
       Mod? updatedMod;
 
       final updatedMods = await Future.wait(
         state.value!.mods.map((mod) async {
-          if (mod.name == modName && mod.fileName != null) {
+          if (mod.saveName == modName) {
             updatedMod = await _getModData(
               mod,
-              mod.fileName!,
-              ref.read(storageProvider).getModAssetLists(mod.fileName!) ??
-                  await _extractUrlsFromJson(mod.directory),
+              ref.read(storageProvider).getModAssetLists(mod.jsonFileName) ??
+                  await _extractUrlsFromJson(mod.jsonFilePath),
             );
 
             if (updatedMod != null) return updatedMod!;
@@ -205,15 +188,14 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   Future<Mod> _getModData(
-      Mod mod, String fileName, Map<String, String> jsonURLs) async {
+    Mod mod,
+    Map<String, String> jsonURLs,
+  ) async {
     final assetLists = _getAssetListsFromUrls(jsonURLs);
-    final imageFilePath = await _getImageFilePath(mod.directory, fileName);
+    final imageFilePath =
+        await _getImageFilePath(mod.jsonFilePath, mod.jsonFileName);
 
-    return Mod(
-      directory: mod.directory,
-      name: mod.name,
-      updateTime: mod.updateTime,
-      fileName: fileName,
+    return mod.copyWith(
       imageFilePath: imageFilePath,
       assetLists: assetLists.$1,
       totalCount: assetLists.$2,
@@ -247,33 +229,30 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   List<Asset> _getAssetsByType(List<String> urls, AssetTypeEnum type) {
-    final filePaths = <(String, String)>[];
+    final assetUrls = <String>[];
 
     for (final url in urls) {
       if (url.startsWith("file:///")) continue;
 
-      final updatedUrl = _replaceInUrl(url, oldUrl, newUrl);
-
-      final filePath = path.joinAll([
-        ref.read(directoriesProvider.notifier).getDirectoryByType(type),
-        getFileNameFromURL(updatedUrl),
-      ]);
-
-      filePaths.add((updatedUrl, filePath));
+      assetUrls.add(_replaceInUrl(url, oldUrl, newUrl));
     }
 
-    final existenceChecks = filePaths
-        .map((filePath) => ref
+    final existenceChecks = assetUrls
+        .map((assetUrl) => ref
             .read(existingAssetListsProvider.notifier)
-            .doesAssetFileExist(getFileNameFromURL(filePath.$1), type))
+            .doesAssetFileExist(getFileNameFromURL(assetUrl), type))
         .toList();
 
     return List.generate(
-      filePaths.length,
+      assetUrls.length,
       (i) => Asset(
-        url: filePaths[i].$1,
+        url: assetUrls[i],
         fileExists: existenceChecks[i],
-        filePath: existenceChecks[i] ? path.normalize(filePaths[i].$2) : null,
+        filePath: existenceChecks[i]
+            ? ref
+                .read(existingAssetListsProvider.notifier)
+                .getAssetFilePath(getFileNameFromURL(assetUrls[i]), type)
+            : null,
       ),
     );
   }
@@ -293,7 +272,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
 
     final results = AssetTypeEnum.values
-        .map((type) => _getAssetsByType(urlsByType[type]!, type))
+        .map((type) => _getAssetsByType(urlsByType[type] ?? [], type))
         .toList();
 
     final totalCount = results.expand((list) => list).length;
@@ -319,7 +298,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       List<Mod> mods, String jsonFileName) async {
     if (mods.isNotEmpty) {
       final foundMod =
-          mods.firstWhereOrNull((mod) => mod.fileName == jsonFileName);
+          mods.firstWhereOrNull((mod) => mod.jsonFileName == jsonFileName);
 
       if (foundMod != null) setSelectedMod(foundMod);
     }
@@ -402,7 +381,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         if (entity is File) {
           // Check if the file has a .json extension
           if (path.extension(entity.path).toLowerCase() == '.json') {
-            jsonFilePaths.add(entity.path);
+            jsonFilePaths.add(path.normalize(entity.path));
           }
         }
       }
@@ -414,14 +393,25 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<String?> _getSaveNameFromJson(String filePath) async {
+  Future<String?> _getSaveNameFromJson(Map<String, dynamic> jsonData) async {
     try {
-      final File file = File(filePath);
-      final String jsonString = await file.readAsString();
-      final Map<String, dynamic> jsonData = jsonDecode(jsonString);
-
       if (jsonData.containsKey('SaveName')) {
         return jsonData['SaveName'] as String;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint("_getSaveNameFromJson error: $e");
+      return null;
+    }
+  }
+
+  Future<String?> _getDateTimeStampFromJson(
+      Map<String, dynamic> jsonData) async {
+    try {
+      if (jsonData.containsKey('Date')) {
+        final dateValue = jsonData['Date'] as String;
+        return dateTimeToUnixTimestamp(dateValue);
       }
 
       return null;

@@ -74,15 +74,17 @@ class AssetsListSection extends HookConsumerWidget {
                             .map((e) => e.fileExists ? null : e.url)
                             .nonNulls
                             .toList();
-                        final name = selectedMod.name;
+
                         await downloadNotifier.downloadFiles(
-                          modName: name,
+                          modName: selectedMod.saveName,
                           modAssetListUrls: urls,
                           type: type,
                           downloadingAllFiles: false,
                         );
 
-                        await ref.read(modsProvider.notifier).updateMod(name);
+                        await ref
+                            .read(modsProvider.notifier)
+                            .updateModBySaveName(selectedMod.saveName);
                       },
                       child: Icon(Icons.download, size: 20),
                     ),

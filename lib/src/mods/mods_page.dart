@@ -114,7 +114,7 @@ class ModsPage extends HookConsumerWidget {
                             ? "Import of ${backup.importFileName} in progress"
                             : "Import in progress")
                         : backup.backupInProgress
-                            ? "Backing up ${ref.read(selectedModProvider)?.name ?? ''}"
+                            ? "Backing up ${ref.read(selectedModProvider)?.saveName ?? ''}"
                             : "",
                     style: TextStyle(
                       fontSize: 32,

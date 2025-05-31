@@ -1,12 +1,8 @@
-import 'dart:io' show Directory, FileSystemEntity;
-
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:path/path.dart' as p show basenameWithoutExtension, normalize;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
@@ -16,18 +12,11 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
-        directoriesProvider,
         downloadProvider,
         modsProvider,
         selectedModProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show
-        getFileNameFromURL,
-        newUrl,
-        oldUrl,
-        openFileInExplorer,
-        openUrl,
-        showSnackBar;
+    show getFileNameFromURL, openFileInExplorer, openUrl, showSnackBar;
 
 class AssetsUrl extends HookConsumerWidget {
   final Asset asset;
@@ -117,32 +106,8 @@ class AssetsUrl extends HookConsumerWidget {
         if (value != null) {
           switch (value) {
             case ContextMenuActionEnum.openInExplorer:
-              if (asset.fileExists &&
-                  asset.filePath != null &&
-                  asset.filePath!.isNotEmpty) {
-                final directory = Directory(ref
-                    .read(directoriesProvider.notifier)
-                    .getDirectoryByType(type));
-                if (!await directory.exists()) return;
-
-                final List<FileSystemEntity> files = directory.listSync();
-
-                final fileToOpen = files.firstWhereOrNull((file) {
-                  final name = p.basenameWithoutExtension(file.path);
-
-                  final newUrlBase =
-                      p.basenameWithoutExtension(asset.filePath!);
-                  // Check if file exists under old url naming scheme
-                  final oldUrlbase = newUrlBase.replaceFirst(
-                      getFileNameFromURL(newUrl), getFileNameFromURL(oldUrl));
-
-                  return name.startsWith(newUrlBase) ||
-                      name.startsWith(oldUrlbase);
-                });
-
-                if (fileToOpen != null) {
-                  openFileInExplorer(p.normalize(fileToOpen.path));
-                }
+              if (asset.filePath != null && asset.filePath!.isNotEmpty) {
+                openFileInExplorer(asset.filePath!);
               }
               break;
 
@@ -181,12 +146,14 @@ class AssetsUrl extends HookConsumerWidget {
               if (selectedMod == null) break;
 
               await ref.read(downloadProvider.notifier).downloadFiles(
-                    modName: selectedMod.name,
+                    modName: selectedMod.saveName,
                     modAssetListUrls: [asset.url],
                     type: type,
                     downloadingAllFiles: false,
                   );
-              await ref.read(modsProvider.notifier).updateMod(selectedMod.name);
+              await ref
+                  .read(modsProvider.notifier)
+                  .updateModBySaveName(selectedMod.saveName);
               break;
           }
         }

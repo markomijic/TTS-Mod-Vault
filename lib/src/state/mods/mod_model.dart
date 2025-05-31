@@ -3,31 +3,45 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
 class Mod {
-  final String directory;
-  final String name;
-  final int updateTime;
-  final String? fileName;
+  final String jsonFilePath;
+  final String saveName;
+  final String? dateTimeStamp;
+  final String jsonFileName;
   final String? imageFilePath;
   final AssetLists? assetLists;
   final int? totalCount;
   final int? totalExistsCount;
 
   Mod({
-    required this.directory,
-    required this.name,
-    required this.updateTime,
-    this.fileName,
+    required this.jsonFilePath,
+    required this.saveName,
+    this.dateTimeStamp,
+    required this.jsonFileName,
     this.imageFilePath,
     this.assetLists,
     this.totalCount,
     this.totalExistsCount,
   });
 
-  factory Mod.fromJson(Map<String, dynamic> json) {
+  Mod copyWith({
+    String? jsonFilePath,
+    String? saveName,
+    String? dateTimeStamp,
+    String? jsonFileName,
+    String? imageFilePath,
+    AssetLists? assetLists,
+    int? totalCount,
+    int? totalExistsCount,
+  }) {
     return Mod(
-      directory: json['Directory'] as String,
-      name: json['Name'] as String,
-      updateTime: json['UpdateTime'] as int,
+      jsonFilePath: jsonFilePath ?? this.jsonFilePath,
+      saveName: saveName ?? this.saveName,
+      dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
+      jsonFileName: jsonFileName ?? this.jsonFileName,
+      imageFilePath: imageFilePath ?? this.imageFilePath,
+      assetLists: assetLists ?? this.assetLists,
+      totalCount: totalCount ?? this.totalCount,
+      totalExistsCount: totalExistsCount ?? this.totalExistsCount,
     );
   }
 

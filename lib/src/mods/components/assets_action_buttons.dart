@@ -41,7 +41,7 @@ class AssetsActionButtons extends HookConsumerWidget {
           onPressed: hasMissingFiles && !actionInProgress
               ? () async {
                   await downloadNotifier.downloadAllFiles(selectedMod);
-                  await modsNotifier.updateMod(selectedMod.name);
+                  await modsNotifier.updateModBySaveName(selectedMod.saveName);
                 }
               : null,
           child: const Text('Download'),

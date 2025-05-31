@@ -116,7 +116,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
     }
 
     String returnValue =
-        "Backup of ${mod.name} has been created in $saveDirectoryPath";
+        "Backup of ${mod.saveName} has been created in $saveDirectoryPath";
 
     try {
       // Add filepaths of assets
@@ -152,7 +152,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
 
       // Add JSON and image filepaths
-      filePaths.add(mod.directory);
+      filePaths.add(mod.jsonFilePath);
       if (mod.imageFilePath != null && mod.imageFilePath!.isNotEmpty) {
         filePaths.add(mod.imageFilePath!);
       }
@@ -163,7 +163,8 @@ class BackupNotifier extends StateNotifier<BackupState> {
         final file = File(filePath);
 
         if (!await file.exists()) {
-          debugPrint('createBackup - ${mod.name} does not exist: $filePath');
+          debugPrint(
+              'createBackup - ${mod.saveName} does not exist: $filePath');
           continue;
         }
 
@@ -185,7 +186,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
 
       final backupFileName =
-          sanitizeFileName("${mod.name}(${mod.fileName}).ttsmod");
+          sanitizeFileName("${mod.saveName}(${mod.jsonFileName}).ttsmod");
       final file = File(p.join(saveDirectoryPath, backupFileName));
       final zipData = ZipEncoder().encode(archive);
 

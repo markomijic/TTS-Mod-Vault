@@ -23,7 +23,7 @@ class ModsList extends ConsumerWidget {
 
             return ListTile(
               selected: selectedMod == mod,
-              title: Text(mod.name),
+              title: Text(mod.saveName),
               subtitle: mod.totalCount != null && mod.totalCount! > 0
                   ? Text('${mod.totalExistsCount}/${mod.totalCount}')
                   : null,

@@ -50,7 +50,7 @@ class AssetsList extends HookConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  selectedMod != null ? selectedMod.name : 'Select a mod',
+                  selectedMod != null ? selectedMod.saveName : 'Select a mod',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

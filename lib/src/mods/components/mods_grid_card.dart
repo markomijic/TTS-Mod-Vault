@@ -11,6 +11,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         selectedModProvider,
         settingsProvider;
+import 'package:tts_mod_vault/src/utils.dart' show showModContextMenu;
 
 class ModsGridCard extends HookConsumerWidget {
   final Mod mod;
@@ -38,6 +39,9 @@ class ModsGridCard extends HookConsumerWidget {
           if (ref.read(actionInProgressProvider)) return;
 
           ref.read(modsProvider.notifier).setSelectedMod(mod);
+        },
+        onSecondaryTapDown: (details) {
+          showModContextMenu(context, details.globalPosition, mod);
         },
         child: Container(
           decoration: BoxDecoration(

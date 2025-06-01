@@ -3,11 +3,15 @@ import 'dart:ui' show ImageFilter;
 import 'dart:convert' show json;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
+import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
+    show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:url_launcher/url_launcher.dart'
     show LaunchMode, canLaunchUrl, launchUrl;
 import 'package:http/http.dart' as http;
@@ -72,6 +76,10 @@ final ThemeData darkTheme = ThemeData(
 String getFileNameFromURL(String url) {
   // Keep only letters and numbers, remove everything else
   return url.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+}
+
+String getFileNameFromPath(String path) {
+  return p.basenameWithoutExtension(path);
 }
 
 void showSnackBar(BuildContext context, String message, [Duration? duration]) {
@@ -361,4 +369,85 @@ String unixTimestampToDateTime(String unixTimestamp) {
   DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
   DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
   return format.format(dateTime);
+}
+
+void showModContextMenu(BuildContext context, Offset position, Mod mod) {
+  showMenu(
+    context: context,
+    color: Theme.of(context).scaffoldBackgroundColor,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+      side: BorderSide(color: Colors.white, width: 2),
+    ),
+    position: RelativeRect.fromLTRB(
+      position.dx,
+      position.dy,
+      position.dx,
+      position.dy,
+    ),
+    items: [
+      PopupMenuItem(
+        value: ContextMenuActionEnum.openInExplorer,
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.folder_open),
+            Text('Open in File Explorer'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: ContextMenuActionEnum.copyUrl,
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.content_copy),
+            Text('Copy Name'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: ContextMenuActionEnum.copyFilename,
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.content_copy),
+            Text('Copy Filename'),
+          ],
+        ),
+      ),
+    ],
+  ).then((value) async {
+    if (value != null) {
+      switch (value) {
+        case ContextMenuActionEnum.openInExplorer:
+          openFileInExplorer(mod.jsonFilePath);
+          break;
+
+        case ContextMenuActionEnum.copyUrl:
+          await Clipboard.setData(ClipboardData(text: mod.saveName));
+          if (context.mounted) {
+            showSnackBar(
+              context,
+              '${mod.saveName} copied to clipboard',
+              Duration(seconds: 3),
+            );
+          }
+
+        case ContextMenuActionEnum.copyFilename:
+          await Clipboard.setData(ClipboardData(text: mod.jsonFileName));
+          if (context.mounted) {
+            showSnackBar(
+              context,
+              '${mod.jsonFileName} copied to clipboard',
+              Duration(seconds: 3),
+            );
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+  });
 }

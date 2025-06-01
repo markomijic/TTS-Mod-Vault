@@ -160,7 +160,7 @@ class AssetsUrl extends HookConsumerWidget {
       });
     }
 
-    return Container(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 2),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,

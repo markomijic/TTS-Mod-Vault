@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
@@ -16,7 +15,12 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         selectedModProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getFileNameFromURL, openFileInExplorer, openUrl, showSnackBar;
+    show
+        copyToClipboard,
+        getFileNameFromURL,
+        openFileInExplorer,
+        openUrl,
+        showSnackBar;
 
 class AssetsUrl extends HookConsumerWidget {
   final Asset asset;
@@ -119,25 +123,14 @@ class AssetsUrl extends HookConsumerWidget {
               break;
 
             case ContextMenuActionEnum.copyUrl:
-              await Clipboard.setData(ClipboardData(text: asset.url));
               if (context.mounted) {
-                showSnackBar(
-                  context,
-                  '${asset.url} copied to clipboard',
-                  Duration(seconds: 3),
-                );
+                copyToClipboard(context, asset.url);
               }
               break;
 
             case ContextMenuActionEnum.copyFilename:
-              final textToCopy = getFileNameFromURL(asset.url);
-              await Clipboard.setData(ClipboardData(text: textToCopy));
               if (context.mounted) {
-                showSnackBar(
-                  context,
-                  '$textToCopy copied to clipboard',
-                  Duration(seconds: 3),
-                );
+                copyToClipboard(context, getFileNameFromURL(asset.url));
               }
               break;
 
@@ -154,6 +147,9 @@ class AssetsUrl extends HookConsumerWidget {
               await ref
                   .read(modsProvider.notifier)
                   .updateModBySaveName(selectedMod.saveName);
+              break;
+
+            default:
               break;
           }
         }

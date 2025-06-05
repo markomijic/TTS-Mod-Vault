@@ -4,8 +4,10 @@ import 'dart:convert' show json;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
+import 'package:tts_mod_vault/src/mods/components/images_viewer.dart';
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -82,11 +84,13 @@ String getFileNameFromPath(String path) {
   return p.basenameWithoutExtension(path);
 }
 
-void showSnackBar(BuildContext context, String message, [Duration? duration]) {
+void showSnackBar(BuildContext context, String message) {
   final snackBar = SnackBar(
-    content: Text(message),
-    duration: duration ?? Duration(seconds: 5),
-    showCloseIcon: true,
+    content: Text(
+      message,
+      style: TextStyle(fontSize: 18),
+    ),
+    showCloseIcon: false,
   );
 
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -371,7 +375,22 @@ String unixTimestampToDateTime(String unixTimestamp) {
   return format.format(dateTime);
 }
 
-void showModContextMenu(BuildContext context, Offset position, Mod mod) {
+Future<void> copyToClipboard(BuildContext context, String textToCopy) async {
+  await Clipboard.setData(ClipboardData(text: textToCopy));
+  if (context.mounted) {
+    showSnackBar(
+      context,
+      '$textToCopy copied to clipboard',
+    );
+  }
+}
+
+void showModContextMenu(
+  BuildContext context,
+  WidgetRef ref,
+  Offset position,
+  Mod mod,
+) {
   showMenu(
     context: context,
     color: Theme.of(context).scaffoldBackgroundColor,
@@ -387,6 +406,16 @@ void showModContextMenu(BuildContext context, Offset position, Mod mod) {
     ),
     items: [
       PopupMenuItem(
+        value: ContextMenuActionEnum.openImagesViewer,
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.image),
+            Text('Open Images Viewer'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
         value: ContextMenuActionEnum.openInExplorer,
         child: Row(
           spacing: 8,
@@ -397,7 +426,7 @@ void showModContextMenu(BuildContext context, Offset position, Mod mod) {
         ),
       ),
       PopupMenuItem(
-        value: ContextMenuActionEnum.copyUrl,
+        value: ContextMenuActionEnum.copySaveName,
         child: Row(
           spacing: 8,
           children: [
@@ -420,28 +449,37 @@ void showModContextMenu(BuildContext context, Offset position, Mod mod) {
   ).then((value) async {
     if (value != null) {
       switch (value) {
+        case ContextMenuActionEnum.openImagesViewer:
+          if (context.mounted) {
+            final existingImages = mod
+                .getAssetsByType(AssetTypeEnum.image)
+                .where((element) =>
+                    element.fileExists &&
+                    element.filePath != null &&
+                    element.filePath!.isNotEmpty)
+                .toList();
+            showImagesViewer(
+              context,
+              existingImages,
+              mod.assetLists?.images.length ?? 0,
+              mod.saveName,
+            );
+          }
+          break;
+
         case ContextMenuActionEnum.openInExplorer:
           openFileInExplorer(mod.jsonFilePath);
           break;
 
-        case ContextMenuActionEnum.copyUrl:
-          await Clipboard.setData(ClipboardData(text: mod.saveName));
+        case ContextMenuActionEnum.copySaveName:
           if (context.mounted) {
-            showSnackBar(
-              context,
-              '${mod.saveName} copied to clipboard',
-              Duration(seconds: 3),
-            );
+            copyToClipboard(context, mod.saveName);
           }
+          break;
 
         case ContextMenuActionEnum.copyFilename:
-          await Clipboard.setData(ClipboardData(text: mod.jsonFileName));
           if (context.mounted) {
-            showSnackBar(
-              context,
-              '${mod.jsonFileName} copied to clipboard',
-              Duration(seconds: 3),
-            );
+            copyToClipboard(context, mod.jsonFileName);
           }
           break;
 

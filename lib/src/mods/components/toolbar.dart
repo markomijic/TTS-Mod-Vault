@@ -96,8 +96,7 @@ class Toolbar extends ConsumerWidget {
             final backupResult = await backupNotifier.importBackup();
 
             if (backupResult && context.mounted) {
-              showSnackBar(context, 'Import finished, refreshing data',
-                  Duration(seconds: 1));
+              showSnackBar(context, 'Import finished, refreshing data');
               Future.delayed(
                   kThemeChangeDuration, () async => await refreshData());
             }

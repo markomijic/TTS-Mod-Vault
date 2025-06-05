@@ -24,7 +24,7 @@ class ModsList extends ConsumerWidget {
 
             return GestureDetector(
               onSecondaryTapDown: (details) {
-                showModContextMenu(context, details.globalPosition, mod);
+                showModContextMenu(context, ref, details.globalPosition, mod);
               },
               child: ListTile(
                 selected: selectedMod == mod,

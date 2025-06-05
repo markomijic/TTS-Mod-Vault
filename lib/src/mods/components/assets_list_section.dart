@@ -62,31 +62,40 @@ class AssetsListSection extends HookConsumerWidget {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 if (hasMissingFiles && !actionInProgress)
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () async {
-                        if (selectedMod == null) {
-                          return;
-                        }
+                  Tooltip(
+                    message: "Download all missing ${type.label.toLowerCase()}",
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      border: Border.all(color: Colors.white, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: TextStyle(color: Colors.white),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (selectedMod == null) {
+                            return;
+                          }
 
-                        final urls = assets
-                            .map((e) => e.fileExists ? null : e.url)
-                            .nonNulls
-                            .toList();
+                          final urls = assets
+                              .map((e) => e.fileExists ? null : e.url)
+                              .nonNulls
+                              .toList();
 
-                        await downloadNotifier.downloadFiles(
-                          modName: selectedMod.saveName,
-                          modAssetListUrls: urls,
-                          type: type,
-                          downloadingAllFiles: false,
-                        );
+                          await downloadNotifier.downloadFiles(
+                            modName: selectedMod.saveName,
+                            modAssetListUrls: urls,
+                            type: type,
+                            downloadingAllFiles: false,
+                          );
 
-                        await ref
-                            .read(modsProvider.notifier)
-                            .updateModBySaveName(selectedMod.saveName);
-                      },
-                      child: Icon(Icons.download, size: 20),
+                          await ref
+                              .read(modsProvider.notifier)
+                              .updateModBySaveName(selectedMod.saveName);
+                        },
+                        child: Icon(Icons.download, size: 20),
+                      ),
                     ),
                   )
               ],

@@ -41,7 +41,7 @@ class ModsGridCard extends HookConsumerWidget {
           ref.read(modsProvider.notifier).setSelectedMod(mod);
         },
         onSecondaryTapDown: (details) {
-          showModContextMenu(context, details.globalPosition, mod);
+          showModContextMenu(context, ref, details.globalPosition, mod);
         },
         child: Container(
           decoration: BoxDecoration(

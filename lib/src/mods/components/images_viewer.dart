@@ -9,7 +9,7 @@ import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
         getFileNameFromPath,
-        openFileInExplorer,
+        openInFileExplorer,
         openUrl,
         showSnackBar;
 
@@ -147,7 +147,7 @@ class ImagesViewer extends StatelessWidget {
                                     IconButton(
                                       tooltip: "Open in File Explorer",
                                       onPressed: () =>
-                                          openFileInExplorer(asset.filePath!),
+                                          openInFileExplorer(asset.filePath!),
                                       icon: const Icon(Icons.folder_open),
                                       style: IconButton.styleFrom(
                                           backgroundColor: Colors.black),

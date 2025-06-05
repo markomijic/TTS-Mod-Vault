@@ -18,7 +18,7 @@ import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
         getFileNameFromURL,
-        openFileInExplorer,
+        openInFileExplorer,
         openUrl,
         showSnackBar;
 
@@ -111,7 +111,7 @@ class AssetsUrl extends HookConsumerWidget {
           switch (value) {
             case ContextMenuActionEnum.openInExplorer:
               if (asset.filePath != null && asset.filePath!.isNotEmpty) {
-                openFileInExplorer(asset.filePath!);
+                openInFileExplorer(asset.filePath!);
               }
               break;
 

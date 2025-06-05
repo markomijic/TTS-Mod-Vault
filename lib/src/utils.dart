@@ -276,7 +276,7 @@ String sanitizeFileName(String input) {
   return sanitized.trim().replaceAll(RegExp(r'^\.+|\.+$'), '');
 }
 
-Future<void> openFileInExplorer(String filePath) async {
+Future<void> openInFileExplorer(String filePath) async {
   try {
     if (Platform.isWindows) {
       await Process.run('explorer.exe', ['/select,', filePath]);
@@ -468,7 +468,7 @@ void showModContextMenu(
           break;
 
         case ContextMenuActionEnum.openInExplorer:
-          openFileInExplorer(mod.jsonFilePath);
+          openInFileExplorer(mod.jsonFilePath);
           break;
 
         case ContextMenuActionEnum.copySaveName:

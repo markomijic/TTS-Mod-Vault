@@ -377,7 +377,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // List all files in the directory
       await for (final FileSystemEntity entity
-          in directory.list(recursive: false)) {
+          in directory.list(recursive: true)) {
         if (entity is File) {
           // Check if the file has a .json extension
           if (path.extension(entity.path).toLowerCase() == '.json') {

@@ -1,4 +1,4 @@
-import 'dart:io' show Directory, Platform, Process;
+import 'dart:io' show Directory, File, Platform, Process;
 import 'dart:ui' show ImageFilter;
 import 'dart:convert' show json;
 
@@ -288,6 +288,18 @@ Future<void> openInFileExplorer(String filePath) async {
     }
   } catch (e) {
     debugPrint('Error opening file in explorer: $e');
+  }
+}
+
+Future<void> openImageFile(String imagePath) async {
+  final file = File(imagePath);
+  final uri = file.uri;
+
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(
+      uri,
+      mode: LaunchMode.platformDefault,
+    );
   }
 }
 

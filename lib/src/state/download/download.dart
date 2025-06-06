@@ -177,63 +177,42 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             final directory =
                 ref.read(directoriesProvider.notifier).getDirectoryByType(type);
 
-            if (type == AssetTypeEnum.image || type == AssetTypeEnum.audio) {
-              final tempPath = path.join(directory, '${fileName}_temp');
-              await dio.download(
-                url,
-                tempPath,
-                cancelToken: cancelToken, // Use the cancel token
-                onReceiveProgress: (received, total) {
-                  if (total <= 0 || batch.length > 1) return;
-                  // Progress per file
-                  state = state.copyWith(progress: received / total);
-                },
-              );
+            final tempPath = path.join(directory, '${fileName}_temp');
 
-              // Check if download was cancelled before proceeding
-              if (cancelToken.isCancelled) {
-                // Clean up the temp file if it exists
-                final tempFile = File(tempPath);
-                if (await tempFile.exists()) {
-                  await tempFile.delete();
-                }
-                return;
-              }
+            await dio.download(
+              url,
+              tempPath,
+              cancelToken: cancelToken,
+              onReceiveProgress: (received, total) {
+                if (total <= 0 || batch.length > 1) return;
+                // Progress per file
+                state = state.copyWith(progress: received / total);
+              },
+            );
 
-              final bytes = await File(tempPath).readAsBytes();
-              final extension = getExtensionByType(type, tempPath, bytes);
+            final tempFile = File(tempPath);
+            final bytes = await tempFile.readAsBytes();
+            final firstContent = String.fromCharCodes(bytes.take(100).toList());
+            bool isErrorPage = false;
 
-              final finalPath = path.join(directory, fileName + extension);
-              await File(tempPath).rename(finalPath);
-            } else {
-              final assetPath = path.join(
-                directory,
-                fileName + getExtensionByType(type),
-              );
-
-              await dio.download(
-                url,
-                assetPath,
-                cancelToken: cancelToken, // Use the cancel token
-                onReceiveProgress: (received, total) {
-                  if (total <= 0 || batch.length > 1) return;
-                  // Progress per file
-                  state = state.copyWith(progress: received / total);
-                },
-              );
-
-              // Check if download was cancelled before proceeding
-              if (cancelToken.isCancelled) {
-                // Clean up the downloaded file if it exists
-                final file = File(assetPath);
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                return;
-              }
+            // Check for HTML error pages
+            if (firstContent.contains('<html>') ||
+                firstContent.contains('<!DOCTYPE')) {
+              debugPrint("File is a HTML error page");
+              isErrorPage = true;
             }
 
-            // Remove the token after successful download
+            if (cancelToken.isCancelled || isErrorPage) {
+              if (await tempFile.exists()) {
+                await tempFile.delete();
+              }
+            } else {
+              final finalPath = path.join(directory,
+                  fileName + getExtensionByType(type, tempPath, bytes));
+              await tempFile.rename(finalPath);
+            }
+
+            // Remove the token after download
             _cancelTokens.remove(url);
           } catch (e) {
             // Remove the token in case of error

@@ -202,7 +202,7 @@ class ImagesViewerGridCard extends StatelessWidget {
                                 tooltip: "Copy URL",
                                 onPressed: () =>
                                     copyToClipboard(context, asset.url),
-                                icon: const Icon(Icons.copy),
+                                icon: const Icon(Icons.link),
                                 style: IconButton.styleFrom(
                                     backgroundColor: Colors.black),
                               ),

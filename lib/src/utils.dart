@@ -88,7 +88,7 @@ void showSnackBar(BuildContext context, String message) {
   final snackBar = SnackBar(
     content: Text(
       message,
-      style: TextStyle(fontSize: 18),
+      style: TextStyle(fontSize: 16),
     ),
     showCloseIcon: false,
   );
@@ -452,7 +452,7 @@ void showModContextMenu(
         child: Row(
           spacing: 8,
           children: [
-            Icon(Icons.content_copy),
+            Icon(Icons.file_copy),
             Text('Copy Filename'),
           ],
         ),

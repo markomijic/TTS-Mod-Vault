@@ -17,6 +17,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
+        getFileNameFromPath,
         getFileNameFromURL,
         openInFileExplorer,
         openUrl,
@@ -87,7 +88,7 @@ class AssetsUrl extends HookConsumerWidget {
             child: Row(
               spacing: 8,
               children: [
-                Icon(Icons.content_copy),
+                Icon(Icons.file_copy),
                 Text('Copy Filename'),
               ],
             ),
@@ -130,7 +131,12 @@ class AssetsUrl extends HookConsumerWidget {
 
             case ContextMenuActionEnum.copyFilename:
               if (context.mounted) {
-                copyToClipboard(context, getFileNameFromURL(asset.url));
+                copyToClipboard(
+                  context,
+                  asset.filePath != null && asset.filePath!.isNotEmpty
+                      ? getFileNameFromPath(asset.filePath ?? '')
+                      : getFileNameFromURL(asset.url),
+                );
               }
               break;
 

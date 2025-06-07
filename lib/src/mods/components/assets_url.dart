@@ -19,6 +19,7 @@ import 'package:tts_mod_vault/src/utils.dart'
         copyToClipboard,
         getFileNameFromPath,
         getFileNameFromURL,
+        openFile,
         openInFileExplorer,
         openUrl,
         showSnackBar;
@@ -52,6 +53,17 @@ class AssetsUrl extends HookConsumerWidget {
           position.dy,
         ),
         items: [
+          if (asset.fileExists)
+            PopupMenuItem(
+              value: ContextMenuActionEnum.openFile,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.file_open),
+                  Text('Open File'),
+                ],
+              ),
+            ),
           if (asset.fileExists)
             PopupMenuItem(
               value: ContextMenuActionEnum.openInExplorer,
@@ -110,6 +122,12 @@ class AssetsUrl extends HookConsumerWidget {
 
         if (value != null) {
           switch (value) {
+            case ContextMenuActionEnum.openFile:
+              if (asset.filePath != null && asset.filePath!.isNotEmpty) {
+                openFile(asset.filePath!);
+              }
+              break;
+
             case ContextMenuActionEnum.openInExplorer:
               if (asset.filePath != null && asset.filePath!.isNotEmpty) {
                 openInFileExplorer(asset.filePath!);

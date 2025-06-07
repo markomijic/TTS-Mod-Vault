@@ -291,8 +291,8 @@ Future<void> openInFileExplorer(String filePath) async {
   }
 }
 
-Future<void> openImageFile(String imagePath) async {
-  final file = File(imagePath);
+Future<void> openFile(String filePath) async {
+  final file = File(filePath);
   final uri = file.uri;
 
   if (await canLaunchUrl(uri)) {

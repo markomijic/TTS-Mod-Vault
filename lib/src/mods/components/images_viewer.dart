@@ -15,7 +15,7 @@ import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
         getFileNameFromPath,
-        openImageFile,
+        openFile,
         openInFileExplorer,
         openUrl,
         showSnackBar;
@@ -212,7 +212,7 @@ class ImagesViewerGridCard extends StatelessWidget {
               break;
 
             case ContextMenuActionEnum.openFile:
-              openImageFile(asset.filePath!);
+              openFile(asset.filePath!);
               break;
 
             case ContextMenuActionEnum.copyUrl:

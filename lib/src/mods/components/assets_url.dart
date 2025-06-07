@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/replace_url_dialog.dart'
+    show showReplaceUrlDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
@@ -105,6 +107,16 @@ class AssetsUrl extends HookConsumerWidget {
               ],
             ),
           ),
+          PopupMenuItem(
+            value: ContextMenuActionEnum.replaceUrl,
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.find_replace),
+                Text('Replace URL'),
+              ],
+            ),
+          ),
           if (!asset.fileExists)
             PopupMenuItem(
               value: ContextMenuActionEnum.download,
@@ -113,17 +125,6 @@ class AssetsUrl extends HookConsumerWidget {
                 children: [
                   Icon(Icons.download),
                   Text('Download'),
-                ],
-              ),
-            )
-          else
-            PopupMenuItem(
-              value: ContextMenuActionEnum.replaceUrl,
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(Icons.find_replace),
-                  Text('Replace URL'),
                 ],
               ),
             ),
@@ -166,6 +167,12 @@ class AssetsUrl extends HookConsumerWidget {
                       ? getFileNameFromPath(asset.filePath ?? '')
                       : getFileNameFromURL(asset.url),
                 );
+              }
+              break;
+
+            case ContextMenuActionEnum.replaceUrl:
+              if (context.mounted) {
+                showReplaceUrlDialog(context, ref);
               }
               break;
 

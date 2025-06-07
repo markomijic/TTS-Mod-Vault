@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumer, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/replace_url_dialog.dart'
+    show showReplaceUrlDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
@@ -227,6 +229,12 @@ class ImagesViewerGridCard extends StatelessWidget {
                   context,
                   getFileNameFromPath(asset.filePath ?? ''),
                 );
+              }
+              break;
+
+            case ContextMenuActionEnum.replaceUrl:
+              if (context.mounted) {
+                showReplaceUrlDialog(context, ref);
               }
               break;
 

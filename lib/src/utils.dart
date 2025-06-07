@@ -7,7 +7,8 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
-import 'package:tts_mod_vault/src/mods/components/images_viewer.dart';
+import 'package:tts_mod_vault/src/mods/components/images_viewer.dart'
+    show showImagesViewer;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'

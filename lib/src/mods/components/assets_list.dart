@@ -48,29 +48,30 @@ class AssetsList extends HookConsumerWidget {
           child: Row(
             spacing: 8,
             children: [
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => openUrl(
-                      "https://steamcommunity.com/sharedfiles/filedetails/?id=${selectedMod?.jsonFileName}"),
-                  child: Tooltip(
-                    message: 'Open on Steam Workshop',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: EdgeInsets.all(2),
-                      child: Image.asset(
-                        'assets/icon/steam_logo.png',
-                        height: 20,
-                        isAntiAlias: true,
-                        fit: BoxFit.fitHeight,
+              if (selectedMod != null)
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => openUrl(
+                        "https://steamcommunity.com/sharedfiles/filedetails/?id=${selectedMod?.jsonFileName}"),
+                    child: Tooltip(
+                      message: 'Open on Steam Workshop',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        padding: EdgeInsets.all(2),
+                        child: Image.asset(
+                          'assets/icon/steam_logo.png',
+                          height: 20,
+                          isAntiAlias: true,
+                          fit: BoxFit.fitHeight,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               Expanded(
                 child: Text(
                   selectedMod != null ? selectedMod.saveName : 'Select a mod',

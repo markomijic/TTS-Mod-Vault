@@ -10,6 +10,7 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -29,7 +30,6 @@ class AssetsListSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final downloadNotifier = ref.watch(downloadProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedMod = ref.watch(selectedModProvider);
 
@@ -63,87 +63,122 @@ class AssetsListSection extends HookConsumerWidget {
                   type.label,
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                if (hasMissingFiles && !actionInProgress)
-                  Tooltip(
-                    message: "Download all missing ${type.label.toLowerCase()}",
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      border: Border.all(color: Colors.white, width: 2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    textStyle: TextStyle(color: Colors.white),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () async {
-                          if (selectedMod == null) {
-                            return;
-                          }
-
-                          final urls = assets
-                              .map((e) => e.fileExists ? null : e.url)
-                              .nonNulls
-                              .toList();
-
-                          await downloadNotifier.downloadFiles(
-                            modName: selectedMod.saveName,
-                            modAssetListUrls: urls,
-                            type: type,
-                            downloadingAllFiles: false,
-                          );
-
-                          await ref
-                              .read(modsProvider.notifier)
-                              .updateModBySaveName(selectedMod.saveName);
-                        },
-                        child: Icon(Icons.download, size: 20),
-                      ),
-                    ),
-                  ),
-                if (!actionInProgress && type == AssetTypeEnum.image)
-                  Tooltip(
-                    message: "Open Images Viewer",
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      border: Border.all(color: Colors.white, width: 2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    textStyle: TextStyle(color: Colors.white),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () async {
-                          if (selectedMod == null) {
-                            return;
-                          }
-
-                          if (context.mounted) {
-                            final existingImages = selectedMod
-                                .getAssetsByType(AssetTypeEnum.image)
-                                .where((element) =>
-                                    element.fileExists &&
-                                    element.filePath != null &&
-                                    element.filePath!.isNotEmpty)
-                                .toList();
-                            showImagesViewer(
-                              context,
-                              existingImages,
-                              selectedMod.assetLists?.images.length ?? 0,
-                              selectedMod.saveName,
-                            );
-                          }
-                        },
-                        child: Icon(Icons.image, size: 20),
-                      ),
-                    ),
-                  )
+                if (hasMissingFiles && !actionInProgress && selectedMod != null)
+                  MissingFilesButton(
+                      type: type,
+                      selectedMod: selectedMod,
+                      assets: assets,
+                      ref: ref),
+                if (!actionInProgress &&
+                    type == AssetTypeEnum.image &&
+                    selectedMod != null)
+                  OpenImagesViewerButton(selectedMod: selectedMod)
               ],
             ),
           ),
           ...assets.map((asset) {
-            return AssetsUrl(asset: asset, type: type);
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 2),
+              child: AssetsUrl(asset: asset, type: type),
+            );
           }),
         ],
+      ),
+    );
+  }
+}
+
+class OpenImagesViewerButton extends StatelessWidget {
+  final Mod selectedMod;
+
+  const OpenImagesViewerButton({
+    super.key,
+    required this.selectedMod,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: "Open Images Viewer",
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border.all(color: Colors.white, width: 2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      textStyle: TextStyle(color: Colors.white),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () async {
+            if (context.mounted) {
+              final existingImages = selectedMod
+                  .getAssetsByType(AssetTypeEnum.image)
+                  .where((element) =>
+                      element.fileExists &&
+                      element.filePath != null &&
+                      element.filePath!.isNotEmpty)
+                  .toList();
+              showImagesViewer(
+                context,
+                existingImages,
+                selectedMod.assetLists?.images.length ?? 0,
+                selectedMod.saveName,
+              );
+            }
+          },
+          child: Icon(Icons.image, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+class MissingFilesButton extends StatelessWidget {
+  const MissingFilesButton({
+    super.key,
+    required this.type,
+    required this.selectedMod,
+    required this.assets,
+    required this.ref,
+  });
+
+  final AssetTypeEnum type;
+  final Mod selectedMod;
+  final List<Asset> assets;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: "Download all missing ${type.label.toLowerCase()}",
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border.all(color: Colors.white, width: 2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      textStyle: TextStyle(color: Colors.white),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () async {
+            final urls = assets
+                .map((e) => e.fileExists ? null : e.url)
+                .nonNulls
+                .toList();
+
+            await ref.read(downloadProvider.notifier).downloadFiles(
+                  modName: selectedMod.saveName,
+                  modAssetListUrls: urls,
+                  type: type,
+                  downloadingAllFiles: false,
+                );
+
+            await ref
+                .read(modsProvider.notifier)
+                .updateModBySaveName(selectedMod.saveName);
+          },
+          child: Icon(Icons.download, size: 20),
+        ),
       ),
     );
   }

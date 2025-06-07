@@ -191,27 +191,24 @@ class AssetsUrl extends HookConsumerWidget {
       });
     }
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onSecondaryTapDown: (details) {
-            if (ref.read(actionInProgressProvider)) return;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onSecondaryTapDown: (details) {
+          if (ref.read(actionInProgressProvider)) return;
 
-            isSelected.value = true;
-            showURLContextMenu(context, details.globalPosition);
-          },
-          child: Text(
-            asset.url,
-            style: TextStyle(
-              fontSize: 12,
-              color: isSelected.value
-                  ? Colors.lightBlue
-                  : asset.fileExists
-                      ? Colors.green
-                      : Colors.red,
-            ),
+          isSelected.value = true;
+          showURLContextMenu(context, details.globalPosition);
+        },
+        child: Text(
+          asset.url,
+          style: TextStyle(
+            fontSize: 12,
+            color: isSelected.value
+                ? Colors.lightBlue
+                : asset.fileExists
+                    ? Colors.green
+                    : Colors.red,
           ),
         ),
       ),

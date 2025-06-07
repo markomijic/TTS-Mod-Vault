@@ -37,7 +37,7 @@ class AssetsUrl extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isSelected = useState(false);
 
-    void showContextMenu(BuildContext context, Offset position) {
+    void showURLContextMenu(BuildContext context, Offset position) {
       showMenu(
         context: context,
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -69,7 +69,7 @@ class AssetsUrl extends HookConsumerWidget {
               spacing: 8,
               children: [
                 Icon(Icons.open_in_browser),
-                Text('Open in Browser'),
+                Text('Open URL in Browser'),
               ],
             ),
           ),
@@ -171,7 +171,7 @@ class AssetsUrl extends HookConsumerWidget {
             if (ref.read(actionInProgressProvider)) return;
 
             isSelected.value = true;
-            showContextMenu(context, details.globalPosition);
+            showURLContextMenu(context, details.globalPosition);
           },
           child: Text(
             asset.url,

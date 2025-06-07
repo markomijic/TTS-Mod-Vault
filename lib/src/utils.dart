@@ -417,7 +417,7 @@ void showModContextMenu(
       position.dy,
     ),
     items: [
-      /* PopupMenuItem(
+      PopupMenuItem(
         value: ContextMenuActionEnum.openImagesViewer,
         child: Row(
           spacing: 8,
@@ -426,7 +426,7 @@ void showModContextMenu(
             Text('Open Images Viewer'),
           ],
         ),
-      ), */
+      ),
       PopupMenuItem(
         value: ContextMenuActionEnum.openInExplorer,
         child: Row(

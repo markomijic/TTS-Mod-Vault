@@ -48,6 +48,9 @@ class AssetsTooltip extends StatelessWidget {
           TextSpan(text: '• Right-click any URL for asset options\n'),
           TextSpan(
               text:
+                  '• Click on Steam icon to open Workshop page of selected mod\n'),
+          TextSpan(
+              text:
                   '• Download button: Try to download all missing asset files\n'),
           TextSpan(text: '• Cancel button: Cancel all downloads\n'),
           TextSpan(

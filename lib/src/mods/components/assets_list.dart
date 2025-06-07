@@ -64,6 +64,7 @@ class AssetsList extends HookConsumerWidget {
                       child: Image.asset(
                         'assets/icon/steam_logo.png',
                         height: 20,
+                        isAntiAlias: true,
                         fit: BoxFit.fitHeight,
                       ),
                     ),

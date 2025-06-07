@@ -115,6 +115,17 @@ class AssetsUrl extends HookConsumerWidget {
                   Text('Download'),
                 ],
               ),
+            )
+          else
+            PopupMenuItem(
+              value: ContextMenuActionEnum.replaceUrl,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.find_replace),
+                  Text('Replace URL'),
+                ],
+              ),
             ),
         ],
       ).then((value) async {

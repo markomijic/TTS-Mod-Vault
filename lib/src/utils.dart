@@ -14,6 +14,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/provider.dart';
 import 'package:url_launcher/url_launcher.dart'
     show LaunchMode, canLaunchUrl, launchUrl;
 import 'package:http/http.dart' as http;
@@ -463,6 +464,12 @@ void showModContextMenu(
       switch (value) {
         case ContextMenuActionEnum.openImagesViewer:
           if (context.mounted) {
+            if (ref.read(actionInProgressProvider)) {
+              showSnackBar(context,
+                  "Finish your current action before opening images viewer");
+              return;
+            }
+
             final existingImages = mod
                 .getAssetsByType(AssetTypeEnum.image)
                 .where((element) =>

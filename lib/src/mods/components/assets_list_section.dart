@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show AssetsUrl;
+import 'package:tts_mod_vault/src/mods/components/images_viewer.dart'
+    show showImagesViewer;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -95,6 +97,43 @@ class AssetsListSection extends HookConsumerWidget {
                               .updateModBySaveName(selectedMod.saveName);
                         },
                         child: Icon(Icons.download, size: 20),
+                      ),
+                    ),
+                  ),
+                if (!actionInProgress && type == AssetTypeEnum.image)
+                  Tooltip(
+                    message: "Open Images Viewer",
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      border: Border.all(color: Colors.white, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: TextStyle(color: Colors.white),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (selectedMod == null) {
+                            return;
+                          }
+
+                          if (context.mounted) {
+                            final existingImages = selectedMod
+                                .getAssetsByType(AssetTypeEnum.image)
+                                .where((element) =>
+                                    element.fileExists &&
+                                    element.filePath != null &&
+                                    element.filePath!.isNotEmpty)
+                                .toList();
+                            showImagesViewer(
+                              context,
+                              existingImages,
+                              selectedMod.assetLists?.images.length ?? 0,
+                              selectedMod.saveName,
+                            );
+                          }
+                        },
+                        child: Icon(Icons.image, size: 20),
                       ),
                     ),
                   )

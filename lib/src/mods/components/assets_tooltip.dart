@@ -15,7 +15,7 @@ class AssetsTooltip extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           color: Colors.white,
-          height: 1.5,
+          height: 1.6,
         ),
         children: [
           // Status indicators
@@ -45,7 +45,8 @@ class AssetsTooltip extends StatelessWidget {
             text: 'Actions:\n',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          TextSpan(text: '• Right-click any URL for asset options\n'),
+          TextSpan(text: '• Right-click on a URL to see options\n'),
+          TextSpan(text: '• Right-click on a Mod to see options\n'),
           TextSpan(
               text:
                   '• Click on Steam icon to open Workshop page of selected mod\n'),

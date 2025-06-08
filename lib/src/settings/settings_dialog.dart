@@ -8,6 +8,8 @@ import 'package:flutter_hooks/flutter_hooks.dart'
     show useFocusNode, useState, useTextEditingController;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
+    show CustomTooltip;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, loaderProvider, modsProvider, settingsProvider;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
@@ -146,15 +148,9 @@ class SettingsDialog extends HookConsumerWidget {
           ),
         ),
         actions: [
-          Tooltip(
+          CustomTooltip(
             message:
                 'A valid Tabletop Simulator data directory must contain folders: DLC, Mods, Saves and Screenshots.\nData will be refreshed upon selecting a valid directory.',
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.white, width: 2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            textStyle: TextStyle(color: Colors.black),
             child: ElevatedButton(
               onPressed: () async {
                 String? ttsDir;

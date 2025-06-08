@@ -6,8 +6,10 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         AssetsActionButtons,
         AssetsListSection,
-        AssetsTooltip,
+        HelpTooltip,
         DownloadProgressBar;
+import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
+    show CustomTooltip;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -53,8 +55,8 @@ class AssetsList extends HookConsumerWidget {
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () => openUrl(
-                        "https://steamcommunity.com/sharedfiles/filedetails/?id=${selectedMod?.jsonFileName}"),
-                    child: Tooltip(
+                        "https://steamcommunity.com/sharedfiles/filedetails/?id=${selectedMod.jsonFileName}"),
+                    child: CustomTooltip(
                       message: 'Open on Steam Workshop',
                       child: Container(
                         decoration: BoxDecoration(
@@ -83,7 +85,7 @@ class AssetsList extends HookConsumerWidget {
               ),
               Padding(
                 padding: const EdgeInsets.all(4.0),
-                child: AssetsTooltip(),
+                child: HelpTooltip(),
               ),
             ],
           ),

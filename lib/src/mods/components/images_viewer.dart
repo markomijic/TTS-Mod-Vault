@@ -10,9 +10,6 @@ import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
-    show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,

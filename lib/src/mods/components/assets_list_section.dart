@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show AssetsUrl;
+import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
+    show CustomTooltip;
 import 'package:tts_mod_vault/src/mods/components/images_viewer.dart'
     show showImagesViewer;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
@@ -98,14 +100,8 @@ class OpenImagesViewerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
+    return CustomTooltip(
       message: "Open Images Viewer",
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border.all(color: Colors.white, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      textStyle: TextStyle(color: Colors.white),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
@@ -149,14 +145,8 @@ class MissingFilesButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
+    return CustomTooltip(
       message: "Download all missing ${type.label.toLowerCase()}",
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border.all(color: Colors.white, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      textStyle: TextStyle(color: Colors.white),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(

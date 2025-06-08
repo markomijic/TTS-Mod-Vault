@@ -112,11 +112,11 @@ void showConfirmDialog(
         child: AlertDialog(
           content: Text(contentMessage),
           actions: [
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop('cancel'),
               child: const Text('Cancel'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop('confirm'),
               child: const Text('Confirm'),
             ),

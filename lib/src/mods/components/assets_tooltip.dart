@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
+    show CustomTooltip;
 
-class AssetsTooltip extends StatelessWidget {
-  const AssetsTooltip({super.key});
+class HelpTooltip extends StatelessWidget {
+  const HelpTooltip({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border.all(color: Colors.white, width: 2),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return CustomTooltip(
       richMessage: TextSpan(
         style: TextStyle(
           fontSize: 16,

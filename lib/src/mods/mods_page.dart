@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useEffect;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/backup_overlay.dart'
+    show BackupOverlay;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show AssetsList, ErrorMessage, ModsGrid, ModsList, Toolbar;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        backupProvider,
-        cleanupProvider,
-        modsProvider,
-        selectedModProvider,
-        settingsProvider;
+    show backupProvider, cleanupProvider, modsProvider, settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
@@ -105,24 +102,7 @@ class ModsPage extends HookConsumerWidget {
               ],
             ),
             if (backup.backupInProgress || backup.importInProgress)
-              Container(
-                color: Colors.black.withAlpha(180),
-                child: Center(
-                  child: Text(
-                    backup.importInProgress
-                        ? (backup.importFileName.isNotEmpty == true
-                            ? "Import of ${backup.importFileName} in progress"
-                            : "Import in progress")
-                        : backup.backupInProgress
-                            ? "Backing up ${ref.read(selectedModProvider)?.saveName ?? ''}"
-                            : "",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+              BackupOverlay(),
           ],
         ),
       ),

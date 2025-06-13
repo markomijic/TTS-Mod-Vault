@@ -53,20 +53,24 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
         if (jsonFileName == "WorkshopFileInfos") continue;
 
-        final File file = File(jsonPath);
-        final String jsonString = await file.readAsString();
-        final Map<String, dynamic> jsonData = jsonDecode(jsonString);
+        try {
+          final file = File(jsonPath);
+          final jsonString = await file.readAsString();
+          final jsonData = jsonDecode(jsonString);
 
-        final saveName = await _getSaveNameFromJson(jsonData);
-        final dateTimeStamp = await _getDateTimeStampFromJson(jsonData);
+          final saveName = await _getSaveNameFromJson(jsonData);
+          final dateTimeStamp = await _getDateTimeStampFromJson(jsonData);
 
-        if (saveName != null && saveName.isNotEmpty) {
-          jsonListMods.add(Mod(
-            jsonFilePath: jsonPath,
-            saveName: saveName,
-            dateTimeStamp: dateTimeStamp,
-            jsonFileName: jsonFileName,
-          ));
+          if (saveName != null && saveName.isNotEmpty) {
+            jsonListMods.add(Mod(
+              jsonFilePath: jsonPath,
+              saveName: saveName,
+              dateTimeStamp: dateTimeStamp,
+              jsonFileName: jsonFileName,
+            ));
+          }
+        } catch (e) {
+          debugPrint('loadModsData - failed to read json $jsonPath, error: $e');
         }
       }
 
@@ -393,10 +397,19 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<String?> _getSaveNameFromJson(Map<String, dynamic> jsonData) async {
+  Future<String?> _getSaveNameFromJson(dynamic jsonData) async {
     try {
-      if (jsonData.containsKey('SaveName')) {
-        return jsonData['SaveName'] as String;
+      if (jsonData is Map<String, dynamic> &&
+          jsonData.containsKey('SaveName')) {
+        return jsonData['SaveName'].toString();
+      }
+
+      if (jsonData is List) {
+        for (final item in jsonData) {
+          if (item is Map<String, dynamic> && item.containsKey('SaveName')) {
+            return item['SaveName'].toString();
+          }
+        }
       }
 
       return null;
@@ -406,17 +419,25 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<String?> _getDateTimeStampFromJson(
-      Map<String, dynamic> jsonData) async {
+  Future<String?> _getDateTimeStampFromJson(dynamic jsonData) async {
     try {
-      if (jsonData.containsKey('Date')) {
-        final dateValue = jsonData['Date'] as String;
+      if (jsonData is Map<String, dynamic> && jsonData.containsKey('Date')) {
+        final dateValue = jsonData['Date'].toString();
         return dateTimeToUnixTimestamp(dateValue);
+      }
+
+      if (jsonData is List) {
+        for (final item in jsonData) {
+          if (item is Map<String, dynamic> && item.containsKey('Date')) {
+            final dateValue = item['Date'].toString();
+            return dateTimeToUnixTimestamp(dateValue);
+          }
+        }
       }
 
       return null;
     } catch (e) {
-      debugPrint("_getSaveNameFromJson error: $e");
+      debugPrint("_getDateTimeStampFromJson error: $e");
       return null;
     }
   }

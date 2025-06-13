@@ -28,6 +28,8 @@ class BackupNotifier extends StateNotifier<BackupState> {
       state = state.copyWith(
         importInProgress: true,
         lastImportedJsonFileName: "",
+        currentCount: 0,
+        totalCount: 0,
       );
 
       FilePickerResult? result;
@@ -72,6 +74,9 @@ class BackupNotifier extends StateNotifier<BackupState> {
           }
 
           try {
+            state = state.copyWith(
+                currentCount: archive.files.indexOf(file) + 1,
+                totalCount: archive.files.length);
             await outputFile.writeAsBytes(data);
           } catch (e) {
             debugPrint(
@@ -108,7 +113,11 @@ class BackupNotifier extends StateNotifier<BackupState> {
       return 'Select a mod to create a backup';
     }
 
-    state = state.copyWith(backupInProgress: true);
+    state = state.copyWith(
+      backupInProgress: true,
+      currentCount: 0,
+      totalCount: 0,
+    );
     final saveDirectoryPath = await FilePicker.platform.getDirectoryPath();
     if (saveDirectoryPath == null) {
       state = state.copyWith(backupInProgress: false);
@@ -175,6 +184,10 @@ class BackupNotifier extends StateNotifier<BackupState> {
           final archiveFile =
               ArchiveFile(relativePath, fileData.length, fileData);
 
+          state = state.copyWith(
+            currentCount: filePaths.indexOf(filePath) + 1,
+            totalCount: filePaths.length,
+          );
           archive.addFile(archiveFile);
         } catch (e) {
           debugPrint('createBackup - error reading file $filePath: $e');

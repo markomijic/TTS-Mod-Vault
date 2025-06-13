@@ -1,12 +1,13 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
+    show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show backupProvider, selectedModProvider;
 
-class BackupOverlay extends ConsumerWidget {
+class BackupOverlay extends HookConsumerWidget {
   const BackupOverlay({super.key});
 
   @override
@@ -14,19 +15,32 @@ class BackupOverlay extends ConsumerWidget {
     final selectedMod = ref.watch(selectedModProvider);
     final backup = ref.watch(backupProvider);
 
+    final message = useMemoized(() {
+      if (backup.importInProgress) {
+        if (backup.importFileName.isNotEmpty && backup.totalCount > 0) {
+          return "Import of ${backup.importFileName} in progress\n${backup.currentCount}/${backup.totalCount}";
+        }
+
+        return "Import in progress";
+      }
+
+      if (selectedMod == null) return "";
+
+      if (backup.backupInProgress && backup.totalCount > 0) {
+        return "Backing up ${selectedMod.saveName}\n${backup.currentCount}/${backup.totalCount}";
+      }
+
+      return "Backing up ${selectedMod.saveName}";
+    }, [backup, selectedMod]);
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
       child: Container(
         color: Colors.black.withAlpha(180),
         child: Center(
           child: Text(
-            backup.importInProgress
-                ? (backup.importFileName.isNotEmpty == true
-                    ? "Import of ${backup.importFileName} in progress"
-                    : "Import in progress")
-                : backup.backupInProgress
-                    ? "Backing up ${selectedMod?.saveName ?? ''}"
-                    : "",
+            message,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,

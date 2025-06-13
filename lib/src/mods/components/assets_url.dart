@@ -55,7 +55,9 @@ class AssetsUrl extends HookConsumerWidget {
           position.dy,
         ),
         items: [
-          if (asset.fileExists)
+          if (asset.fileExists &&
+              [AssetTypeEnum.audio, AssetTypeEnum.image, AssetTypeEnum.pdf]
+                  .contains(type))
             PopupMenuItem(
               value: ContextMenuActionEnum.openFile,
               child: Row(

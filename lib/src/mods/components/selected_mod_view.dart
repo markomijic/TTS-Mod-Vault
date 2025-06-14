@@ -323,7 +323,6 @@ class _MissingFilesButton extends StatelessWidget {
                 .toList();
 
             await ref.read(downloadProvider.notifier).downloadFiles(
-                  modName: selectedMod.saveName,
                   modAssetListUrls: urls,
                   type: assetType,
                   downloadingAllFiles: false,
@@ -331,7 +330,7 @@ class _MissingFilesButton extends StatelessWidget {
 
             await ref
                 .read(modsProvider.notifier)
-                .updateModBySaveName(selectedMod.saveName);
+                .updateModByJsonFilename(selectedMod.jsonFileName);
           },
           child: Icon(Icons.download, size: 20),
         ),

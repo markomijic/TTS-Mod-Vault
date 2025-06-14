@@ -183,14 +183,13 @@ class AssetsUrl extends HookConsumerWidget {
               if (selectedMod == null) break;
 
               await ref.read(downloadProvider.notifier).downloadFiles(
-                    modName: selectedMod.saveName,
-                    modAssetListUrls: [asset.url],
-                    type: type,
-                    downloadingAllFiles: false,
-                  );
+                modAssetListUrls: [asset.url],
+                type: type,
+                downloadingAllFiles: false,
+              );
               await ref
                   .read(modsProvider.notifier)
-                  .updateModBySaveName(selectedMod.saveName);
+                  .updateModByJsonFilename(selectedMod.jsonFileName);
               break;
 
             default:

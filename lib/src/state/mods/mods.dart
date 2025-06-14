@@ -161,13 +161,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<void> updateModBySaveName(String modName) async {
+  Future<void> updateModByJsonFilename(String jsonFilename) async {
     try {
       Mod? updatedMod;
 
       final updatedMods = await Future.wait(
         state.value!.mods.map((mod) async {
-          if (mod.saveName == modName) {
+          if (mod.jsonFileName == jsonFilename) {
             updatedMod = await _getModData(
               mod,
               ref.read(storageProvider).getModAssetLists(mod.jsonFileName) ??
@@ -236,8 +236,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final assetUrls = <String>[];
 
     for (final url in urls) {
-      if (url.startsWith("file:///")) continue;
-
       assetUrls.add(_replaceInUrl(url, oldUrl, newUrl));
     }
 

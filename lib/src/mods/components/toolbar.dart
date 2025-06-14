@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
+import 'package:tts_mod_vault/src/changelog.dart' show showChangelogDialog;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show HelpAndFeedbackButton;
 import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
@@ -121,6 +122,10 @@ class Toolbar extends ConsumerWidget {
             }
           },
           child: const Text('Check for updates'),
+        ),
+        ElevatedButton(
+          onPressed: () => showChangelogDialog(context),
+          child: const Text('Changelog'),
         ),
         HelpAndFeedbackButton(),
       ],

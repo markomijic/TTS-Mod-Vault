@@ -2,31 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         backupProvider,
         downloadProvider,
-        modsProvider,
-        selectedModProvider;
+        modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
-class AssetsActionButtons extends HookConsumerWidget {
-  const AssetsActionButtons({super.key});
+class SelectedModActionButtons extends HookConsumerWidget {
+  final Mod selectedMod;
+
+  const SelectedModActionButtons({super.key, required this.selectedMod});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMod = ref.watch(selectedModProvider);
-
     final hasMissingFiles = useMemoized(() {
-      if (selectedMod == null || selectedMod.assetLists == null) return false;
+      if (selectedMod.assetLists == null) return false;
 
       return selectedMod.getAllAssets().any((asset) => !asset.fileExists);
     }, [selectedMod]);
-
-    if (selectedMod == null) {
-      return SizedBox.shrink();
-    }
 
     final modsNotifier = ref.watch(modsProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);

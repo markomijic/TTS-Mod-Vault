@@ -18,10 +18,10 @@ class BackupOverlay extends HookConsumerWidget {
     final message = useMemoized(() {
       if (backup.importInProgress) {
         if (backup.importFileName.isNotEmpty && backup.totalCount > 0) {
-          return "Import of ${backup.importFileName} in progress\n${backup.currentCount}/${backup.totalCount}";
+          return "Importing ${backup.importFileName}\n${backup.currentCount}/${backup.totalCount}";
         }
 
-        return "Import in progress";
+        return "Select a backup to import";
       }
 
       if (selectedMod == null) return "";
@@ -30,7 +30,7 @@ class BackupOverlay extends HookConsumerWidget {
         return "Backing up ${selectedMod.saveName}\n${backup.currentCount}/${backup.totalCount}";
       }
 
-      return "Backing up ${selectedMod.saveName}";
+      return "Select a folder to backup ${selectedMod.saveName}";
     }, [backup, selectedMod]);
 
     return BackdropFilter(

@@ -5,7 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:tts_mod_vault/src/mods/components/backup_overlay.dart'
     show BackupOverlay;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show AssetsList, ErrorMessage, ModsGrid, ModsList, Toolbar;
+    show ErrorMessage, ModsGrid, ModsList, SelectedModView, Toolbar;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -80,7 +80,7 @@ class ModsPage extends HookConsumerWidget {
                           ),
                           Expanded(
                             flex: 1,
-                            child: AssetsList(),
+                            child: SelectedModView(),
                           ),
                         ],
                       );

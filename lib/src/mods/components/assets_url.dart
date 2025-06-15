@@ -15,7 +15,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         downloadProvider,
         modsProvider,
-        selectedModProvider;
+        selectedModProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
@@ -109,16 +110,17 @@ class AssetsUrl extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
-            value: ContextMenuActionEnum.replaceUrl,
-            child: Row(
-              spacing: 8,
-              children: [
-                Icon(Icons.find_replace),
-                Text('Replace URL'),
-              ],
+          if (ref.read(settingsProvider).enableTtsModdersFeatures)
+            PopupMenuItem(
+              value: ContextMenuActionEnum.replaceUrl,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.find_replace),
+                  Text('Replace URL'),
+                ],
+              ),
             ),
-          ),
           if (!asset.fileExists)
             PopupMenuItem(
               value: ContextMenuActionEnum.download,

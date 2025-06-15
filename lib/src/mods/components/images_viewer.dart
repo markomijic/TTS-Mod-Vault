@@ -10,6 +10,7 @@ import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
+import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
@@ -188,16 +189,17 @@ class ImagesViewerGridCard extends StatelessWidget {
               ],
             ),
           ),
-          PopupMenuItem(
-            value: ContextMenuActionEnum.replaceUrl,
-            child: Row(
-              spacing: 8,
-              children: [
-                Icon(Icons.find_replace),
-                Text('Replace URL'),
-              ],
+          if (ref.read(settingsProvider).enableTtsModdersFeatures)
+            PopupMenuItem(
+              value: ContextMenuActionEnum.replaceUrl,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.find_replace),
+                  Text('Replace URL'),
+                ],
+              ),
             ),
-          ),
         ],
       ).then((value) async {
         if (value != null) {

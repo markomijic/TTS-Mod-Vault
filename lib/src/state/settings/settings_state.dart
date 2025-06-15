@@ -3,12 +3,14 @@ class SettingsState {
   final bool showTitleOnCards;
   final bool checkForUpdatesOnStart;
   final int concurrentDownloads;
+  final bool enableTtsModdersFeatures;
 
   const SettingsState({
     this.useModsListView = false,
     this.showTitleOnCards = false,
     this.checkForUpdatesOnStart = true,
     this.concurrentDownloads = 5,
+    this.enableTtsModdersFeatures = false,
   });
 
   SettingsState copyWith({
@@ -16,6 +18,7 @@ class SettingsState {
     bool? showTitleOnCards,
     bool? checkForUpdatesOnStart,
     int? concurrentDownloads,
+    bool? enableTtsModdersFeatures,
   }) {
     return SettingsState(
       useModsListView: useModsListView ?? this.useModsListView,
@@ -23,6 +26,8 @@ class SettingsState {
       checkForUpdatesOnStart:
           checkForUpdatesOnStart ?? this.checkForUpdatesOnStart,
       concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
+      enableTtsModdersFeatures:
+          enableTtsModdersFeatures ?? this.enableTtsModdersFeatures,
     );
   }
 
@@ -32,16 +37,36 @@ class SettingsState {
       'showTitleOnCards': showTitleOnCards,
       'checkForUpdatesOnStart': checkForUpdatesOnStart,
       'concurrentDownloads': concurrentDownloads,
+      'enableTtsModdersFeatures': enableTtsModdersFeatures,
     };
   }
 
-  factory SettingsState.fromJson(Map<String, String> json) {
+  factory SettingsState.fromJson(Map<String, dynamic> json) {
     return SettingsState(
-      useModsListView: json['useModsListView'] == "true",
-      showTitleOnCards: json['showTitleOnCards'] == "true",
-      checkForUpdatesOnStart: json['checkForUpdatesOnStart'] == "true",
-      concurrentDownloads:
-          int.tryParse(json['concurrentDownloads'] ?? "5") ?? 5,
+      useModsListView: _parseBool(json['useModsListView'], false),
+      showTitleOnCards: _parseBool(json['showTitleOnCards'], false),
+      checkForUpdatesOnStart: _parseBool(json['checkForUpdatesOnStart'], true),
+      concurrentDownloads: _parseInt(json['concurrentDownloads'], 5),
+      enableTtsModdersFeatures:
+          _parseBool(json['enableTtsModdersFeatures'], false),
     );
+  }
+
+  static bool _parseBool(dynamic value, bool defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is String) {
+      return value.toLowerCase() == 'true';
+    }
+    return defaultValue;
+  }
+
+  static int _parseInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value) ?? defaultValue;
+    }
+    return defaultValue;
   }
 }

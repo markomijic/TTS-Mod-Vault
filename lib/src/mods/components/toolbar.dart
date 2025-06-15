@@ -105,6 +105,10 @@ class Toolbar extends ConsumerWidget {
           child: const Text('Import backup'),
         ),
         ElevatedButton(
+          onPressed: () => showChangelogDialog(context),
+          child: const Text('Changelog'),
+        ),
+        ElevatedButton(
           onPressed: () async {
             final newTagVersion = await checkForUpdatesOnGitHub();
 
@@ -122,10 +126,6 @@ class Toolbar extends ConsumerWidget {
             }
           },
           child: const Text('Check for updates'),
-        ),
-        ElevatedButton(
-          onPressed: () => showChangelogDialog(context),
-          child: const Text('Changelog'),
         ),
         HelpAndFeedbackButton(),
       ],

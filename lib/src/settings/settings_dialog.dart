@@ -26,6 +26,8 @@ class SettingsDialog extends HookConsumerWidget {
     final useModsListViewBox = useState(settings.useModsListView);
     final showTitleOnCardsBox = useState(settings.showTitleOnCards);
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
+    final enableTtsModdersFeatures =
+        useState(settings.enableTtsModdersFeatures);
     final numberValue = useState(settings.concurrentDownloads);
 
     final textFieldController =
@@ -52,6 +54,7 @@ class SettingsDialog extends HookConsumerWidget {
         showTitleOnCards: showTitleOnCardsBox.value,
         checkForUpdatesOnStart: checkForUpdatesOnStartBox.value,
         concurrentDownloads: concurrentDownloads,
+        enableTtsModdersFeatures: enableTtsModdersFeatures.value,
       );
 
       await ref.read(settingsProvider.notifier).saveSettings(newState);
@@ -97,6 +100,20 @@ class SettingsDialog extends HookConsumerWidget {
                   checkForUpdatesOnStartBox.value =
                       value ?? checkForUpdatesOnStartBox.value;
                 },
+              ),
+              CustomTooltip(
+                message:
+                    "Enables:\nReplace URL in asset lists and Images Viewer",
+                child: CheckboxListTile(
+                  title: Text('Enable TTS Modders features'),
+                  value: enableTtsModdersFeatures.value,
+                  checkColor: Colors.black,
+                  activeColor: Colors.white,
+                  onChanged: (value) {
+                    enableTtsModdersFeatures.value =
+                        value ?? enableTtsModdersFeatures.value;
+                  },
+                ),
               ),
               SizedBox(height: 8),
               Padding(

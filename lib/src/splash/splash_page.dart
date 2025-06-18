@@ -81,7 +81,7 @@ class SplashPage extends HookConsumerWidget {
                       spacing: 10,
                       children: [
                         Text(
-                          'Tabletop Simulator data directory has not been found, please locate it manually.\nIt must contain folders: DLC, Mods, Saves, Screenshots.',
+                          "Tabletop Simulator data directory has not been found, please locate it manually.\nIt typically contains folders: DLC, Mods, Saves, Screenshots.\nCurrent version uses only the Mods folder.",
                           textAlign: TextAlign.center,
                         ),
                         Row(

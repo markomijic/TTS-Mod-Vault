@@ -81,6 +81,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       const int batchSize = 5;
       final List<Mod> allMods = [];
 
+      final storage = ref.read(storageProvider);
+
       for (int i = 0; i < jsonListMods.length; i += batchSize) {
         final batch = jsonListMods.skip(i).take(batchSize).toList();
         debugPrint('loadModsData - processing batch of size: ${batch.length}');
@@ -88,43 +90,37 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         final batchResults = await Future.wait(
           batch.map((mod) async {
             try {
-              if (await File(mod.jsonFilePath).exists()) {
-                final storage = ref.read(storageProvider);
+              final cachedMod = storage.getModName(mod.jsonFileName);
+              bool updateTimeChanged = false;
 
-                // Get cached data
-                final cachedMod = storage.getModName(mod.jsonFileName);
+              if (cachedMod != null) {
                 final cachedUpdateTime =
                     storage.getModDateTimeStamp(mod.jsonFileName);
-                final cachedAssetLists =
-                    storage.getModAssetLists(mod.jsonFileName);
 
-                // Check if update is needed
-                final updateTimeChanged = cachedUpdateTime != mod.dateTimeStamp;
-                final needsRefresh = cachedMod == null || updateTimeChanged;
+                updateTimeChanged = cachedUpdateTime != mod.dateTimeStamp;
+              }
 
-                Map<String, String>? jsonURLs;
+              final needsRefresh = cachedMod == null || updateTimeChanged;
 
-                if (needsRefresh) {
-                  jsonURLs = await _extractUrlsFromJson(mod.jsonFilePath);
+              Map<String, String>? jsonURLs;
 
-                  if (updateTimeChanged) {
-                    await storage.deleteMod(mod.jsonFileName);
-                  }
+              if (needsRefresh) {
+                jsonURLs = await _extractUrlsFromJson(mod.jsonFilePath);
 
-                  await storage.saveModData(
-                      mod.jsonFileName, mod.dateTimeStamp ?? '', jsonURLs);
-                } else {
-                  jsonURLs = cachedAssetLists;
+                if (updateTimeChanged) {
+                  await storage.deleteMod(mod.jsonFileName);
                 }
 
-                // Uncomment this to delete all stored mod data
-                // await storage.deleteMod(jsonFileName);
-
-                return _getModData(mod, jsonURLs ?? <String, String>{});
+                await storage.saveModData(
+                    mod.jsonFileName, mod.dateTimeStamp ?? '', jsonURLs);
               } else {
-                debugPrint('loadModsData - missing JSON: ${mod.jsonFilePath}');
-                return null;
+                jsonURLs = storage.getModAssetLists(mod.jsonFileName);
               }
+
+              // Uncomment this to delete all stored mod data
+              // await storage.deleteMod(jsonFileName);
+
+              return _getModData(mod, jsonURLs ?? <String, String>{});
             } catch (e) {
               debugPrint(
                   'loadModsData - error processing item: ${e.toString()}');

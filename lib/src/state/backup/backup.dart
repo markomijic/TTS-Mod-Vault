@@ -77,6 +77,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
             state = state.copyWith(
                 currentCount: archive.files.indexOf(file) + 1,
                 totalCount: archive.files.length);
+            await outputFile.create(recursive: true);
             await outputFile.writeAsBytes(data);
           } catch (e) {
             debugPrint(

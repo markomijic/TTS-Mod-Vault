@@ -14,18 +14,19 @@ class MessageProgressIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      spacing: 8,
       children: [
         if (showCircularIndicator)
           CircularProgressIndicator(
             color: Colors.white,
-            constraints: BoxConstraints(minHeight: 60, minWidth: 60),
+            constraints: BoxConstraints(minHeight: 50, minWidth: 50),
             strokeWidth: 6,
           ),
         Text(
           message,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 40,
+            fontSize: 36,
             fontWeight: FontWeight.bold,
           ),
         ),

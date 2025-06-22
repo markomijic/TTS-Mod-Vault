@@ -376,19 +376,6 @@ bool _checkIfLatestVersionIsNewer(String current, String latest) {
   return false;
 }
 
-String dateTimeToUnixTimestamp(String dateString) {
-  DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
-  DateTime dateTime = format.parse(dateString);
-  return (dateTime.millisecondsSinceEpoch / 1000).floor().toString();
-}
-
-String unixTimestampToDateTime(String unixTimestamp) {
-  int timestamp = int.parse(unixTimestamp);
-  DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
-  DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
-  return format.format(dateTime);
-}
-
 Future<void> copyToClipboard(BuildContext context, String textToCopy) async {
   await Clipboard.setData(ClipboardData(text: textToCopy));
   if (context.mounted) {

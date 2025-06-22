@@ -71,8 +71,8 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
 
     final mainTtsDirectoriesResult = await Future.wait([
       'Mods',
-      /* 'Saves',
-      'DLC',
+      'Saves',
+      /* 'DLC',
       'Screenshots' */
     ].map((folder) => Directory(path.join(ttsDir, folder)).exists()))
         .then((exists) => exists.every((e) => e));

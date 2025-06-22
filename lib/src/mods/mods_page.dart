@@ -54,10 +54,8 @@ class ModsPage extends HookConsumerWidget {
             Column(
               children: [
                 Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(left: 12),
+                  padding: const EdgeInsets.only(top: 8, left: 8),
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  alignment: Alignment.bottomLeft,
                   child: Toolbar(),
                 ),
                 Expanded(
@@ -70,15 +68,9 @@ class ModsPage extends HookConsumerWidget {
                             child: Column(
                               children: [
                                 Container(
-                                  height: 50,
-                                  padding: EdgeInsets.only(
-                                    left: 12,
-                                    right: 12,
-                                    bottom: 4,
-                                  ),
+                                  padding: EdgeInsets.only(top: 8, left: 8),
                                   color:
                                       Theme.of(context).scaffoldBackgroundColor,
-                                  alignment: Alignment.bottomLeft,
                                   child: Row(
                                     spacing: 8,
                                     children: [
@@ -89,7 +81,11 @@ class ModsPage extends HookConsumerWidget {
                                 ),
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.all(8),
+                                    padding: EdgeInsets.only(
+                                      top: 8,
+                                      left: 4,
+                                      right: 8,
+                                    ),
                                     child: useModsListView
                                         ? ModsList(state: data)
                                         : ModsGrid(state: data),

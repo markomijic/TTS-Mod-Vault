@@ -15,13 +15,15 @@ class Search extends HookConsumerWidget {
     final controller = useTextEditingController();
 
     useEffect(() {
-      controller.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.clear();
+      });
       return null;
     }, [selectedModType]);
 
     return SizedBox(
-      height: 40,
-      width: 337,
+      height: 32,
+      width: 335,
       child: TextField(
         controller: controller,
         onChanged: (value) =>
@@ -41,6 +43,7 @@ class Search extends HookConsumerWidget {
               icon: const Icon(
                 Icons.clear,
                 color: Colors.black,
+                size: 17,
               ),
               onPressed: () {
                 controller.clear();

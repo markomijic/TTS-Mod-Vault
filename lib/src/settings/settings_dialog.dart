@@ -10,8 +10,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
     show CustomTooltip;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, loaderProvider, modsProvider, settingsProvider;
+    show
+        directoriesProvider,
+        loaderProvider,
+        modsProvider,
+        selectedModTypeProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
     show SettingsState;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
@@ -28,6 +34,7 @@ class SettingsDialog extends HookConsumerWidget {
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
     final enableTtsModdersFeatures =
         useState(settings.enableTtsModdersFeatures);
+    final showSavedObjects = useState(settings.showSavedObjects);
     final numberValue = useState(settings.concurrentDownloads);
 
     final textFieldController =
@@ -55,7 +62,13 @@ class SettingsDialog extends HookConsumerWidget {
         checkForUpdatesOnStart: checkForUpdatesOnStartBox.value,
         concurrentDownloads: concurrentDownloads,
         enableTtsModdersFeatures: enableTtsModdersFeatures.value,
+        showSavedObjects: showSavedObjects.value,
       );
+
+      if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
+          !showSavedObjects.value) {
+        ref.read(selectedModTypeProvider.notifier).state = ModTypeEnum.mod;
+      }
 
       await ref.read(settingsProvider.notifier).saveSettings(newState);
 
@@ -100,6 +113,18 @@ class SettingsDialog extends HookConsumerWidget {
                   checkForUpdatesOnStartBox.value =
                       value ?? checkForUpdatesOnStartBox.value;
                 },
+              ),
+              CustomTooltip(
+                message: "Show Saved Objects next to Mods and Saves",
+                child: CheckboxListTile(
+                  title: Text('Show Saved Objects'),
+                  value: showSavedObjects.value,
+                  checkColor: Colors.black,
+                  activeColor: Colors.white,
+                  onChanged: (value) {
+                    showSavedObjects.value = value ?? showSavedObjects.value;
+                  },
+                ),
               ),
               CustomTooltip(
                 message:

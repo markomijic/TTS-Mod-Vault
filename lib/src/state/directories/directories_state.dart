@@ -1,6 +1,7 @@
 class DirectoriesState {
   final String ttsDir;
   final String savesDir;
+  final String savedObjectsDir;
   final String workshopDir;
   final String modsDir;
   final String assetBundlesDir;
@@ -14,6 +15,7 @@ class DirectoriesState {
   const DirectoriesState({
     required this.ttsDir,
     required this.savesDir,
+    required this.savedObjectsDir,
     required this.workshopDir,
     required this.modsDir,
     required this.assetBundlesDir,
@@ -30,6 +32,7 @@ class DirectoriesState {
     return DirectoriesState(
       ttsDir: ttsDir,
       savesDir: '$ttsDir/Saves',
+      savedObjectsDir: '$ttsDir/Saves/Saved Objects',
       workshopDir: '$modsDir/Workshop',
       modsDir: modsDir,
       assetBundlesDir: '$modsDir/Assetbundles',
@@ -47,6 +50,7 @@ class DirectoriesState {
     return const DirectoriesState(
       ttsDir: emptyPath,
       savesDir: emptyPath,
+      savedObjectsDir: emptyPath,
       workshopDir: emptyPath,
       modsDir: emptyPath,
       assetBundlesDir: emptyPath,

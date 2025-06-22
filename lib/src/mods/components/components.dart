@@ -9,3 +9,5 @@ export 'mods_list.dart';
 export 'toolbar.dart';
 export 'selected_mod_action_buttons.dart';
 export 'selected_mod_view.dart';
+export 'mods_selector.dart';
+export 'search.dart';

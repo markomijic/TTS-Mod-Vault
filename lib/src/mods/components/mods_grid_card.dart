@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -73,7 +74,7 @@ class ModsGridCard extends HookConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-              if (showTitleOnCards)
+              if (showTitleOnCards || mod.modType != ModTypeEnum.mod)
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Container(
@@ -83,7 +84,10 @@ class ModsGridCard extends HookConsumerWidget {
                     child: Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: mod.saveName),
+                          TextSpan(
+                              text: mod.modType == ModTypeEnum.mod
+                                  ? mod.saveName
+                                  : '${mod.jsonFileName}\n${mod.saveName}'),
                           TextSpan(
                             text: mod.totalCount != null && mod.totalCount! > 0
                                 ? "\n(${mod.totalExistsCount}/${mod.totalCount})"

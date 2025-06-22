@@ -38,7 +38,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (ref.read(selectedModProvider) != null) {
       await ref
           .read(modsProvider.notifier)
-          .updateModByJsonFilename(ref.read(selectedModProvider)!.jsonFileName);
+          .updateMod(ref.read(selectedModProvider)!);
     }
   }
 

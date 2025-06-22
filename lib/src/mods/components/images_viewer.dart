@@ -270,10 +270,11 @@ class ImagesViewerGridCard extends StatelessWidget {
             final isHovered = useState(false);
 
             return GestureDetector(
-              onSecondaryTapDown: (details) {
-                showImagesViewerGridCardContextMenu(
-                    context, ref, details.globalPosition, asset);
-              },
+              onTapDown: (details) => showImagesViewerGridCardContextMenu(
+                  context, ref, details.globalPosition, asset),
+              onSecondaryTapDown: (details) =>
+                  showImagesViewerGridCardContextMenu(
+                      context, ref, details.globalPosition, asset),
               child: MouseRegion(
                 onEnter: (event) => isHovered.value = true,
                 onExit: (event) => isHovered.value = false,

@@ -5,7 +5,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:tts_mod_vault/src/mods/components/backup_overlay.dart'
     show BackupOverlay;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show ErrorMessage, ModsGrid, ModsList, SelectedModView, Toolbar;
+    show
+        ErrorMessage,
+        ModsSelector,
+        ModsGrid,
+        ModsList,
+        Search,
+        SelectedModView,
+        Toolbar;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -48,34 +55,47 @@ class ModsPage extends HookConsumerWidget {
               children: [
                 Container(
                   height: 50,
-                  padding: const EdgeInsets.only(left: 12.0, bottom: 4),
+                  padding: const EdgeInsets.only(left: 12),
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Toolbar(),
-                  ),
+                  alignment: Alignment.bottomLeft,
+                  child: Toolbar(),
                 ),
                 Expanded(
                   child: mods.when(
                     data: (data) {
-                      if (data.mods.isEmpty) {
-                        return Center(
-                          child: Text(
-                              style: TextStyle(fontSize: 26),
-                              textAlign: TextAlign.center,
-                              "You don't seem to have any mods!\nSubscribe to some on the Steam workshop and then run Tabletop Simulator atleast once before restarting TTS Mod Vault!"),
-                        );
-                      }
-
                       return Row(
                         children: [
                           Expanded(
                             flex: 2,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: useModsListView
-                                  ? ModsList(mods: data.mods)
-                                  : ModsGrid(mods: data.mods),
+                            child: Column(
+                              children: [
+                                Container(
+                                  height: 50,
+                                  padding: EdgeInsets.only(
+                                    left: 12,
+                                    right: 12,
+                                    bottom: 4,
+                                  ),
+                                  color:
+                                      Theme.of(context).scaffoldBackgroundColor,
+                                  alignment: Alignment.bottomLeft,
+                                  child: Row(
+                                    spacing: 8,
+                                    children: [
+                                      ModsSelector(),
+                                      Search(),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child: useModsListView
+                                        ? ModsList(state: data)
+                                        : ModsGrid(state: data),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Expanded(

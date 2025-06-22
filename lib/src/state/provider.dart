@@ -38,6 +38,11 @@ final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
 
 final selectedModProvider = StateProvider<Mod?>((ref) => null);
 
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final selectedModTypeProvider =
+    StateProvider<ModTypeEnum>((ref) => ModTypeEnum.mod);
+
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),
 );

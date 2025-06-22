@@ -1,22 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerWidget, HookConsumer, WidgetRef;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+    show HookConsumerWidget, HookConsumer, WidgetRef;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show Mod, ModTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show actionInProgressProvider, modsProvider, selectedModProvider;
+    show
+        actionInProgressProvider,
+        modsProvider,
+        searchQueryProvider,
+        selectedModProvider,
+        selectedModTypeProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showModContextMenu;
 
-class ModsList extends ConsumerWidget {
-  final List<Mod> mods;
+class ModsList extends HookConsumerWidget {
+  final ModsState state;
 
-  const ModsList({super.key, required this.mods});
+  const ModsList({super.key, required this.state});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final searchQuery = ref.watch(searchQueryProvider);
+    final selectedModType = ref.watch(selectedModTypeProvider);
+
+    final filteredMods = useMemoized(() {
+      List<Mod> mods = switch (selectedModType) {
+        ModTypeEnum.mod => state.mods,
+        ModTypeEnum.save => state.saves,
+        ModTypeEnum.savedObject => state.savedObjects,
+      };
+
+      return mods
+          .where((element) => element.saveName
+              .toLowerCase()
+              .contains(searchQuery.toLowerCase()))
+          .toList();
+    }, [state, searchQuery, selectedModType]);
+
     return ListView.builder(
-      itemCount: mods.length,
+      itemCount: filteredMods.length,
       itemBuilder: (context, index) {
-        final mod = mods[index];
+        final mod = filteredMods[index];
 
         return HookConsumer(
           builder: (context, ref, child) {
@@ -28,7 +53,9 @@ class ModsList extends ConsumerWidget {
               },
               child: ListTile(
                 selected: selectedMod == mod,
-                title: Text(mod.saveName),
+                title: Text(mod.modType == ModTypeEnum.mod
+                    ? mod.saveName
+                    : "${mod.jsonFileName}\n${mod.saveName}"),
                 subtitle: mod.totalCount != null && mod.totalCount! > 0
                     ? Text('${mod.totalExistsCount}/${mod.totalCount}')
                     : null,
@@ -44,7 +71,14 @@ class ModsList extends ConsumerWidget {
                           ? Colors.green
                           : Colors.white,
                 ),
-                shape: Border.all(color: Colors.white, width: 2),
+                shape: Border(
+                  top: BorderSide(color: Colors.white, width: 2),
+                  left: BorderSide(color: Colors.white, width: 2),
+                  right: BorderSide(color: Colors.white, width: 2),
+                  bottom: index == filteredMods.length - 1
+                      ? BorderSide(color: Colors.white, width: 2)
+                      : BorderSide.none,
+                ),
                 onTap: () {
                   if (ref.read(actionInProgressProvider)) return;
 

@@ -12,13 +12,15 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         downloadProvider,
         modsProvider,
-        selectedModProvider;
+        selectedModProvider,
+        selectedModTypeProvider;
 import 'package:tts_mod_vault/src/utils.dart' show openUrl;
 
 abstract class _ListItem {}
@@ -51,6 +53,7 @@ class SelectedModView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedMod = ref.watch(selectedModProvider);
+    final selectedModType = ref.watch(selectedModTypeProvider);
 
     if (selectedMod == null) {
       return Column(
@@ -69,7 +72,7 @@ class SelectedModView extends HookConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    "Select a mod",
+                    "Select a ${selectedModType.label}",
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -146,32 +149,35 @@ class _SelectedModViewComponent extends HookConsumerWidget {
           child: Row(
             spacing: 8,
             children: [
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => openUrl(
-                      "https://steamcommunity.com/sharedfiles/filedetails/?id=${selectedMod.jsonFileName}"),
-                  child: CustomTooltip(
-                    message: 'Open on Steam Workshop',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: EdgeInsets.all(2),
-                      child: Image.asset(
-                        'assets/icon/steam_logo.png',
-                        height: 20,
-                        isAntiAlias: true,
-                        fit: BoxFit.fitHeight,
+              if (selectedMod.modType == ModTypeEnum.mod)
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => openUrl(
+                        "https://steamcommunity.com/sharedfiles/filedetails/?id=${selectedMod.jsonFileName}"),
+                    child: CustomTooltip(
+                      message: 'Open on Steam Workshop',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        padding: EdgeInsets.all(2),
+                        child: Image.asset(
+                          'assets/icon/steam_logo.png',
+                          height: 20,
+                          isAntiAlias: true,
+                          fit: BoxFit.fitHeight,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               Expanded(
                 child: Text(
-                  selectedMod.saveName,
+                  selectedMod.modType == ModTypeEnum.mod
+                      ? selectedMod.saveName
+                      : '${selectedMod.jsonFileName}\n${selectedMod.saveName}',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -328,9 +334,7 @@ class _MissingFilesButton extends StatelessWidget {
                   downloadingAllFiles: false,
                 );
 
-            await ref
-                .read(modsProvider.notifier)
-                .updateModByJsonFilename(selectedMod.jsonFileName);
+            await ref.read(modsProvider.notifier).updateMod(selectedMod);
           },
           child: Icon(Icons.download, size: 20),
         ),

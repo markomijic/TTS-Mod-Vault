@@ -39,7 +39,7 @@ class Toolbar extends ConsumerWidget {
     }
 
     return Row(
-      spacing: 10,
+      spacing: 8,
       children: [
         ElevatedButton(
           onPressed: actionInProgress

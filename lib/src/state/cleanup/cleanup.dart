@@ -26,16 +26,16 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
         filesToDelete: [],
       );
 
-      final mods = ref.read(modsProvider).value?.mods;
+      final allMods = ref.read(modsProvider.notifier).getAllMods();
 
-      if (mods == null || mods.isEmpty) {
+      if (allMods.isEmpty) {
         throw "No mods available, cancelling cleanup";
       }
 
       final Set<String> referencedFiles = {};
       for (final assetType in AssetTypeEnum.values) {
         referencedFiles.clear();
-        for (final mod in mods) {
+        for (final mod in allMods) {
           mod.getAssetsByType(assetType).forEach(
             (e) {
               if (e.fileExists &&

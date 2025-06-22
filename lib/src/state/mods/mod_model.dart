@@ -2,7 +2,17 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart';
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
+enum ModTypeEnum {
+  mod('mod'),
+  save('save'),
+  savedObject('saved object');
+
+  final String label;
+  const ModTypeEnum(this.label);
+}
+
 class Mod {
+  final ModTypeEnum modType;
   final String jsonFilePath;
   final String saveName;
   final String? dateTimeStamp;
@@ -13,6 +23,7 @@ class Mod {
   final int? totalExistsCount;
 
   Mod({
+    required this.modType,
     required this.jsonFilePath,
     required this.saveName,
     this.dateTimeStamp,
@@ -34,6 +45,7 @@ class Mod {
     int? totalExistsCount,
   }) {
     return Mod(
+      modType: modType,
       jsonFilePath: jsonFilePath ?? this.jsonFilePath,
       saveName: saveName ?? this.saveName,
       dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,

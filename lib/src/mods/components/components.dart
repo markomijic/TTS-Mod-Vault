@@ -11,3 +11,4 @@ export 'selected_mod_action_buttons.dart';
 export 'selected_mod_view.dart';
 export 'mods_selector.dart';
 export 'search.dart';
+export 'message_progress_indicator.dart';

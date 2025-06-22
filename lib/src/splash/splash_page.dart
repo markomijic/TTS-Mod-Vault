@@ -7,7 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show ErrorMessage;
+    show ErrorMessage, MessageProgressIndicator;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
@@ -69,13 +69,7 @@ class SplashPage extends HookConsumerWidget {
           child: modsError != null
               ? ErrorMessage(e: modsError)
               : !showTtsDirNotFound.value
-                  ? Text(
-                      "Loading",
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
+                  ? MessageProgressIndicator()
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       spacing: 10,

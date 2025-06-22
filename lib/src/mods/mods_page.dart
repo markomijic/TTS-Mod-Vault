@@ -7,9 +7,10 @@ import 'package:tts_mod_vault/src/mods/components/backup_overlay.dart'
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         ErrorMessage,
-        ModsSelector,
+        MessageProgressIndicator,
         ModsGrid,
         ModsList,
+        ModsSelector,
         Search,
         SelectedModView,
         Toolbar;
@@ -105,13 +106,7 @@ class ModsPage extends HookConsumerWidget {
                       child: ErrorMessage(e: e),
                     ),
                     loading: () => Center(
-                      child: Text(
-                        "Loading",
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: MessageProgressIndicator(),
                     ),
                   ),
                 ),

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show MessageProgressIndicator;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show backupProvider, selectedModProvider;
 
@@ -38,15 +40,11 @@ class BackupOverlay extends HookConsumerWidget {
       child: Container(
         color: Colors.black.withAlpha(180),
         child: Center(
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+            child: MessageProgressIndicator(
+                message: message,
+                showCircularIndicator: ((backup.importFileName.isNotEmpty &&
+                        backup.totalCount > 0) ||
+                    (backup.backupInProgress && backup.totalCount > 0)))),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:io' show Directory, File, FileSystemEntity;
+import 'dart:isolate';
 
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
@@ -131,22 +132,30 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
     try {
       state = state.copyWith(status: CleanUpStatusEnum.deleting);
 
-      for (final filePath in state.filesToDelete) {
-        final file = File(filePath);
-        if (await file.exists()) {
-          await file.delete();
-        }
-      }
+      final List<String> filePaths = List<String>.from(state.filesToDelete);
+      await Isolate.run(() => _deleteFiles(filePaths));
 
-      state = state.copyWith(
-        status: CleanUpStatusEnum.completed,
-        filesToDelete: [],
-      );
+      state = state.copyWith(status: CleanUpStatusEnum.completed);
     } catch (e) {
       state = state.copyWith(
         status: CleanUpStatusEnum.error,
         errorMessage: e.toString(),
       );
+    } finally {
+      state = state.copyWith(filesToDelete: []);
+    }
+  }
+
+  static Future<void> _deleteFiles(List<String> filePaths) async {
+    for (final filePath in filePaths) {
+      try {
+        final file = File(filePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (e) {
+        continue;
+      }
     }
   }
 

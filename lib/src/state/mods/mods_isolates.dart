@@ -82,8 +82,7 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
           ));
         }
 
-        final processedMod = await _getModDataIsolate(mod);
-        allProcessedMods.add(processedMod);
+        allProcessedMods.add(mod);
       } catch (e) {
         debugPrint(
             'Isolate error processing mod ${mod.jsonFileName}: ${e.toString()}');
@@ -179,7 +178,7 @@ Map<String, String> _extractUrlsWithReversedKeysIsolate(dynamic data,
 }
 
 // Isolate-safe version of _getModData
-Future<Mod> _getModDataIsolate(Mod mod) async {
+/* Future<Mod> _getModDataIsolate(Mod mod) async {
   final imageFilePath =
       await _getImageFilePathIsolate(mod.jsonFilePath, mod.jsonFileName);
 
@@ -187,7 +186,7 @@ Future<Mod> _getModDataIsolate(Mod mod) async {
     imageFilePath: imageFilePath,
     // Asset lists will be processed in main isolate
   );
-}
+} */
 
 // Isolate-safe version of _getImageFilePath
 Future<String?> _getImageFilePathIsolate(
@@ -267,6 +266,8 @@ Future<Mod?> _processSingleFileOptimized(
     final saveName =
         _extractSaveNameFromString(jsonString, modType) ?? jsonFileName;
     final dateTimeStamp = _extractDateTimeStampFromString(jsonString);
+    final imageFilePath =
+        await _getImageFilePathIsolate(jsonPath, jsonFileName);
 
     return Mod(
       modType: modType,
@@ -274,6 +275,7 @@ Future<Mod?> _processSingleFileOptimized(
       saveName: saveName.isNotEmpty ? saveName : jsonFileName,
       dateTimeStamp: dateTimeStamp,
       jsonFileName: jsonFileName,
+      imageFilePath: imageFilePath,
     );
   } catch (e) {
     return null;

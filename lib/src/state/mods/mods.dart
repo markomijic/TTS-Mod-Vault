@@ -435,18 +435,18 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     Map<String, String> jsonURLs,
   ) async {
     final assetLists = _getAssetListsFromUrls(jsonURLs);
-    final imageFilePath = mod.imageFilePath ??
-        await _getImageFilePath(mod.jsonFilePath, mod.jsonFileName);
+    /*   final imageFilePath = mod.imageFilePath ??
+        await _getImageFilePath(mod.jsonFilePath, mod.jsonFileName); */
 
     return mod.copyWith(
-      imageFilePath: imageFilePath,
+      //imageFilePath: imageFilePath,
       assetLists: assetLists.$1,
       totalCount: assetLists.$2,
       totalExistsCount: assetLists.$3,
     );
   }
 
-  Future<String?> _getImageFilePath(
+  /* Future<String?> _getImageFilePath(
     String modDirectory,
     String fileName,
   ) async {
@@ -468,7 +468,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
 
     return imageFilePath;
-  }
+  } */
 
   List<Asset> _getAssetsByType(List<String> urls, AssetTypeEnum type) {
     final assetUrls = <String>[];
@@ -619,7 +619,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       // List all files in the directory
-      await for (final entity in directory.list(recursive: true)) {
+      await for (final entity in directory.list(recursive: false)) {
+        // TO DO NO COMMITO
         if (entity is File) {
           // Check if the file has a .json extension
           if (path.extension(entity.path).toLowerCase() == '.json') {
@@ -637,6 +638,119 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     } catch (e) {
       debugPrint('_getJsonFilesInDirectory error: $e');
       return jsonFilePaths;
+    }
+  }
+
+  Future<void> updateModAsset({
+    required Mod selectedMod,
+    required Asset oldAsset,
+    required AssetTypeEnum assetType,
+    required String newAssetUrl,
+  }) async {
+    try {
+      if (!state.hasValue) {
+        return;
+      }
+
+      final mods = switch (selectedMod.modType) {
+            ModTypeEnum.mod => state.value?.mods,
+            ModTypeEnum.save => state.value?.saves,
+            ModTypeEnum.savedObject => state.value?.savedObjects,
+          } ??
+          [];
+
+      final updatedAssetLists = await _updateAssetInLists(
+        selectedMod.assetLists,
+        oldAsset,
+        assetType,
+        newAssetUrl,
+      );
+
+      final updatedMods = mods.map((mod) {
+        if (mod.jsonFileName == selectedMod.jsonFileName) {
+          return mod.copyWith(assetLists: updatedAssetLists);
+        }
+        return mod;
+      }).toList();
+
+      final updatedSelectedMod = updatedMods.firstWhereOrNull(
+        (mod) => mod.jsonFileName == selectedMod.jsonFileName,
+      );
+      setSelectedMod(updatedSelectedMod);
+
+      switch (selectedMod.modType) {
+        case ModTypeEnum.mod:
+          state = AsyncValue.data(state.value!.copyWith(mods: updatedMods));
+          break;
+        case ModTypeEnum.save:
+          state = AsyncValue.data(state.value!.copyWith(saves: updatedMods));
+          break;
+        case ModTypeEnum.savedObject:
+          state =
+              AsyncValue.data(state.value!.copyWith(savedObjects: updatedMods));
+          break;
+      }
+    } catch (e) {
+      debugPrint('updateModAsset error: $e');
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  Future<AssetLists?> _updateAssetInLists(
+    AssetLists? assetLists,
+    Asset oldAsset,
+    AssetTypeEnum assetType,
+    String newAssetUrl,
+  ) async {
+    if (assetLists == null) return null;
+
+    Future<List<Asset>> updateAssetList(List<Asset> assets) async {
+      final newFilepath = oldAsset.filePath == null
+          ? null
+          : path.join(path.dirname(oldAsset.filePath!),
+              '${getFileNameFromURL(newAssetUrl)}${path.extension(oldAsset.filePath!)}');
+      final newFileExists =
+          newFilepath != null ? await File(newFilepath).exists() : false;
+      final newAsset = Asset(
+        url: newAssetUrl,
+        filePath: newFilepath,
+        fileExists: newFileExists,
+      );
+
+      debugPrint('newAsset filepath: $newFilepath');
+      debugPrint('newAsset url: $newAssetUrl');
+      debugPrint('newAsset exists: $newFileExists');
+
+      return assets.map((asset) {
+        return asset.url == oldAsset.url ? newAsset : asset;
+      }).toList();
+    }
+
+    switch (assetType) {
+      case AssetTypeEnum.assetBundle:
+        return assetLists.copyWith(
+          assetBundles: await updateAssetList(assetLists.assetBundles),
+        );
+
+      case AssetTypeEnum.audio:
+        return assetLists.copyWith(
+          audio: await updateAssetList(assetLists.audio),
+        );
+
+      case AssetTypeEnum.image:
+        return assetLists.copyWith(
+          images: await updateAssetList(assetLists.images),
+        );
+
+      case AssetTypeEnum.model:
+        return assetLists.copyWith(
+          models: await updateAssetList(assetLists.models),
+        );
+
+      case AssetTypeEnum.pdf:
+        return assetLists.copyWith(
+          pdf: await updateAssetList(assetLists.pdf),
+        );
     }
   }
 }

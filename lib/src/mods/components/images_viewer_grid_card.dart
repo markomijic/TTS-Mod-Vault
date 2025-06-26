@@ -10,6 +10,8 @@ import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show selectedModProvider, settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -142,7 +144,8 @@ class ImagesViewerGridCard extends HookConsumerWidget {
             case ContextMenuActionEnum.replaceUrl:
               final mod = ref.read(selectedModProvider);
               if (context.mounted && mod != null) {
-                showReplaceUrlDialog(context, ref, asset, mod);
+                showReplaceUrlDialog(
+                    context, ref, asset, AssetTypeEnum.image, mod);
               }
               break;
 

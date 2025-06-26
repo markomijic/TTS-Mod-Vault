@@ -178,7 +178,7 @@ class AssetsUrl extends HookConsumerWidget {
               final selectedMod = ref.read(selectedModProvider);
               if (selectedMod == null || !context.mounted) break;
 
-              showReplaceUrlDialog(context, ref, asset, selectedMod);
+              showReplaceUrlDialog(context, ref, asset, type, selectedMod);
               break;
 
             case ContextMenuActionEnum.download:

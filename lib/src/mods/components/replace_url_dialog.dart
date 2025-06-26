@@ -1,127 +1,110 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'
-    show FilteringTextInputFormatter, LengthLimitingTextInputFormatter;
 import 'package:flutter_hooks/flutter_hooks.dart'
     show useFocusNode, useState, useTextEditingController;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
+import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
+    show Asset;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 
 void showReplaceUrlDialog(
   BuildContext context,
   WidgetRef ref,
+  Asset asset,
+  Mod mod,
 ) {
   if (context.mounted) {
     showDialog(
       context: context,
       builder: (context) {
-        return ReplaceUrlDialog();
+        return ReplaceUrlDialog(asset: asset, mod: mod);
       },
     );
   }
 }
 
 class ReplaceUrlDialog extends HookConsumerWidget {
-  const ReplaceUrlDialog({super.key});
+  final Asset asset;
+  final Mod mod;
+
+  const ReplaceUrlDialog({super.key, required this.asset, required this.mod});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-
-/*     final useModsListViewBox = useState(settings.useModsListView);
-    final showTitleOnCardsBox = useState(settings.showTitleOnCards);
-    final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart); */
-    final numberValue = useState(settings.concurrentDownloads);
-
-    final textFieldController =
-        useTextEditingController(text: numberValue.value.toString());
+    final textFieldController = useTextEditingController();
     final textFieldFocusNode = useFocusNode();
-
-    textFieldFocusNode.addListener(
-      () {
-        if (!textFieldFocusNode.hasFocus && textFieldController.text.isEmpty) {
-          textFieldController.text = "5";
-        }
-      },
-    );
-
-    /* Future<void> saveSettingsChanges(BuildContext context) async {
-      int concurrentDownloads = int.tryParse(textFieldController.text) ?? 5;
-
-      if (concurrentDownloads < 1 || concurrentDownloads > 99) {
-        concurrentDownloads = 5;
-      }
-
-      SettingsState newState = SettingsState(
-        useModsListView: useModsListViewBox.value,
-        showTitleOnCards: showTitleOnCardsBox.value,
-        checkForUpdatesOnStart: checkForUpdatesOnStartBox.value,
-        concurrentDownloads: concurrentDownloads,
-      );
-
-      await ref.read(settingsProvider.notifier).saveSettings(newState);
-
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
-    } */
+    final renameFileBox = useState(asset.fileExists);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
       child: AlertDialog(
         title: Text('Replace URL'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Row(
-                  spacing: 8,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'New URL',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    SizedBox(
-                      width: 50,
-                      child: TextField(
-                        textAlign: TextAlign.center,
-                        controller: textFieldController,
-                        cursorColor: Colors.white,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(2),
-                        ],
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                        ),
-                        focusNode: textFieldFocusNode,
+          child: SizedBox(
+            width: 950,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Current URL:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
+                  ),
+                  child: SelectableText(
+                    asset.url,
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'New URL:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: textFieldController,
+                  focusNode: textFieldFocusNode,
+                  cursorColor: Colors.black,
+                  style: TextStyle(
+                      fontSize: 16, color: Colors.black, letterSpacing: 0.26),
+                  decoration: InputDecoration(
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter new URL',
+                  ),
+                ),
+                if (asset.fileExists) ...[
+                  SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: renameFileBox.value,
+                        checkColor: Colors.black,
+                        activeColor: Colors.white,
                         onChanged: (value) {
-                          /*         final num = int.tryParse(value);
-                          if (value.startsWith("0")) {
-                            // Reset to 1 if user enters 0
-                            textFieldController.text = '1';
-                            textFieldController.selection =
-                                TextSelection.fromPosition(
-                              TextPosition(
-                                  offset: textFieldController.text.length),
-                            );
-                            numberValue.value = 1;
-                          } else if (num != null && num >= 1 && num <= 99) {
-                            numberValue.value = num;
-                          } */
+                          renameFileBox.value = value ?? false;
                         },
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                      Text(
+                        'Rename existing file',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
         actions: [
@@ -131,17 +114,21 @@ class ReplaceUrlDialog extends HookConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              /*            // Validate number input
-              final inputValue = int.tryParse(textFieldController.text);
-              if (inputValue == null || inputValue < 1 || inputValue > 99) {
-                showSnackBar(context, 'Please enter a number between 1 and 99');
-                if (context.mounted) Navigator.pop(context);
+              // Validate URL input
+              if (textFieldController.text.trim().isEmpty) {
+                // You might want to show a snackbar or error message here
                 return;
               }
 
-              await saveSettingsChanges(context); */
+              // Handle the URL replacement logic here
+              // You can access:
+              // - textFieldController.text for the new URL
+              // - renameFileBox.value for rename checkbox state
+              // - asset for the original asset data
+
+              Navigator.pop(context);
             },
-            child: Text('Save'),
+            child: Text('Apply'),
           ),
         ],
       ),

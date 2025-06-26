@@ -40,11 +40,11 @@ class BackupOverlay extends HookConsumerWidget {
       child: Container(
         color: Colors.black.withAlpha(180),
         child: Center(
-            child: MessageProgressIndicator(
-                message: message,
-                showCircularIndicator: ((backup.importFileName.isNotEmpty &&
-                        backup.totalCount > 0) ||
-                    (backup.backupInProgress && backup.totalCount > 0)))),
+          child: MessageProgressIndicator(
+            message: message,
+            showCircularIndicator: false,
+          ),
+        ),
       ),
     );
   }

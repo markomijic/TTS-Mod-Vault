@@ -411,7 +411,7 @@ void showModContextMenu(
           spacing: 8,
           children: [
             Icon(Icons.image),
-            Text('Open Images Viewer'),
+            Text('View Images'),
           ],
         ),
       ),
@@ -457,19 +457,7 @@ void showModContextMenu(
               return;
             }
 
-            final existingImages = mod
-                .getAssetsByType(AssetTypeEnum.image)
-                .where((element) =>
-                    element.fileExists &&
-                    element.filePath != null &&
-                    element.filePath!.isNotEmpty)
-                .toList();
-            showImagesViewer(
-              context,
-              existingImages,
-              mod.assetLists?.images.length ?? 0,
-              mod.saveName,
-            );
+            showImagesViewer(context, mod);
           }
           break;
 

@@ -86,6 +86,7 @@ class ModsPage extends HookConsumerWidget {
                                       top: 8,
                                       left: 4,
                                       right: 8,
+                                      bottom: 8,
                                     ),
                                     child: useModsListView
                                         ? ModsList(state: data)

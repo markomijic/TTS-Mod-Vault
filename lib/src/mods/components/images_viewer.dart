@@ -10,6 +10,9 @@ import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
@@ -22,13 +25,20 @@ import 'package:tts_mod_vault/src/utils.dart'
 
 void showImagesViewer(
   BuildContext context,
-  List<Asset> existingImages,
-  int totalImagesCount,
-  String modSaveName,
+  Mod mod,
 ) {
   if (context.mounted) {
+    final existingImages = mod
+        .getAssetsByType(AssetTypeEnum.image)
+        .where((element) =>
+            element.fileExists &&
+            element.filePath != null &&
+            element.filePath!.isNotEmpty)
+        .toList();
+
     if (existingImages.isEmpty) {
-      showSnackBar(context, "$modSaveName doesn't have any downloaded images");
+      showSnackBar(
+          context, "${mod.saveName} doesn't have any downloaded images");
       return;
     }
 
@@ -37,8 +47,8 @@ void showImagesViewer(
       builder: (context) {
         return ImagesViewer(
           existingImages: existingImages,
-          totalImagesCount: totalImagesCount,
-          modSaveName: modSaveName,
+          totalImagesCount: mod.assetLists?.images.length ?? 0,
+          mod: mod,
         );
       },
     );
@@ -48,13 +58,13 @@ void showImagesViewer(
 class ImagesViewer extends StatelessWidget {
   final List<Asset> existingImages;
   final int totalImagesCount;
-  final String modSaveName;
+  final Mod mod;
 
   const ImagesViewer({
     super.key,
     required this.existingImages,
     required this.totalImagesCount,
-    required this.modSaveName,
+    required this.mod,
   });
 
   @override
@@ -74,7 +84,7 @@ class ImagesViewer extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                modSaveName,
+                mod.saveName,
                 style: TextStyle(
                   overflow: TextOverflow.ellipsis,
                   fontSize: 30,
@@ -100,7 +110,7 @@ class ImagesViewer extends StatelessWidget {
             itemBuilder: (context, index) {
               final asset = existingImages[index];
 
-              return ImagesViewerGridCard(asset: asset);
+              return ImagesViewerGridCard(asset: asset, mod: mod);
             },
           );
         },
@@ -111,10 +121,12 @@ class ImagesViewer extends StatelessWidget {
 
 class ImagesViewerGridCard extends StatelessWidget {
   final Asset asset;
+  final Mod mod;
 
   const ImagesViewerGridCard({
     super.key,
     required this.asset,
+    required this.mod,
   });
 
   @override
@@ -124,6 +136,7 @@ class ImagesViewerGridCard extends StatelessWidget {
       WidgetRef ref,
       Offset position,
       Asset asset,
+      Mod mod,
     ) {
       showMenu(
         context: context,
@@ -233,7 +246,7 @@ class ImagesViewerGridCard extends StatelessWidget {
 
             case ContextMenuActionEnum.replaceUrl:
               if (context.mounted) {
-                showReplaceUrlDialog(context, ref);
+                showReplaceUrlDialog(context, ref, asset, mod);
               }
               break;
 
@@ -271,10 +284,10 @@ class ImagesViewerGridCard extends StatelessWidget {
 
             return GestureDetector(
               onTapDown: (details) => showImagesViewerGridCardContextMenu(
-                  context, ref, details.globalPosition, asset),
+                  context, ref, details.globalPosition, asset, mod),
               onSecondaryTapDown: (details) =>
                   showImagesViewerGridCardContextMenu(
-                      context, ref, details.globalPosition, asset),
+                      context, ref, details.globalPosition, asset, mod),
               child: MouseRegion(
                 onEnter: (event) => isHovered.value = true,
                 onExit: (event) => isHovered.value = false,
@@ -293,70 +306,6 @@ class ImagesViewerGridCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      /*       Positioned(
-                        bottom: 8,
-                        left: 8,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 4,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              spacing: 4,
-                              children: [
-                                IconButton(
-                                  tooltip: "Open URL in Browser",
-                                  onPressed: () => openUrl(asset.url),
-                                  icon: const Icon(Icons.open_in_browser),
-                                  style: IconButton.styleFrom(
-                                      backgroundColor: Colors.black),
-                                ),
-                                IconButton(
-                                  tooltip: "Open in File Explorer",
-                                  onPressed: () =>
-                                      openInFileExplorer(asset.filePath!),
-                                  icon: const Icon(Icons.folder_open),
-                                  style: IconButton.styleFrom(
-                                      backgroundColor: Colors.black),
-                                ),
-                                IconButton(
-                                  tooltip: "Open File",
-                                  onPressed: () => openImageFile(asset.filePath!),
-                                  icon: const Icon(Icons.folder_special),
-                                  style: IconButton.styleFrom(
-                                      backgroundColor: Colors.black),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              spacing: 4,
-                              children: [
-                                IconButton(
-                                  tooltip: "Copy URL",
-                                  onPressed: () =>
-                                      copyToClipboard(context, asset.url),
-                                  icon: const Icon(Icons.link),
-                                  style: IconButton.styleFrom(
-                                      backgroundColor: Colors.black),
-                                ),
-                                IconButton(
-                                  tooltip: "Copy Filename",
-                                  onPressed: () => copyToClipboard(
-                                    context,
-                                    getFileNameFromPath(asset.filePath ?? ''),
-                                  ),
-                                  icon: const Icon(Icons.file_copy),
-                                  style: IconButton.styleFrom(
-                                      backgroundColor: Colors.black),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ), */
                     ],
                   ),
                 ),

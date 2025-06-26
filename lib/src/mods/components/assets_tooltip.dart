@@ -35,25 +35,25 @@ class HelpTooltip extends StatelessWidget {
             style:
                 TextStyle(fontWeight: FontWeight.bold, color: Colors.lightBlue),
           ),
-          TextSpan(text: ' - Selected (right-clicked)\n\n'),
+          TextSpan(text: ' - Selected (clicked)\n\n'),
 
           // Actions
           TextSpan(
             text: 'Actions:\n',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          TextSpan(text: '• Right-click on a URL to see options\n'),
-          TextSpan(text: '• Right-click on a Mod to see options\n'),
+          TextSpan(text: '• Click a URL to see options\n'),
+          TextSpan(text: '• Right-click a Mod to see options\n'),
           TextSpan(
               text:
-                  '• Click on Steam icon to open Workshop page of selected mod\n'),
+                  '• Click the Steam icon to open the Workshop page of the selected mod\n'),
           TextSpan(
               text:
-                  '• Download button: Try to download all missing asset files\n'),
-          TextSpan(text: '• Cancel button: Cancel all downloads\n'),
+                  '• Download button: Attempts to download all missing asset files\n'),
+          TextSpan(text: '• Cancel button: Cancels all downloads\n'),
           TextSpan(
               text:
-                  '• Backup button: Create backup (even with missing asset files)'),
+                  '• Backup button: Creates a backup (even with missing asset files)'),
         ],
       ),
       child: Icon(

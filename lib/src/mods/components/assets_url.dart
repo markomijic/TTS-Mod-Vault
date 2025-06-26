@@ -110,17 +110,6 @@ class AssetsUrl extends HookConsumerWidget {
               ],
             ),
           ),
-          if (ref.read(settingsProvider).enableTtsModdersFeatures)
-            PopupMenuItem(
-              value: ContextMenuActionEnum.replaceUrl,
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(Icons.find_replace),
-                  Text('Replace URL'),
-                ],
-              ),
-            ),
           if (!asset.fileExists)
             PopupMenuItem(
               value: ContextMenuActionEnum.download,
@@ -129,6 +118,17 @@ class AssetsUrl extends HookConsumerWidget {
                 children: [
                   Icon(Icons.download),
                   Text('Download'),
+                ],
+              ),
+            ),
+          if (ref.read(settingsProvider).enableTtsModdersFeatures)
+            PopupMenuItem(
+              value: ContextMenuActionEnum.replaceUrl,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.find_replace),
+                  Text('Replace URL'),
                 ],
               ),
             ),
@@ -175,9 +175,10 @@ class AssetsUrl extends HookConsumerWidget {
               break;
 
             case ContextMenuActionEnum.replaceUrl:
-              if (context.mounted) {
-                showReplaceUrlDialog(context, ref);
-              }
+              final selectedMod = ref.read(selectedModProvider);
+              if (selectedMod == null || !context.mounted) break;
+
+              showReplaceUrlDialog(context, ref, asset, selectedMod);
               break;
 
             case ContextMenuActionEnum.download:
@@ -202,6 +203,12 @@ class AssetsUrl extends HookConsumerWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        onTapDown: (details) {
+          if (ref.read(actionInProgressProvider)) return;
+
+          isSelected.value = true;
+          showURLContextMenu(context, details.globalPosition);
+        },
         onSecondaryTapDown: (details) {
           if (ref.read(actionInProgressProvider)) return;
 

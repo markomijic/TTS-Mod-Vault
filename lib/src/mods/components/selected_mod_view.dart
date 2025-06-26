@@ -146,6 +146,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             ),
           ),
           alignment: Alignment.topLeft,
+          padding: EdgeInsets.only(top: 8),
           child: Row(
             spacing: 8,
             children: [
@@ -165,7 +166,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                         padding: EdgeInsets.all(2),
                         child: Image.asset(
                           'assets/icon/steam_logo.png',
-                          height: 20,
+                          height: 22,
                           isAntiAlias: true,
                           fit: BoxFit.fitHeight,
                         ),
@@ -275,25 +276,13 @@ class _OpenImagesViewerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomTooltip(
-      message: "Open Images Viewer",
+      message: "View Images",
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: () async {
             if (context.mounted) {
-              final existingImages = selectedMod
-                  .getAssetsByType(AssetTypeEnum.image)
-                  .where((element) =>
-                      element.fileExists &&
-                      element.filePath != null &&
-                      element.filePath!.isNotEmpty)
-                  .toList();
-              showImagesViewer(
-                context,
-                existingImages,
-                selectedMod.assetLists?.images.length ?? 0,
-                selectedMod.saveName,
-              );
+              showImagesViewer(context, selectedMod);
             }
           },
           child: Icon(Icons.image, size: 20),

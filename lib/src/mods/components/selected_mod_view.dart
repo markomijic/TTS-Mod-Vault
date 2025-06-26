@@ -6,8 +6,7 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
     show SelectedModActionButtons, AssetsUrl, DownloadProgressBar, HelpTooltip;
 import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
     show CustomTooltip;
-import 'package:tts_mod_vault/src/mods/components/images_viewer.dart'
-    show showImagesViewer;
+
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -282,7 +281,7 @@ class _OpenImagesViewerButton extends StatelessWidget {
         child: GestureDetector(
           onTap: () async {
             if (context.mounted) {
-              showImagesViewer(context, selectedMod);
+              Navigator.of(context).pushNamed('/images-viewer');
             }
           },
           child: Icon(Icons.image, size: 20),

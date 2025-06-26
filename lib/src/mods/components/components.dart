@@ -12,3 +12,4 @@ export 'selected_mod_view.dart';
 export 'mods_selector.dart';
 export 'search.dart';
 export 'message_progress_indicator.dart';
+export 'images_viewer_grid_card.dart';

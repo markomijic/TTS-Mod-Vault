@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tts_mod_vault/src/mods/images_viewer_page.dart'
+    show ImagesViewerPage;
 import 'package:tts_mod_vault/src/mods/mods_page.dart' show ModsPage;
 import 'package:tts_mod_vault/src/splash/splash_page.dart' show SplashPage;
 import 'package:tts_mod_vault/src/utils.dart' show darkTheme;
@@ -16,6 +18,7 @@ class App extends StatelessWidget {
       routes: {
         '/': (context) => const SplashPage(),
         '/mods': (context) => const ModsPage(),
+        '/images-viewer': (context) => const ImagesViewerPage(),
       },
     );
   }

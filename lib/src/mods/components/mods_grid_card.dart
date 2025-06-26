@@ -44,7 +44,8 @@ class ModsGridCard extends HookConsumerWidget {
         onSecondaryTapDown: (details) {
           showModContextMenu(context, ref, details.globalPosition, mod);
         },
-        child: Container(
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 150),
           decoration: BoxDecoration(
             border: Border.all(
               width: 4,

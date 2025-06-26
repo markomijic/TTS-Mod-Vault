@@ -3,140 +3,35 @@ import 'dart:io' show File;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show HookConsumer, WidgetRef;
+    show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/replace_url_dialog.dart'
     show showReplaceUrlDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
-import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
-    show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show selectedModProvider, settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
         getFileNameFromPath,
         openFile,
         openInFileExplorer,
-        openUrl,
-        showSnackBar;
+        openUrl;
 
-void showImagesViewer(
-  BuildContext context,
-  Mod mod,
-) {
-  if (context.mounted) {
-    final existingImages = mod
-        .getAssetsByType(AssetTypeEnum.image)
-        .where((element) =>
-            element.fileExists &&
-            element.filePath != null &&
-            element.filePath!.isNotEmpty)
-        .toList();
-
-    if (existingImages.isEmpty) {
-      showSnackBar(
-          context, "${mod.saveName} doesn't have any downloaded images");
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return ImagesViewer(
-          existingImages: existingImages,
-          totalImagesCount: mod.assetLists?.images.length ?? 0,
-          mod: mod,
-        );
-      },
-    );
-  }
-}
-
-class ImagesViewer extends StatelessWidget {
-  final List<Asset> existingImages;
-  final int totalImagesCount;
-  final Mod mod;
-
-  const ImagesViewer({
-    super.key,
-    required this.existingImages,
-    required this.totalImagesCount,
-    required this.mod,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "(${existingImages.length}/$totalImagesCount) ",
-              style: TextStyle(
-                overflow: TextOverflow.ellipsis,
-                fontSize: 30,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                mod.saveName,
-                style: TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  fontSize: 30,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final crossAxisCount =
-              constraints.maxWidth > 500 ? constraints.maxWidth ~/ 220 : 1;
-
-          return GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              mainAxisSpacing: 20,
-              crossAxisSpacing: 20,
-              crossAxisCount: crossAxisCount,
-            ),
-            itemCount: existingImages.length,
-            itemBuilder: (context, index) {
-              final asset = existingImages[index];
-
-              return ImagesViewerGridCard(asset: asset, mod: mod);
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class ImagesViewerGridCard extends StatelessWidget {
+class ImagesViewerGridCard extends HookConsumerWidget {
   final Asset asset;
-  final Mod mod;
 
-  const ImagesViewerGridCard({
-    super.key,
-    required this.asset,
-    required this.mod,
-  });
+  const ImagesViewerGridCard({super.key, required this.asset});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void showImagesViewerGridCardContextMenu(
       BuildContext context,
       WidgetRef ref,
       Offset position,
       Asset asset,
-      Mod mod,
     ) {
       showMenu(
         context: context,
@@ -245,7 +140,8 @@ class ImagesViewerGridCard extends StatelessWidget {
               break;
 
             case ContextMenuActionEnum.replaceUrl:
-              if (context.mounted) {
+              final mod = ref.read(selectedModProvider);
+              if (context.mounted && mod != null) {
                 showReplaceUrlDialog(context, ref, asset, mod);
               }
               break;
@@ -257,6 +153,7 @@ class ImagesViewerGridCard extends StatelessWidget {
       });
     }
 
+    final isHovered = useState(false);
     return Stack(
       children: [
         Image.file(
@@ -278,40 +175,24 @@ class ImagesViewerGridCard extends StatelessWidget {
             );
           },
         ),
-        HookConsumer(
-          builder: (context, ref, child) {
-            final isHovered = useState(false);
-
-            return GestureDetector(
-              onTapDown: (details) => showImagesViewerGridCardContextMenu(
-                  context, ref, details.globalPosition, asset, mod),
-              onSecondaryTapDown: (details) =>
-                  showImagesViewerGridCardContextMenu(
-                      context, ref, details.globalPosition, asset, mod),
-              child: MouseRegion(
-                onEnter: (event) => isHovered.value = true,
-                onExit: (event) => isHovered.value = false,
-                child: Visibility(
-                  visible: isHovered.value,
-                  replacement: Container(),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 4,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+        GestureDetector(
+          onTapDown: (details) => showImagesViewerGridCardContextMenu(
+              context, ref, details.globalPosition, asset),
+          onSecondaryTapDown: (details) => showImagesViewerGridCardContextMenu(
+              context, ref, details.globalPosition, asset),
+          child: MouseRegion(
+            onEnter: (event) => isHovered.value = true,
+            onExit: (event) => isHovered.value = false,
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 150),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  width: 4,
+                  color: isHovered.value ? Colors.white : Colors.transparent,
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ],
     );

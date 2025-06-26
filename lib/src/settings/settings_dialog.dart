@@ -128,7 +128,7 @@ class SettingsDialog extends HookConsumerWidget {
               ),
               CustomTooltip(
                 message:
-                    "Enables:\nReplace URL in asset lists and Images Viewer",
+                    "Enables:\nReplace URL in asset lists and viewing images",
                 child: CheckboxListTile(
                   title: Text('Enable TTS Modders features'),
                   value: enableTtsModdersFeatures.value,

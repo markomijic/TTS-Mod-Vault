@@ -11,7 +11,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getFileNameFromURL, newUrl, oldUrl;
+    show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
 class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
   final Ref ref;
@@ -74,10 +74,11 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
       final filepath = file.path;
 
       // In case of old files named using old url, remap them to the new url for the existing assets list
-      final mappedFilename = filename.startsWith(getFileNameFromURL(oldUrl))
-          ? filename.replaceFirst(
-              getFileNameFromURL(oldUrl), getFileNameFromURL(newUrl))
-          : filename;
+      final mappedFilename =
+          filename.startsWith(getFileNameFromURL(oldCloudUrl))
+              ? filename.replaceFirst(getFileNameFromURL(oldCloudUrl),
+                  getFileNameFromURL(newSteamUserContentUrl))
+              : filename;
 
       filenames.add(mappedFilename);
       filepaths.add(filepath);

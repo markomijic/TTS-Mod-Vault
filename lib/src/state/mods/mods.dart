@@ -34,7 +34,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         storageProvider;
 import 'package:tts_mod_vault/src/state/storage/storage.dart' show Storage;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getFileNameFromURL, newUrl, oldUrl;
+    show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
@@ -474,7 +474,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final assetUrls = <String>[];
 
     for (final url in urls) {
-      assetUrls.add(_replaceInUrl(url, oldUrl, newUrl));
+      assetUrls.add(_replaceInUrl(url, oldCloudUrl, newSteamUserContentUrl));
     }
 
     final existenceChecks = assetUrls
@@ -641,15 +641,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<void> _renameFile(String currentFilePath, String newAssetUrl) async {
-    final file = File(currentFilePath);
-
-    final newPath = path.join(file.parent.path,
-        '${getFileNameFromURL(newAssetUrl)}${path.extension(currentFilePath)}');
-
-    await file.rename(newPath);
-  }
-
   Future<void> updateModAsset({
     required Mod selectedMod,
     required Asset oldAsset,
@@ -662,111 +653,44 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         return;
       }
 
-      // TODO update json
+      await _replaceUrlInJsonFile(
+          selectedMod.jsonFilePath, oldAsset.url, newAssetUrl);
 
       if (renameFile && oldAsset.filePath != null) {
-        await _renameFile(oldAsset.filePath!, newAssetUrl);
+        await _renameAssetFile(oldAsset.filePath!, newAssetUrl);
+        await ref
+            .read(existingAssetListsProvider.notifier)
+            .setExistingAssetsListByType(assetType);
       }
 
-      final mods = switch (selectedMod.modType) {
-            ModTypeEnum.mod => state.value?.mods,
-            ModTypeEnum.save => state.value?.saves,
-            ModTypeEnum.savedObject => state.value?.savedObjects,
-          } ??
-          [];
+      await ref.read(storageProvider).deleteMod(selectedMod.jsonFileName);
 
-      final updatedAssetLists = await _updateAssetInLists(
-        selectedMod.assetLists,
-        oldAsset,
-        assetType,
-        newAssetUrl,
-      );
-
-      final updatedMods = mods.map((mod) {
-        if (mod.jsonFileName == selectedMod.jsonFileName) {
-          return mod.copyWith(assetLists: updatedAssetLists);
-        }
-        return mod;
-      }).toList();
-
-      final updatedSelectedMod = updatedMods.firstWhereOrNull(
-        (mod) => mod.jsonFileName == selectedMod.jsonFileName,
-      );
-      setSelectedMod(updatedSelectedMod);
-
-      switch (selectedMod.modType) {
-        case ModTypeEnum.mod:
-          state = AsyncValue.data(state.value!.copyWith(mods: updatedMods));
-          break;
-        case ModTypeEnum.save:
-          state = AsyncValue.data(state.value!.copyWith(saves: updatedMods));
-          break;
-        case ModTypeEnum.savedObject:
-          state =
-              AsyncValue.data(state.value!.copyWith(savedObjects: updatedMods));
-          break;
-      }
+      await updateMod(selectedMod);
     } catch (e) {
       debugPrint('updateModAsset error: $e');
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
-  Future<AssetLists?> _updateAssetInLists(
-    AssetLists? assetLists,
-    Asset oldAsset,
-    AssetTypeEnum assetType,
-    String newAssetUrl,
+  Future<void> _renameAssetFile(
+      String currentFilePath, String newAssetUrl) async {
+    final file = File(currentFilePath);
+
+    final newPath = path.join(file.parent.path,
+        '${getFileNameFromURL(newAssetUrl)}${path.extension(currentFilePath)}');
+
+    await file.rename(newPath);
+  }
+
+  Future<void> _replaceUrlInJsonFile(
+    String filePath,
+    String oldUrl,
+    String newUrl,
   ) async {
-    if (assetLists == null) return null;
+    String jsonString = await File(filePath).readAsString();
 
-    Future<List<Asset>> updateAssetList(List<Asset> assets) async {
-      final newFilepath = oldAsset.filePath == null
-          ? null
-          : path.join(path.dirname(oldAsset.filePath!),
-              '${getFileNameFromURL(newAssetUrl)}${path.extension(oldAsset.filePath!)}');
-      final newFileExists =
-          newFilepath != null ? await File(newFilepath).exists() : false;
-      final newAsset = Asset(
-        url: newAssetUrl,
-        filePath: newFilepath,
-        fileExists: newFileExists,
-      );
+    String updatedJsonString = jsonString.replaceAll(oldUrl, newUrl);
 
-      debugPrint('newAsset filepath: $newFilepath');
-      debugPrint('newAsset url: $newAssetUrl');
-      debugPrint('newAsset exists: $newFileExists');
-
-      return assets.map((asset) {
-        return asset.url == oldAsset.url ? newAsset : asset;
-      }).toList();
-    }
-
-    switch (assetType) {
-      case AssetTypeEnum.assetBundle:
-        return assetLists.copyWith(
-          assetBundles: await updateAssetList(assetLists.assetBundles),
-        );
-
-      case AssetTypeEnum.audio:
-        return assetLists.copyWith(
-          audio: await updateAssetList(assetLists.audio),
-        );
-
-      case AssetTypeEnum.image:
-        return assetLists.copyWith(
-          images: await updateAssetList(assetLists.images),
-        );
-
-      case AssetTypeEnum.model:
-        return assetLists.copyWith(
-          models: await updateAssetList(assetLists.models),
-        );
-
-      case AssetTypeEnum.pdf:
-        return assetLists.copyWith(
-          pdf: await updateAssetList(assetLists.pdf),
-        );
-    }
+    await File(filePath).writeAsString(updatedJsonString);
   }
 }

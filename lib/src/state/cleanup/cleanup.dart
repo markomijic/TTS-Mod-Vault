@@ -97,11 +97,11 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
         if (fileName.startsWith("file")) continue;
 
         // In case of old url naming scheme rename to new url to match existing assets lists
-        if (fileName.startsWith(getFileNameFromURL(oldUrl))) {
+        if (fileName.startsWith(getFileNameFromURL(oldCloudUrl))) {
           final originalFileName = fileName;
 
-          fileName = fileName.replaceFirst(
-              getFileNameFromURL(oldUrl), getFileNameFromURL(newUrl));
+          fileName = fileName.replaceFirst(getFileNameFromURL(oldCloudUrl),
+              getFileNameFromURL(newSteamUserContentUrl));
 
           // Check if old url file has a duplicate with new url file
           final newUrlFilepath =

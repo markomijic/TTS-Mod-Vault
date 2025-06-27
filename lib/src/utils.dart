@@ -19,8 +19,8 @@ import 'package:url_launcher/url_launcher.dart'
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
-const oldUrl = "http://cloud-3.steamusercontent.com/";
-const newUrl = "https://steamusercontent-a.akamaihd.net/";
+const oldCloudUrl = "http://cloud-3.steamusercontent.com/";
+const newSteamUserContentUrl = "https://steamusercontent-a.akamaihd.net/";
 const nexusModsDownloadPageUrl =
     "https://www.nexusmods.com/tabletopsimulator/mods/426";
 

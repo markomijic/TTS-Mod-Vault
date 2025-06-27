@@ -16,7 +16,11 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, selectedModProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getFileNameFromURL, newUrl, oldUrl, sanitizeFileName;
+    show
+        getFileNameFromURL,
+        newSteamUserContentUrl,
+        oldCloudUrl,
+        sanitizeFileName;
 
 class BackupNotifier extends StateNotifier<BackupState> {
   final Ref ref;
@@ -148,8 +152,8 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
             // Check if file exists under old url naming scheme
             final oldUrlBase = newUrlBase.replaceFirst(
-              getFileNameFromURL(newUrl),
-              getFileNameFromURL(oldUrl),
+              getFileNameFromURL(newSteamUserContentUrl),
+              getFileNameFromURL(oldCloudUrl),
             );
 
             return name.startsWith(newUrlBase) || name.startsWith(oldUrlBase);

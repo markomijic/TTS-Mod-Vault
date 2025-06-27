@@ -618,17 +618,15 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         return jsonFilePaths;
       }
 
-      // List all files in the directory
-      await for (final entity in directory.list(recursive: false)) {
-        // TO DO NO COMMITO
+      await for (final entity in directory.list(recursive: true)) {
         if (entity is File) {
-          // Check if the file has a .json extension
           if (path.extension(entity.path).toLowerCase() == '.json') {
             // Skip files in excluded directory if specified
             if (excludeDirectory != null &&
                 path.isWithin(excludeDirectory, entity.path)) {
               continue;
             }
+
             jsonFilePaths.add(path.normalize(entity.path));
           }
         }

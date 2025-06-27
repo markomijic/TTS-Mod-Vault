@@ -641,15 +641,31 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
+  Future<void> _renameFile(String currentFilePath, String newAssetUrl) async {
+    final file = File(currentFilePath);
+
+    final newPath = path.join(file.parent.path,
+        '${getFileNameFromURL(newAssetUrl)}${path.extension(currentFilePath)}');
+
+    await file.rename(newPath);
+  }
+
   Future<void> updateModAsset({
     required Mod selectedMod,
     required Asset oldAsset,
     required AssetTypeEnum assetType,
     required String newAssetUrl,
+    required bool renameFile,
   }) async {
     try {
       if (!state.hasValue) {
         return;
+      }
+
+      // TODO update json
+
+      if (renameFile && oldAsset.filePath != null) {
+        await _renameFile(oldAsset.filePath!, newAssetUrl);
       }
 
       final mods = switch (selectedMod.modType) {

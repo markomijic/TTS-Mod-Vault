@@ -140,14 +140,12 @@ class ReplaceUrlDialog extends HookConsumerWidget {
                   try {
                     updatingURL.value = true;
 
-                    // TODO add updating JSON
-                    // TODO add rename of file if checked
-
                     await ref.read(modsProvider.notifier).updateModAsset(
                           selectedMod: mod,
                           oldAsset: asset,
                           assetType: assetType,
                           newAssetUrl: newUrl,
+                          renameFile: renameFileBox.value,
                         );
 
                     if (context.mounted) {

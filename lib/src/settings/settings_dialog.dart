@@ -211,7 +211,7 @@ class SettingsDialog extends HookConsumerWidget {
 
                 if (await ref
                     .read(directoriesProvider.notifier)
-                    .isTtsDirectoryValid(ttsDir)) {
+                    .isModsDirectoryValid(ttsDir)) {
                   ref.read(modsProvider.notifier).setLoading();
                   ref.read(loaderProvider).refreshAppData();
                   if (context.mounted) Navigator.pop(context);

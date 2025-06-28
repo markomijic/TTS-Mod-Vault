@@ -27,14 +27,17 @@ class DirectoriesState {
     required this.pdfDir,
   });
 
-  factory DirectoriesState.fromTtsDir(String ttsDir) {
-    final modsDir = '$ttsDir/Mods';
+  factory DirectoriesState.fromDir(String dir, String? savesDir) {
+    final modsDir = '$dir/Mods';
+
     return DirectoriesState(
-      ttsDir: ttsDir,
-      savesDir: '$ttsDir/Saves',
-      savedObjectsDir: '$ttsDir/Saves/Saved Objects',
-      workshopDir: '$modsDir/Workshop',
+      ttsDir: dir,
+      // Saves
+      savesDir: savesDir != null ? '$savesDir/Saves' : '$dir/Saves',
+      savedObjectsDir: '$savesDir/Saves/Saved Objects',
+      // Mods
       modsDir: modsDir,
+      workshopDir: '$modsDir/Workshop',
       assetBundlesDir: '$modsDir/Assetbundles',
       audioDir: '$modsDir/Audio',
       imagesDir: '$modsDir/Images',

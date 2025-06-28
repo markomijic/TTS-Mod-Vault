@@ -160,13 +160,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // Prepare cached data for all mods
       final Map<String, String?> cachedDateTimeStamps = {};
-      final Map<String, Map<String, String>?> cachedAssetLists = {};
+      final Map<String, Map<String, String>?> cachedUrls = {};
 
       for (final mod in jsonListMods) {
         cachedDateTimeStamps[mod.jsonFileName] =
             ref.read(storageProvider).getModDateTimeStamp(mod.jsonFileName);
-        cachedAssetLists[mod.jsonFileName] =
-            ref.read(storageProvider).getModAssetLists(mod.jsonFileName);
+        cachedUrls[mod.jsonFileName] =
+            ref.read(storageProvider).getModUrls(mod.jsonFileName);
       }
 
       // Distribute batches across isolates
@@ -192,7 +192,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
               MapEntry(
                   mod.jsonFileName, cachedDateTimeStamps[mod.jsonFileName]))),
           cachedAssetLists: Map.fromEntries(allModsForIsolate.map((mod) =>
-              MapEntry(mod.jsonFileName, cachedAssetLists[mod.jsonFileName]))),
+              MapEntry(mod.jsonFileName, cachedUrls[mod.jsonFileName]))),
         );
       }).toList();
 
@@ -252,7 +252,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       List<Mod> allMods = [];
       for (final mod in allProcessedMods) {
         final jsonURLs =
-            ref.read(storageProvider).getModAssetLists(mod.jsonFileName) ??
+            ref.read(storageProvider).getModUrls(mod.jsonFileName) ??
                 <String, String>{};
         final finalMod = await _getModData(mod, jsonURLs);
         allMods.add(finalMod);
@@ -398,7 +398,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         if (mod.jsonFileName == selectedMod.jsonFileName) {
           updatedMod = await _getModData(
             mod,
-            ref.read(storageProvider).getModAssetLists(mod.jsonFileName) ??
+            ref.read(storageProvider).getModUrls(mod.jsonFileName) ??
                 await _extractUrlsFromJson(mod.jsonFilePath),
           );
           if (updatedMod != null) return updatedMod!;

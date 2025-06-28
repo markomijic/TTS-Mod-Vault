@@ -23,10 +23,9 @@ dependencies:
   http: ^1.2.2
   dio: ^5.7.0
   collection: ^1.19.0
-  window_manager: ^0.4.3
+  window_manager: ^0.5.0
   mime: ^2.0.0
   file_picker: ^10.1.9
-  shared_preferences: ^2.3.5
   archive: ^4.0.5
   package_info_plus: ^8.3.0
   url_launcher: ^6.3.1

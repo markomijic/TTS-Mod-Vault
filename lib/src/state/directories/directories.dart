@@ -16,9 +16,10 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
   void initializeDirectories() {
     debugPrint("initializeDirectories");
 
-    final ttsDir =
-        ref.read(storageProvider).getTtsDir() ?? _getDefaultTtsDirectory();
-    state = DirectoriesState.fromTtsDir(ttsDir);
+    final modsDir =
+        ref.read(storageProvider).getModsDir() ?? _getDefaultTtsDirectory();
+    final savesDir = ref.read(storageProvider).getSavesDir();
+    state = DirectoriesState.fromDir(modsDir, savesDir);
   }
 
   String _getDefaultTtsDirectory() {
@@ -59,27 +60,41 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     return Platform.environment['HOME'] ?? '';
   }
 
-  Future<void> _saveNewTtsDirectory(String ttsDir) async {
-    state = DirectoriesState.fromTtsDir(ttsDir);
-    await ref.read(storageProvider).saveTtsDir(ttsDir);
+  Future<void> _saveNewTtsDirectory(String modsDir, String? savesDir) async {
+    state = DirectoriesState.fromDir(modsDir, savesDir);
+    await ref.read(storageProvider).saveModsDir(modsDir);
+    if (savesDir != null) {
+      await ref.read(storageProvider).saveSavesDir(savesDir);
+    }
   }
 
-  Future<bool> isTtsDirectoryValid(String ttsDir) async {
-    final mainDirectoryResult = await Directory(ttsDir).exists();
+  Future<bool> isModsDirectoryValid(String ttsDir) async {
+    final doesDirectoryExist = await Directory(ttsDir).exists();
 
-    if (!mainDirectoryResult) return false;
+    if (!doesDirectoryExist) return false;
 
-    final mainTtsDirectoriesResult = await Future.wait([
-      'Mods',
-      'Saves',
-      /* 'DLC',
-      'Screenshots' */
-    ].map((folder) => Directory(path.join(ttsDir, folder)).exists()))
-        .then((exists) => exists.every((e) => e));
+/*     final result = await Future.wait(['Mods', 'Saves', 'DLC', 'Screenshots']
+            .map((folder) => Directory(path.join(ttsDir, folder)).exists()))
+        .then((exists) => exists.every((e) => e)); */
 
-    if (!mainTtsDirectoriesResult) return false;
+    final result = await Directory(path.join(ttsDir, 'Mods')).exists();
 
-    await _saveNewTtsDirectory(ttsDir);
+    if (!result) return false;
+
+    await _saveNewTtsDirectory(ttsDir, null);
+    return true;
+  }
+
+  Future<bool> isSavesDirectoryValid(String ttsDir) async {
+    final doesDirectoryExist = await Directory(ttsDir).exists();
+
+    if (!doesDirectoryExist) return false;
+
+    final result = await Directory(path.join(ttsDir, 'Saves')).exists();
+
+    if (!result) return false;
+
+    //await _saveNewTtsDirectory(ttsDir);
     return true;
   }
 

@@ -52,7 +52,7 @@ class SplashPage extends HookConsumerWidget {
 
         // Load existing assets lists and mods data if TTS Data Directories exist
         if (await directoriesNotifier
-            .isTtsDirectoryValid(ref.read(directoriesProvider).ttsDir)) {
+            .isModsDirectoryValid(ref.read(directoriesProvider).ttsDir)) {
           await loaderNotifier.loadAppData(
             () => Navigator.of(context).pushReplacementNamed('/mods'),
           );
@@ -104,7 +104,7 @@ class SplashPage extends HookConsumerWidget {
                                 WidgetsBinding.instance
                                     .addPostFrameCallback((_) async {
                                   if (!await directoriesNotifier
-                                      .isTtsDirectoryValid(ttsDir!)) {
+                                      .isModsDirectoryValid(ttsDir!)) {
                                     showTtsDirNotFound.value = true;
 
                                     if (context.mounted) {

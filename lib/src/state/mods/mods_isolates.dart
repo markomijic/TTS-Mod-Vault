@@ -1,5 +1,5 @@
 import 'dart:convert' show jsonDecode;
-import 'dart:io' show File;
+import 'dart:io' show Directory, File;
 
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:intl/intl.dart' show DateFormat;
@@ -8,10 +8,11 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
+import 'package:tts_mod_vault/src/utils.dart'
+    show newSteamUserContentUrl, oldCloudUrl;
 
-// Data class for isolate communication - handles multiple batches per isolate
 class IsolateWorkData {
-  final List<List<Mod>> batches; // Multiple batches for this isolate
+  final List<List<Mod>> batches;
   final Map<String, String?> cachedDateTimeStamps;
   final Map<String, Map<String, String>?> cachedAssetLists;
 
@@ -44,19 +45,13 @@ class ModStorageUpdate {
   });
 }
 
-// Top-level function for isolate - processes multiple batches
 Future<IsolateWorkResult> processMultipleBatchesInIsolate(
     IsolateWorkData workData) async {
   final List<Mod> allProcessedMods = [];
   final List<ModStorageUpdate> allStorageUpdates = [];
 
-  debugPrint(
-      'Isolate processing ${workData.batches.length} batches with total ${workData.batches.expand((batch) => batch).length} mods');
-
   for (int batchIndex = 0; batchIndex < workData.batches.length; batchIndex++) {
     final batch = workData.batches[batchIndex];
-    debugPrint(
-        'Isolate processing batch ${batchIndex + 1}/${workData.batches.length} with ${batch.length} mods');
 
     for (final mod in batch) {
       try {
@@ -73,12 +68,15 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
         Map<String, String>? jsonURLs;
 
         if (needsRefresh) {
-          jsonURLs = await _extractUrlsFromJsonIsolate(mod.jsonFilePath);
+          jsonURLs = await extractUrlsFromJson(mod.jsonFilePath);
 
           allStorageUpdates.add(ModStorageUpdate(
             jsonFileName: mod.jsonFileName,
             dateTimeStamp: mod.dateTimeStamp ?? '',
-            jsonURLs: jsonURLs,
+            jsonURLs: jsonURLs.map((key, value) => MapEntry(
+                  key.replaceAll(oldCloudUrl, newSteamUserContentUrl),
+                  value,
+                )),
           ));
         }
 
@@ -90,15 +88,13 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
     }
   }
 
-  debugPrint('Isolate completed processing ${allProcessedMods.length} mods');
   return IsolateWorkResult(
     processedMods: allProcessedMods,
     storageUpdates: allStorageUpdates,
   );
 }
 
-// Isolate-safe version of _extractUrlsFromJson
-Future<Map<String, String>> _extractUrlsFromJsonIsolate(String filePath) async {
+Future<Map<String, String>> extractUrlsFromJson(String filePath) async {
   try {
     final file = File(filePath);
     final jsonString = await file.readAsString();
@@ -123,10 +119,9 @@ Future<Map<String, String>> _extractUrlsFromJsonIsolate(String filePath) async {
 Map<String, String> _extractUrlsWithRegex(String jsonString) {
   Map<String, String> urls = {};
 
-  // Exact keys from your AssetTypeEnum subtypes
   List<String> assetKeys = [];
-  for (final kurac in AssetTypeEnum.values) {
-    assetKeys.addAll(kurac.subtypes);
+  for (final value in AssetTypeEnum.values) {
+    assetKeys.addAll(value.subtypes);
   }
 
   // Create regex pattern for each exact asset key
@@ -135,19 +130,14 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
     // Handles various whitespace scenarios and captures the URL
     final pattern = RegExp(
       '"$key"\\s*:\\s*"([^"]*)"',
-      caseSensitive: true, // Your keys seem case-sensitive
+      caseSensitive: true,
     );
 
     final matches = pattern.allMatches(jsonString);
     for (final match in matches) {
       final url = match.group(1);
       if (url != null && url.isNotEmpty) {
-        // Validate it's actually a URL (basic check)
-        if (url.startsWith('http://') ||
-            url.startsWith('https://') ||
-            url.startsWith('file://')) {
-          urls[url] = key;
-        }
+        urls[url] = key;
       }
     }
   }
@@ -155,7 +145,6 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
   return urls;
 }
 
-// Isolate-safe version of _extractUrlsWithReversedKeys
 Map<String, String> _extractUrlsWithReversedKeysIsolate(dynamic data,
     [String? parentKey]) {
   Map<String, String> urls = {};
@@ -174,21 +163,9 @@ Map<String, String> _extractUrlsWithReversedKeysIsolate(dynamic data,
     }
   }
 
-  return urls; // Note: AssetType filtering will be done in main isolate
+  return urls;
 }
 
-// Isolate-safe version of _getModData
-/* Future<Mod> _getModDataIsolate(Mod mod) async {
-  final imageFilePath =
-      await _getImageFilePathIsolate(mod.jsonFilePath, mod.jsonFileName);
-
-  return mod.copyWith(
-    imageFilePath: imageFilePath,
-    // Asset lists will be processed in main isolate
-  );
-} */
-
-// Isolate-safe version of _getImageFilePath
 Future<String?> _getImageFilePathIsolate(
   String modDirectory,
   String fileName,
@@ -226,7 +203,6 @@ class InitialModsIsolateData {
   });
 }
 
-// Top-level function for isolate processing
 Future<List<Mod>> processInitialModsInIsolate(
   InitialModsIsolateData data,
 ) async {
@@ -258,11 +234,8 @@ Future<Mod?> _processSingleFileOptimized(
 
   try {
     final file = File(jsonPath);
-    if (!await file.exists()) return null;
-
     final jsonString = await file.readAsString();
 
-    // Fast string-based extraction instead of full JSON parsing
     final saveName =
         _extractSaveNameFromString(jsonString, modType) ?? jsonFileName;
     final dateTimeStamp = _extractDateTimeStampFromString(jsonString);
@@ -282,7 +255,6 @@ Future<Mod?> _processSingleFileOptimized(
   }
 }
 
-// Fast string-based extraction using regex patterns
 String? _extractSaveNameFromString(String jsonString, ModTypeEnum modType) {
   try {
     if (modType == ModTypeEnum.savedObject) {
@@ -412,4 +384,34 @@ String? dateTimeToUnixTimestampSync(String dateTimeVrijednost) {
   } catch (e) {
     return null;
   }
+}
+
+Future<List<String>> getJsonFilesInDirectory({
+  required String directoryPath,
+  String? excludeDirectory,
+}) async {
+  final List<String> jsonFilePaths = [];
+
+  try {
+    final directory = Directory(directoryPath);
+
+    if (!await directory.exists()) {
+      return jsonFilePaths;
+    }
+
+    await for (final entity in directory.list(recursive: true)) {
+      if (entity is File &&
+          path.extension(entity.path).toLowerCase() == '.json') {
+        if (excludeDirectory != null &&
+            path.isWithin(excludeDirectory, entity.path)) {
+          continue;
+        }
+        jsonFilePaths.add(path.normalize(entity.path));
+      }
+    }
+  } catch (e) {
+    debugPrint('getJsonFilesInDirectory error: $e');
+  }
+
+  return jsonFilePaths;
 }

@@ -12,8 +12,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         backupProvider,
         cleanupProvider,
-        loaderProvider,
-        modsProvider;
+        loaderProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         checkForUpdatesOnGitHub,
@@ -29,14 +28,6 @@ class Toolbar extends ConsumerWidget {
     final actionInProgress = ref.watch(actionInProgressProvider);
     final cleanupNotifier = ref.watch(cleanupProvider.notifier);
     final backupNotifier = ref.watch(backupProvider.notifier);
-
-    Future<void> refreshData() async {
-      ref.read(modsProvider.notifier).setLoading();
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await ref.read(loaderProvider).refreshAppData();
-      });
-    }
 
     return Row(
       spacing: 8,
@@ -83,7 +74,7 @@ class Toolbar extends ConsumerWidget {
                     context,
                     'Are you sure you want to refresh data for all mods?',
                     () async {
-                      await refreshData();
+                      await ref.read(loaderProvider).refreshAppData();
                     },
                   ),
           child: const Text('Refresh'),
@@ -98,8 +89,7 @@ class Toolbar extends ConsumerWidget {
 
             if (backupResult && context.mounted) {
               showSnackBar(context, 'Import finished, refreshing data');
-              Future.delayed(
-                  kThemeChangeDuration, () async => await refreshData());
+              await ref.read(loaderProvider).refreshAppData();
             }
           },
           child: const Text('Import backup'),

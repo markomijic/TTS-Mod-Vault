@@ -34,7 +34,9 @@ class DirectoriesState {
       ttsDir: dir,
       // Saves
       savesDir: savesDir != null ? '$savesDir/Saves' : '$dir/Saves',
-      savedObjectsDir: '$savesDir/Saves/Saved Objects',
+      savedObjectsDir: savesDir != null
+          ? '$savesDir/Saves/Saved Objects'
+          : '$dir/Saves/Saved Objects',
       // Mods
       modsDir: modsDir,
       workshopDir: '$modsDir/Workshop',

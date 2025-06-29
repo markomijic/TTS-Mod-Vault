@@ -36,6 +36,11 @@ final loaderProvider = Provider<LoaderNotifier>((ref) {
 final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
     () => ModsStateNotifier());
 
+final cardModProvider =
+    FutureProvider.family.autoDispose<Mod, String>((ref, jsonFileName) async {
+  return ref.read(modsProvider.notifier).getCardMod(jsonFileName);
+});
+
 final selectedModProvider = StateProvider<Mod?>((ref) => null);
 
 final searchQueryProvider = StateProvider<String>((ref) => '');

@@ -1,4 +1,5 @@
 import 'dart:io' show Directory, File;
+import 'dart:isolate' show Isolate;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show debugPrint;
@@ -21,17 +22,55 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
   Future<void> loadExistingAssetsLists() async {
     debugPrint('loadExistingAssetsLists');
 
-    for (final type in AssetTypeEnum.values) {
-      await setExistingAssetsListByType(type);
-    }
+    final directoryPaths = {
+      for (final type in AssetTypeEnum.values)
+        type: ref.read(directoriesProvider.notifier).getDirectoryByType(type)
+    };
+
+    final futures = AssetTypeEnum.values.map((type) async {
+      final directoryPath = directoryPaths[type] ?? '';
+
+      final (filenames, filepaths) = await Isolate.run(
+        () => _getDirectoryFileNamesAndPaths(directoryPath),
+      );
+
+      return (type, filenames, filepaths);
+    });
+
+    final results = await Future.wait(futures);
+
+    final Map<AssetTypeEnum, (List<String>, List<String>)> resultMap = {
+      for (final (type, filenames, filepaths) in results)
+        type: (filenames, filepaths)
+    };
+
+    state = ExistingAssetsListsState(
+      assetBundles: resultMap[AssetTypeEnum.assetBundle]?.$1 ?? [],
+      assetBundlesFilepaths: resultMap[AssetTypeEnum.assetBundle]?.$2 ?? [],
+      audio: resultMap[AssetTypeEnum.audio]?.$1 ?? [],
+      audioFilepaths: resultMap[AssetTypeEnum.audio]?.$2 ?? [],
+      images: resultMap[AssetTypeEnum.image]?.$1 ?? [],
+      imagesFilepaths: resultMap[AssetTypeEnum.image]?.$2 ?? [],
+      models: resultMap[AssetTypeEnum.model]?.$1 ?? [],
+      modelsFilepaths: resultMap[AssetTypeEnum.model]?.$2 ?? [],
+      pdf: resultMap[AssetTypeEnum.pdf]?.$1 ?? [],
+      pdfFilepaths: resultMap[AssetTypeEnum.pdf]?.$2 ?? [],
+    );
   }
 
   Future<void> setExistingAssetsListByType(AssetTypeEnum type) async {
-    final directory =
+    final directoryPath =
         ref.read(directoriesProvider.notifier).getDirectoryByType(type);
-    final (filenames, filepaths) =
-        await _getDirectoryFileNamesAndPaths(directory);
 
+    final (filenames, filepaths) = await Isolate.run(
+      () => _getDirectoryFileNamesAndPaths(directoryPath),
+    );
+
+    _updateStateByType(type, filenames, filepaths);
+  }
+
+  void _updateStateByType(
+      AssetTypeEnum type, List<String> filenames, List<String> filepaths) {
     switch (type) {
       case AssetTypeEnum.assetBundle:
         state = state.copyWith(
@@ -52,63 +91,24 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
     }
   }
 
-  Future<(List<String>, List<String>)> _getDirectoryFileNamesAndPaths(
-      String path) async {
-    final directory = Directory(path);
-
-    if (!directory.existsSync()) {
-      return (<String>[], <String>[]);
-    }
-
-    final files = await directory
-        .list()
-        // Filter to only include files, not directories
-        .where((entity) => entity is File)
-        .toList();
-
-    final List<String> filenames = [];
-    final List<String> filepaths = [];
-
-    for (final file in files) {
-      final filename = p.basenameWithoutExtension(file.path);
-      final filepath = file.path;
-
-      // In case of old files named using old url, remap them to the new url for the existing assets list
-      final mappedFilename =
-          filename.startsWith(getFileNameFromURL(oldCloudUrl))
-              ? filename.replaceFirst(getFileNameFromURL(oldCloudUrl),
-                  getFileNameFromURL(newSteamUserContentUrl))
-              : filename;
-
-      filenames.add(mappedFilename);
-      filepaths.add(filepath);
-    }
-
-    return (filenames, filepaths);
-  }
-
   bool doesAssetFileExist(String assetFileName, AssetTypeEnum type) {
     switch (type) {
       case AssetTypeEnum.assetBundle:
         return state.assetBundles.firstWhereOrNull(
                 (element) => element.startsWith(assetFileName)) !=
             null;
-
       case AssetTypeEnum.audio:
         return state.audio.firstWhereOrNull(
                 (element) => element.startsWith(assetFileName)) !=
             null;
-
       case AssetTypeEnum.image:
         return state.images.firstWhereOrNull(
                 (element) => element.startsWith(assetFileName)) !=
             null;
-
       case AssetTypeEnum.model:
         return state.models.firstWhereOrNull(
                 (element) => element.startsWith(assetFileName)) !=
             null;
-
       case AssetTypeEnum.pdf:
         return state.pdf.firstWhereOrNull(
                 (element) => element.startsWith(assetFileName)) !=
@@ -123,22 +123,52 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
         return index < 0
             ? null
             : path.normalize(state.assetBundlesFilepaths[index]);
-
       case AssetTypeEnum.audio:
         final index = state.audio.indexOf(assetFilename);
         return index < 0 ? null : path.normalize(state.audioFilepaths[index]);
-
       case AssetTypeEnum.image:
         final index = state.images.indexOf(assetFilename);
         return index < 0 ? null : path.normalize(state.imagesFilepaths[index]);
-
       case AssetTypeEnum.model:
         final index = state.models.indexOf(assetFilename);
         return index < 0 ? null : path.normalize(state.modelsFilepaths[index]);
-
       case AssetTypeEnum.pdf:
         final index = state.pdf.indexOf(assetFilename);
         return index < 0 ? null : path.normalize(state.pdfFilepaths[index]);
     }
   }
+}
+
+///
+/// Top-level function required by Isolate.run
+///
+Future<(List<String>, List<String>)> _getDirectoryFileNamesAndPaths(
+    String dirPath) async {
+  final directory = Directory(dirPath);
+
+  if (!directory.existsSync()) {
+    return (<String>[], <String>[]);
+  }
+
+  final files = await directory
+      .list()
+      .where((entity) => entity is File)
+      .cast<File>()
+      .toList();
+
+  final filenames = <String>[];
+  final filepaths = <String>[];
+
+  for (final file in files) {
+    final filename = p.basenameWithoutExtension(file.path);
+    final mappedFilename = filename.startsWith(getFileNameFromURL(oldCloudUrl))
+        ? filename.replaceFirst(getFileNameFromURL(oldCloudUrl),
+            getFileNameFromURL(newSteamUserContentUrl))
+        : filename;
+
+    filenames.add(mappedFilename);
+    filepaths.add(file.path);
+  }
+
+  return (filenames, filepaths);
 }

@@ -322,7 +322,9 @@ class _MissingFilesButton extends StatelessWidget {
                   downloadingAllFiles: false,
                 );
 
-            await ref.read(modsProvider.notifier).updateMod(selectedMod);
+            await ref
+                .read(modsProvider.notifier)
+                .updateSelectedMod(selectedMod);
           },
           child: Icon(Icons.download, size: 20),
         ),

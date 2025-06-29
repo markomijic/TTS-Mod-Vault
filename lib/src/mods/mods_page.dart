@@ -33,20 +33,36 @@ class ModsPage extends HookConsumerWidget {
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (cleanUpState.status == CleanUpStatusEnum.completed) {
-          showSnackBar(context, 'Cleanup finished!');
-          cleanUpNotifier.resetState();
-        } else if (cleanUpState.status == CleanUpStatusEnum.error) {
-          showSnackBar(
-            context,
-            'Cleanup error: ${ref.read(cleanupProvider).errorMessage}',
-          );
-          cleanUpNotifier.resetState();
+        switch (cleanUpState.status) {
+          case CleanUpStatusEnum.idle:
+          case CleanUpStatusEnum.awaitingConfirmation:
+            break;
+
+          case CleanUpStatusEnum.deleting:
+            showSnackBar(context, 'Deleting files...');
+            break;
+
+          case CleanUpStatusEnum.scanning:
+            showSnackBar(context, 'Scanning for files...');
+            break;
+
+          case CleanUpStatusEnum.completed:
+            showSnackBar(context, 'Cleanup finished!');
+            cleanUpNotifier.resetState();
+            break;
+
+          case CleanUpStatusEnum.error:
+            showSnackBar(
+              context,
+              'Cleanup error: ${ref.read(cleanupProvider).errorMessage}',
+            );
+            cleanUpNotifier.resetState();
+            break;
         }
       });
 
       return null;
-    }, [cleanUpState]);
+    }, [cleanUpState.status]);
 
     return SafeArea(
       child: Scaffold(

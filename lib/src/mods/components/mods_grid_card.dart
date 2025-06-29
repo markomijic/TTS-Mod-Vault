@@ -3,12 +3,13 @@ import 'dart:io' show File;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show HookConsumerWidget, WidgetRef;
+    show AsyncValue, AsyncValueX, HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
+        cardModProvider,
         modsProvider,
         selectedModProvider,
         settingsProvider;
@@ -23,13 +24,29 @@ class ModsGridCard extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
     final selectedMod = ref.watch(selectedModProvider);
-
     final isHovered = useState(false);
+
+    final loadedModAsync = mod.assetLists != null
+        ? AsyncValue.data(mod)
+        : ref.watch(cardModProvider(mod.jsonFileName));
+
+    final displayMod = loadedModAsync.when(
+      data: (loadedMod) => loadedMod,
+      loading: () => mod,
+      error: (_, __) => mod,
+    );
+
     final imageExists = useMemoized(() {
       return mod.imageFilePath != null
           ? File(mod.imageFilePath!).existsSync()
           : false;
-    }, [mod]);
+    }, [mod.imageFilePath]);
+
+    final showAssetCount = useMemoized(() {
+      return displayMod.totalExistsCount != null &&
+          displayMod.totalCount != null &&
+          displayMod.totalCount! > 0;
+    }, [displayMod]);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -37,19 +54,21 @@ class ModsGridCard extends HookConsumerWidget {
       onExit: (_) => isHovered.value = false,
       child: GestureDetector(
         onTap: () {
-          if (ref.read(actionInProgressProvider)) return;
+          if (ref.read(actionInProgressProvider) || !loadedModAsync.hasValue) {
+            return;
+          }
 
-          ref.read(modsProvider.notifier).setSelectedMod(mod);
+          ref.read(modsProvider.notifier).setSelectedMod(displayMod);
         },
         onSecondaryTapDown: (details) {
-          showModContextMenu(context, ref, details.globalPosition, mod);
+          showModContextMenu(context, ref, details.globalPosition, displayMod);
         },
         child: AnimatedContainer(
           duration: Duration(milliseconds: 150),
           decoration: BoxDecoration(
             border: Border.all(
               width: 4,
-              color: selectedMod == mod
+              color: selectedMod == displayMod
                   ? Colors.white
                   : isHovered.value
                       ? Colors.white70
@@ -60,7 +79,7 @@ class ModsGridCard extends HookConsumerWidget {
             children: [
               imageExists
                   ? Image.file(
-                      File(mod.imageFilePath!),
+                      File(displayMod.imageFilePath!),
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
@@ -69,13 +88,13 @@ class ModsGridCard extends HookConsumerWidget {
                       color: Colors.blueGrey,
                       alignment: Alignment.center,
                       child: Text(
-                        mod.saveName,
+                        displayMod.saveName,
                         textAlign: TextAlign.center,
                         maxLines: 5,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-              if (showTitleOnCards || mod.modType != ModTypeEnum.mod)
+              if (showTitleOnCards || displayMod.modType != ModTypeEnum.mod)
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Container(
@@ -86,15 +105,16 @@ class ModsGridCard extends HookConsumerWidget {
                       TextSpan(
                         children: [
                           TextSpan(
-                              text: mod.modType == ModTypeEnum.mod
-                                  ? mod.saveName
-                                  : '${mod.jsonFileName}\n${mod.saveName}'),
+                              text: displayMod.modType == ModTypeEnum.mod
+                                  ? displayMod.saveName
+                                  : '${displayMod.jsonFileName}\n${displayMod.saveName}'),
                           TextSpan(
-                            text: mod.totalCount != null && mod.totalCount! > 0
-                                ? "\n(${mod.totalExistsCount}/${mod.totalCount})"
+                            text: showAssetCount
+                                ? "\n(${displayMod.totalExistsCount}/${displayMod.totalCount})"
                                 : "",
                             style: TextStyle(
-                              color: mod.totalExistsCount == mod.totalCount
+                              color: displayMod.totalExistsCount ==
+                                      displayMod.totalCount
                                   ? Colors.green
                                   : Colors.white,
                             ),
@@ -104,7 +124,7 @@ class ModsGridCard extends HookConsumerWidget {
                     ),
                   ),
                 )
-              else if (mod.totalCount != null && mod.totalCount! > 0)
+              else if (showAssetCount)
                 Align(
                   alignment: Alignment.bottomRight,
                   child: Padding(
@@ -116,9 +136,10 @@ class ModsGridCard extends HookConsumerWidget {
                       ),
                       padding: EdgeInsets.all(4),
                       child: Text(
-                        "${mod.totalExistsCount}/${mod.totalCount}",
+                        "${displayMod.totalExistsCount}/${displayMod.totalCount}",
                         style: TextStyle(
-                          color: mod.totalExistsCount == mod.totalCount
+                          color: displayMod.totalExistsCount ==
+                                  displayMod.totalCount
                               ? Colors.green
                               : Colors.white,
                         ),

@@ -21,6 +21,13 @@ class Search extends HookConsumerWidget {
       return null;
     }, [selectedModType]);
 
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.text = ref.read(searchQueryProvider);
+      });
+      return null;
+    }, []);
+
     return SizedBox(
       height: 32,
       width: 335,

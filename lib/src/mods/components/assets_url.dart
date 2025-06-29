@@ -190,7 +190,9 @@ class AssetsUrl extends HookConsumerWidget {
                 type: type,
                 downloadingAllFiles: false,
               );
-              await ref.read(modsProvider.notifier).updateMod(selectedMod);
+              await ref
+                  .read(modsProvider.notifier)
+                  .updateSelectedMod(selectedMod);
               break;
 
             default:

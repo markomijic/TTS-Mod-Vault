@@ -15,7 +15,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
         loaderProvider,
-        modsProvider,
         selectedModTypeProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
@@ -212,8 +211,7 @@ class SettingsDialog extends HookConsumerWidget {
                 if (await ref
                     .read(directoriesProvider.notifier)
                     .isModsDirectoryValid(ttsDir)) {
-                  ref.read(modsProvider.notifier).setLoading();
-                  ref.read(loaderProvider).refreshAppData();
+                  await ref.read(loaderProvider).refreshAppData();
                   if (context.mounted) Navigator.pop(context);
                 }
               },

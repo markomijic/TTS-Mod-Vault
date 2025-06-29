@@ -25,6 +25,6 @@ void main() async {
     }
   });
 
-  await Hive.initFlutter();
+  await Hive.initFlutter('TTS Mod Vault');
   runApp(ProviderScope(child: App()));
 }

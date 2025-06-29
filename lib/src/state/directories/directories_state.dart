@@ -25,15 +25,15 @@ class DirectoriesState {
     required this.pdfDir,
   });
 
-  factory DirectoriesState.fromDir(String dir, String? savesDir) {
-    final modsDir = '$dir/Mods';
-
+  factory DirectoriesState.fromDirs(
+    String modsDir,
+    String savesDir,
+  ) {
     return DirectoriesState(
       // Saves
-      savesDir: savesDir != null ? '$savesDir/Saves' : '$dir/Saves',
-      savedObjectsDir: savesDir != null
-          ? '$savesDir/Saves/Saved Objects'
-          : '$dir/Saves/Saved Objects',
+      savesDir: savesDir,
+      savedObjectsDir: '$savesDir/Saved Objects',
+
       // Mods
       modsDir: modsDir,
       workshopDir: '$modsDir/Workshop',
@@ -61,6 +61,44 @@ class DirectoriesState {
       modelsDir: emptyPath,
       modelsRawDir: emptyPath,
       pdfDir: emptyPath,
+    );
+  }
+}
+
+extension DirectoriesStateExtensions on DirectoriesState {
+  DirectoriesState updateSaves(String newSavesDir) {
+    return DirectoriesState(
+      // Saves
+      savesDir: newSavesDir,
+      savedObjectsDir: '$newSavesDir/Saved Objects',
+      // Mods
+      workshopDir: workshopDir,
+      modsDir: modsDir,
+      assetBundlesDir: assetBundlesDir,
+      audioDir: audioDir,
+      imagesDir: imagesDir,
+      imagesRawDir: imagesRawDir,
+      modelsDir: modelsDir,
+      modelsRawDir: modelsRawDir,
+      pdfDir: pdfDir,
+    );
+  }
+
+  DirectoriesState updateMods(String newModsDir) {
+    return DirectoriesState(
+      // Saves
+      savesDir: savesDir,
+      savedObjectsDir: savedObjectsDir,
+      // Mods
+      modsDir: newModsDir,
+      workshopDir: '$newModsDir/Workshop',
+      assetBundlesDir: '$newModsDir/Assetbundles',
+      audioDir: '$newModsDir/Audio',
+      imagesDir: '$newModsDir/Images',
+      imagesRawDir: '$newModsDir/Images Raw',
+      modelsDir: '$newModsDir/Models',
+      modelsRawDir: '$newModsDir/Models Raw',
+      pdfDir: '$newModsDir/PDF',
     );
   }
 }

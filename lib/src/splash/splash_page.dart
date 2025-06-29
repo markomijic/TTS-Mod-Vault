@@ -1,6 +1,5 @@
-import 'dart:io' show exit;
+import 'dart:io' show Directory;
 
-import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useEffect, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
@@ -8,6 +7,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show ErrorMessage, MessageProgressIndicator;
+import 'package:tts_mod_vault/src/splash/components/select_directories_widget.dart'
+    show SelectDirectoriesWidget;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
@@ -16,7 +17,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         settingsProvider,
         storageProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show checkForUpdatesOnGitHub, showDownloadDialog, showSnackBar;
+    show checkForUpdatesOnGitHub, showDownloadDialog;
 
 class SplashPage extends HookConsumerWidget {
   const SplashPage({super.key});
@@ -27,7 +28,9 @@ class SplashPage extends HookConsumerWidget {
     final loaderNotifier = ref.watch(loaderProvider);
     final modsError = ref.watch(modsProvider).error;
 
-    final showTtsDirNotFound = useState(false);
+    final initialModsDirExists = useState(false);
+    final initialSavesDirExists = useState(false);
+    final showSelectDirectories = useState(false);
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -50,14 +53,21 @@ class SplashPage extends HookConsumerWidget {
           }
         }
 
-        // Load existing assets lists and mods data if TTS Data Directories exist
-        if (await directoriesNotifier
-            .isModsDirectoryValid(ref.read(directoriesProvider).modsDir)) {
+        final modsDir = ref.read(directoriesProvider).modsDir;
+        final savesDir = ref.read(directoriesProvider).savesDir;
+
+        final modsDirExists = await Directory(modsDir).exists();
+        final savesDirExists = await Directory(savesDir).exists();
+
+        if (modsDirExists && savesDirExists) {
+          await directoriesNotifier.saveDirectories();
           await loaderNotifier.loadAppData(
             () => Navigator.of(context).pushReplacementNamed('/mods'),
           );
         } else {
-          showTtsDirNotFound.value = true;
+          initialModsDirExists.value = modsDirExists;
+          initialSavesDirExists.value = savesDirExists;
+          showSelectDirectories.value = true;
         }
       });
       return null;
@@ -68,69 +78,11 @@ class SplashPage extends HookConsumerWidget {
         body: Center(
           child: modsError != null
               ? ErrorMessage(e: modsError)
-              : !showTtsDirNotFound.value
+              : !showSelectDirectories.value
                   ? MessageProgressIndicator()
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      spacing: 10,
-                      children: [
-                        Text(
-                          "Tabletop Simulator data directory has not been found, please locate it manually.\nIt typically contains folders: DLC, Mods, Saves, Screenshots.\nCurrent version uses only the Mods folder.",
-                          textAlign: TextAlign.center,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          spacing: 10,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                String? ttsDir;
-                                try {
-                                  ttsDir = await FilePicker.platform
-                                      .getDirectoryPath();
-                                } catch (e) {
-                                  debugPrint("File picker error $e");
-                                  if (context.mounted) {
-                                    showSnackBar(
-                                        context, "Failed to open file picker");
-                                    Navigator.pop(context);
-                                  }
-                                  return;
-                                }
-
-                                if (ttsDir == null) return;
-                                showTtsDirNotFound.value = false;
-
-                                WidgetsBinding.instance
-                                    .addPostFrameCallback((_) async {
-                                  if (!await directoriesNotifier
-                                      .isModsDirectoryValid(ttsDir!)) {
-                                    showTtsDirNotFound.value = true;
-
-                                    if (context.mounted) {
-                                      showSnackBar(
-                                        context,
-                                        'Invalid Tabletop Simulator data directory',
-                                      );
-                                    }
-                                    return;
-                                  }
-
-                                  await loaderNotifier.loadAppData(
-                                    () => Navigator.of(context)
-                                        .pushReplacementNamed('/mods'),
-                                  );
-                                });
-                              },
-                              child: Text('Select TTS directory'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => exit(0),
-                              child: Text('Exit'),
-                            ),
-                          ],
-                        ),
-                      ],
+                  : SelectDirectoriesWidget(
+                      initialModsDirExists: initialModsDirExists.value,
+                      initialSavesDirExists: initialSavesDirExists.value,
                     ),
         ),
       ),

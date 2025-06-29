@@ -5,7 +5,8 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart' show storageProvider;
 
-import 'directories_state.dart' show DirectoriesState;
+import 'directories_state.dart'
+    show DirectoriesState, DirectoriesStateExtensions;
 import 'package:path/path.dart' as path;
 
 class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
@@ -16,10 +17,11 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
   void initializeDirectories() {
     debugPrint("initializeDirectories");
 
-    final modsDir =
-        ref.read(storageProvider).getModsDir() ?? _getDefaultTtsDirectory();
-    final savesDir = ref.read(storageProvider).getSavesDir();
-    state = DirectoriesState.fromDir(modsDir, savesDir);
+    final modsDir = ref.read(storageProvider).getModsDir() ??
+        path.joinAll([_getDefaultTtsDirectory(), 'Mods']);
+    final savesDir = ref.read(storageProvider).getSavesDir() ??
+        path.joinAll([_getDefaultTtsDirectory(), 'Saves']);
+    state = DirectoriesState.fromDirs(modsDir, savesDir);
   }
 
   String _getDefaultTtsDirectory() {
@@ -60,32 +62,53 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     return Platform.environment['HOME'] ?? '';
   }
 
-  Future<void> _saveNewTtsDirectory(String modsDir, String? savesDir) async {
-    state = DirectoriesState.fromDir(modsDir, savesDir);
-    await ref.read(storageProvider).saveModsDir(modsDir);
-    if (savesDir != null) {
-      await ref.read(storageProvider).saveSavesDir(savesDir);
+  Future<void> saveDirectories() async {
+    await ref.read(storageProvider).saveModsDir(state.modsDir);
+    await ref.read(storageProvider).saveSavesDir(state.savesDir);
+  }
+
+  Future<bool> isModsDirectoryValid(String initialDir) async {
+    final directory = Directory(initialDir);
+
+    final doesDirectoryExist = await directory.exists();
+
+    if (!doesDirectoryExist) return false;
+
+    bool result = false;
+
+    if (directory.path.endsWith('Mods')) {
+      result = true;
+      state = state.updateMods(initialDir);
+    } else {
+      result = await Directory(path.join(initialDir, 'Mods')).exists();
+      if (result) {
+        state = state.updateMods(path.joinAll([initialDir, 'Mods']));
+      }
     }
+
+    return result;
   }
 
-  Future<bool> isModsDirectoryValid(String modsDir) async {
-    final doesDirectoryExist = await Directory(modsDir).exists();
+  Future<bool> isSavesDirectoryValid(String initialDir) async {
+    final directory = Directory(initialDir);
 
-    print("modsdir $modsDir");
+    final doesDirectoryExist = await directory.exists();
 
     if (!doesDirectoryExist) return false;
 
-    await _saveNewTtsDirectory(modsDir, null);
-    return true;
-  }
+    bool result = false;
 
-  Future<bool> isSavesDirectoryValid(String savesDir) async {
-    final doesDirectoryExist = await Directory(savesDir).exists();
+    if (directory.path.endsWith('Saves')) {
+      result = true;
+      state = state.updateSaves(initialDir);
+    } else {
+      result = await Directory(path.join(initialDir, 'Saves')).exists();
+      if (result) {
+        state = state.updateSaves(path.joinAll([initialDir, 'Saves']));
+      }
+    }
 
-    if (!doesDirectoryExist) return false;
-
-    await _saveNewTtsDirectory(state.modsDir, savesDir);
-    return true;
+    return result;
   }
 
   String getDirectoryByType(AssetTypeEnum type) {

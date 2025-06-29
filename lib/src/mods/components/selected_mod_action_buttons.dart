@@ -31,7 +31,7 @@ class SelectedModActionButtons extends HookConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
-      spacing: 10,
+      spacing: 8,
       children: [
         ElevatedButton(
           onPressed: hasMissingFiles && !actionInProgress

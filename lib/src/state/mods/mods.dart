@@ -246,6 +246,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       allPathsLength += paths.$2.length;
     }
 
+    if (allPathsLength == 0) {
+      return [];
+    }
+
     final numberOfIsolates = max(Platform.numberOfProcessors - 2, 2);
     final chunkSize = (allPathsLength / numberOfIsolates).ceil();
     final totalChunks = (allPathsLength / chunkSize).ceil();

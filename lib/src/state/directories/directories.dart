@@ -63,11 +63,15 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
   }
 
   Future<void> saveDirectories() async {
+    debugPrint('saveDirectories');
     await ref.read(storageProvider).saveModsDir(state.modsDir);
     await ref.read(storageProvider).saveSavesDir(state.savesDir);
   }
 
-  Future<bool> isModsDirectoryValid(String initialDir) async {
+  Future<bool> isModsDirectoryValid(
+    String initialDir, [
+    updateState = true,
+  ]) async {
     final directory = Directory(initialDir);
 
     final doesDirectoryExist = await directory.exists();
@@ -78,10 +82,12 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
 
     if (directory.path.endsWith('Mods')) {
       result = true;
-      state = state.updateMods(initialDir);
+      if (updateState) {
+        state = state.updateMods(initialDir);
+      }
     } else {
       result = await Directory(path.join(initialDir, 'Mods')).exists();
-      if (result) {
+      if (result && updateState) {
         state = state.updateMods(path.joinAll([initialDir, 'Mods']));
       }
     }
@@ -89,7 +95,10 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     return result;
   }
 
-  Future<bool> isSavesDirectoryValid(String initialDir) async {
+  Future<bool> isSavesDirectoryValid(
+    String initialDir, [
+    updateState = true,
+  ]) async {
     final directory = Directory(initialDir);
 
     final doesDirectoryExist = await directory.exists();
@@ -100,10 +109,12 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
 
     if (directory.path.endsWith('Saves')) {
       result = true;
-      state = state.updateSaves(initialDir);
+      if (updateState) {
+        state = state.updateSaves(initialDir);
+      }
     } else {
       result = await Directory(path.join(initialDir, 'Saves')).exists();
-      if (result) {
+      if (result && updateState) {
         state = state.updateSaves(path.joinAll([initialDir, 'Saves']));
       }
     }

@@ -36,8 +36,8 @@ class SelectDirectoriesWidget extends HookConsumerWidget {
 
     Future<void> loadData() async {
       showLoading.value = true;
-      await directoriesNotifier.saveDirectories();
-      await loaderNotifier.loadAppData(
+
+      await loaderNotifier.loadApp(
         () => Navigator.of(context).pushReplacementNamed('/mods'),
       );
     }

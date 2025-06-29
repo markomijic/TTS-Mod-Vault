@@ -60,8 +60,7 @@ class SplashPage extends HookConsumerWidget {
         final savesDirExists = await Directory(savesDir).exists();
 
         if (modsDirExists && savesDirExists) {
-          await directoriesNotifier.saveDirectories();
-          await loaderNotifier.loadAppData(
+          await loaderNotifier.loadApp(
             () => Navigator.of(context).pushReplacementNamed('/mods'),
           );
         } else {

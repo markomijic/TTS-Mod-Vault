@@ -292,28 +292,36 @@ Future<void> openInFileExplorer(String filePath) async {
 }
 
 Future<void> openFile(String filePath) async {
-  final file = File(filePath);
-  final uri = file.uri;
+  try {
+    final file = File(filePath);
+    final uri = file.uri;
 
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(
-      uri,
-      mode: LaunchMode.platformDefault,
-    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+      );
+    }
+  } catch (e) {
+    debugPrint('openFile error: $e');
   }
 }
 
 Future<bool> openUrl(String url) async {
-  if (url.isEmpty) return false;
+  try {
+    if (url.isEmpty) return false;
 
-  final Uri uri = Uri.parse(url);
+    final Uri uri = Uri.parse(url);
 
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-    return true;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return true;
+    }
+    return false;
+  } catch (e) {
+    debugPrint('openUrl error: $e');
+    return false;
   }
-
-  return false;
 }
 
 String getGitHubReleaseUrl(String newTagVersion) {

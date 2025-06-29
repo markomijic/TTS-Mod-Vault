@@ -329,7 +329,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
   /// Creates adaptive batches based on file sizes and complexity
   Future<List<List<Mod>>> _createAdaptiveBatches(List<Mod> mods) async {
-    const int targetBatchSizeBytes = 100 * 1024 * 1024; // 100MB per batch
+    const int targetBatchSizeBytes = 50 * 1024 * 1024; // 50MB per batch
     const int maxModsPerBatch = 100;
     const int minModsPerBatch = 5;
 

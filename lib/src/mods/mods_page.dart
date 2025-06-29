@@ -32,7 +32,7 @@ class ModsPage extends HookConsumerWidget {
     final mods = ref.watch(modsProvider);
 
     useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         switch (cleanUpState.status) {
           case CleanUpStatusEnum.idle:
           case CleanUpStatusEnum.awaitingConfirmation:

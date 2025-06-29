@@ -80,15 +80,7 @@ class Storage {
     await _appDataBox.delete(savesDirKey);
   }
 
-  // MOD DATA (Move to Hive)
-
-  Future<void> saveModDateTimeStamp(String modName, String timestamp) async {
-    await _metadataBox.put('$modName$dateTimeStampSuffix', timestamp);
-  }
-
-  Future<void> saveModMap(String modName, Map<String, String> data) async {
-    await _urlsBox.put(modName, data);
-  }
+  // MOD DATA
 
   String? getModDateTimeStamp(String modName) {
     return _metadataBox.get('$modName$dateTimeStampSuffix');
@@ -98,17 +90,6 @@ class Storage {
     final urls = _urlsBox.get(jsonFileName);
     if (urls == null) return null;
     return Map<String, String>.from(urls);
-  }
-
-  Future<void> saveModData(
-    String modName,
-    String dateTimeStamp,
-    Map<String, String> data,
-  ) async {
-    await Future.wait([
-      saveModDateTimeStamp(modName, dateTimeStamp),
-      saveModMap(modName, data)
-    ]);
   }
 
   Future<void> deleteMod(String modName) async {
@@ -128,9 +109,19 @@ class Storage {
     await _metadataBox.putAll(allModMeta);
   }
 
-  // Get all mod names for bulk operations
-  List<String> getAllModNames() {
-    return _urlsBox.keys.cast<String>().toList();
+  Map<String, Map<String, String>?> getModUrlsBulk(List<String> jsonFileNames) {
+    final Map<String, Map<String, String>?> result = {};
+
+    for (final jsonFileName in jsonFileNames) {
+      final urls = _urlsBox.get(jsonFileName);
+      if (urls == null) {
+        result[jsonFileName] = null;
+      } else {
+        result[jsonFileName] = Map<String, String>.from(urls);
+      }
+    }
+
+    return result;
   }
 
   // Clear all mod data (for testing)

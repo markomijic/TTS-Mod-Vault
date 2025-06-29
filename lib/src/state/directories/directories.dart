@@ -68,33 +68,23 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     }
   }
 
-  Future<bool> isModsDirectoryValid(String ttsDir) async {
-    final doesDirectoryExist = await Directory(ttsDir).exists();
+  Future<bool> isModsDirectoryValid(String modsDir) async {
+    final doesDirectoryExist = await Directory(modsDir).exists();
+
+    print("modsdir $modsDir");
 
     if (!doesDirectoryExist) return false;
 
-/*     final result = await Future.wait(['Mods', 'Saves', 'DLC', 'Screenshots']
-            .map((folder) => Directory(path.join(ttsDir, folder)).exists()))
-        .then((exists) => exists.every((e) => e)); */
-
-    final result = await Directory(path.join(ttsDir, 'Mods')).exists();
-
-    if (!result) return false;
-
-    await _saveNewTtsDirectory(ttsDir, null);
+    await _saveNewTtsDirectory(modsDir, null);
     return true;
   }
 
-  Future<bool> isSavesDirectoryValid(String ttsDir) async {
-    final doesDirectoryExist = await Directory(ttsDir).exists();
+  Future<bool> isSavesDirectoryValid(String savesDir) async {
+    final doesDirectoryExist = await Directory(savesDir).exists();
 
     if (!doesDirectoryExist) return false;
 
-    final result = await Directory(path.join(ttsDir, 'Saves')).exists();
-
-    if (!result) return false;
-
-    //await _saveNewTtsDirectory(ttsDir);
+    await _saveNewTtsDirectory(state.modsDir, savesDir);
     return true;
   }
 

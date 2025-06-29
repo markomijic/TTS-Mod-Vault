@@ -1,5 +1,4 @@
 class DirectoriesState {
-  final String ttsDir;
   final String savesDir;
   final String savedObjectsDir;
   final String workshopDir;
@@ -13,7 +12,6 @@ class DirectoriesState {
   final String pdfDir;
 
   const DirectoriesState({
-    required this.ttsDir,
     required this.savesDir,
     required this.savedObjectsDir,
     required this.workshopDir,
@@ -31,7 +29,6 @@ class DirectoriesState {
     final modsDir = '$dir/Mods';
 
     return DirectoriesState(
-      ttsDir: dir,
       // Saves
       savesDir: savesDir != null ? '$savesDir/Saves' : '$dir/Saves',
       savedObjectsDir: savesDir != null
@@ -53,7 +50,6 @@ class DirectoriesState {
   factory DirectoriesState.empty() {
     const emptyPath = '';
     return const DirectoriesState(
-      ttsDir: emptyPath,
       savesDir: emptyPath,
       savedObjectsDir: emptyPath,
       workshopDir: emptyPath,

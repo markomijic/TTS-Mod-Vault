@@ -13,8 +13,8 @@ import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, selectedModProvider;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         getFileNameFromURL,
@@ -64,11 +64,20 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
       final bytes = await File(filePath).readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
-      final targetDir = ref.read(directoriesProvider).ttsDir;
+      final modsDir = Directory(ref.read(directoriesProvider).modsDir);
+      final savesDir = Directory(ref.read(directoriesProvider).savesDir);
 
       for (final file in archive) {
         if (file.isFile) {
           final filename = file.name;
+          String targetDir = modsDir.parent.path;
+
+          if (filename.startsWith('Mods')) {
+            targetDir = modsDir.parent.path;
+          } else if (filename.startsWith('Saves')) {
+            targetDir = savesDir.parent.path;
+          }
+
           final data = file.content as List<int>;
           final outputFile = File('$targetDir/$filename');
 
@@ -112,17 +121,13 @@ class BackupNotifier extends StateNotifier<BackupState> {
     return isJsonFile && containsWorkshop;
   }
 
-  Future<String> createBackup() async {
-    final mod = ref.read(selectedModProvider);
-    if (mod == null) {
-      return 'Select a mod to create a backup';
-    }
-
+  Future<String> createBackup(Mod mod) async {
     state = state.copyWith(
       backupInProgress: true,
       currentCount: 0,
       totalCount: 0,
     );
+
     final saveDirectoryPath = await FilePicker.platform.getDirectoryPath();
     if (saveDirectoryPath == null) {
       state = state.copyWith(backupInProgress: false);
@@ -173,6 +178,9 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
       final archive = Archive();
 
+      final modsDir = Directory(ref.read(directoriesProvider).modsDir);
+      final savesDir = Directory(ref.read(directoriesProvider).savesDir);
+
       for (final filePath in filePaths) {
         final file = File(filePath);
 
@@ -184,8 +192,13 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
         try {
           final fileData = await file.readAsBytes();
-          final relativePath =
-              p.relative(filePath, from: ref.read(directoriesProvider).ttsDir);
+
+          final isInSavesPath = filePath.startsWith(p.normalize(savesDir.path));
+
+          final relativePath = p.relative(
+            filePath,
+            from: isInSavesPath ? savesDir.parent.path : modsDir.parent.path,
+          );
           final archiveFile =
               ArchiveFile(relativePath, fileData.length, fileData);
 

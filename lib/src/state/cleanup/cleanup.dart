@@ -1,5 +1,5 @@
 import 'dart:io' show Directory, File, FileSystemEntity;
-import 'dart:isolate';
+import 'dart:isolate' show Isolate;
 
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
@@ -9,8 +9,9 @@ import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, modsProvider;
-import 'package:tts_mod_vault/src/utils.dart';
+    show directoriesProvider, modsProvider, storageProvider;
+import 'package:tts_mod_vault/src/utils.dart'
+    show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
 class CleanupNotifier extends StateNotifier<CleanUpState> {
   final Ref ref;
@@ -30,49 +31,85 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
       final allMods = ref.read(modsProvider.notifier).getAllMods();
 
       if (allMods.isEmpty) {
-        throw "No mods available, cancelling cleanup";
+        throw "no mods available, cancelling cleanup";
       }
 
-      final Set<String> referencedFiles = {};
+      final allJsonFileNames = await Isolate.run(
+          () => allMods.map((mod) => mod.jsonFileName).toList());
+
+      final bulkUrls =
+          ref.read(storageProvider).getModUrlsBulk(allJsonFileNames);
+
+      final referencedFiles = await Isolate.run(
+        () {
+          final Set<String> files = {};
+
+          for (final mod in allMods) {
+            final urls = bulkUrls[mod.jsonFileName];
+            if (urls == null) continue;
+
+            for (final url in urls.entries) {
+              files.add(getFileNameFromURL(url.key));
+            }
+          }
+
+          return files;
+        },
+      );
+
+      // Process each asset type in parallel
+      final List<Future<List<String>>> futures = [];
+
       for (final assetType in AssetTypeEnum.values) {
-        referencedFiles.clear();
-        for (final mod in allMods) {
-          mod.getAssetsByType(assetType).forEach(
-            (e) {
-              if (e.fileExists &&
-                  e.filePath != null &&
-                  e.filePath!.isNotEmpty) {
-                referencedFiles.add(p.basenameWithoutExtension(e.filePath!));
-              }
-            },
-          );
-        }
-
-        final directory = Directory(ref
+        // Get directory paths before isolate calls
+        final mainDirPath = ref
             .read(directoriesProvider.notifier)
-            .getDirectoryByType(assetType));
-        if (await directory.exists()) {
-          await _processDirectory(directory, referencedFiles);
+            .getDirectoryByType(assetType);
+
+        final rawDirPath = (assetType == AssetTypeEnum.image ||
+                assetType == AssetTypeEnum.model)
+            ? ref
+                .read(directoriesProvider.notifier)
+                .getRawDirectoryByType(assetType)
+            : null;
+
+        final List<DirectoryProcessData> directoriesToProcess = [];
+
+        if (await Directory(mainDirPath).exists()) {
+          directoriesToProcess.add(DirectoryProcessData(
+            directoryPath: mainDirPath,
+            referencedFileNames: referencedFiles,
+            assetType: assetType,
+          ));
         }
 
-        if (assetType == AssetTypeEnum.image ||
-            assetType == AssetTypeEnum.model) {
-          final rawDirPath = ref
-              .read(directoriesProvider.notifier)
-              .getRawDirectoryByType(assetType);
-          if (rawDirPath == null) continue;
+        if (rawDirPath != null && await Directory(rawDirPath).exists()) {
+          directoriesToProcess.add(DirectoryProcessData(
+            directoryPath: rawDirPath,
+            referencedFileNames: referencedFiles,
+            assetType: assetType,
+          ));
+        }
 
-          final directory = Directory(rawDirPath);
-          if (!await directory.exists()) continue;
-
-          await _processDirectory(directory, referencedFiles);
+        for (final processData in directoriesToProcess) {
+          futures
+              .add(Isolate.run(() => processDirectoryInIsolate(processData)));
         }
       }
-      referencedFiles.clear();
+
+      final List<List<String>> allResults = await Future.wait(futures);
+
+      final List<String> allFilesToDelete = [];
+      for (final result in allResults) {
+        allFilesToDelete.addAll(result);
+      }
+
       state = state.copyWith(
-          status: state.filesToDelete.isNotEmpty
-              ? CleanUpStatusEnum.awaitingConfirmation
-              : CleanUpStatusEnum.idle);
+        filesToDelete: allFilesToDelete,
+        status: allFilesToDelete.isNotEmpty
+            ? CleanUpStatusEnum.awaitingConfirmation
+            : CleanUpStatusEnum.idle,
+      );
 
       onAwaitingConfirmation(state.filesToDelete.length);
     } catch (e) {
@@ -81,49 +118,6 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
         errorMessage: e.toString(),
       );
     }
-  }
-
-  Future<void> _processDirectory(
-    Directory directory,
-    Set<String> referencedFileNames,
-  ) async {
-    final List<FileSystemEntity> files = directory.listSync();
-
-    for (final file in files) {
-      if (file is File) {
-        String fileName = p.basenameWithoutExtension(file.path);
-
-        // Ignore rawt/rawm files that are not from URL download
-        if (fileName.startsWith("file")) continue;
-
-        // In case of old url naming scheme rename to new url to match existing assets lists
-        if (fileName.startsWith(getFileNameFromURL(oldCloudUrl))) {
-          final originalFileName = fileName;
-
-          fileName = fileName.replaceFirst(getFileNameFromURL(oldCloudUrl),
-              getFileNameFromURL(newSteamUserContentUrl));
-
-          // Check if old url file has a duplicate with new url file
-          final newUrlFilepath =
-              file.path.replaceFirst(originalFileName, fileName);
-          if (await File(newUrlFilepath).exists()) {
-            state = state.copyWith(
-              filesToDelete: [...state.filesToDelete, file.path],
-            );
-            continue;
-          }
-        }
-
-        if (!referencedFileNames.contains(fileName)) {
-          state = state.copyWith(
-            filesToDelete: [...state.filesToDelete, file.path],
-          );
-        }
-      }
-    }
-
-    debugPrint(
-        'Processed ${directory.path}, total files to delete is now: ${state.filesToDelete.length}');
   }
 
   Future<void> executeDelete() async {
@@ -162,4 +156,61 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
   void resetState() {
     state = const CleanUpState();
   }
+}
+
+class DirectoryProcessData {
+  final String directoryPath;
+  final Set<String> referencedFileNames;
+  final AssetTypeEnum assetType;
+
+  DirectoryProcessData({
+    required this.directoryPath,
+    required this.referencedFileNames,
+    required this.assetType,
+  });
+}
+
+// Top-level function for isolate processing
+Future<List<String>> processDirectoryInIsolate(
+    DirectoryProcessData data) async {
+  final List<String> filesToDelete = [];
+
+  try {
+    final directory = Directory(data.directoryPath);
+    final List<FileSystemEntity> files = directory.listSync();
+
+    for (final file in files) {
+      if (file is File) {
+        String fileName = p.basenameWithoutExtension(file.path);
+
+        // Ignore rawt/rawm files that are not from URL download
+        if (fileName.startsWith("file")) continue;
+
+        // In case of old url naming scheme rename to new url to match existing assets lists
+        if (fileName.startsWith(getFileNameFromURL(oldCloudUrl))) {
+          final originalFileName = fileName;
+
+          fileName = fileName.replaceFirst(getFileNameFromURL(oldCloudUrl),
+              getFileNameFromURL(newSteamUserContentUrl));
+
+          // Check if old url file has a duplicate with new url file
+          final newUrlFilepath =
+              file.path.replaceFirst(originalFileName, fileName);
+          if (await File(newUrlFilepath).exists()) {
+            filesToDelete.add(file.path);
+            continue;
+          }
+        }
+
+        if (!data.referencedFileNames.contains(fileName)) {
+          filesToDelete.add(file.path);
+        }
+      }
+    }
+  } catch (e) {
+    // Log error but continue processing other directories
+    debugPrint('Error processing directory ${data.directoryPath}: $e');
+  }
+
+  return filesToDelete;
 }

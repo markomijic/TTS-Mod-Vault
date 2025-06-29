@@ -48,8 +48,9 @@ class SelectedModActionButtons extends HookConsumerWidget {
               return;
             }
 
-            final result =
-                await ref.read(backupProvider.notifier).createBackup();
+            final result = await ref
+                .read(backupProvider.notifier)
+                .createBackup(selectedMod);
 
             if (result.isNotEmpty && context.mounted) {
               showSnackBar(context, result);

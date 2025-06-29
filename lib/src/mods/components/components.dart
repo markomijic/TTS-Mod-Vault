@@ -13,3 +13,4 @@ export 'mods_selector.dart';
 export 'search.dart';
 export 'message_progress_indicator.dart';
 export 'images_viewer_grid_card.dart';
+export 'mods_list_item.dart';

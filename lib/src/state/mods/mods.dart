@@ -31,6 +31,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         directoriesProvider,
         existingAssetListsProvider,
+        loadingMessageProvider,
         selectedModProvider,
         storageProvider;
 import 'package:tts_mod_vault/src/state/storage/storage.dart' show Storage;
@@ -57,6 +58,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final startTime = DateTime.now();
     debugPrint('loadModsData START: $startTime');
 
+    ref.read(loadingMessageProvider.notifier).state = 'Loading';
     state = const AsyncValue.loading();
 
     try {
@@ -65,6 +67,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           .loadExistingAssetsLists();
 
       debugPrint('loadExistingAssetsLists finished at ${DateTime.now()}');
+
+      ref.read(loadingMessageProvider.notifier).state =
+          'Creating lists of items to load';
 
       final workshopDir = ref.read(directoriesProvider).workshopDir.toString();
       final savesDir = ref.read(directoriesProvider).savesDir.toString();
@@ -148,6 +153,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       debugPrint('Starting ${isolateWorkData.length} isolates in parallel');
 
+      ref.read(loadingMessageProvider.notifier).state =
+          'Loading ${jsonPaths[0].length} mods, ${jsonPaths[1].length} saves and ${jsonPaths[2].length} saved objects';
+
       final List<IsolateWorkResult> allResults = await Future.wait(
         isolateWorkData
             .map((workData) =>
@@ -179,6 +187,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       if (allStorageUpdates.isNotEmpty) {
         debugPrint('Applying ${allStorageUpdates.length} storage updates...');
+        ref.read(loadingMessageProvider.notifier).state =
+            'Updating cached data';
 
         await Future.wait([
           ref.read(storageProvider).saveAllModUrlsData(allModUrlsData),

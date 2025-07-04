@@ -7,7 +7,7 @@ class MessageProgressIndicator extends StatelessWidget {
   const MessageProgressIndicator({
     super.key,
     this.showCircularIndicator = true,
-    this.message = "Loading",
+    required this.message,
   });
 
   @override

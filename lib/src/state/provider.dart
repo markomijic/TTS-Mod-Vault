@@ -17,6 +17,15 @@ import 'package:tts_mod_vault/src/state/settings/settings.dart';
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart';
 import 'package:tts_mod_vault/src/state/storage/storage.dart';
 
+final selectedModProvider = StateProvider<Mod?>((ref) => null);
+
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final selectedModTypeProvider =
+    StateProvider<ModTypeEnum>((ref) => ModTypeEnum.mod);
+
+final loadingMessageProvider = StateProvider<String>((ref) => 'Loading');
+
 final storageProvider = Provider((ref) => Storage());
 
 final directoriesProvider =
@@ -40,13 +49,6 @@ final cardModProvider =
     FutureProvider.family.autoDispose<Mod, String>((ref, jsonFileName) async {
   return ref.read(modsProvider.notifier).getCardMod(jsonFileName);
 });
-
-final selectedModProvider = StateProvider<Mod?>((ref) => null);
-
-final searchQueryProvider = StateProvider<String>((ref) => '');
-
-final selectedModTypeProvider =
-    StateProvider<ModTypeEnum>((ref) => ModTypeEnum.mod);
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),

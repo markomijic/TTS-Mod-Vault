@@ -4,11 +4,15 @@ import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show HookConsumerWidget, WidgetRef;
+    show AsyncLoading, HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show MessageProgressIndicator;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, loaderProvider;
+    show
+        directoriesProvider,
+        loaderProvider,
+        loadingMessageProvider,
+        modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class SelectDirectoriesWidget extends HookConsumerWidget {
@@ -24,26 +28,26 @@ class SelectDirectoriesWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final directoriesNotifier = ref.watch(directoriesProvider.notifier);
+    final loadingMessage = ref.watch(loadingMessageProvider);
+
     final directories = ref.watch(directoriesProvider);
     final loaderNotifier = ref.watch(loaderProvider);
+    final modsState = ref.watch(modsProvider);
 
     final separateSavesDir =
         useState(initialModsDirExists != initialSavesDirExists);
 
     final modsDirExists = useState(initialModsDirExists);
     final savesDirExists = useState(initialSavesDirExists);
-    final showLoading = useState(false);
 
     Future<void> loadData() async {
-      showLoading.value = true;
-
       await loaderNotifier.loadApp(
         () => Navigator.of(context).pushReplacementNamed('/mods'),
       );
     }
 
-    if (showLoading.value) {
-      return MessageProgressIndicator();
+    if (modsState is AsyncLoading) {
+      return MessageProgressIndicator(message: loadingMessage);
     }
 
     return Column(

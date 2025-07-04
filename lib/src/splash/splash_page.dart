@@ -13,6 +13,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
         loaderProvider,
+        loadingMessageProvider,
         modsProvider,
         settingsProvider,
         storageProvider;
@@ -25,6 +26,7 @@ class SplashPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final directoriesNotifier = ref.watch(directoriesProvider.notifier);
+    final loadingMessage = ref.watch(loadingMessageProvider);
     final loaderNotifier = ref.watch(loaderProvider);
     final modsError = ref.watch(modsProvider).error;
 
@@ -78,7 +80,7 @@ class SplashPage extends HookConsumerWidget {
           child: modsError != null
               ? ErrorMessage(e: modsError)
               : !showSelectDirectories.value
-                  ? MessageProgressIndicator()
+                  ? MessageProgressIndicator(message: loadingMessage)
                   : SelectDirectoriesWidget(
                       initialModsDirExists: initialModsDirExists.value,
                       initialSavesDirExists: initialSavesDirExists.value,

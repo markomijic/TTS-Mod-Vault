@@ -17,7 +17,12 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show backupProvider, cleanupProvider, modsProvider, settingsProvider;
+    show
+        backupProvider,
+        cleanupProvider,
+        loadingMessageProvider,
+        modsProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
@@ -25,6 +30,7 @@ class ModsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final loadingMessage = ref.watch(loadingMessageProvider);
     final useModsListView = ref.watch(settingsProvider).useModsListView;
     final cleanUpNotifier = ref.watch(cleanupProvider.notifier);
     final cleanUpState = ref.watch(cleanupProvider);
@@ -123,7 +129,7 @@ class ModsPage extends HookConsumerWidget {
                       child: ErrorMessage(e: e),
                     ),
                     loading: () => Center(
-                      child: MessageProgressIndicator(),
+                      child: MessageProgressIndicator(message: loadingMessage),
                     ),
                   ),
                 ),

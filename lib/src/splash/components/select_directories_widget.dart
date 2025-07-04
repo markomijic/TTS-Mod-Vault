@@ -95,7 +95,9 @@ class SelectDirectoriesWidget extends HookConsumerWidget {
                 onPressed: () async {
                   String? ttsDir;
                   try {
-                    ttsDir = await FilePicker.platform.getDirectoryPath();
+                    ttsDir = await FilePicker.platform.getDirectoryPath(
+                      lockParentWindow: true,
+                    );
                   } catch (e) {
                     debugPrint("File picker error $e");
                     if (context.mounted) {
@@ -133,7 +135,9 @@ class SelectDirectoriesWidget extends HookConsumerWidget {
                 onPressed: () async {
                   String? ttsDir;
                   try {
-                    ttsDir = await FilePicker.platform.getDirectoryPath();
+                    ttsDir = await FilePicker.platform.getDirectoryPath(
+                      lockParentWindow: true,
+                    );
                   } catch (e) {
                     debugPrint("File picker error $e");
                     if (context.mounted) {
@@ -162,7 +166,9 @@ class SelectDirectoriesWidget extends HookConsumerWidget {
                 onPressed: () async {
                   String? ttsDir;
                   try {
-                    ttsDir = await FilePicker.platform.getDirectoryPath();
+                    ttsDir = await FilePicker.platform.getDirectoryPath(
+                      lockParentWindow: true,
+                    );
                   } catch (e) {
                     debugPrint("File picker error $e");
                     if (context.mounted) {

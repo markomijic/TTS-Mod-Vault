@@ -128,7 +128,10 @@ class BackupNotifier extends StateNotifier<BackupState> {
       totalCount: 0,
     );
 
-    final saveDirectoryPath = await FilePicker.platform.getDirectoryPath();
+    final saveDirectoryPath = await FilePicker.platform.getDirectoryPath(
+      lockParentWindow: true,
+    );
+
     if (saveDirectoryPath == null) {
       state = state.copyWith(backupInProgress: false);
       return "";

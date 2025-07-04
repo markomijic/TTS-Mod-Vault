@@ -10,6 +10,9 @@ Created using Flutter 3.29.3
 
 Screenshots: 
 
-![Main interface](https://i.imgur.com/62ZgleS.jpeg)
-![Downloading assets](https://i.imgur.com/DXavDkE.jpeg)
-![Backup creation](https://i.imgur.com/7LmubAM.jpeg)
+![Mod options](https://i.imgur.com/gT7L21Y.jpeg)
+![Asset options](https://i.imgur.com/DltmEZS.jpeg)
+![Backup](https://i.imgur.com/qB21z90.jpeg)
+![Download](https://i.imgur.com/f6zGO3j.jpeg)
+![View images](https://i.imgur.com/JoUQd4K.jpeg)
+![Replace URL](https://i.imgur.com/Wbd33S1.jpeg)

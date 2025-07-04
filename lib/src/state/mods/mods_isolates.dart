@@ -11,6 +11,11 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/utils.dart'
     show newSteamUserContentUrl, oldCloudUrl;
 
+final urlRegex = RegExp(
+  r'(?:[a-zA-Z]+:\/\/)?[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^\s{}"]*)?',
+  caseSensitive: false,
+);
+
 class IsolateWorkData {
   final List<List<Mod>> batches;
   final Map<String, String?> cachedDateTimeStamps;
@@ -107,7 +112,32 @@ Future<Map<String, String>> extractUrlsFromJson(String filePath) async {
     debugPrint('extractUrlsFromJson error: $e');
   }
 
-  return urls;
+  Map<String, String> finalUrls = {};
+
+  for (final url in urls.entries) {
+    final processedUrls = _processUrl(url.key, url.value);
+    finalUrls.addAll(processedUrls);
+  }
+
+  return finalUrls;
+}
+
+// Separates one url into multiple entries and/or removes {prefix} such as {en}
+// Example input urlKey: {en}https://www.en-example.com{fr}https://www.fr-example.com
+Map<String, String> _processUrl(String urlKey, String value) {
+  final matches = urlRegex.allMatches(urlKey);
+
+  final urls = matches.map((m) => m.group(0)!).toList();
+
+  final Set<String> setovi = {};
+  setovi.addAll(urls);
+
+  Map<String, String> finalUrls = {};
+  for (final entry in urls) {
+    finalUrls[entry] = value;
+  }
+
+  return finalUrls;
 }
 
 // Fast regex-based URL extraction using exact AssetTypeEnum subtypes

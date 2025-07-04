@@ -91,12 +91,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         (ModTypeEnum.savedObject, jsonPaths[2]),
       ];
 
-      final jsonListMods = await getInitialMods(allPaths);
+      final initialMods = await getInitialMods(allPaths);
 
       // Create adaptive batches based on file sizes
       debugPrint('loadModsData - creating adaptive batches, ${DateTime.now()}');
       final List<List<Mod>> adaptiveBatches =
-          await _createAdaptiveBatches(jsonListMods);
+          await _createAdaptiveBatches(initialMods);
       debugPrint(
           'loadModsData - created ${adaptiveBatches.length} adaptive batches');
 
@@ -104,14 +104,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       debugPrint(
           'Using $numberOfIsolates isolates for ${adaptiveBatches.length} batches');
 
-      // Uncomment this to delete all stored mod data
-      //await ref.read(storageProvider).clearAllModData();
-
       // Prepare cached data for all mods
       final Map<String, String?> cachedDateTimeStamps = {};
       final Map<String, Map<String, String>?> cachedUrls = {};
 
-      for (final mod in jsonListMods) {
+      for (final mod in initialMods) {
         cachedDateTimeStamps[mod.jsonFileName] =
             ref.read(storageProvider).getModDateTimeStamp(mod.jsonFileName);
         cachedUrls[mod.jsonFileName] =
@@ -267,11 +264,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         final isolateData = InitialModsIsolateData(
           jsonsPaths: chunk,
           modType: paths.$1,
-          fileNameToIgnore: paths.$1 == ModTypeEnum.mod
-              ? "WorkshopFileInfos"
-              : paths.$1 == ModTypeEnum.save
-                  ? "SaveFileInfos"
-                  : "",
         );
 
         futures
@@ -524,7 +516,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  void setSelectedMod(Mod? mod) {
+  void setSelectedMod(Mod mod) {
     ref.read(selectedModProvider.notifier).state = mod;
   }
 

@@ -14,6 +14,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
         modsProvider,
+        selectedModProvider,
         selectedModTypeProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
@@ -69,6 +70,7 @@ class SettingsDialog extends HookConsumerWidget {
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
           !showSavedObjects.value) {
         ref.read(selectedModTypeProvider.notifier).state = ModTypeEnum.mod;
+        ref.read(selectedModProvider.notifier).state = null;
       }
 
       await ref.read(settingsProvider.notifier).saveSettings(newState);

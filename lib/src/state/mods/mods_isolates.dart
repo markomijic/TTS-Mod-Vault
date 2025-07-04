@@ -1,4 +1,4 @@
-import 'dart:convert' show jsonDecode;
+import 'dart:convert' show LineSplitter, jsonDecode, utf8;
 import 'dart:io' show Directory, File;
 
 import 'package:flutter/material.dart' show debugPrint;
@@ -95,24 +95,19 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
 }
 
 Future<Map<String, String>> extractUrlsFromJson(String filePath) async {
+  Map<String, String> urls = {};
+
   try {
     final file = File(filePath);
     final jsonString = await file.readAsString();
 
     // Use regex extraction instead of full JSON parsing
-    Map<String, String> urls = _extractUrlsWithRegex(jsonString);
-    return urls;
+    urls = _extractUrlsWithRegex(jsonString);
   } catch (e) {
-    // Fallback to original method if regex fails
-    try {
-      final file = File(filePath);
-      final jsonString = await file.readAsString();
-      final decodedJson = jsonDecode(jsonString);
-      return _extractUrlsWithReversedKeysIsolate(decodedJson);
-    } catch (fallbackError) {
-      return {};
-    }
+    debugPrint('extractUrlsFromJson error: $e');
   }
+
+  return urls;
 }
 
 // Fast regex-based URL extraction using exact AssetTypeEnum subtypes
@@ -145,7 +140,8 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
   return urls;
 }
 
-Map<String, String> _extractUrlsWithReversedKeysIsolate(dynamic data,
+// Original URL extraction method
+/* Map<String, String> _extractUrlsWithReversedKeysIsolate(dynamic data,
     [String? parentKey]) {
   Map<String, String> urls = {};
 
@@ -164,7 +160,7 @@ Map<String, String> _extractUrlsWithReversedKeysIsolate(dynamic data,
   }
 
   return urls;
-}
+} */
 
 Future<String?> _getImageFilePathIsolate(
   String modDirectory,
@@ -193,12 +189,10 @@ Future<String?> _getImageFilePathIsolate(
 
 class InitialModsIsolateData {
   final List<String> jsonsPaths;
-  final String fileNameToIgnore;
   final ModTypeEnum modType;
 
   InitialModsIsolateData({
     required this.jsonsPaths,
-    required this.fileNameToIgnore,
     required this.modType,
   });
 }
@@ -215,8 +209,7 @@ Future<List<Mod>> processInitialModsInIsolate(
 
     // Process chunk in parallel
     final futures = chunk
-        .map((jsonPath) => _processSingleFileOptimized(
-            jsonPath, data.fileNameToIgnore, data.modType))
+        .map((jsonPath) => _processSingleFileOptimized(jsonPath, data.modType))
         .toList();
 
     final results = await Future.wait(futures);
@@ -227,18 +220,19 @@ Future<List<Mod>> processInitialModsInIsolate(
 }
 
 Future<Mod?> _processSingleFileOptimized(
-    String jsonPath, String fileNameToIgnore, ModTypeEnum modType) async {
+  String jsonPath,
+  ModTypeEnum modType,
+) async {
   final jsonFileName = path.basenameWithoutExtension(jsonPath);
 
-  if (jsonFileName == fileNameToIgnore) return null;
-
   try {
-    final file = File(jsonPath);
-    final jsonString = await file.readAsString();
+    final initialModMetaData = await _extractInitialModMetadataFromFile(
+        jsonPath, jsonFileName, modType);
 
     final saveName =
-        _extractSaveNameFromString(jsonString, modType) ?? jsonFileName;
-    final dateTimeStamp = _extractDateTimeStampFromString(jsonString);
+        initialModMetaData['saveName']!; // Non-null (fallback to jsonFileName)
+    final dateTimeStamp = initialModMetaData['dateTimeStamp']; // Can be null
+
     final imageFilePath =
         await _getImageFilePathIsolate(jsonPath, jsonFileName);
 
@@ -255,17 +249,65 @@ Future<Mod?> _processSingleFileOptimized(
   }
 }
 
+Future<Map<String, String?>> _extractInitialModMetadataFromFile(
+  String jsonPath,
+  String jsonFileName,
+  ModTypeEnum modType,
+) async {
+  final file = File(jsonPath);
+
+  String? saveName;
+  String? dateTimeStamp;
+  const chunkSize = 50;
+
+  await for (final chunk in _readFileInChunks(file, chunkSize)) {
+    // Try to extract data from current chunk
+    saveName ??= _extractSaveNameFromString(chunk, modType);
+    dateTimeStamp ??= _extractDateTimeStampFromString(chunk);
+
+    // If we found both, we can stop
+    if (saveName != null && dateTimeStamp != null) {
+      break;
+    }
+  }
+
+  return {
+    'saveName': saveName ?? jsonFileName,
+    'dateTimeStamp': dateTimeStamp,
+  };
+}
+
+Stream<String> _readFileInChunks(File file, int linesPerChunk) async* {
+  final lines = <String>[];
+  int lineCount = 0;
+
+  await for (final line in file
+      .openRead()
+      .transform(utf8.decoder)
+      .transform(const LineSplitter())) {
+    lines.add(line);
+    lineCount++;
+
+    // When we reach chunk size, yield the chunk and reset
+    if (lineCount % linesPerChunk == 0) {
+      yield lines.join('\n');
+      lines.clear();
+    }
+  }
+
+  // Yield any remaining lines
+  if (lines.isNotEmpty) {
+    yield lines.join('\n');
+  }
+}
+
 String? _extractSaveNameFromString(String jsonString, ModTypeEnum modType) {
   try {
     if (modType == ModTypeEnum.savedObject) {
       // Look for "Nickname":"value" pattern in ObjectStates
-      // First check if ObjectStates exists
-      if (jsonString.contains('"ObjectStates"')) {
-        final nicknameRegex = RegExp(r'"Nickname"\s*:\s*"([^"]*)"');
-        final match = nicknameRegex.firstMatch(jsonString);
-        return match?.group(1);
-      }
-      return null;
+      final nicknameRegex = RegExp(r'"Nickname"\s*:\s*"([^"]*)"');
+      final match = nicknameRegex.firstMatch(jsonString);
+      return match?.group(1);
     } else {
       // Look for "SaveName":"value" pattern
       final saveNameRegex = RegExp(r'"SaveName"\s*:\s*"([^"]*)"');
@@ -273,9 +315,10 @@ String? _extractSaveNameFromString(String jsonString, ModTypeEnum modType) {
       return match?.group(1);
     }
   } catch (e) {
-    // Fallback to JSON parsing if regex fails
-    return _fallbackToJsonParsing(jsonString, modType);
+    debugPrint('_extractSaveNameFromString error: $e');
   }
+
+  return null;
 }
 
 String? _extractDateTimeStampFromString(String jsonString) {
@@ -286,100 +329,20 @@ String? _extractDateTimeStampFromString(String jsonString) {
     if (match != null) {
       final dateValue = match.group(1);
       if (dateValue != null && dateValue.isNotEmpty) {
-        return dateTimeToUnixTimestampSync(dateValue);
+        return _dateTimeToUnixTimestampSync(dateValue);
       }
     }
-    return null;
   } catch (e) {
-    // Fallback to JSON parsing if regex fails
-    return _fallbackToJsonDateParsing(jsonString);
+    debugPrint('_extractDateTimeStampFromString error: $e');
   }
+
+  return null;
 }
 
-// Fallback methods in case regex fails
-String? _fallbackToJsonParsing(String jsonString, ModTypeEnum modType) {
-  try {
-    final jsonData = jsonDecode(jsonString);
-    return _getSaveNameFromJsonSync(jsonData, modType);
-  } catch (e) {
-    return null;
-  }
-}
-
-String? _fallbackToJsonDateParsing(String jsonString) {
-  try {
-    final jsonData = jsonDecode(jsonString);
-    return _getDateTimeStampFromJsonSync(jsonData);
-  } catch (e) {
-    return null;
-  }
-}
-
-// Synchronous versions for isolate use
-String? _getSaveNameFromJsonSync(dynamic jsonData, ModTypeEnum modType) {
-  try {
-    if (modType == ModTypeEnum.savedObject) {
-      // For saved objects, look for nickname in ObjectStates
-      if (jsonData is Map<String, dynamic> &&
-          jsonData.containsKey('ObjectStates')) {
-        final objectStates = jsonData['ObjectStates'] as List<dynamic>?;
-        if (objectStates != null && objectStates.isNotEmpty) {
-          final firstObject = objectStates[0] as Map<String, dynamic>?;
-          if (firstObject != null && firstObject.containsKey('Nickname')) {
-            return firstObject['Nickname'].toString();
-          }
-        }
-      }
-      return null;
-    }
-
-    if (jsonData is Map<String, dynamic> && jsonData.containsKey('SaveName')) {
-      return jsonData['SaveName'].toString();
-    }
-
-    if (jsonData is List) {
-      for (final item in jsonData) {
-        if (item is Map<String, dynamic> && item.containsKey('SaveName')) {
-          return item['SaveName'].toString();
-        }
-      }
-    }
-
-    return null;
-  } catch (e) {
-    return null;
-  }
-}
-
-String? _getDateTimeStampFromJsonSync(dynamic jsonData) {
-  try {
-    if (jsonData is Map<String, dynamic> && jsonData.containsKey('Date')) {
-      final dateValue = jsonData['Date'].toString();
-      return dateTimeToUnixTimestampSync(dateValue);
-    }
-
-    if (jsonData is List) {
-      for (final item in jsonData) {
-        if (item is Map<String, dynamic> && item.containsKey('Date')) {
-          final dateValue = item['Date'].toString();
-
-          if (dateValue.isEmpty) return null;
-
-          return dateTimeToUnixTimestampSync(dateValue);
-        }
-      }
-    }
-
-    return null;
-  } catch (e) {
-    return null;
-  }
-}
-
-String? dateTimeToUnixTimestampSync(String dateTimeVrijednost) {
+String? _dateTimeToUnixTimestampSync(String dateValue) {
   try {
     DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
-    DateTime dateTime = format.parse(dateTimeVrijednost);
+    DateTime dateTime = format.parse(dateValue);
     return (dateTime.millisecondsSinceEpoch / 1000).floor().toString();
   } catch (e) {
     return null;
@@ -391,6 +354,10 @@ Future<List<String>> getJsonFilesInDirectory({
   String? excludeDirectory,
 }) async {
   final List<String> jsonFilePaths = [];
+  final List<String> excludeFiles = [
+    'WorkshopFileInfos.json',
+    'SaveFileInfos.json'
+  ];
 
   try {
     final directory = Directory(directoryPath);
@@ -406,6 +373,12 @@ Future<List<String>> getJsonFilesInDirectory({
             path.isWithin(excludeDirectory, entity.path)) {
           continue;
         }
+
+        final fileName = path.basename(entity.path);
+        if (excludeFiles.contains(fileName)) {
+          continue;
+        }
+
         jsonFilePaths.add(path.normalize(entity.path));
       }
     }

@@ -17,7 +17,7 @@ class HelpAndFeedbackButton extends StatelessWidget {
           showSnackBar(context, "Failed to open: $url");
         }
       },
-      child: Text('Help / Feedback', style: style),
+      child: Text('Help & Feedback', style: style),
     );
   }
 }

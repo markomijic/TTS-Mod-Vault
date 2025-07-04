@@ -161,17 +161,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           final cancelToken = CancelToken();
           _cancelTokens[url] = cancelToken;
 
+          final fileName = getFileNameFromURL(url);
+          final directory =
+              ref.read(directoriesProvider.notifier).getDirectoryByType(type);
+
+          final tempPath = path.join(directory, '${fileName}_temp');
+
           try {
             if (state.cancelledDownloads) {
               _cancelTokens.remove(url);
               return;
             }
-
-            final fileName = getFileNameFromURL(url);
-            final directory =
-                ref.read(directoriesProvider.notifier).getDirectoryByType(type);
-
-            final tempPath = path.join(directory, '${fileName}_temp');
 
             await dio.download(
               url,
@@ -211,6 +211,14 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           } catch (e) {
             // Remove the token in case of error
             _cancelTokens.remove(url);
+
+            try {
+              if (await File(tempPath).exists()) {
+                await File(tempPath).delete();
+              }
+            } catch (e) {
+              debugPrint('Error deleting file after download error $e');
+            }
 
             // Handle cancellation specifically
             if (e is DioException && e.type == DioExceptionType.cancel) {

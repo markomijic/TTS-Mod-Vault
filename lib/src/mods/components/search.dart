@@ -1,6 +1,7 @@
+import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart'
-    show useEffect, useTextEditingController;
+    show useEffect, useRef, useTextEditingController;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -13,6 +14,7 @@ class Search extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedModType = ref.watch(selectedModTypeProvider);
     final controller = useTextEditingController();
+    final debounceTimer = useRef<Timer?>(null);
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -28,13 +30,26 @@ class Search extends HookConsumerWidget {
       return null;
     }, []);
 
+    useEffect(() {
+      return () {
+        debounceTimer.value?.cancel();
+      };
+    }, []);
+
+    void onSearchChanged(String value) {
+      debounceTimer.value?.cancel();
+
+      debounceTimer.value = Timer(const Duration(milliseconds: 500), () {
+        ref.read(searchQueryProvider.notifier).state = value;
+      });
+    }
+
     return SizedBox(
       height: 32,
       width: 335,
       child: TextField(
         controller: controller,
-        onChanged: (value) =>
-            ref.read(searchQueryProvider.notifier).state = value,
+        onChanged: onSearchChanged,
         style: TextStyle(
           color: Colors.black,
           fontSize: 16,
@@ -54,6 +69,7 @@ class Search extends HookConsumerWidget {
               ),
               onPressed: () {
                 controller.clear();
+                debounceTimer.value?.cancel();
                 ref.read(searchQueryProvider.notifier).state = '';
               }),
           hintText: 'Search',

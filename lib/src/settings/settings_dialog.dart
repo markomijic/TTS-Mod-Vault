@@ -135,7 +135,8 @@ class SettingsDialog extends HookConsumerWidget {
               },
             ),
             CustomTooltip(
-              message: "Show Saved Objects next to Mods and Saves",
+              message:
+                  "Show Saved Objects next to Mods and Saves, manual refresh of data is needed after enabling if TTS Mod Vault was opened while this setting was disabled",
               child: CheckboxListTile(
                 title: Text('Show Saved Objects'),
                 value: showSavedObjects.value,

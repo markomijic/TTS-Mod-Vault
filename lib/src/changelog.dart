@@ -36,6 +36,21 @@ void showChangelogDialog(BuildContext context) {
 
 String getChangelog() {
   return """
+v1.1.0
+Features:
+· Search
+· Viewing images
+· Support for Saves and Saved Objects
+· Separate selection of Mods and Saves folders
+· Opening audio, image and pdf files
+· URL replacement tool
+
+Changes:
+· Reworked loading system for faster load times
+· New caching system for better performance
+· General improvements and fixes
+
+
 v1.0.2
 Changes:
 · Fixed mods not appearing if they were in a folder within the Workshop folder

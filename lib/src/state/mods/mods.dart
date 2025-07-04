@@ -33,6 +33,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         existingAssetListsProvider,
         loadingMessageProvider,
         selectedModProvider,
+        settingsProvider,
         storageProvider;
 import 'package:tts_mod_vault/src/state/storage/storage.dart' show Storage;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -82,9 +83,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
               directoryPath: savesDir,
               excludeDirectory: savedObjectsDir,
             )),
-        Isolate.run(
-            () => getJsonFilesInDirectory(directoryPath: savedObjectsDir)),
       ];
+
+      final showSavedObjects = ref.read(settingsProvider).showSavedObjects;
+      if (showSavedObjects) {
+        jsonPathsFutures.add(Isolate.run(
+            () => getJsonFilesInDirectory(directoryPath: savedObjectsDir)));
+      }
 
       final jsonPaths = await Future.wait(jsonPathsFutures);
 
@@ -93,8 +98,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       List<(ModTypeEnum type, List<String>)> allPaths = [
         (ModTypeEnum.mod, jsonPaths[0]),
         (ModTypeEnum.save, jsonPaths[1]),
-        (ModTypeEnum.savedObject, jsonPaths[2]),
       ];
+
+      if (showSavedObjects) {
+        allPaths.add((ModTypeEnum.savedObject, jsonPaths[2]));
+      }
 
       final initialMods = await getInitialMods(allPaths);
 
@@ -153,8 +161,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       debugPrint('Starting ${isolateWorkData.length} isolates in parallel');
 
-      ref.read(loadingMessageProvider.notifier).state =
-          'Loading ${jsonPaths[0].length} mods, ${jsonPaths[1].length} saves and ${jsonPaths[2].length} saved objects';
+      ref.read(loadingMessageProvider.notifier).state = showSavedObjects
+          ? 'Loading ${jsonPaths[0].length} mods, ${jsonPaths[1].length} saves and ${jsonPaths[2].length} saved objects'
+          : 'Loading ${jsonPaths[0].length} mods and ${jsonPaths[1].length} saves';
 
       final List<IsolateWorkResult> allResults = await Future.wait(
         isolateWorkData

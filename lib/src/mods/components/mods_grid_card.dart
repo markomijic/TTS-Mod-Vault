@@ -105,7 +105,7 @@ class ModsGridCard extends HookConsumerWidget {
                       TextSpan(
                         children: [
                           TextSpan(
-                              text: displayMod.modType == ModTypeEnum.mod
+                              text: displayMod.modType != ModTypeEnum.save
                                   ? displayMod.saveName
                                   : '${displayMod.jsonFileName}\n${displayMod.saveName}'),
                           TextSpan(

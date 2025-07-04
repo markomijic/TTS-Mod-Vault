@@ -97,24 +97,24 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
   bool doesAssetFileExist(String assetFileName, AssetTypeEnum type) {
     switch (type) {
       case AssetTypeEnum.assetBundle:
-        return state.assetBundles.firstWhereOrNull(
-                (element) => element.startsWith(assetFileName)) !=
+        return state.assetBundles
+                .firstWhereOrNull((element) => element == assetFileName) !=
             null;
       case AssetTypeEnum.audio:
-        return state.audio.firstWhereOrNull(
-                (element) => element.startsWith(assetFileName)) !=
+        return state.audio
+                .firstWhereOrNull((element) => element == assetFileName) !=
             null;
       case AssetTypeEnum.image:
-        return state.images.firstWhereOrNull(
-                (element) => element.startsWith(assetFileName)) !=
+        return state.images
+                .firstWhereOrNull((element) => element == assetFileName) !=
             null;
       case AssetTypeEnum.model:
-        return state.models.firstWhereOrNull(
-                (element) => element.startsWith(assetFileName)) !=
+        return state.models
+                .firstWhereOrNull((element) => element == assetFileName) !=
             null;
       case AssetTypeEnum.pdf:
-        return state.pdf.firstWhereOrNull(
-                (element) => element.startsWith(assetFileName)) !=
+        return state.pdf
+                .firstWhereOrNull((element) => element == assetFileName) !=
             null;
     }
   }

@@ -47,7 +47,7 @@ Features:
 
 Changes:
 · Reworked loading system for faster load times
-· New caching system for better performance
+· Replaced storage solution with faster alternative for improved performance
 · General improvements and fixes
 
 

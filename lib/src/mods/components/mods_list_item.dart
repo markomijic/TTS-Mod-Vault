@@ -50,7 +50,7 @@ class ModsListItem extends HookConsumerWidget {
       },
       child: ListTile(
         selected: selectedMod == displayMod,
-        title: Text(displayMod.modType == ModTypeEnum.mod
+        title: Text(displayMod.modType != ModTypeEnum.save
             ? displayMod.saveName
             : "${displayMod.jsonFileName}\n${displayMod.saveName}"),
         subtitle: showAssetCount

@@ -6,9 +6,9 @@ You can download assets, create backups and restore them.
 Restoring backups supports ttsmod files.
 
 The tool also features:
-Cleanup - delete locally cached files that are not part of your installed mods & saves
-Viewing images - view all downloaded images of a mod
-URL replacement - replaces a URL in the mods JSON file and optionally renames the file (if it exists) (enabled in settings)
+- Cleanup - delete locally cached files that are not part of your installed mods & saves
+- Viewing images - view all downloaded images of a mod
+- URL replacement - replaces a URL in the mods JSON file and optionally renames the file (feature has to be enabled in settings)
 
 Created using Flutter 3.29.3
 

@@ -1,14 +1,14 @@
 # TTS Mod Vault
 
-TTS Mod Vault is a cross-platform tool for managing your Tabletop Simulator mods, saves and saved objects across Windows, Linux, and macOS. 
+TTS Mod Vault is a cross-platform mod backup tool for your Tabletop Simulator mods, saves and saved objects on Windows, Linux, and macOS. 
+You can download assets, create backups and import them. Import & backup system works with ttsmod file format used by TTS Mod Backup, making them compatible with each other.
 
-You can download assets, create backups and restore them. 
-Restoring backups supports ttsmod files.
-
-The tool also features:
-- Cleanup - delete locally cached files that are not part of your installed mods & saves
-- Viewing images - view all downloaded images of a mod
-- URL replacement - replaces a URL in the mods JSON file and optionally renames the file (feature has to be enabled in settings)
+Additional features include:
+- Cleanup - Remove unused cached files that aren't part of your installed mods, saves or saved objects
+- View Images - View all downloaded images of a specific mod in one place
+- Replace URL - Replace any URL in the JSON file. You can optionally rename the file at the same time if the file exists. Feature has to be enabled in settings.
+- Mods & Saves paths - Separately set what paths are used for your Mods folder and your Saves folder in the Settings
+- Open Files - You can open Audio, Images and PDF files
 
 Created using Flutter 3.29.3
 

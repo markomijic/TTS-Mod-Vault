@@ -263,12 +263,14 @@ Future<Mod?> _processSingleFileOptimized(
         initialModMetaData['saveName']!; // Non-null (fallback to jsonFileName)
     final dateTimeStamp = initialModMetaData['dateTimeStamp']; // Can be null
 
+    final parentFolder = path.basename(path.dirname(jsonPath));
     final imageFilePath =
         await _getImageFilePathIsolate(jsonPath, jsonFileName);
 
     return Mod(
       modType: modType,
       jsonFilePath: jsonPath,
+      parentFolderName: parentFolder,
       saveName: saveName.isNotEmpty ? saveName : jsonFileName,
       dateTimeStamp: dateTimeStamp,
       jsonFileName: jsonFileName,

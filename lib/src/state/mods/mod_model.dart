@@ -14,9 +14,10 @@ enum ModTypeEnum {
 class Mod {
   final ModTypeEnum modType;
   final String jsonFilePath;
+  final String jsonFileName;
+  final String parentFolderName;
   final String saveName;
   final String? dateTimeStamp;
-  final String jsonFileName;
   final String? imageFilePath;
   final AssetLists? assetLists;
   final int? totalCount;
@@ -25,9 +26,10 @@ class Mod {
   Mod({
     required this.modType,
     required this.jsonFilePath,
+    required this.jsonFileName,
+    required this.parentFolderName,
     required this.saveName,
     this.dateTimeStamp,
-    required this.jsonFileName,
     this.imageFilePath,
     this.assetLists,
     this.totalCount,
@@ -36,6 +38,7 @@ class Mod {
 
   Mod copyWith({
     String? jsonFilePath,
+    String? parentFolderName,
     String? saveName,
     String? dateTimeStamp,
     String? jsonFileName,
@@ -47,9 +50,10 @@ class Mod {
     return Mod(
       modType: modType,
       jsonFilePath: jsonFilePath ?? this.jsonFilePath,
+      jsonFileName: jsonFileName ?? this.jsonFileName,
+      parentFolderName: parentFolderName ?? this.parentFolderName,
       saveName: saveName ?? this.saveName,
       dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
-      jsonFileName: jsonFileName ?? this.jsonFileName,
       imageFilePath: imageFilePath ?? this.imageFilePath,
       assetLists: assetLists ?? this.assetLists,
       totalCount: totalCount ?? this.totalCount,

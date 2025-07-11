@@ -29,7 +29,7 @@ dependencies:
   archive: ^4.0.5
   package_info_plus: ^8.3.0
   url_launcher: ^6.3.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   hive_ce: ^2.11.3
   hive_ce_flutter: ^2.3.1
 
@@ -37,7 +37,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   flutter_launcher_icons: "^0.14.3"
   hive_ce_generator: ^1.9.2
   build_runner: ^2.5.3

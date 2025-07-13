@@ -16,12 +16,20 @@ class CustomTooltip extends StatelessWidget {
   final String? message;
   final InlineSpan? richMessage;
   final Widget? child;
+  final Duration? waitDuration;
 
-  const CustomTooltip({super.key, this.message, this.richMessage, this.child});
+  const CustomTooltip({
+    super.key,
+    this.message,
+    this.richMessage,
+    this.child,
+    this.waitDuration,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
+      waitDuration: waitDuration,
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border.all(color: Colors.white, width: 2),

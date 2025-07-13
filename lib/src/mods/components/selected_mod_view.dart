@@ -3,10 +3,12 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show SelectedModActionButtons, AssetsUrl, DownloadProgressBar, HelpTooltip;
-import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
-    show CustomTooltip;
-
+    show
+        SelectedModActionButtons,
+        AssetsUrl,
+        DownloadProgressBar,
+        HelpTooltip,
+        CustomTooltip;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'

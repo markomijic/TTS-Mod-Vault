@@ -23,7 +23,7 @@ dependencies:
   http: ^1.2.2
   dio: ^5.7.0
   collection: ^1.19.0
-  window_manager: ^0.5.0
+  window_manager: ^0.5.1
   mime: ^2.0.0
   file_picker: ^10.1.9
   archive: ^4.0.5

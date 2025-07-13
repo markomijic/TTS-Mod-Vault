@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
+import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
 
 class HelpTooltip extends StatelessWidget {

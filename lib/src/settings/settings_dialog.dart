@@ -7,7 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart'
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:path/path.dart' as path;
-import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart'
+import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'

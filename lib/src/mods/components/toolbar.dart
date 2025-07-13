@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
-import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
-import 'package:tts_mod_vault/src/changelog.dart' show showChangelogDialog;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show HelpAndFeedbackButton;
+    show HelpMenu;
 import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -14,11 +12,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         cleanupProvider,
         loaderProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show
-        checkForUpdatesOnGitHub,
-        showConfirmDialog,
-        showDownloadDialog,
-        showSnackBar;
+    show showConfirmDialog, showSnackBar;
 
 class Toolbar extends ConsumerWidget {
   const Toolbar({super.key});
@@ -32,7 +26,7 @@ class Toolbar extends ConsumerWidget {
     return Row(
       spacing: 8,
       children: [
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: actionInProgress
               ? null
               : () => showDialog(
@@ -40,9 +34,10 @@ class Toolbar extends ConsumerWidget {
                   builder: (BuildContext context) {
                     return SettingsDialog();
                   }),
-          child: const Text('Settings'),
+          icon: const Icon(Icons.settings),
+          label: const Text('Settings'),
         ),
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: actionInProgress
               ? null
               : () async {
@@ -65,9 +60,10 @@ class Toolbar extends ConsumerWidget {
                     },
                   );
                 },
-          child: const Text('Cleanup'),
+          icon: const Icon(Icons.cleaning_services),
+          label: const Text('Cleanup'),
         ),
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: actionInProgress
               ? null
               : () => showConfirmDialog(
@@ -77,9 +73,10 @@ class Toolbar extends ConsumerWidget {
                       await ref.read(loaderProvider).refreshAppData();
                     },
                   ),
-          child: const Text('Refresh'),
+          icon: const Icon(Icons.refresh),
+          label: const Text('Refresh'),
         ),
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: () async {
             if (actionInProgress) {
               return;
@@ -92,32 +89,10 @@ class Toolbar extends ConsumerWidget {
               await ref.read(loaderProvider).refreshAppData();
             }
           },
-          child: const Text('Import backup'),
+          icon: const Icon(Icons.unarchive),
+          label: const Text('Import backup'),
         ),
-        ElevatedButton(
-          onPressed: () => showChangelogDialog(context),
-          child: const Text('Changelog'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final newTagVersion = await checkForUpdatesOnGitHub();
-
-            if (newTagVersion.isNotEmpty) {
-              final packageInfo = await PackageInfo.fromPlatform();
-              final currentVersion = packageInfo.version;
-
-              if (!context.mounted) return;
-
-              await showDownloadDialog(context, currentVersion, newTagVersion);
-            } else {
-              if (context.mounted) {
-                showSnackBar(context, 'No new updates found');
-              }
-            }
-          },
-          child: const Text('Check for updates'),
-        ),
-        HelpAndFeedbackButton(),
+        HelpMenu(),
       ],
     );
   }

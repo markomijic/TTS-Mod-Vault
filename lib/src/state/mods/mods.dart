@@ -217,9 +217,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         saves: allProcessedMods
             .where((element) => element.modType == ModTypeEnum.save)
             .toList(),
-        savedObjects: allProcessedMods
-            .where((element) => element.modType == ModTypeEnum.savedObject)
-            .toList(),
+        savedObjects: showSavedObjects
+            ? allProcessedMods
+                .where((element) => element.modType == ModTypeEnum.savedObject)
+                .toList()
+            : [],
       ));
 
       // If backup was imported set it as selected mod

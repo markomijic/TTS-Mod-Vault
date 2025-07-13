@@ -23,6 +23,8 @@ const oldCloudUrl = "http://cloud-3.steamusercontent.com/";
 const newSteamUserContentUrl = "https://steamusercontent-a.akamaihd.net/";
 const nexusModsDownloadPageUrl =
     "https://www.nexusmods.com/tabletopsimulator/mods/426";
+const steamDiscussionUrl =
+    "https://steamcommunity.com/app/286160/discussions/0/591772542952298985/";
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
@@ -153,17 +155,17 @@ Future<void> showDownloadDialog(
             "Your version: $currentVersion\nLatest version: $latestVersion\n\nA new application version is available.\nWould you like to open the download page?",
           ),
           actions: [
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop('cancel'),
               child: const Text('Cancel'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop('nexusmods'),
-              child: const Text('Download from Nexus Mods'),
+              child: const Text('Nexus Mods'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop('github'),
-              child: const Text('Download from GitHub'),
+              child: const Text('GitHub'),
             ),
           ],
         ),

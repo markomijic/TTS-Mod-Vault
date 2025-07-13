@@ -3,8 +3,8 @@ import 'dart:io' show exit;
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show HelpAndFeedbackButton;
+import 'package:tts_mod_vault/src/utils.dart'
+    show openUrl, showSnackBar, steamDiscussionUrl;
 
 class ErrorMessage extends ConsumerWidget {
   final Object e;
@@ -30,7 +30,15 @@ class ErrorMessage extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 16,
           children: [
-            HelpAndFeedbackButton(style: TextStyle(fontSize: 24)),
+            ElevatedButton(
+              onPressed: () async {
+                final result = await openUrl(steamDiscussionUrl);
+                if (!result && context.mounted) {
+                  showSnackBar(context, "Failed to open: $steamDiscussionUrl");
+                }
+              },
+              child: Text('Help & Feedback', style: TextStyle(fontSize: 24)),
+            ),
             ElevatedButton(
               onPressed: () => exit(0),
               child: Text('Exit', style: TextStyle(fontSize: 24)),

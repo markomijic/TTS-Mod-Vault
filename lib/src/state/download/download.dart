@@ -1,7 +1,7 @@
 import 'dart:io' show File;
 
 import 'package:dio/dio.dart'
-    show CancelToken, Dio, DioException, DioExceptionType;
+    show CancelToken, Dio, DioException, DioExceptionType, Options;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/download/download_state.dart'
@@ -156,16 +156,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           i + batchSize > urls.length ? urls.length : i + batchSize,
         );
 
-        await Future.wait(batch.map((url) async {
-          // Create a new CancelToken for this download
-          final cancelToken = CancelToken();
-          _cancelTokens[url] = cancelToken;
-
-          final fileName = getFileNameFromURL(url);
+        await Future.wait(batch.map((originalUrl) async {
+          // Set filename and path
+          final fileName = getFileNameFromURL(originalUrl);
           final directory =
               ref.read(directoriesProvider.notifier).getDirectoryByType(type);
-
           final tempPath = path.join(directory, '${fileName}_temp');
+
+          // Set url and cancel token
+          final url = await resolveUrlWithScheme(originalUrl);
+          final cancelToken = CancelToken();
+          _cancelTokens[url] = cancelToken;
 
           try {
             if (state.cancelledDownloads) {
@@ -250,6 +251,39 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
     } catch (e) {
       state = state.copyWith(isDownloading: false);
+    }
+  }
+
+  Future<String> resolveUrlWithScheme(String url) async {
+    // If URL already starts with http/https, return it directly
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    final httpsUrl = 'https://$url';
+    final httpUrl = 'http://$url';
+
+    Future<bool> isReachable(String fullUrl) async {
+      try {
+        final response = await dio.request(
+          fullUrl,
+          options: Options(
+            method: 'HEAD',
+            validateStatus: (status) => status != null && status < 500,
+          ),
+        );
+        return response.statusCode != null && response.statusCode! < 400;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (await isReachable(httpsUrl)) {
+      return httpsUrl;
+    } else if (await isReachable(httpUrl)) {
+      return httpUrl;
+    } else {
+      return url; // Could not resolve; return original
     }
   }
 }

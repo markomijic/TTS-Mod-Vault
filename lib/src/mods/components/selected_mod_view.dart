@@ -151,30 +151,6 @@ class _SelectedModViewComponent extends HookConsumerWidget {
           child: Row(
             spacing: 8,
             children: [
-              if (selectedMod.modType == ModTypeEnum.mod)
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => openUrl(
-                        "https://steamcommunity.com/sharedfiles/filedetails/?id=${selectedMod.jsonFileName}"),
-                    child: CustomTooltip(
-                      message: 'Open on Steam Workshop',
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        padding: EdgeInsets.all(2),
-                        child: Image.asset(
-                          'assets/icon/steam_logo.png',
-                          height: 22,
-                          isAntiAlias: true,
-                          fit: BoxFit.fitHeight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               Expanded(
                 child: Text(
                   selectedMod.modType == ModTypeEnum.mod

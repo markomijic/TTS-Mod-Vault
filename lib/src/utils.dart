@@ -12,8 +12,10 @@ import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show Mod, ModTypeEnum;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show actionInProgressProvider;
 import 'package:url_launcher/url_launcher.dart'
     show LaunchMode, canLaunchUrl, launchUrl;
 import 'package:http/http.dart' as http;
@@ -400,8 +402,6 @@ void showModContextMenu(
   Offset position,
   Mod mod,
 ) {
-  ref.read(modsProvider.notifier).setSelectedMod(mod);
-
   showMenu(
     context: context,
     color: Theme.of(context).scaffoldBackgroundColor,
@@ -436,6 +436,17 @@ void showModContextMenu(
           ],
         ),
       ),
+      if (mod.modType == ModTypeEnum.mod)
+        PopupMenuItem(
+          value: ContextMenuActionEnum.openSteamWorkshopPage,
+          child: Row(
+            spacing: 8,
+            children: [
+              Icon(Icons.open_in_browser),
+              Text('Open Steam Workshop page'),
+            ],
+          ),
+        ),
       PopupMenuItem(
         value: ContextMenuActionEnum.copySaveName,
         child: Row(
@@ -474,6 +485,11 @@ void showModContextMenu(
 
         case ContextMenuActionEnum.openInExplorer:
           openInFileExplorer(mod.jsonFilePath);
+          break;
+
+        case ContextMenuActionEnum.openSteamWorkshopPage:
+          openUrl(
+              "https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.jsonFileName}");
           break;
 
         case ContextMenuActionEnum.copySaveName:

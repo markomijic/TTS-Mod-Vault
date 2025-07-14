@@ -22,7 +22,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         selectedModProvider,
         selectedModTypeProvider;
-import 'package:tts_mod_vault/src/utils.dart' show openUrl;
 
 abstract class _ListItem {}
 

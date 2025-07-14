@@ -15,3 +15,4 @@ export 'images_viewer_grid_card.dart';
 export 'mods_list_item.dart';
 export 'custom_tooltip.dart';
 export 'help_menu.dart';
+export 'mods_view.dart';

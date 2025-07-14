@@ -8,21 +8,15 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         ErrorMessage,
         MessageProgressIndicator,
-        ModsGrid,
-        ModsList,
         ModsSelector,
         Search,
         SelectedModView,
-        Toolbar;
+        Toolbar,
+        ModsView;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        backupProvider,
-        cleanupProvider,
-        loadingMessageProvider,
-        modsProvider,
-        settingsProvider;
+    show backupProvider, cleanupProvider, loadingMessageProvider, modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
@@ -31,7 +25,6 @@ class ModsPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loadingMessage = ref.watch(loadingMessageProvider);
-    final useModsListView = ref.watch(settingsProvider).useModsListView;
     final cleanUpNotifier = ref.watch(cleanupProvider.notifier);
     final cleanUpState = ref.watch(cleanupProvider);
     final backup = ref.watch(backupProvider);
@@ -104,15 +97,11 @@ class ModsPage extends HookConsumerWidget {
                                 ),
                                 Expanded(
                                   child: Padding(
-                                    padding: EdgeInsets.only(
-                                      top: 8,
-                                      left: 4,
-                                      right: 8,
-                                      bottom: 8,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 8,
                                     ),
-                                    child: useModsListView
-                                        ? ModsList(state: data)
-                                        : ModsGrid(state: data),
+                                    child: ModsView(state: data),
                                   ),
                                 ),
                               ],

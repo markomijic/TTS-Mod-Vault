@@ -12,7 +12,8 @@ import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show loadingMessageProvider;
-import 'package:tts_mod_vault/src/utils.dart' show sanitizeFileName;
+import 'package:tts_mod_vault/src/utils.dart'
+    show sanitizeFileName, getBackupFilenameByMod;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
   final Ref ref;
@@ -55,8 +56,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
 
   ExistingBackup? getBackupByMod(Mod mod) {
     try {
-      final backupFileName =
-          sanitizeFileName("${mod.saveName}(${mod.jsonFileName}).ttsmod");
+      final backupFileName = getBackupFilenameByMod(mod);
 
       return state.backups
           .firstWhereOrNull((backup) => backup.filename == backupFileName);

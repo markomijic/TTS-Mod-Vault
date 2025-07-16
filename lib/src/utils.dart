@@ -281,6 +281,17 @@ String sanitizeFileName(String input) {
   return sanitized.trim().replaceAll(RegExp(r'^\.+|\.+$'), '');
 }
 
+String getBackupFilenameByMod(Mod mod) {
+  // If json file name is not a number -> do not include it in backup filename
+  final nameAsNumber = int.tryParse(mod.jsonFileName);
+
+  if (nameAsNumber == null) {
+    return sanitizeFileName("${mod.saveName}.ttsmod");
+  }
+
+  return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
+}
+
 Future<void> openInFileExplorer(String filePath) async {
   try {
     if (Platform.isWindows) {

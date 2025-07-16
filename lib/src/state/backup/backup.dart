@@ -20,6 +20,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, existingBackupsProvider, modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
+        getBackupFilenameByMod,
         getFileNameFromURL,
         newSteamUserContentUrl,
         oldCloudUrl,
@@ -222,8 +223,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
         throw Exception('No valid files to create a backup');
       }
 
-      final backupFileName =
-          sanitizeFileName("${mod.saveName}(${mod.jsonFileName}).ttsmod");
+      final backupFileName = getBackupFilenameByMod(mod);
       final file = File(p.join(saveDirectoryPath, backupFileName));
       final zipData = ZipEncoder().encode(archive);
 

@@ -5,6 +5,7 @@ import 'dart:convert' show json;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
 
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
@@ -436,6 +437,17 @@ void showModContextMenu(
           ],
         ),
       ),
+      if (mod.backup != null)
+        PopupMenuItem(
+          value: ContextMenuActionEnum.openBackupInExplorer,
+          child: Row(
+            spacing: 8,
+            children: [
+              Icon(Icons.folder_zip_outlined),
+              Text('Open Backup in File Explorer'),
+            ],
+          ),
+        ),
       if (mod.modType == ModTypeEnum.mod)
         PopupMenuItem(
           value: ContextMenuActionEnum.openSteamWorkshopPage,
@@ -492,6 +504,10 @@ void showModContextMenu(
               "https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.jsonFileName}");
           break;
 
+        case ContextMenuActionEnum.openBackupInExplorer:
+          openInFileExplorer(mod.backup!.filepath);
+          break;
+
         case ContextMenuActionEnum.copySaveName:
           if (context.mounted) {
             copyToClipboard(context, mod.saveName);
@@ -509,4 +525,16 @@ void showModContextMenu(
       }
     }
   });
+}
+
+String? formatTimestamp(String? timestamp) {
+  if (timestamp == null) return null;
+
+  try {
+    final dateTime =
+        DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp) * 1000);
+    return DateFormat('MMM dd, yyyy HH:mm').format(dateTime);
+  } catch (e) {
+    return null;
+  }
 }

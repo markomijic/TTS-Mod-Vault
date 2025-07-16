@@ -375,7 +375,7 @@ String? _dateTimeToUnixTimestampSync(String dateValue) {
   try {
     DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
     DateTime dateTime = format.parse(dateValue);
-    return (dateTime.millisecondsSinceEpoch / 1000).floor().toString();
+    return (dateTime.millisecondsSinceEpoch ~/ 1000).toString();
   } catch (e) {
     return null;
   }

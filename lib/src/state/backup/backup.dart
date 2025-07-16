@@ -11,10 +11,13 @@ import 'package:path/path.dart' as p
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupState;
+import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
+    show ExistingBackup;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show directoriesProvider, existingBackupsProvider, modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         getFileNameFromURL,
@@ -225,6 +228,15 @@ class BackupNotifier extends StateNotifier<BackupState> {
       final zipData = ZipEncoder().encode(archive);
 
       await file.writeAsBytes(zipData);
+
+      // Add new backup to state, update mod
+      final newBackup = ExistingBackup(
+        filename: backupFileName,
+        filepath: p.join(saveDirectoryPath, backupFileName),
+        lastModifiedTimestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      ref.read(existingBackupsProvider.notifier).addBackup(newBackup);
+      ref.read(modsProvider.notifier).updateSelectedMod(mod);
     } catch (e) {
       debugPrint('createBackup - error: ${e.toString()}');
       returnValue = e.toString();

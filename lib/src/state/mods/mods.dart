@@ -31,6 +31,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         directoriesProvider,
         existingAssetListsProvider,
+        existingBackupsProvider,
         loadingMessageProvider,
         selectedModProvider,
         settingsProvider,
@@ -240,6 +241,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         if (mod != null) updateSelectedMod(mod);
       }
 
+      // TODO update with check for path set
+      if (true) {
+        await ref.read(existingBackupsProvider.notifier).loadExistingBackups();
+      }
+
       final endTime = DateTime.now();
       debugPrint('loadModsData END: $endTime');
       debugPrint('loadModsData total time: ${endTime.difference(startTime)}');
@@ -401,7 +407,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final urls = ref.read(storageProvider).getModUrls(jsonFileName) ??
         await extractUrlsFromJson(mod.jsonFilePath);
 
-    return _getModDataWithAssetLists(mod, urls);
+    return _getCompleteMod(mod, urls);
   }
 
   Future<void> updateSelectedMod(Mod selectedMod) async {
@@ -424,7 +430,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           ref.read(storageProvider).getModUrls(selectedMod.jsonFileName) ??
               await extractUrlsFromJson(selectedMod.jsonFilePath);
 
-      final updatedMod = _getModDataWithAssetLists(selectedMod, urls);
+      final updatedMod = _getCompleteMod(selectedMod, urls);
 
       final updatedList = [...modList];
       updatedList[modIndex] = updatedMod;
@@ -449,10 +455,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod _getModDataWithAssetLists(Mod mod, Map<String, String> jsonURLs) {
+  Mod _getCompleteMod(Mod mod, Map<String, String> jsonURLs) {
     final assetLists = _getAssetListsFromUrls(jsonURLs);
+    final backup =
+        ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
     return mod.copyWith(
+      backup: backup,
       assetLists: assetLists.$1,
       totalCount: assetLists.$2,
       totalExistsCount: assetLists.$3,

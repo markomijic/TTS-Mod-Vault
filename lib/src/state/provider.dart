@@ -3,6 +3,8 @@ import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
 import 'package:tts_mod_vault/src/state/backup/backup.dart';
+import 'package:tts_mod_vault/src/state/backup/existing_backups.dart';
+import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
 import 'package:tts_mod_vault/src/state/directories/directories.dart';
@@ -38,6 +40,11 @@ final existingAssetListsProvider =
   (ref) => ExistingAssetsNotifier(ref),
 );
 
+final existingBackupsProvider =
+    StateNotifierProvider<ExistingBackupsStateNotifier, ExistingBackupsState>(
+  (ref) => ExistingBackupsStateNotifier(ref),
+);
+
 final loaderProvider = Provider<LoaderNotifier>((ref) {
   return LoaderNotifier(ref);
 });
@@ -47,6 +54,9 @@ final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
 
 final cardModProvider =
     FutureProvider.family.autoDispose<Mod, String>((ref, jsonFileName) async {
+  // TODO revisit
+  //await Future.delayed(Duration(milliseconds: Random().nextInt(500) + 1));
+
   return ref.read(modsProvider.notifier).getCardMod(jsonFileName);
 });
 

@@ -3,6 +3,7 @@ enum ContextMenuActionEnum {
   openInExplorer,
   openInBrowser,
   openSteamWorkshopPage,
+  openBackupInExplorer,
   openFile,
   copyUrl,
   copyFilename,

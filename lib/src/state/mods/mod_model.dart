@@ -1,5 +1,6 @@
 import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart';
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart';
+import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
 enum ModTypeEnum {
@@ -18,6 +19,7 @@ class Mod {
   final String parentFolderName;
   final String saveName;
   final String? dateTimeStamp;
+  final ExistingBackup? backup;
   final String? imageFilePath;
   final AssetLists? assetLists;
   final int? totalCount;
@@ -30,6 +32,7 @@ class Mod {
     required this.parentFolderName,
     required this.saveName,
     this.dateTimeStamp,
+    this.backup,
     this.imageFilePath,
     this.assetLists,
     this.totalCount,
@@ -41,6 +44,7 @@ class Mod {
     String? parentFolderName,
     String? saveName,
     String? dateTimeStamp,
+    ExistingBackup? backup,
     String? jsonFileName,
     String? imageFilePath,
     AssetLists? assetLists,
@@ -54,6 +58,7 @@ class Mod {
       parentFolderName: parentFolderName ?? this.parentFolderName,
       saveName: saveName ?? this.saveName,
       dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
+      backup: backup ?? this.backup,
       imageFilePath: imageFilePath ?? this.imageFilePath,
       assetLists: assetLists ?? this.assetLists,
       totalCount: totalCount ?? this.totalCount,

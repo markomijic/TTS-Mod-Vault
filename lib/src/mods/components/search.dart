@@ -52,8 +52,7 @@ class Search extends HookConsumerWidget {
         onChanged: onSearchChanged,
         style: TextStyle(
           color: Colors.black,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           contentPadding: EdgeInsets.symmetric(horizontal: 20),
@@ -75,8 +74,7 @@ class Search extends HookConsumerWidget {
           hintText: 'Search',
           hintStyle: TextStyle(
             color: Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
           filled: true,
           fillColor: Colors.white,

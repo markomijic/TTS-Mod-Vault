@@ -16,7 +16,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         selectedModProvider,
         settingsProvider;
-import 'package:tts_mod_vault/src/utils.dart' show showModContextMenu;
+import 'package:tts_mod_vault/src/utils.dart'
+    show showModContextMenu, formatTimestamp;
 
 class ModsGridCard extends HookConsumerWidget {
   final Mod mod;
@@ -49,6 +50,16 @@ class ModsGridCard extends HookConsumerWidget {
       return displayMod.totalExistsCount != null &&
           displayMod.totalCount != null &&
           displayMod.totalCount! > 0;
+    }, [displayMod]);
+
+    final backupIsUpToDate = useMemoized(() {
+      if (displayMod.backup == null) {
+        return null;
+      }
+
+      return displayMod.dateTimeStamp == null ||
+          displayMod.backup!.lastModifiedTimestamp >
+              int.parse(displayMod.dateTimeStamp!);
     }, [displayMod]);
 
     return MouseRegion(
@@ -93,28 +104,36 @@ class ModsGridCard extends HookConsumerWidget {
                       fit: BoxFit.cover,
                     )
                   : Container(
-                      color: Colors.blueGrey,
+                      color: Colors.grey[850],
                       alignment: Alignment.center,
                       child: Text(
                         displayMod.saveName,
-                        textAlign: TextAlign.center,
                         maxLines: 5,
+                        textAlign: TextAlign.center,
                         overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
               if (showTitleOnCards || displayMod.modType != ModTypeEnum.mod)
                 Align(
-                  alignment: Alignment.bottomLeft,
+                  alignment: Alignment.bottomCenter,
                   child: ClipRect(
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
                       child: Container(
-                        color: Colors.black.withAlpha(160),
+                        color: Colors.black.withAlpha(140),
                         width: double.infinity,
                         padding: EdgeInsets.all(4),
-                        child: Text(displayMod.modType != ModTypeEnum.save
-                            ? displayMod.saveName
-                            : '${displayMod.jsonFileName}\n${displayMod.saveName}'),
+                        child: Text(
+                          displayMod.modType != ModTypeEnum.save
+                              ? displayMod.saveName
+                              : '${displayMod.jsonFileName}\n${displayMod.saveName}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -141,21 +160,23 @@ class ModsGridCard extends HookConsumerWidget {
                               Text(
                                 "${displayMod.totalExistsCount}/${displayMod.totalCount}",
                                 style: TextStyle(
+                                  fontWeight: FontWeight.w500,
                                   color: displayMod.totalExistsCount ==
                                           displayMod.totalCount
                                       ? Colors.green
                                       : Colors.white,
                                 ),
                               ),
-                              // TODO update
-                              if (mod.saveName.length < 30)
+                              if (displayMod.backup != null)
                                 CustomTooltip(
-                                  message: 'Mod date: 123\nBackup date: XYZ',
+                                  message:
+                                      'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\nBackup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}',
                                   waitDuration: Duration(milliseconds: 300),
                                   child: Icon(
                                     Icons.folder_zip_outlined,
                                     size: 20,
-                                    color: mod.saveName.length > 20
+                                    color: backupIsUpToDate != null &&
+                                            backupIsUpToDate
                                         ? Colors.green
                                         : Colors.red,
                                   ),

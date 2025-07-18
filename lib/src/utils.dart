@@ -7,6 +7,7 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
+import 'package:open_filex/open_filex.dart' show OpenFilex;
 
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
@@ -285,7 +286,7 @@ String getBackupFilenameByMod(Mod mod) {
   // If json file name is not a number -> do not include it in backup filename
   final nameAsNumber = int.tryParse(mod.jsonFileName);
 
-  if (nameAsNumber == null) {
+  if (nameAsNumber == null && mod.modType == ModTypeEnum.mod) {
     return sanitizeFileName("${mod.saveName}.ttsmod");
   }
 
@@ -309,15 +310,7 @@ Future<void> openInFileExplorer(String filePath) async {
 
 Future<void> openFile(String filePath) async {
   try {
-    final file = File(filePath);
-    final uri = file.uri;
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(
-        uri,
-        mode: LaunchMode.platformDefault,
-      );
-    }
+    await OpenFilex.open(filePath);
   } catch (e) {
     debugPrint('openFile error: $e');
   }

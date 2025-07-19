@@ -27,7 +27,7 @@ class BulkActions extends HookConsumerWidget {
 
             ref
                 .read(bulkActionsProvider.notifier)
-                .downloadAllMods(ref.read(modsProvider).value!.mods);
+                .downloadAllMods(ref.read(filteredModsProvider));
           },
         ),
 /*         MenuItemButton(

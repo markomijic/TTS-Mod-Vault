@@ -1,6 +1,7 @@
 import 'dart:io' show Directory, File;
 import 'dart:isolate' show Isolate;
 
+import 'package:archive/archive.dart' show ZipDecoder;
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
@@ -10,8 +11,7 @@ import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart'
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, loadingMessageProvider;
+import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 import 'package:tts_mod_vault/src/utils.dart' show getBackupFilenameByMod;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
@@ -21,9 +21,6 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
 
   Future<void> loadExistingBackups() async {
     debugPrint('loadExistingBackups');
-
-    ref.read(loadingMessageProvider.notifier).state =
-        'Loading existing backups';
 
     final backupsDir = ref.read(directoriesProvider).backupsDir;
 
@@ -87,13 +84,45 @@ Future<List<ExistingBackup>> _getBackupsFromDirectory(String dirPath) async {
   for (final entity in entities) {
     final stat = await entity.stat();
     final filename = path.basename(entity.path);
+    final totalAssetCount = await getTotalFileCount(entity.path);
 
     backups.add(ExistingBackup(
       filename: filename,
       filepath: path.normalize(entity.path),
       lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
+      totalAssetCount: totalAssetCount,
     ));
   }
 
   return backups;
+}
+
+Future<int> getTotalFileCount(String ttsmodPath) async {
+  const targetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
+
+  try {
+    final file = File(ttsmodPath);
+    final bytes = await file.readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    int totalCount = 0;
+
+    for (final entry in archive) {
+      if (entry.isFile) {
+        final parentFolderName = path.basename(path.dirname(entry.name));
+
+        for (final folder in targetFolders) {
+          if (parentFolderName == folder) {
+            totalCount++;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalCount;
+  } catch (e) {
+    debugPrint('getTotalFileCount - error reading $ttsmodPath: $e');
+    return 0;
+  }
 }

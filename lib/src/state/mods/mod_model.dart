@@ -1,5 +1,6 @@
 import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart';
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart';
+import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart';
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart';
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart';
 
@@ -18,8 +19,9 @@ class Mod {
   final String jsonFileName;
   final String parentFolderName;
   final String saveName;
-  final String? dateTimeStamp;
+  final BackupStatusEnum backupStatus;
   final ExistingBackup? backup;
+  final String? dateTimeStamp;
   final String? imageFilePath;
   final AssetLists? assetLists;
   final int? totalCount;
@@ -31,8 +33,9 @@ class Mod {
     required this.jsonFileName,
     required this.parentFolderName,
     required this.saveName,
-    this.dateTimeStamp,
+    required this.backupStatus,
     this.backup,
+    this.dateTimeStamp,
     this.imageFilePath,
     this.assetLists,
     this.totalCount,
@@ -43,8 +46,9 @@ class Mod {
     String? jsonFilePath,
     String? parentFolderName,
     String? saveName,
-    String? dateTimeStamp,
+    BackupStatusEnum? backupStatus,
     ExistingBackup? backup,
+    String? dateTimeStamp,
     String? jsonFileName,
     String? imageFilePath,
     AssetLists? assetLists,
@@ -57,8 +61,9 @@ class Mod {
       jsonFileName: jsonFileName ?? this.jsonFileName,
       parentFolderName: parentFolderName ?? this.parentFolderName,
       saveName: saveName ?? this.saveName,
-      dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
+      backupStatus: backupStatus ?? this.backupStatus,
       backup: backup ?? this.backup,
+      dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
       imageFilePath: imageFilePath ?? this.imageFilePath,
       assetLists: assetLists ?? this.assetLists,
       totalCount: totalCount ?? this.totalCount,

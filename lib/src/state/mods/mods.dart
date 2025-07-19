@@ -11,6 +11,8 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart'
     show AssetLists;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
+import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
+    show BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
@@ -35,6 +37,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         loadingMessageProvider,
         selectedModProvider,
         settingsProvider,
+        sortAndFilterProvider,
         storageProvider;
 import 'package:tts_mod_vault/src/state/storage/storage.dart' show Storage;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -64,11 +67,15 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     state = const AsyncValue.loading();
 
     try {
+      ref.read(loadingMessageProvider.notifier).state =
+          'Loading existing files';
+
+      await ref.read(existingBackupsProvider.notifier).loadExistingBackups();
       await ref
           .read(existingAssetListsProvider.notifier)
           .loadExistingAssetsLists();
 
-      debugPrint('loadExistingAssetsLists finished at ${DateTime.now()}');
+      debugPrint('Loading existing files finished at ${DateTime.now()}');
 
       ref.read(loadingMessageProvider.notifier).state =
           'Creating lists of items to load';
@@ -208,25 +215,51 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         debugPrint('Bulk storage operations completed ${DateTime.now()}');
       }
 
-      // Load existings backups
-      await ref.read(existingBackupsProvider.notifier).loadExistingBackups();
-
       // Sort all mods alphabetically
       allProcessedMods.sort((a, b) => a.saveName.compareTo(b.saveName));
 
+      final mods = <Mod>[];
+      final saves = <Mod>[];
+      final savedObjects = <Mod>[];
+
+      for (final mod in allProcessedMods) {
+        switch (mod.modType) {
+          case ModTypeEnum.mod:
+            mods.add(_getModWithBackup(mod));
+            break;
+          case ModTypeEnum.save:
+            saves.add(_getModWithBackup(mod));
+            break;
+          case ModTypeEnum.savedObject:
+            if (showSavedObjects) savedObjects.add(_getModWithBackup(mod));
+            break;
+        }
+      }
+
       state = AsyncValue.data(ModsState(
-        mods: allProcessedMods
-            .where((element) => element.modType == ModTypeEnum.mod)
-            .toList(),
-        saves: allProcessedMods
-            .where((element) => element.modType == ModTypeEnum.save)
-            .toList(),
-        savedObjects: showSavedObjects
-            ? allProcessedMods
-                .where((element) => element.modType == ModTypeEnum.savedObject)
-                .toList()
-            : [],
+        mods: mods,
+        saves: saves,
+        savedObjects: savedObjects,
       ));
+
+      // Set folders filters
+      ref.read(sortAndFilterProvider.notifier).resetState();
+      // TODO move to filters state
+      for (final mod in mods) {
+        ref
+            .read(sortAndFilterProvider.notifier)
+            .addModFolder(mod.parentFolderName);
+      }
+      for (final mod in saves) {
+        ref
+            .read(sortAndFilterProvider.notifier)
+            .addSaveFolder(mod.parentFolderName);
+      }
+      for (final mod in savedObjects) {
+        ref
+            .read(sortAndFilterProvider.notifier)
+            .addSavedObjectFolder(mod.parentFolderName);
+      }
 
       // If backup was imported set it as selected mod
       if (modJsonFileName.isNotEmpty) {
@@ -453,13 +486,29 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod _getCompleteMod(Mod mod, Map<String, String> jsonURLs) {
-    final assetLists = _getAssetListsFromUrls(jsonURLs);
-    final backup =
-        ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
+  Mod _getModWithBackup(Mod mod) {
+    try {
+      final backup =
+          ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
-    return mod.copyWith(
-      backup: backup,
+      final backupStatus = backup == null
+          ? BackupStatusEnum.noBackup
+          : (mod.dateTimeStamp == null ||
+                  backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
+              ? BackupStatusEnum.upToDate
+              : BackupStatusEnum.outOfDate;
+
+      return mod.copyWith(backup: backup, backupStatus: backupStatus);
+    } catch (e) {
+      return mod;
+    }
+  }
+
+  Mod _getCompleteMod(Mod mod, Map<String, String> jsonURLs) {
+    final modWithBackup = _getModWithBackup(mod);
+    final assetLists = _getAssetListsFromUrls(jsonURLs);
+
+    return modWithBackup.copyWith(
       assetLists: assetLists.$1,
       totalCount: assetLists.$2,
       totalExistsCount: assetLists.$3,

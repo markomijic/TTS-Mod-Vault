@@ -176,6 +176,8 @@ class BackupNotifier extends StateNotifier<BackupState> {
         });
       }
 
+      final totalAssetCount = filePaths.length;
+
       // Add JSON and image filepaths
       filePaths.add(mod.jsonFilePath);
       if (mod.imageFilePath != null && mod.imageFilePath!.isNotEmpty) {
@@ -233,6 +235,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
         filename: backupFileName,
         filepath: p.join(saveDirectoryPath, backupFileName),
         lastModifiedTimestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        totalAssetCount: totalAssetCount,
       );
       ref.read(existingBackupsProvider.notifier).addBackup(newBackup);
       ref.read(modsProvider.notifier).updateSelectedMod(mod);

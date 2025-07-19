@@ -15,15 +15,12 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         ModsView,
         BulkActions,
         DownloadAllProgressBar;
+import 'package:tts_mod_vault/src/mods/components/filter.dart'
+    show FilterButton;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        backupProvider,
-        bulkActionsProvider,
-        cleanupProvider,
-        loadingMessageProvider,
-        modsProvider;
+    show backupProvider, cleanupProvider, loadingMessageProvider, modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
@@ -36,8 +33,6 @@ class ModsPage extends HookConsumerWidget {
     final cleanUpState = ref.watch(cleanupProvider);
     final backup = ref.watch(backupProvider);
     final mods = ref.watch(modsProvider);
-    final downloadingAllMods =
-        ref.watch(bulkActionsProvider).downloadingAllMods;
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -105,6 +100,7 @@ class ModsPage extends HookConsumerWidget {
                                           ModsSelector(),
                                           Search(),
                                           BulkActions(),
+                                          FilterButton(),
                                         ],
                                       ),
                                     ),
@@ -116,11 +112,10 @@ class ModsPage extends HookConsumerWidget {
                                       horizontal: 4,
                                       vertical: 8,
                                     ),
-                                    child: ModsView(state: data),
+                                    child: ModsView(),
                                   ),
                                 ),
-                                if (downloadingAllMods)
-                                  DownloadAllProgressBar(),
+                                DownloadAllProgressBar(),
                               ],
                             ),
                           ),

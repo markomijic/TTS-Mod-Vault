@@ -6,6 +6,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValue, AsyncValueX, HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
+import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
+    show BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -53,16 +55,6 @@ class ModsListItem extends HookConsumerWidget {
       return displayMod.totalExistsCount != null &&
           displayMod.totalCount != null &&
           displayMod.totalCount! > 0;
-    }, [displayMod]);
-
-    final backupIsUpToDate = useMemoized(() {
-      if (displayMod.backup == null) {
-        return null;
-      }
-
-      return displayMod.dateTimeStamp == null ||
-          displayMod.backup!.lastModifiedTimestamp >
-              int.parse(displayMod.dateTimeStamp!);
     }, [displayMod]);
 
     final isSelected = useMemoized(() {
@@ -140,30 +132,43 @@ class ModsListItem extends HookConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         spacing: 4,
                         children: [
-                          Text(
-                            showAssetCount
-                                ? "${displayMod.totalExistsCount}/${displayMod.totalCount}"
-                                : " ",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: displayMod.totalExistsCount ==
-                                      displayMod.totalCount
-                                  ? Colors.green
-                                  : Colors.white,
+                          CustomTooltip(
+                            waitDuration: Duration(milliseconds: 300),
+                            message: displayMod.totalCount! -
+                                        displayMod.totalExistsCount! >
+                                    0
+                                ? '${displayMod.totalCount! - displayMod.totalExistsCount!} missing files'
+                                : '',
+                            child: Text(
+                              showAssetCount
+                                  ? "${displayMod.totalExistsCount}/${displayMod.totalCount}"
+                                  : " ",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: displayMod.totalExistsCount ==
+                                        displayMod.totalCount
+                                    ? Colors.green
+                                    : Colors.white,
+                              ),
                             ),
                           ),
                           if (displayMod.backup != null && showBackupState)
                             CustomTooltip(
                               message:
-                                  'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\nBackup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}',
-                              waitDuration: Duration(milliseconds: 300),
+                                  'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
+                                  'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}\n\n'
+                                  'Backup contains ${displayMod.backup!.totalAssetCount} asset files',
+                              //'${displayMod.backup!.totalAssetCount >= displayMod.totalExistsCount! ? '' : '\n\nYour backup has less asset files than the ${displayMod.modType.label}'}',
                               child: Icon(
                                 Icons.folder_zip_outlined,
                                 size: 20,
-                                color:
-                                    backupIsUpToDate != null && backupIsUpToDate
-                                        ? Colors.green
-                                        : Colors.red,
+                                color: displayMod.backupStatus ==
+                                        BackupStatusEnum.upToDate
+                                    /* &&
+                                        displayMod.backup!.totalAssetCount >=
+                                            displayMod.totalExistsCount! */
+                                    ? Colors.green
+                                    : Colors.red,
                               ),
                             ),
                         ],

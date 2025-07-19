@@ -9,6 +9,8 @@ class DownloadAllProgressBar extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final downloadingAllMods =
+        ref.watch(bulkActionsProvider).downloadingAllMods;
     final cancelledDownloadingAllMods =
         ref.watch(bulkActionsProvider).cancelledDownloadingAllMods;
     final currentNumber = ref.watch(bulkActionsProvider).currentModNumber;
@@ -17,6 +19,10 @@ class DownloadAllProgressBar extends HookConsumerWidget {
     final progress = useMemoized(() {
       return (totalNumber > 0) ? currentNumber / totalNumber : 0.0;
     }, [currentNumber, totalNumber]);
+
+    if (!downloadingAllMods) {
+      return SizedBox.shrink();
+    }
 
     return SizedBox(
       height: 70,

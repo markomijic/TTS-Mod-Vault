@@ -10,8 +10,7 @@ import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, loadingMessageProvider;
+import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
@@ -22,8 +21,6 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
 
   Future<void> loadExistingAssetsLists() async {
     debugPrint('loadExistingAssetsLists');
-
-    ref.read(loadingMessageProvider.notifier).state = 'Loading existing assets';
 
     final directoryPaths = {
       for (final type in AssetTypeEnum.values)

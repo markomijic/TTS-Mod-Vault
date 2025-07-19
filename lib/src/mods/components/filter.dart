@@ -1,28 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
+    show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
+    show BackupStatusEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show sortAndFilterProvider;
+    show
+        actionInProgressProvider,
+        selectedModTypeProvider,
+        sortAndFilterProvider;
 
-class ModsFolderFilterMenu extends ConsumerWidget {
-  const ModsFolderFilterMenu({super.key});
+class FilterButton extends HookConsumerWidget {
+  const FilterButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final actionInProgress = ref.watch(actionInProgressProvider);
+    final selectedModType = ref.watch(selectedModTypeProvider);
     final sortAndFilterState = ref.watch(sortAndFilterProvider);
     final sortAndFilterNotifier = ref.read(sortAndFilterProvider.notifier);
+
+    final folders = useMemoized(() {
+      Set<String> folders = switch (selectedModType) {
+        ModTypeEnum.mod => sortAndFilterState.modsFolders,
+        ModTypeEnum.save => sortAndFilterState.savesFolders,
+        ModTypeEnum.savedObject => sortAndFilterState.savedObjectsFolders,
+      };
+
+      return folders;
+    }, [selectedModType]);
+
+    final selectedFolders = useMemoized(() {
+      Set<String> selectedFolders = switch (selectedModType) {
+        ModTypeEnum.mod => sortAndFilterState.filteredModsFolders,
+        ModTypeEnum.save => sortAndFilterState.filteredSavesFolders,
+        ModTypeEnum.savedObject => sortAndFilterState.savedObjectsFolders,
+      };
+
+      return selectedFolders;
+    }, [selectedModType, sortAndFilterState]);
+
+    final totalFilters = useMemoized(() {
+      return selectedFolders.length +
+          sortAndFilterState.filteredBackupStatuses.length;
+    }, [selectedFolders, sortAndFilterState]);
 
     return MenuAnchor(
       builder: (context, controller, child) {
         return IconButton(
           alignment: Alignment.center,
-          onPressed: () {
-            if (controller.isOpen) {
-              controller.close();
-            } else {
-              controller.open();
-            }
-          },
+          onPressed: actionInProgress
+              ? null
+              : () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
           style: ButtonStyle(
             backgroundColor:
                 WidgetStateProperty.all(Colors.white), // Background
@@ -31,8 +67,8 @@ class ModsFolderFilterMenu extends ConsumerWidget {
           icon: Badge(
             backgroundColor: Colors.black,
             textColor: Colors.white,
-            isLabelVisible: sortAndFilterState.filteredModsFolders.isNotEmpty,
-            label: Text('${sortAndFilterState.filteredModsFolders.length}'),
+            isLabelVisible: totalFilters > 0,
+            label: Text('$totalFilters'),
             child: const Icon(
               Icons.filter_list,
               size: 20,
@@ -49,7 +85,7 @@ class ModsFolderFilterMenu extends ConsumerWidget {
             iconColor: Colors.black,
           ),
           menuChildren: [
-            // "Select All" option
+            // "Clear all" option
             MenuItemButton(
               closeOnActivate: false,
               style: MenuItemButton.styleFrom(
@@ -70,28 +106,17 @@ class ModsFolderFilterMenu extends ConsumerWidget {
                 ],
               ),
               onPressed: () {
-                sortAndFilterNotifier.clearFilteredModsFolders();
-                /*       if (sortAndFilterState.filteredModsFolders.length ==
-                    sortAndFilterState.modsFolders.length) {
-                  // If all selected, clear all
-                  sortAndFilterNotifier.clearFilteredModsFolders();
-                } else {
-                  // Otherwise select all
-                  sortAndFilterNotifier.setFilteredModsFolders(
-                    sortAndFilterState.modsFolders,
-                  );
-                } */
+                sortAndFilterNotifier.clearFilteredFolders(selectedModType);
               },
             ),
 
-            // Divider between "Select All" and individual folders
-            if (sortAndFilterState.modsFolders.isNotEmpty)
+            // Divider between "Clear all" and individual folders
+            if (folders.isNotEmpty)
               const Divider(height: 1, color: Colors.black),
 
             // Individual folder options
-            ...sortAndFilterState.modsFolders.map((folder) {
-              final isSelected =
-                  sortAndFilterState.filteredModsFolders.contains(folder);
+            ...folders.map((folder) {
+              final isSelected = selectedFolders.contains(folder);
 
               return MenuItemButton(
                 closeOnActivate: false,
@@ -118,22 +143,115 @@ class ModsFolderFilterMenu extends ConsumerWidget {
                 ),
                 onPressed: () {
                   if (isSelected) {
-                    sortAndFilterNotifier.removeFilteredModFolder(folder);
+                    sortAndFilterNotifier.removeFilteredFolder(
+                        folder, selectedModType);
                   } else {
-                    sortAndFilterNotifier.addFilteredModFolder(folder);
+                    sortAndFilterNotifier.addFilteredFolder(
+                        folder, selectedModType);
                   }
                 },
               );
             }),
 
             // Show message if no folders available
-            if (sortAndFilterState.modsFolders.isEmpty)
+            if (folders.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text('No folders available'),
               ),
           ],
-          child: const Text('Folders'),
+          child: SizedBox(
+            width: 80,
+            child: Text(
+              selectedFolders.isEmpty
+                  ? 'Folders'
+                  : 'Folders (${selectedFolders.length})',
+            ),
+          ),
+        ),
+
+        // Main "Backups" submenu item
+        SubmenuButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            iconColor: Colors.black,
+          ),
+          menuChildren: [
+            // "Clear all" option
+            MenuItemButton(
+              closeOnActivate: false,
+              style: MenuItemButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                iconColor: Colors.black,
+              ),
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.clear),
+                  Expanded(
+                    child: Text(
+                      "Clear all",
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              onPressed: () {
+                sortAndFilterNotifier.clearFilteredBackupStatuses();
+              },
+            ),
+
+            // Divider between "Clear all" and backup status options
+            const Divider(height: 1, color: Colors.black),
+
+            // Generate backup status options dynamically from enum
+            ...BackupStatusEnum.values.map((status) {
+              final isSelected =
+                  sortAndFilterState.filteredBackupStatuses.contains(status);
+
+              return MenuItemButton(
+                closeOnActivate: false,
+                style: MenuItemButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  iconColor: Colors.black,
+                ),
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    Icon(
+                      isSelected
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                    ),
+                    Expanded(
+                      child: Text(
+                        status.label,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                onPressed: () {
+                  if (isSelected) {
+                    sortAndFilterNotifier.removeFilteredBackupStatus(status);
+                  } else {
+                    sortAndFilterNotifier.addFilteredBackupStatus(status);
+                  }
+                },
+              );
+            }),
+          ],
+          child: SizedBox(
+            width: 80,
+            child: Text(
+              sortAndFilterState.filteredBackupStatuses.isEmpty
+                  ? 'Backups'
+                  : 'Backups (${sortAndFilterState.filteredBackupStatuses.length})',
+            ),
+          ),
         ),
       ],
     );

@@ -30,10 +30,16 @@ class Toolbar extends ConsumerWidget {
           onPressed: actionInProgress
               ? null
               : () => showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return SettingsDialog();
-                  }),
+                    context: context,
+                    builder: (context) => Dialog(
+                      insetPadding: EdgeInsets.all(20),
+                      child: SizedBox(
+                        width: 1280 * 0.95,
+                        height: 720 * 0.65,
+                        child: SettingsDialog(),
+                      ),
+                    ),
+                  ),
           icon: const Icon(Icons.settings),
           label: const Text('Settings'),
         ),

@@ -96,14 +96,17 @@ class ModsPage extends HookConsumerWidget {
                                   padding: EdgeInsets.only(top: 8, left: 8),
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      spacing: 8,
-                                      children: [
-                                        ModsSelector(),
-                                        Search(),
-                                        BulkActions(),
-                                      ],
+                                    child: SizedBox(
+                                      height: 32,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        spacing: 8,
+                                        children: [
+                                          ModsSelector(),
+                                          Search(),
+                                          BulkActions(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

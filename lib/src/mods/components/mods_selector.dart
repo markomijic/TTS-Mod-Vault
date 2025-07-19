@@ -60,30 +60,62 @@ class ModsSelector extends HookConsumerWidget {
       return messages.isEmpty ? null : messages.join(', ');
     }, [modsMessage, savesMessage, savedObjectsMessage]);
 
+    final segments = useMemoized(() {
+      return [
+        ModTypeEnum.mod,
+        ModTypeEnum.save,
+        if (showSavedObjects) ModTypeEnum.savedObject,
+      ];
+    }, [showSavedObjects]);
+
     return CustomTooltip(
       message: tooltipMessage,
       waitDuration: const Duration(milliseconds: 300),
-      child: SegmentedButton<ModTypeEnum>(
-        showSelectedIcon: false,
-        segments: [
-          const ButtonSegment(value: ModTypeEnum.mod, label: Text('Mods')),
-          const ButtonSegment(value: ModTypeEnum.save, label: Text('Saves')),
-          if (showSavedObjects)
-            const ButtonSegment(
-              value: ModTypeEnum.savedObject,
-              label: Text('Saved Objects'),
-            ),
-        ],
-        selected: {selectedModType},
-        onSelectionChanged: (newSelection) {
+      child: ToggleButtons(
+        // Unselect items colors
+        color: Colors.white,
+        borderColor: Colors.white,
+        // Selected items colors
+        selectedColor: Colors.black, // Text
+        fillColor: Colors.white, // Background
+        selectedBorderColor: Colors.white,
+
+        isSelected: segments.map((type) => type == selectedModType).toList(),
+        onPressed: (index) {
           if (ref.read(actionInProgressProvider)) {
             return;
           }
 
-          ref.read(selectedModTypeProvider.notifier).state = newSelection.first;
+          final selectedType = segments[index];
+          ref.read(selectedModTypeProvider.notifier).state = selectedType;
           ref.read(selectedModProvider.notifier).state = null;
           ref.read(searchQueryProvider.notifier).state = '';
         },
+        borderRadius: BorderRadius.circular(16),
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'Mods',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 11),
+            child: Text(
+              'Saves',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          if (showSavedObjects)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'Saved Objects',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+        ],
       ),
     );
   }

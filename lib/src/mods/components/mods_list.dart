@@ -15,13 +15,7 @@ class ModsList extends ConsumerWidget {
     return ListView.builder(
       itemCount: mods.length,
       itemBuilder: (context, index) {
-        final mod = mods[index];
-
-        return ModsListItem(
-          mod: mod,
-          index: index,
-          filteredModsLength: mods.length,
-        );
+        return ModsListItem(index: index, mod: mods[index]);
       },
     );
   }

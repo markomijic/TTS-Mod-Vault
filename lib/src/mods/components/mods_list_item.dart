@@ -1,7 +1,11 @@
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValue, AsyncValueX, HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show CustomTooltip;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -9,23 +13,24 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         cardModProvider,
         modsProvider,
-        selectedModProvider;
-import 'package:tts_mod_vault/src/utils.dart' show showModContextMenu;
+        selectedModProvider,
+        settingsProvider;
+import 'package:tts_mod_vault/src/utils.dart'
+    show showModContextMenu, formatTimestamp;
 
 class ModsListItem extends HookConsumerWidget {
-  final Mod mod;
   final int index;
-  final int filteredModsLength;
+  final Mod mod;
 
   const ModsListItem({
     super.key,
-    required this.mod,
     required this.index,
-    required this.filteredModsLength,
+    required this.mod,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showBackupState = ref.watch(settingsProvider).showBackupState;
     final selectedMod = ref.watch(selectedModProvider);
 
     final loadedModAsync = mod.assetLists != null
@@ -38,50 +43,137 @@ class ModsListItem extends HookConsumerWidget {
       error: (_, __) => mod,
     );
 
+    final imageExists = useMemoized(() {
+      return mod.imageFilePath != null
+          ? File(mod.imageFilePath!).existsSync()
+          : false;
+    }, [mod.imageFilePath]);
+
     final showAssetCount = useMemoized(() {
       return displayMod.totalExistsCount != null &&
           displayMod.totalCount != null &&
           displayMod.totalCount! > 0;
     }, [displayMod]);
 
+    final backupIsUpToDate = useMemoized(() {
+      if (displayMod.backup == null) {
+        return null;
+      }
+
+      return displayMod.dateTimeStamp == null ||
+          displayMod.backup!.lastModifiedTimestamp >
+              int.parse(displayMod.dateTimeStamp!);
+    }, [displayMod]);
+
+    final isSelected = useMemoized(() {
+      return selectedMod?.jsonFilePath == displayMod.jsonFilePath;
+    }, [selectedMod]);
+
     return GestureDetector(
-      onSecondaryTapDown: (details) {
-        showModContextMenu(context, ref, details.globalPosition, displayMod);
-      },
-      child: ListTile(
-        selected: selectedMod == displayMod,
-        title: Text(displayMod.modType != ModTypeEnum.save
-            ? displayMod.saveName
-            : "${displayMod.jsonFileName}\n${displayMod.saveName}"),
-        subtitle: showAssetCount
-            ? Text('${displayMod.totalExistsCount}/${displayMod.totalCount}')
-            : null,
-        selectedTileColor: Colors.white,
-        selectedColor: Colors.black,
-        splashColor: Colors.transparent,
-        titleTextStyle: TextStyle(fontSize: 18),
-        subtitleTextStyle: TextStyle(
-          fontSize: 16,
-          color: selectedMod == displayMod
-              ? Colors.black
-              : displayMod.totalExistsCount == displayMod.totalCount
-                  ? Colors.green
-                  : Colors.white,
-        ),
-        shape: Border(
-          top: BorderSide(color: Colors.white, width: 2),
-          left: BorderSide(color: Colors.white, width: 2),
-          right: BorderSide(color: Colors.white, width: 2),
-          bottom: index == filteredModsLength - 1
-              ? BorderSide(color: Colors.white, width: 2)
-              : BorderSide.none,
-        ),
         onTap: () {
-          if (ref.read(actionInProgressProvider)) return;
+          if (ref.read(actionInProgressProvider) || !loadedModAsync.hasValue) {
+            return;
+          }
 
           ref.read(modsProvider.notifier).setSelectedMod(displayMod);
         },
-      ),
-    );
+        onSecondaryTapDown: (details) {
+          if (ref.read(actionInProgressProvider) || !loadedModAsync.hasValue) {
+            return;
+          }
+
+          ref.read(modsProvider.notifier).setSelectedMod(displayMod);
+          showModContextMenu(context, ref, details.globalPosition, displayMod);
+        },
+        child: Card(
+          margin: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          color: Colors.grey[850],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+            side: BorderSide(
+              color: isSelected ? Colors.white : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(4),
+            child: Row(
+              spacing: 8,
+              children: [
+                SizedBox.shrink(),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.grey[700],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: imageExists
+                        ? Image.file(
+                            File(displayMod.imageFilePath!),
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.fitHeight,
+                          )
+                        : Icon(
+                            Icons.image,
+                            color: Colors.white,
+                          ),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayMod.modType != ModTypeEnum.save
+                            ? displayMod.saveName
+                            : "${displayMod.saveName} - ${displayMod.jsonFileName}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 4,
+                        children: [
+                          Text(
+                            showAssetCount
+                                ? "${displayMod.totalExistsCount}/${displayMod.totalCount}"
+                                : " ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: displayMod.totalExistsCount ==
+                                      displayMod.totalCount
+                                  ? Colors.green
+                                  : Colors.white,
+                            ),
+                          ),
+                          if (displayMod.backup != null && showBackupState)
+                            CustomTooltip(
+                              message:
+                                  'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\nBackup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}',
+                              waitDuration: Duration(milliseconds: 300),
+                              child: Icon(
+                                Icons.folder_zip_outlined,
+                                size: 20,
+                                color:
+                                    backupIsUpToDate != null && backupIsUpToDate
+                                        ? Colors.green
+                                        : Colors.red,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ));
   }
 }

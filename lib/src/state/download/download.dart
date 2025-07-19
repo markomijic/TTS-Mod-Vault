@@ -34,7 +34,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         super(const DownloadState());
 
   Future<void> handleCancelDownloadsButton() async {
-    await ref.read(downloadProvider.notifier)._cancelAllDownloads();
+    await ref.read(downloadProvider.notifier).cancelAllDownloads();
     if (ref.read(selectedModProvider) != null) {
       await ref
           .read(modsProvider.notifier)
@@ -42,9 +42,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
-  Future<void> _cancelAllDownloads() async {
+  Future<void> cancelAllDownloads() async {
     state = state.copyWith(
-      isDownloading: false,
+      downloading: false,
       cancelledDownloads: true,
       progress: null,
       downloadingType: null,
@@ -54,10 +54,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       token.cancel('All downloads cancelled by user');
     }
     _cancelTokens.clear();
-
-    await ref
-        .read(existingAssetListsProvider.notifier)
-        .loadExistingAssetsLists();
   }
 
   Future<void> downloadAllFiles(Mod mod) async {
@@ -105,12 +101,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       type: AssetTypeEnum.pdf,
     );
 
-    await ref
-        .read(existingAssetListsProvider.notifier)
-        .loadExistingAssetsLists();
-
     state = state.copyWith(
-      isDownloading: false,
+      downloading: false,
       progress: null,
       downloadingType: null,
       cancelledDownloads: false,
@@ -137,9 +129,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .doesAssetFileExist(fileName, type);
     }).toList();
 
+    // Track successful downloads
+    final List<(String, String)> successfulDownloads = [];
+
     try {
       state = state.copyWith(
-        isDownloading: true,
+        downloading: true,
         progress: 0.0,
         downloadingType: type,
       );
@@ -205,6 +200,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
               final finalPath = path.join(directory,
                   fileName + getExtensionByType(type, tempPath, bytes));
               await tempFile.rename(finalPath);
+
+              // Track successful download
+              successfulDownloads.add((fileName, finalPath));
             }
 
             // Remove the token after download
@@ -238,19 +236,25 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         }
       }
 
+      // Add successful downloads to existing assets list
+      if (successfulDownloads.isNotEmpty) {
+        final existingAssetsNotifier =
+            ref.read(existingAssetListsProvider.notifier);
+        for (final (filename, filepath) in successfulDownloads) {
+          existingAssetsNotifier.addExistingAsset(type, filename, filepath);
+        }
+      }
+
       if (!downloadingAllFiles) {
-        await ref
-            .read(existingAssetListsProvider.notifier)
-            .setExistingAssetsListByType(type);
         state = state.copyWith(
-          isDownloading: false,
+          downloading: false,
           progress: null,
           downloadingType: null,
           cancelledDownloads: false,
         );
       }
     } catch (e) {
-      state = state.copyWith(isDownloading: false);
+      state = state.copyWith(downloading: false);
     }
   }
 

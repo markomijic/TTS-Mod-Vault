@@ -5,6 +5,8 @@ import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
 import 'package:tts_mod_vault/src/state/backup/backup.dart';
 import 'package:tts_mod_vault/src/state/backup/existing_backups.dart';
 import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart';
+import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions.dart';
+import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
 import 'package:tts_mod_vault/src/state/directories/directories.dart';
@@ -76,12 +78,19 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
   (ref) => SettingsNotifier(ref),
 );
 
+final bulkActionsProvider =
+    StateNotifierProvider<BulkActionsNotifier, BulkActionsState>(
+  (ref) => BulkActionsNotifier(ref),
+);
+
 final actionInProgressProvider = Provider<bool>((ref) {
-  final isDownloading = ref.watch(downloadProvider).isDownloading;
+  final downloading = ref.watch(downloadProvider).downloading;
+  final downloadingAllMods = ref.watch(bulkActionsProvider).downloadingAllMods;
   final modsAsyncValue = ref.watch(modsProvider);
   final cleanUpStatus = ref.watch(cleanupProvider).status;
 
   return cleanUpStatus != CleanUpStatusEnum.idle ||
-      isDownloading ||
+      downloading ||
+      downloadingAllMods ||
       modsAsyncValue is AsyncLoading;
 });

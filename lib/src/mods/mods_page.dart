@@ -12,11 +12,18 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         Search,
         SelectedModView,
         Toolbar,
-        ModsView;
+        ModsView,
+        BulkActions,
+        DownloadAllProgressBar;
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
     show CleanUpStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show backupProvider, cleanupProvider, loadingMessageProvider, modsProvider;
+    show
+        backupProvider,
+        bulkActionsProvider,
+        cleanupProvider,
+        loadingMessageProvider,
+        modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ModsPage extends HookConsumerWidget {
@@ -29,6 +36,8 @@ class ModsPage extends HookConsumerWidget {
     final cleanUpState = ref.watch(cleanupProvider);
     final backup = ref.watch(backupProvider);
     final mods = ref.watch(modsProvider);
+    final downloadingAllMods =
+        ref.watch(bulkActionsProvider).downloadingAllMods;
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,6 +101,7 @@ class ModsPage extends HookConsumerWidget {
                                     children: [
                                       ModsSelector(),
                                       Search(),
+                                      BulkActions(),
                                     ],
                                   ),
                                 ),
@@ -104,6 +114,8 @@ class ModsPage extends HookConsumerWidget {
                                     child: ModsView(state: data),
                                   ),
                                 ),
+                                if (downloadingAllMods)
+                                  DownloadAllProgressBar(),
                               ],
                             ),
                           ),

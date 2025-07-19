@@ -190,7 +190,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
         ),
         SizedBox(
           height: 80,
-          child: downloadState.cancelledDownloads || downloadState.isDownloading
+          child: downloadState.cancelledDownloads || downloadState.downloading
               ? DownloadProgressBar()
               : listItems.isNotEmpty
                   ? SelectedModActionButtons(selectedMod: selectedMod)

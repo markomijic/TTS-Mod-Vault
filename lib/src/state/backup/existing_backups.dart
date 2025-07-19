@@ -12,13 +12,12 @@ import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show loadingMessageProvider;
-import 'package:tts_mod_vault/src/utils.dart'
-    show sanitizeFileName, getBackupFilenameByMod;
+import 'package:tts_mod_vault/src/utils.dart' show getBackupFilenameByMod;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
   final Ref ref;
   static const String _backupsDirectoryPath =
-      r'D:\Downloads\Backups'; // TODO replace with path from settings
+      r'D:\Downloads\Backups'; // TODO replace with path from directories provider
 
   ExistingBackupsStateNotifier(this.ref) : super(ExistingBackupsState.empty());
 

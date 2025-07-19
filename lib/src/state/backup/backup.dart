@@ -23,8 +23,7 @@ import 'package:tts_mod_vault/src/utils.dart'
         getBackupFilenameByMod,
         getFileNameFromURL,
         newSteamUserContentUrl,
-        oldCloudUrl,
-        sanitizeFileName;
+        oldCloudUrl;
 
 class BackupNotifier extends StateNotifier<BackupState> {
   final Ref ref;

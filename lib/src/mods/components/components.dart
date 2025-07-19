@@ -16,3 +16,5 @@ export 'mods_list_item.dart';
 export 'custom_tooltip.dart';
 export 'help_menu.dart';
 export 'mods_view.dart';
+export 'bulk_actions.dart';
+export 'download_all_progress_bar.dart';

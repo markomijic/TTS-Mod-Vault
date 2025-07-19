@@ -12,11 +12,12 @@ class DownloadProgressBar extends ConsumerWidget {
     final canceling = ref.watch(downloadProvider).cancelledDownloads;
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      spacing: 5,
+      mainAxisAlignment: MainAxisAlignment.end,
+      spacing: 4,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (downloadingType != null && !canceling)
               Text(
@@ -43,7 +44,7 @@ class DownloadProgressBar extends ConsumerWidget {
           ],
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 6.0),
+          padding: const EdgeInsets.only(right: 6.0, bottom: 12),
           child: Container(
             width: double.infinity,
             decoration: BoxDecoration(

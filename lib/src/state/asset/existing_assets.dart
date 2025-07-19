@@ -72,6 +72,51 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
     _updateStateByType(type, filenames, filepaths);
   }
 
+  void addExistingAsset(AssetTypeEnum type, String filename, String filepath) {
+    switch (type) {
+      case AssetTypeEnum.assetBundle:
+        final newFilenames = [filename, ...state.assetBundles];
+        final newFilepaths = [filepath, ...state.assetBundlesFilepaths];
+        state = state.copyWith(
+          assetBundles: newFilenames,
+          assetBundlesFilepaths: newFilepaths,
+        );
+        break;
+      case AssetTypeEnum.audio:
+        final newFilenames = [filename, ...state.audio];
+        final newFilepaths = [filepath, ...state.audioFilepaths];
+        state = state.copyWith(
+          audio: newFilenames,
+          audioFilepaths: newFilepaths,
+        );
+        break;
+      case AssetTypeEnum.image:
+        final newFilenames = [filename, ...state.images];
+        final newFilepaths = [filepath, ...state.imagesFilepaths];
+        state = state.copyWith(
+          images: newFilenames,
+          imagesFilepaths: newFilepaths,
+        );
+        break;
+      case AssetTypeEnum.model:
+        final newFilenames = [filename, ...state.models];
+        final newFilepaths = [filepath, ...state.modelsFilepaths];
+        state = state.copyWith(
+          models: newFilenames,
+          modelsFilepaths: newFilepaths,
+        );
+        break;
+      case AssetTypeEnum.pdf:
+        final newFilenames = [filename, ...state.pdf];
+        final newFilepaths = [filepath, ...state.pdfFilepaths];
+        state = state.copyWith(
+          pdf: newFilenames,
+          pdfFilepaths: newFilepaths,
+        );
+        break;
+    }
+  }
+
   void _updateStateByType(
       AssetTypeEnum type, List<String> filenames, List<String> filepaths) {
     switch (type) {

@@ -1,4 +1,4 @@
-import 'dart:io' show Directory, File, Platform, Process;
+import 'dart:io' show Directory, Platform, Process;
 import 'dart:ui' show ImageFilter;
 import 'dart:convert' show json;
 
@@ -8,7 +8,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
 import 'package:open_filex/open_filex.dart' show OpenFilex;
-
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'

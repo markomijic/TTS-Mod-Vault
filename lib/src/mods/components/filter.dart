@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
+import 'package:flutter_hooks/flutter_hooks.dart' show useEffect, useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
@@ -9,6 +9,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         selectedModTypeProvider,
+        settingsProvider,
         sortAndFilterProvider;
 
 class FilterButton extends HookConsumerWidget {
@@ -16,10 +17,22 @@ class FilterButton extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showBackupState = ref.watch(settingsProvider).showBackupState;
     final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedModType = ref.watch(selectedModTypeProvider);
     final sortAndFilterState = ref.watch(sortAndFilterProvider);
     final sortAndFilterNotifier = ref.read(sortAndFilterProvider.notifier);
+
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!showBackupState &&
+            sortAndFilterState.filteredBackupStatuses.isNotEmpty) {
+          sortAndFilterNotifier.clearFilteredBackupStatuses();
+        }
+      });
+
+      return null;
+    }, [showBackupState]);
 
     final folders = useMemoized(() {
       Set<String> folders = switch (selectedModType) {
@@ -171,47 +184,16 @@ class FilterButton extends HookConsumerWidget {
         ),
 
         // Main "Backups" submenu item
-        SubmenuButton(
-          style: MenuItemButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            iconColor: Colors.black,
-          ),
-          menuChildren: [
-            // "Clear all" option
-            MenuItemButton(
-              closeOnActivate: false,
-              style: MenuItemButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                iconColor: Colors.black,
-              ),
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(Icons.clear),
-                  Expanded(
-                    child: Text(
-                      "Clear all",
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              onPressed: () {
-                sortAndFilterNotifier.clearFilteredBackupStatuses();
-              },
+        if (showBackupState)
+          SubmenuButton(
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              iconColor: Colors.black,
             ),
-
-            // Divider between "Clear all" and backup status options
-            const Divider(height: 1, color: Colors.black),
-
-            // Generate backup status options dynamically from enum
-            ...BackupStatusEnum.values.map((status) {
-              final isSelected =
-                  sortAndFilterState.filteredBackupStatuses.contains(status);
-
-              return MenuItemButton(
+            menuChildren: [
+              // "Clear all" option
+              MenuItemButton(
                 closeOnActivate: false,
                 style: MenuItemButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -221,38 +203,70 @@ class FilterButton extends HookConsumerWidget {
                 child: Row(
                   spacing: 8,
                   children: [
-                    Icon(
-                      isSelected
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                    ),
+                    Icon(Icons.clear),
                     Expanded(
                       child: Text(
-                        status.label,
+                        "Clear all",
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
                 onPressed: () {
-                  if (isSelected) {
-                    sortAndFilterNotifier.removeFilteredBackupStatus(status);
-                  } else {
-                    sortAndFilterNotifier.addFilteredBackupStatus(status);
-                  }
+                  sortAndFilterNotifier.clearFilteredBackupStatuses();
                 },
-              );
-            }),
-          ],
-          child: SizedBox(
-            width: 80,
-            child: Text(
-              sortAndFilterState.filteredBackupStatuses.isEmpty
-                  ? 'Backups'
-                  : 'Backups (${sortAndFilterState.filteredBackupStatuses.length})',
+              ),
+
+              // Divider between "Clear all" and backup status options
+              const Divider(height: 1, color: Colors.black),
+
+              // Generate backup status options dynamically from enum
+              ...BackupStatusEnum.values.map((status) {
+                final isSelected =
+                    sortAndFilterState.filteredBackupStatuses.contains(status);
+
+                return MenuItemButton(
+                  closeOnActivate: false,
+                  style: MenuItemButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    iconColor: Colors.black,
+                  ),
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        isSelected
+                            ? Icons.check_box
+                            : Icons.check_box_outline_blank,
+                      ),
+                      Expanded(
+                        child: Text(
+                          status.label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  onPressed: () {
+                    if (isSelected) {
+                      sortAndFilterNotifier.removeFilteredBackupStatus(status);
+                    } else {
+                      sortAndFilterNotifier.addFilteredBackupStatus(status);
+                    }
+                  },
+                );
+              }),
+            ],
+            child: SizedBox(
+              width: 80,
+              child: Text(
+                sortAndFilterState.filteredBackupStatuses.isEmpty
+                    ? 'Backups'
+                    : 'Backups (${sortAndFilterState.filteredBackupStatuses.length})',
+              ),
             ),
           ),
-        ),
       ],
     );
   }

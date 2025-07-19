@@ -12,7 +12,6 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
-        backupProvider,
         cardModProvider,
         modsProvider,
         selectedModProvider,

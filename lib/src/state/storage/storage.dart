@@ -83,7 +83,6 @@ class Storage {
 
   // BACKUPS DIR
   Future<void> saveBackupsDir(String value) async {
-    print('ide spremit $value');
     await _appDataBox.put(backupsDirKey, value);
   }
 

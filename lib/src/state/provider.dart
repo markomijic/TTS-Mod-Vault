@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
@@ -56,8 +58,7 @@ final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
 
 final cardModProvider =
     FutureProvider.family.autoDispose<Mod, String>((ref, jsonFileName) async {
-  // TODO revisit
-  //await Future.delayed(Duration(milliseconds: Random().nextInt(500) + 1));
+  await Future.delayed(Duration(milliseconds: Random().nextInt(500) + 1));
 
   return ref.read(modsProvider.notifier).getCardMod(jsonFileName);
 });

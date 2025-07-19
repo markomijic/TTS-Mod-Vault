@@ -11,13 +11,11 @@ import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart
     show ExistingBackup;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show loadingMessageProvider;
+    show directoriesProvider, loadingMessageProvider;
 import 'package:tts_mod_vault/src/utils.dart' show getBackupFilenameByMod;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
   final Ref ref;
-  static const String _backupsDirectoryPath =
-      r'D:\Downloads\Backups'; // TODO replace with path from directories provider
 
   ExistingBackupsStateNotifier(this.ref) : super(ExistingBackupsState.empty());
 
@@ -27,8 +25,10 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     ref.read(loadingMessageProvider.notifier).state =
         'Loading existing backups';
 
+    final backupsDir = ref.read(directoriesProvider).backupsDir;
+
     final backups = await Isolate.run(
-      () => _getBackupsFromDirectory(_backupsDirectoryPath),
+      () => _getBackupsFromDirectory(backupsDir),
     );
 
     state = ExistingBackupsState(backups: backups);
@@ -71,7 +71,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
 Future<List<ExistingBackup>> _getBackupsFromDirectory(String dirPath) async {
   final directory = Directory(dirPath);
 
-  if (!directory.existsSync()) {
+  if (dirPath.isEmpty || !directory.existsSync()) {
     return <ExistingBackup>[];
   }
 

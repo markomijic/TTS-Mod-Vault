@@ -208,6 +208,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         debugPrint('Bulk storage operations completed ${DateTime.now()}');
       }
 
+      // Load existings backups
+      await ref.read(existingBackupsProvider.notifier).loadExistingBackups();
+
       // Sort all mods alphabetically
       allProcessedMods.sort((a, b) => a.saveName.compareTo(b.saveName));
 
@@ -239,11 +242,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
             (m) => m.jsonFilePath == selectedMod.jsonFilePath);
 
         if (mod != null) updateSelectedMod(mod);
-      }
-
-      // TODO update with check for path set
-      if (true) {
-        await ref.read(existingBackupsProvider.notifier).loadExistingBackups();
       }
 
       final endTime = DateTime.now();

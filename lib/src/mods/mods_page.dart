@@ -78,9 +78,8 @@ class ModsPage extends HookConsumerWidget {
           children: [
             Column(
               children: [
-                Container(
+                Padding(
                   padding: const EdgeInsets.only(top: 8, left: 8),
-                  color: Theme.of(context).scaffoldBackgroundColor,
                   child: Toolbar(),
                 ),
                 Expanded(
@@ -91,18 +90,21 @@ class ModsPage extends HookConsumerWidget {
                           Expanded(
                             flex: 2,
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
+                                Padding(
                                   padding: EdgeInsets.only(top: 8, left: 8),
-                                  color:
-                                      Theme.of(context).scaffoldBackgroundColor,
-                                  child: Row(
-                                    spacing: 8,
-                                    children: [
-                                      ModsSelector(),
-                                      Search(),
-                                      BulkActions(),
-                                    ],
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      spacing: 8,
+                                      children: [
+                                        ModsSelector(),
+                                        Search(),
+                                        BulkActions(),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 Expanded(

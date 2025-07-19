@@ -34,17 +34,14 @@ class DownloadAllProgressBar extends HookConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (!cancelledDownloadingAllMods)
-                  Text(
-                    "Downloading all mods: $currentNumber / $totalNumber",
-                    style: TextStyle(fontSize: 16),
+                if (!cancelledDownloadingAllMods) ...[
+                  Expanded(
+                    child: Text(
+                      "Downloading all mods: $currentNumber / $totalNumber",
+                      style: TextStyle(fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                if (cancelledDownloadingAllMods)
-                  Text(
-                    'Cancelling all downloads',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                if (!cancelledDownloadingAllMods)
                   Padding(
                     padding: const EdgeInsets.only(right: 6.0),
                     child: ElevatedButton(
@@ -55,31 +52,36 @@ class DownloadAllProgressBar extends HookConsumerWidget {
                       },
                       child: Text('Cancel all downloads'),
                     ),
-                  )
+                  ),
+                ] else
+                  Expanded(
+                    child: Text(
+                      'Cancelling all downloads',
+                      style: TextStyle(fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 6.0),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                child: Stack(
-                  children: [
-                    FractionallySizedBox(
-                      widthFactor: progress.clamp(0.0, 1.0),
-                      child: Container(
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(32),
-                        ),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Stack(
+                children: [
+                  FractionallySizedBox(
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Container(
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(32),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

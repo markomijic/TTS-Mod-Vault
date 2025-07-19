@@ -5,6 +5,7 @@ class SettingsState {
   final int concurrentDownloads;
   final bool enableTtsModdersFeatures;
   final bool showSavedObjects;
+  final bool showBackupState;
 
   const SettingsState({
     this.useModsListView = false,
@@ -13,6 +14,7 @@ class SettingsState {
     this.concurrentDownloads = 5,
     this.enableTtsModdersFeatures = false,
     this.showSavedObjects = false,
+    this.showBackupState = true,
   });
 
   SettingsState copyWith({
@@ -22,6 +24,7 @@ class SettingsState {
     int? concurrentDownloads,
     bool? enableTtsModdersFeatures,
     bool? showSavedObjects,
+    bool? showBackupState,
   }) {
     return SettingsState(
       useModsListView: useModsListView ?? this.useModsListView,
@@ -32,6 +35,7 @@ class SettingsState {
       enableTtsModdersFeatures:
           enableTtsModdersFeatures ?? this.enableTtsModdersFeatures,
       showSavedObjects: showSavedObjects ?? this.showSavedObjects,
+      showBackupState: showBackupState ?? this.showBackupState,
     );
   }
 
@@ -43,6 +47,7 @@ class SettingsState {
       'concurrentDownloads': concurrentDownloads,
       'enableTtsModdersFeatures': enableTtsModdersFeatures,
       'showSavedObjects': showSavedObjects,
+      'showBackupState': showBackupState,
     };
   }
 
@@ -55,6 +60,7 @@ class SettingsState {
       enableTtsModdersFeatures:
           _parseBool(json['enableTtsModdersFeatures'], false),
       showSavedObjects: _parseBool(json['showSavedObjects'], false),
+      showBackupState: _parseBool(json['showBackupState'], true),
     );
   }
 

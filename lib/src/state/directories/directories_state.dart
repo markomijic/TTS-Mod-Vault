@@ -1,4 +1,5 @@
 class DirectoriesState {
+  final String backupsDir;
   final String savesDir;
   final String savedObjectsDir;
   final String workshopDir;
@@ -12,6 +13,7 @@ class DirectoriesState {
   final String pdfDir;
 
   const DirectoriesState({
+    required this.backupsDir,
     required this.savesDir,
     required this.savedObjectsDir,
     required this.workshopDir,
@@ -28,12 +30,14 @@ class DirectoriesState {
   factory DirectoriesState.fromDirs(
     String modsDir,
     String savesDir,
+    String backupsDir,
   ) {
     return DirectoriesState(
+      // Backups
+      backupsDir: backupsDir,
       // Saves
       savesDir: savesDir,
       savedObjectsDir: '$savesDir/Saved Objects',
-
       // Mods
       modsDir: modsDir,
       workshopDir: '$modsDir/Workshop',
@@ -50,6 +54,7 @@ class DirectoriesState {
   factory DirectoriesState.empty() {
     const emptyPath = '';
     return const DirectoriesState(
+      backupsDir: emptyPath,
       savesDir: emptyPath,
       savedObjectsDir: emptyPath,
       workshopDir: emptyPath,
@@ -68,6 +73,8 @@ class DirectoriesState {
 extension DirectoriesStateExtensions on DirectoriesState {
   DirectoriesState updateSaves(String newSavesDir) {
     return DirectoriesState(
+      // Backups
+      backupsDir: backupsDir,
       // Saves
       savesDir: newSavesDir,
       savedObjectsDir: '$newSavesDir/Saved Objects',
@@ -86,6 +93,8 @@ extension DirectoriesStateExtensions on DirectoriesState {
 
   DirectoriesState updateMods(String newModsDir) {
     return DirectoriesState(
+      // Backups
+      backupsDir: backupsDir,
       // Saves
       savesDir: savesDir,
       savedObjectsDir: savedObjectsDir,
@@ -99,6 +108,26 @@ extension DirectoriesStateExtensions on DirectoriesState {
       modelsDir: '$newModsDir/Models',
       modelsRawDir: '$newModsDir/Models Raw',
       pdfDir: '$newModsDir/PDF',
+    );
+  }
+
+  DirectoriesState updateBackups(String newBackupsDir) {
+    return DirectoriesState(
+      // Backups
+      backupsDir: newBackupsDir,
+      // Saves
+      savesDir: savesDir,
+      savedObjectsDir: savedObjectsDir,
+      // Mods
+      workshopDir: workshopDir,
+      modsDir: modsDir,
+      assetBundlesDir: assetBundlesDir,
+      audioDir: audioDir,
+      imagesDir: imagesDir,
+      imagesRawDir: imagesRawDir,
+      modelsDir: modelsDir,
+      modelsRawDir: modelsRawDir,
+      pdfDir: pdfDir,
     );
   }
 }

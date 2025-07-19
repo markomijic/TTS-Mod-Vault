@@ -8,33 +8,71 @@ class BulkActions extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // TODO prevent clicking if action in progress
-    return Row(
-      spacing: 8,
-      children: [
-        ElevatedButton.icon(
+    final actionInProgress = ref.watch(actionInProgressProvider);
+
+    return MenuAnchor(
+      style: MenuStyle(
+        backgroundColor: WidgetStateProperty.all(Colors.black),
+      ),
+      menuChildren: <Widget>[
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          leadingIcon: Icon(Icons.download, color: Colors.black),
+          child: Text('Download all', style: TextStyle(color: Colors.black)),
           onPressed: () {
+            if (ref.read(actionInProgressProvider)) return;
+
             ref
                 .read(bulkActionsProvider.notifier)
                 .downloadAllMods(ref.read(modsProvider).value!.mods);
           },
-          // icon: Icon(Icons.download),
-          label: Text('Bulk actions'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-          ),
         ),
-        /*      ElevatedButton.icon(
-          onPressed: () {},
-          icon: Icon(Icons.archive),
-          label: Text('Backup all'),
-          style: ElevatedButton.styleFrom(
+/*         MenuItemButton(
+          style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           ),
+          onPressed: () {},
+          leadingIcon: Icon(Icons.archive, color: Colors.black),
+          child: Text('Backup all', style: TextStyle(color: Colors.black)),
+        ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          leadingIcon: Icon(Icons.download, color: Colors.black),
+          trailingIcon: Icon(Icons.archive, color: Colors.black),
+          child: Text('Download & backup all',
+              style: TextStyle(color: Colors.black)),
+          onPressed: () {},
         ), */
       ],
+      builder: (
+        BuildContext context,
+        MenuController controller,
+        Widget? child,
+      ) {
+        return ElevatedButton.icon(
+          onPressed: actionInProgress
+              ? null
+              : () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+          label: Text('Bulk actions'),
+          icon: Icon(
+            Icons.arrow_drop_down,
+            size: 26,
+          ),
+        );
+      },
     );
   }
 }

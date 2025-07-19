@@ -21,7 +21,8 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
         path.joinAll([_getDefaultTtsDirectory(), 'Mods']);
     final savesDir = ref.read(storageProvider).getSavesDir() ??
         path.joinAll([_getDefaultTtsDirectory(), 'Saves']);
-    state = DirectoriesState.fromDirs(modsDir, savesDir);
+    final backupsDir = ref.read(storageProvider).getBackupsDir() ?? "";
+    state = DirectoriesState.fromDirs(modsDir, savesDir, backupsDir);
   }
 
   String _getDefaultTtsDirectory() {
@@ -66,6 +67,7 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     debugPrint('saveDirectories');
     await ref.read(storageProvider).saveModsDir(state.modsDir);
     await ref.read(storageProvider).saveSavesDir(state.savesDir);
+    await ref.read(storageProvider).saveBackupsDir(state.backupsDir);
   }
 
   Future<bool> isModsDirectoryValid(
@@ -119,6 +121,14 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
       }
     }
 
+    return result;
+  }
+
+  Future<bool> isBackupsDirectoryValid(String backupsDir) async {
+    final result = await Directory(backupsDir).exists();
+    if (!result) return result;
+
+    state = state.updateBackups(backupsDir);
     return result;
   }
 

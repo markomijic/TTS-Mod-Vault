@@ -20,6 +20,7 @@ class Storage {
   static const String dateTimeStampSuffix = 'DateTimeStamp';
   static const String modsDirKey = 'ModsDir';
   static const String savesDirKey = 'SavesDir';
+  static const String backupsDirKey = 'BackupsDir';
   static const String settingsKey = 'TTSModVaultSettings';
 
   Future<void> initializeStorage() async {
@@ -80,8 +81,21 @@ class Storage {
     await _appDataBox.delete(savesDirKey);
   }
 
-  // MOD DATA
+  // BACKUPS DIR
+  Future<void> saveBackupsDir(String value) async {
+    print('ide spremit $value');
+    await _appDataBox.put(backupsDirKey, value);
+  }
 
+  String? getBackupsDir() {
+    return _appDataBox.get(backupsDirKey);
+  }
+
+  Future<void> deleteBackupsDir() async {
+    await _appDataBox.delete(backupsDirKey);
+  }
+
+  // MOD DATA
   String? getModDateTimeStamp(String modName) {
     return _metadataBox.get('$modName$dateTimeStampSuffix');
   }

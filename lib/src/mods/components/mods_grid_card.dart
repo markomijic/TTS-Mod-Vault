@@ -12,6 +12,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
+        backupProvider,
         cardModProvider,
         modsProvider,
         selectedModProvider,
@@ -27,6 +28,8 @@ class ModsGridCard extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
+    final showBackupState = ref.watch(settingsProvider).showBackupState;
+
     final selectedMod = ref.watch(selectedModProvider);
     final isHovered = useState(false);
 
@@ -60,7 +63,11 @@ class ModsGridCard extends HookConsumerWidget {
       return displayMod.dateTimeStamp == null ||
           displayMod.backup!.lastModifiedTimestamp >
               int.parse(displayMod.dateTimeStamp!);
-    }, [displayMod]);
+    }, [displayMod, showBackupState]);
+
+    final isSelected = useMemoized(() {
+      return selectedMod?.jsonFilePath == displayMod.jsonFilePath;
+    }, [selectedMod]);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -87,7 +94,7 @@ class ModsGridCard extends HookConsumerWidget {
           decoration: BoxDecoration(
             border: Border.all(
               width: 4,
-              color: selectedMod == displayMod
+              color: isSelected
                   ? Colors.white
                   : isHovered.value
                       ? Colors.white70
@@ -167,7 +174,7 @@ class ModsGridCard extends HookConsumerWidget {
                                       : Colors.white,
                                 ),
                               ),
-                              if (displayMod.backup != null)
+                              if (displayMod.backup != null && showBackupState)
                                 CustomTooltip(
                                   message:
                                       'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\nBackup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}',

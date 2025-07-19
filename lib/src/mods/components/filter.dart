@@ -48,7 +48,8 @@ class FilterButton extends HookConsumerWidget {
       Set<String> selectedFolders = switch (selectedModType) {
         ModTypeEnum.mod => sortAndFilterState.filteredModsFolders,
         ModTypeEnum.save => sortAndFilterState.filteredSavesFolders,
-        ModTypeEnum.savedObject => sortAndFilterState.savedObjectsFolders,
+        ModTypeEnum.savedObject =>
+          sortAndFilterState.filteredSavedObjectsFolders,
       };
 
       return selectedFolders;

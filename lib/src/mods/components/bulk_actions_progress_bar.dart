@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart';
 import 'package:tts_mod_vault/src/state/provider.dart' show bulkActionsProvider;
 
 class BulkActionsProgressBar extends HookConsumerWidget {
@@ -17,7 +18,7 @@ class BulkActionsProgressBar extends HookConsumerWidget {
           : 0.0;
     }, [bulkActionsState]);
 
-    if (!bulkActionsState.bulkActionInProgress) {
+    if (bulkActionsState.status == BulkActionEnum.idle) {
       return SizedBox.shrink();
     }
 

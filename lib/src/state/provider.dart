@@ -143,15 +143,14 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
 
 final actionInProgressProvider = Provider<bool>((ref) {
   final downloading = ref.watch(downloadProvider).downloading;
-  final bulkActionInProgress =
-      ref.watch(bulkActionsProvider).bulkActionInProgress;
+  final bulkActionStatus = ref.watch(bulkActionsProvider).status;
   final modsAsyncValue = ref.watch(modsProvider);
   final cleanUpStatus = ref.watch(cleanupProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
 
   return cleanUpStatus != CleanUpStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
+      bulkActionStatus != BulkActionEnum.idle ||
       downloading ||
-      bulkActionInProgress ||
       modsAsyncValue is AsyncLoading;
 });

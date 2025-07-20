@@ -14,8 +14,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   void _resetState() {
     state = BulkActionsState(
-      bulkAction: BulkActionEnum.idle,
-      bulkActionInProgress: false,
+      status: BulkActionEnum.idle,
       cancelledBulkAction: false,
       currentModNumber: 0,
       totalModNumber: 0,
@@ -37,8 +36,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   // Bulk actions methods
   Future<void> downloadAllMods(List<Mod> mods) async {
     state = state.copyWith(
-      bulkAction: BulkActionEnum.downloadAll,
-      bulkActionInProgress: true,
+      status: BulkActionEnum.downloadAll,
       totalModNumber: mods.length,
     );
 
@@ -67,10 +65,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   Future<void> backupAllMods(List<Mod> mods) async {
     state = state.copyWith(
-        bulkAction: BulkActionEnum.backupAll,
-        bulkActionInProgress: true,
-        totalModNumber: mods.length,
-        statusMessage: "Select a folder to backup all mods");
+      status: BulkActionEnum.backupAll,
+      totalModNumber: mods.length,
+      statusMessage: "Select a folder to backup all mods",
+    );
 
     final backupFolder = await _getBackupFolder();
     if (backupFolder == null) {
@@ -105,7 +103,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   // Cancel methods
   Future<void> cancelBulkAction() async {
-    switch (state.bulkAction) {
+    switch (state.status) {
       case BulkActionEnum.idle:
         break;
 

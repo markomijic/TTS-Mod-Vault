@@ -8,6 +8,7 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
     show MessageProgressIndicator;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupStatusEnum;
+import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart';
 import 'package:tts_mod_vault/src/state/provider.dart'
     show backupProvider, selectedModProvider, bulkActionsProvider;
 
@@ -16,12 +17,10 @@ class BackupOverlay extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bulkActionInProgress =
-        ref.watch(bulkActionsProvider).bulkActionInProgress;
+    final bulkActionStatus = ref.watch(bulkActionsProvider).status;
     final selectedMod = ref.watch(selectedModProvider);
     final backup = ref.watch(backupProvider);
 
-    // TODO move to hooks folder and reuse in "download" progress bar?
     final message = useMemoized(() {
       if (selectedMod == null) return "";
 
@@ -50,7 +49,8 @@ class BackupOverlay extends HookConsumerWidget {
       }
     }, [backup, selectedMod]);
 
-    if (backup.status == BackupStatusEnum.idle || bulkActionInProgress) {
+    if (backup.status == BackupStatusEnum.idle ||
+        bulkActionStatus != BulkActionEnum.idle) {
       return SizedBox.shrink();
     }
 

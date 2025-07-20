@@ -166,9 +166,8 @@ class ModsListItem extends HookConsumerWidget {
                             CustomTooltip(
                               message:
                                   'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
-                                  'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}\n\n'
-                                  'Backup contains ${displayMod.backup!.totalAssetCount} asset files'
-                                  '${backupHasSameAssetCount ? '' : '\n\nYour backup asset files count (${displayMod.backup!.totalAssetCount}) does not match existing assets count (${displayMod.totalExistsCount})'}',
+                                  'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}'
+                                  '${backupHasSameAssetCount ? '\n\nBackup contains ${displayMod.backup!.totalAssetCount} assets' : '\n\nYour backup assets count (${displayMod.backup!.totalAssetCount}) does not match existing assets count (${displayMod.totalExistsCount})'}',
                               child: Icon(
                                 Icons.folder_zip_outlined,
                                 size: 20,

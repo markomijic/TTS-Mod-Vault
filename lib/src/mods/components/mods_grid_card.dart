@@ -187,7 +187,7 @@ class ModsGridCard extends HookConsumerWidget {
                                   message:
                                       'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
                                       'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}'
-                                      '${backupHasSameAssetCount ? '\n\nBackup contains ${displayMod.backup!.totalAssetCount} asset files' : '\n\nYour backup asset files count (${displayMod.backup!.totalAssetCount}) does not match existing assets count (${displayMod.totalExistsCount})'}',
+                                      '${backupHasSameAssetCount ? '\n\nBackup contains ${displayMod.backup!.totalAssetCount} assets' : '\n\nYour backup assets count (${displayMod.backup!.totalAssetCount}) does not match existing assets count (${displayMod.totalExistsCount})'}',
                                   child: Icon(
                                     Icons.folder_zip_outlined,
                                     size: 20,

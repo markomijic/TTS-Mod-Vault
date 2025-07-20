@@ -61,6 +61,14 @@ class ModsListItem extends HookConsumerWidget {
       return selectedMod?.jsonFilePath == displayMod.jsonFilePath;
     }, [selectedMod]);
 
+    final backupHasSameAssetCount = useMemoized(() {
+      if (displayMod.backup != null && displayMod.totalExistsCount != null) {
+        return displayMod.backup!.totalAssetCount ==
+            displayMod.totalExistsCount!;
+      }
+      return true;
+    }, [displayMod.backup, displayMod.totalExistsCount]);
+
     return GestureDetector(
         onTap: () {
           if (ref.read(actionInProgressProvider) || !loadedModAsync.hasValue) {
@@ -134,10 +142,12 @@ class ModsListItem extends HookConsumerWidget {
                         children: [
                           CustomTooltip(
                             waitDuration: Duration(milliseconds: 300),
-                            message: displayMod.totalCount! -
-                                        displayMod.totalExistsCount! >
-                                    0
-                                ? '${displayMod.totalCount! - displayMod.totalExistsCount!} missing files'
+                            message: showAssetCount
+                                ? (displayMod.totalCount! -
+                                            displayMod.totalExistsCount! >
+                                        0
+                                    ? '${displayMod.totalCount! - displayMod.totalExistsCount!} missing files'
+                                    : '')
                                 : '',
                             child: Text(
                               showAssetCount
@@ -157,17 +167,16 @@ class ModsListItem extends HookConsumerWidget {
                               message:
                                   'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
                                   'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}\n\n'
-                                  'Backup contains ${displayMod.backup!.totalAssetCount} asset files',
-                              //'${displayMod.backup!.totalAssetCount >= displayMod.totalExistsCount! ? '' : '\n\nYour backup has less asset files than the ${displayMod.modType.label}'}',
+                                  'Backup contains ${displayMod.backup!.totalAssetCount} asset files'
+                                  '${backupHasSameAssetCount ? '' : '\n\nYour backup asset files count (${displayMod.backup!.totalAssetCount}) does not match existing assets count (${displayMod.totalExistsCount})'}',
                               child: Icon(
                                 Icons.folder_zip_outlined,
                                 size: 20,
                                 color: displayMod.backupStatus ==
                                         BackupStatusEnum.upToDate
-                                    /* &&
-                                        displayMod.backup!.totalAssetCount >=
-                                            displayMod.totalExistsCount! */
-                                    ? Colors.green
+                                    ? backupHasSameAssetCount
+                                        ? Colors.green
+                                        : Colors.yellow
                                     : Colors.red,
                               ),
                             ),

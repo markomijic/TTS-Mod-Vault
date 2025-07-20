@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useEffect;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/backup_overlay.dart'
@@ -13,15 +12,14 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         SelectedModView,
         Toolbar,
         ModsView,
-        BulkActions,
-        DownloadAllProgressBar;
+        BulkActionsDropDownButton,
+        BulkActionsProgressBar;
 import 'package:tts_mod_vault/src/mods/components/filter.dart'
     show FilterButton;
-import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart'
-    show CleanUpStatusEnum;
+import 'package:tts_mod_vault/src/mods/hooks/hooks.dart'
+    show useCleanupSnackbar;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show backupProvider, cleanupProvider, loadingMessageProvider, modsProvider;
-import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
+    show loadingMessageProvider, modsProvider;
 
 class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
@@ -29,43 +27,9 @@ class ModsPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loadingMessage = ref.watch(loadingMessageProvider);
-    final cleanUpNotifier = ref.watch(cleanupProvider.notifier);
-    final cleanUpState = ref.watch(cleanupProvider);
-    final backup = ref.watch(backupProvider);
     final mods = ref.watch(modsProvider);
 
-    useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        switch (cleanUpState.status) {
-          case CleanUpStatusEnum.idle:
-          case CleanUpStatusEnum.awaitingConfirmation:
-            break;
-
-          case CleanUpStatusEnum.deleting:
-            showSnackBar(context, 'Deleting files...');
-            break;
-
-          case CleanUpStatusEnum.scanning:
-            showSnackBar(context, 'Scanning for files...');
-            break;
-
-          case CleanUpStatusEnum.completed:
-            showSnackBar(context, 'Cleanup finished!');
-            cleanUpNotifier.resetState();
-            break;
-
-          case CleanUpStatusEnum.error:
-            showSnackBar(
-              context,
-              'Cleanup error: ${ref.read(cleanupProvider).errorMessage}',
-            );
-            cleanUpNotifier.resetState();
-            break;
-        }
-      });
-
-      return null;
-    }, [cleanUpState.status]);
+    useCleanupSnackbar(context, ref);
 
     return SafeArea(
       child: Scaffold(
@@ -99,7 +63,7 @@ class ModsPage extends HookConsumerWidget {
                                         children: [
                                           ModsSelector(),
                                           Search(),
-                                          BulkActions(),
+                                          BulkActionsDropDownButton(),
                                           FilterButton(),
                                         ],
                                       ),
@@ -115,7 +79,7 @@ class ModsPage extends HookConsumerWidget {
                                     child: ModsView(),
                                   ),
                                 ),
-                                DownloadAllProgressBar(),
+                                BulkActionsProgressBar(),
                               ],
                             ),
                           ),
@@ -136,8 +100,7 @@ class ModsPage extends HookConsumerWidget {
                 ),
               ],
             ),
-            if (backup.backupInProgress || backup.importInProgress)
-              BackupOverlay(),
+            BackupOverlay(),
           ],
         ),
       ),

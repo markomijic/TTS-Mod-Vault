@@ -1,14 +1,19 @@
+enum BackupStatusEnum {
+  idle,
+  awaitingBackupFolder,
+  importingBackup,
+  backingUp,
+}
+
 class BackupState {
-  final bool importInProgress;
-  final bool backupInProgress;
+  final BackupStatusEnum status;
   final String importFileName;
   final String lastImportedJsonFileName;
   final int totalCount;
   final int currentCount;
 
   const BackupState({
-    this.importInProgress = false,
-    this.backupInProgress = false,
+    this.status = BackupStatusEnum.idle,
     this.importFileName = "",
     this.lastImportedJsonFileName = "",
     this.totalCount = 0,
@@ -16,16 +21,14 @@ class BackupState {
   });
 
   BackupState copyWith({
-    bool? importInProgress,
-    bool? backupInProgress,
+    BackupStatusEnum? status,
     String? importFileName,
     String? lastImportedJsonFileName,
     int? totalCount,
     int? currentCount,
   }) {
     return BackupState(
-      importInProgress: importInProgress ?? this.importInProgress,
-      backupInProgress: backupInProgress ?? this.backupInProgress,
+      status: status ?? this.status,
       importFileName: importFileName ?? this.importFileName,
       lastImportedJsonFileName:
           lastImportedJsonFileName ?? this.lastImportedJsonFileName,

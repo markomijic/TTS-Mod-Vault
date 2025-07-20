@@ -60,6 +60,14 @@ class ModsGridCard extends HookConsumerWidget {
       return selectedMod?.jsonFilePath == displayMod.jsonFilePath;
     }, [selectedMod]);
 
+    final backupHasSameAssetCount = useMemoized(() {
+      if (displayMod.backup != null && displayMod.totalExistsCount != null) {
+        return displayMod.backup!.totalAssetCount ==
+            displayMod.totalExistsCount!;
+      }
+      return true;
+    }, [displayMod.backup, displayMod.totalExistsCount]);
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => isHovered.value = true,
@@ -178,19 +186,16 @@ class ModsGridCard extends HookConsumerWidget {
                                   waitDuration: Duration(milliseconds: 300),
                                   message:
                                       'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
-                                      'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}\n\n'
-                                      'Backup contains ${displayMod.backup!.totalAssetCount} asset files',
-                                  //'${displayMod.backup!.totalAssetCount >= displayMod.totalExistsCount! ? '' : '\nYour backup has less asset files than the ${displayMod.modType.label}'}',
+                                      'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}'
+                                      '${backupHasSameAssetCount ? '\n\nBackup contains ${displayMod.backup!.totalAssetCount} asset files' : '\n\nYour backup asset files count (${displayMod.backup!.totalAssetCount}) does not match existing assets count (${displayMod.totalExistsCount})'}',
                                   child: Icon(
                                     Icons.folder_zip_outlined,
                                     size: 20,
                                     color: displayMod.backupStatus ==
                                             BackupStatusEnum.upToDate
-                                        /* &&
-                                                displayMod.backup!
-                                                        .totalAssetCount >=
-                                                    displayMod.totalExistsCount! */
-                                        ? Colors.green
+                                        ? backupHasSameAssetCount
+                                            ? Colors.green
+                                            : Colors.yellow
                                         : Colors.red,
                                   ),
                                 ),

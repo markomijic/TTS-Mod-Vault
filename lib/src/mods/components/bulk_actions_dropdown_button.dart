@@ -3,8 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/provider.dart';
 
-class BulkActions extends HookConsumerWidget {
-  const BulkActions({super.key});
+class BulkActionsDropDownButton extends HookConsumerWidget {
+  const BulkActionsDropDownButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,16 +30,22 @@ class BulkActions extends HookConsumerWidget {
                 .downloadAllMods(ref.read(filteredModsProvider));
           },
         ),
-/*         MenuItemButton(
+        MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           ),
-          onPressed: () {},
           leadingIcon: Icon(Icons.archive, color: Colors.black),
           child: Text('Backup all', style: TextStyle(color: Colors.black)),
+          onPressed: () {
+            if (ref.read(actionInProgressProvider)) return;
+
+            ref
+                .read(bulkActionsProvider.notifier)
+                .backupAllMods(ref.read(filteredModsProvider));
+          },
         ),
-        MenuItemButton(
+        /* MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,

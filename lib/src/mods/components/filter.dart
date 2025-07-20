@@ -91,6 +91,32 @@ class FilterButton extends HookConsumerWidget {
         );
       },
       menuChildren: [
+        // Main "Clear all filters" item
+        MenuItemButton(
+          closeOnActivate: true,
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            iconColor: Colors.black,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  "Clear all",
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(Icons.clear),
+            ],
+          ),
+          onPressed: () {
+            sortAndFilterNotifier.clearFilteredBackupStatuses();
+            sortAndFilterNotifier.clearFilteredFolders(selectedModType);
+          },
+        ),
+
         // Main "Folders" submenu item
         SubmenuButton(
           style: MenuItemButton.styleFrom(

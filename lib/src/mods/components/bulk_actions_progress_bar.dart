@@ -4,23 +4,20 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/provider.dart' show bulkActionsProvider;
 
-class DownloadAllProgressBar extends HookConsumerWidget {
-  const DownloadAllProgressBar({super.key});
+class BulkActionsProgressBar extends HookConsumerWidget {
+  const BulkActionsProgressBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final downloadingAllMods =
-        ref.watch(bulkActionsProvider).downloadingAllMods;
-    final cancelledDownloadingAllMods =
-        ref.watch(bulkActionsProvider).cancelledDownloadingAllMods;
-    final currentNumber = ref.watch(bulkActionsProvider).currentModNumber;
-    final totalNumber = ref.watch(bulkActionsProvider).totalModNumber;
+    final bulkActionsState = ref.watch(bulkActionsProvider);
 
     final progress = useMemoized(() {
-      return (totalNumber > 0) ? currentNumber / totalNumber : 0.0;
-    }, [currentNumber, totalNumber]);
+      return (bulkActionsState.totalModNumber > 0)
+          ? bulkActionsState.currentModNumber / bulkActionsState.totalModNumber
+          : 0.0;
+    }, [bulkActionsState]);
 
-    if (!downloadingAllMods) {
+    if (!bulkActionsState.bulkActionInProgress) {
       return SizedBox.shrink();
     }
 
@@ -40,29 +37,28 @@ class DownloadAllProgressBar extends HookConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (!cancelledDownloadingAllMods) ...[
+                if (!bulkActionsState.cancelledBulkAction) ...[
                   Expanded(
                     child: Text(
-                      "Downloading all mods: $currentNumber / $totalNumber",
+                      bulkActionsState.statusMessage,
                       style: TextStyle(fontSize: 16),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6.0),
-                    child: ElevatedButton(
-                      onPressed: () {
+                  ElevatedButton(
+                    onPressed: () {
+                      if (!bulkActionsState.cancelledBulkAction) {
                         ref
                             .read(bulkActionsProvider.notifier)
-                            .cancelAllDownloads();
-                      },
-                      child: Text('Cancel all downloads'),
-                    ),
+                            .cancelBulkAction();
+                      }
+                    },
+                    child: Text('Cancel all'),
                   ),
                 ] else
                   Expanded(
                     child: Text(
-                      'Cancelling all downloads',
+                      bulkActionsState.statusMessage,
                       style: TextStyle(fontSize: 16),
                       overflow: TextOverflow.ellipsis,
                     ),

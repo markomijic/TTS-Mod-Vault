@@ -6,34 +6,53 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show MessageProgressIndicator;
+import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
+    show BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show backupProvider, selectedModProvider;
+    show backupProvider, selectedModProvider, bulkActionsProvider;
 
 class BackupOverlay extends HookConsumerWidget {
   const BackupOverlay({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bulkActionInProgress =
+        ref.watch(bulkActionsProvider).bulkActionInProgress;
     final selectedMod = ref.watch(selectedModProvider);
     final backup = ref.watch(backupProvider);
 
+    // TODO move to hooks folder and reuse in "download" progress bar?
     final message = useMemoized(() {
-      if (backup.importInProgress) {
-        if (backup.importFileName.isNotEmpty && backup.totalCount > 0) {
-          return "Importing ${backup.importFileName}\n${backup.currentCount}/${backup.totalCount}";
-        }
-
-        return "Select a backup to import";
-      }
-
       if (selectedMod == null) return "";
 
-      if (backup.backupInProgress && backup.totalCount > 0) {
-        return "Backing up ${selectedMod.saveName}\n${backup.currentCount}/${backup.totalCount}";
-      }
+      switch (backup.status) {
+        case BackupStatusEnum.idle:
+          return "";
 
-      return "Select a folder to backup ${selectedMod.saveName}";
+        case BackupStatusEnum.awaitingBackupFolder:
+          return "Select a folder to backup ${selectedMod.saveName}";
+
+        case BackupStatusEnum.importingBackup:
+          if (backup.importFileName.isNotEmpty) {
+            final progressText = backup.totalCount > 0
+                ? "\n${backup.currentCount}/${backup.totalCount}"
+                : "";
+            return "Importing ${backup.importFileName}$progressText";
+          }
+
+          return "Select a backup to import";
+
+        case BackupStatusEnum.backingUp:
+          final progressText = backup.totalCount > 0
+              ? "\n${backup.currentCount}/${backup.totalCount}"
+              : "";
+          return "Backing up ${selectedMod.saveName}$progressText";
+      }
     }, [backup, selectedMod]);
+
+    if (backup.status == BackupStatusEnum.idle || bulkActionInProgress) {
+      return SizedBox.shrink();
+    }
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),

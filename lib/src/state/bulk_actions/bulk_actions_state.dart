@@ -1,28 +1,42 @@
+enum BulkActionEnum {
+  idle,
+  downloadAll,
+  backupAll,
+  downloadAndBackupAll;
+}
+
 class BulkActionsState {
-  final bool downloadingAllMods;
-  final bool cancelledDownloadingAllMods;
+  final BulkActionEnum bulkAction;
+  final bool bulkActionInProgress;
+  final bool cancelledBulkAction;
   final int currentModNumber;
   final int totalModNumber;
+  final String statusMessage;
 
   const BulkActionsState({
-    this.downloadingAllMods = false,
-    this.cancelledDownloadingAllMods = false,
+    this.bulkAction = BulkActionEnum.idle,
+    this.bulkActionInProgress = false,
+    this.cancelledBulkAction = false,
     this.currentModNumber = 0,
     this.totalModNumber = 0,
+    this.statusMessage = "",
   });
 
   BulkActionsState copyWith({
-    bool? downloadingAllMods,
-    bool? cancelledDownloadingAllMods,
+    BulkActionEnum? bulkAction,
+    bool? bulkActionInProgress,
+    bool? cancelledBulkAction,
     int? currentModNumber,
     int? totalModNumber,
+    String? statusMessage,
   }) {
     return BulkActionsState(
-      downloadingAllMods: downloadingAllMods ?? this.downloadingAllMods,
-      cancelledDownloadingAllMods:
-          cancelledDownloadingAllMods ?? this.cancelledDownloadingAllMods,
+      bulkAction: bulkAction ?? this.bulkAction,
+      bulkActionInProgress: bulkActionInProgress ?? this.bulkActionInProgress,
+      cancelledBulkAction: cancelledBulkAction ?? this.cancelledBulkAction,
       currentModNumber: currentModNumber ?? this.currentModNumber,
       totalModNumber: totalModNumber ?? this.totalModNumber,
+      statusMessage: statusMessage ?? this.statusMessage,
     );
   }
 }

@@ -10,7 +10,7 @@ import 'package:path/path.dart' as p
     show basenameWithoutExtension, extension, join, normalize, relative, split;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
-    show BackupState;
+    show BackupState, BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -33,7 +33,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
   Future<bool> importBackup() async {
     try {
       state = state.copyWith(
-        importInProgress: true,
+        status: BackupStatusEnum.importingBackup,
         lastImportedJsonFileName: "",
         currentCount: 0,
         totalCount: 0,
@@ -52,18 +52,24 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
 
       if (result == null || result.files.isEmpty) {
-        state = state.copyWith(importInProgress: false);
+        state = state.copyWith(
+          status: BackupStatusEnum.idle,
+        );
         return false;
       }
 
       final filePath = result.files.single.path!;
       if (filePath.isEmpty) {
-        state = state.copyWith(importInProgress: false);
+        state = state.copyWith(
+          status: BackupStatusEnum.idle,
+        );
         return false;
       }
 
       state = state.copyWith(
-          importFileName: p.basenameWithoutExtension(result.files.single.name));
+        status: BackupStatusEnum.importingBackup,
+        importFileName: p.basenameWithoutExtension(result.files.single.name),
+      );
 
       final bytes = await File(filePath).readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
@@ -84,7 +90,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
           final data = file.content as List<int>;
           final outputFile = File('$targetDir/$filename');
 
-          if (isJsonFile(filename)) {
+          if (_isJsonFile(filename)) {
             state = state.copyWith(
                 lastImportedJsonFileName: p.basenameWithoutExtension(filename));
           }
@@ -103,11 +109,17 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
     } catch (e) {
       debugPrint('importBackup error: $e');
-      state = state.copyWith(importInProgress: false, importFileName: "");
+      state = state.copyWith(
+        status: BackupStatusEnum.idle,
+        importFileName: "",
+      );
       return false;
     }
 
-    state = state.copyWith(importInProgress: false, importFileName: "");
+    state = state.copyWith(
+      status: BackupStatusEnum.idle,
+      importFileName: "",
+    );
     return true;
   }
 
@@ -115,7 +127,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
     state = state.copyWith(lastImportedJsonFileName: "");
   }
 
-  bool isJsonFile(String inputPath) {
+  bool _isJsonFile(String inputPath) {
     final filePath = p.normalize(inputPath);
 
     final isJsonFile = p.extension(filePath).toLowerCase() == '.json';
@@ -124,24 +136,30 @@ class BackupNotifier extends StateNotifier<BackupState> {
     return isJsonFile && containsWorkshop;
   }
 
-  Future<String> createBackup(Mod mod) async {
+  Future<String> createBackup(Mod mod, [String? backupAllDir]) async {
     state = state.copyWith(
-      backupInProgress: true,
+      status: BackupStatusEnum.awaitingBackupFolder,
       currentCount: 0,
       totalCount: 0,
     );
 
-    final saveDirectoryPath = await FilePicker.platform.getDirectoryPath(
-      lockParentWindow: true,
-    );
+    final backupsDir = ref.read(directoriesProvider).backupsDir;
 
-    if (saveDirectoryPath == null) {
-      state = state.copyWith(backupInProgress: false);
+    final backupDirPath = backupAllDir ??
+        await FilePicker.platform.getDirectoryPath(
+          lockParentWindow: true,
+          initialDirectory: backupsDir.isEmpty ? null : backupsDir,
+        );
+
+    if (backupDirPath == null) {
+      state = state.copyWith(status: BackupStatusEnum.idle);
       return "";
     }
 
     String returnValue =
-        "Backup of ${mod.saveName} has been created in $saveDirectoryPath";
+        "Backup of ${mod.saveName} has been created in $backupDirPath";
+
+    state = state.copyWith(status: BackupStatusEnum.backingUp);
 
     try {
       // Add filepaths of assets
@@ -225,7 +243,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       }
 
       final backupFileName = getBackupFilenameByMod(mod);
-      final file = File(p.join(saveDirectoryPath, backupFileName));
+      final file = File(p.join(backupDirPath, backupFileName));
       final zipData = ZipEncoder().encode(archive);
 
       await file.writeAsBytes(zipData);
@@ -233,7 +251,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       // Add new backup to state, update mod
       final newBackup = ExistingBackup(
         filename: backupFileName,
-        filepath: p.join(saveDirectoryPath, backupFileName),
+        filepath: p.join(backupDirPath, backupFileName),
         lastModifiedTimestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         totalAssetCount: totalAssetCount,
       );
@@ -243,7 +261,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       debugPrint('createBackup - error: ${e.toString()}');
       returnValue = e.toString();
     } finally {
-      state = state.copyWith(backupInProgress: false);
+      state = state.copyWith(status: BackupStatusEnum.idle);
     }
 
     return returnValue;

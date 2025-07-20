@@ -46,9 +46,6 @@ class HelpTooltip extends StatelessWidget {
           TextSpan(text: '• Right-click a Mod to see options\n'),
           TextSpan(
               text:
-                  '• Click the Steam icon to open the Workshop page of the selected mod\n'),
-          TextSpan(
-              text:
                   '• Download button: Attempts to download all missing asset files\n'),
           TextSpan(text: '• Cancel button: Cancels all downloads\n'),
           TextSpan(

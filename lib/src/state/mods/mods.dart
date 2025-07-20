@@ -12,7 +12,7 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart'
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
-    show BackupStatusEnum;
+    show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
@@ -30,10 +30,10 @@ import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
-        backupProvider,
         directoriesProvider,
         existingAssetListsProvider,
         existingBackupsProvider,
+        importBackupProvider,
         loadingMessageProvider,
         selectedModProvider,
         settingsProvider,
@@ -263,7 +263,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // If backup was imported set it as selected mod
       if (modJsonFileName.isNotEmpty) {
-        ref.read(backupProvider.notifier).resetLastImportedJsonFileName();
+        ref.read(importBackupProvider.notifier).resetLastImportedJsonFileName();
         _setImportedModAsSelected(allProcessedMods, modJsonFileName);
       }
 
@@ -492,11 +492,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
       final backupStatus = backup == null
-          ? BackupStatusEnum.noBackup
+          ? ExistingBackupStatusEnum.noBackup
           : (mod.dateTimeStamp == null ||
                   backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
-              ? BackupStatusEnum.upToDate
-              : BackupStatusEnum.outOfDate;
+              ? ExistingBackupStatusEnum.upToDate
+              : ExistingBackupStatusEnum.outOfDate;
 
       return mod.copyWith(backup: backup, backupStatus: backupStatus);
     } catch (e) {

@@ -1,9 +1,9 @@
-enum BackupStatusEnum {
+enum ExistingBackupStatusEnum {
   upToDate('Up to date'),
   outOfDate('Out of date'),
   noBackup('No backup');
 
-  const BackupStatusEnum(this.label);
+  const ExistingBackupStatusEnum(this.label);
 
   final String label;
 }

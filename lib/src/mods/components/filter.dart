@@ -3,7 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useEffect, useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
-    show BackupStatusEnum;
+    show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -64,15 +64,15 @@ class FilterButton extends HookConsumerWidget {
       builder: (context, controller, child) {
         return IconButton(
           alignment: Alignment.center,
-          onPressed: actionInProgress
-              ? null
-              : () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
+          onPressed: () {
+            if (actionInProgress) return;
+
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
           style: ButtonStyle(
             backgroundColor:
                 WidgetStateProperty.all(Colors.white), // Background
@@ -248,7 +248,7 @@ class FilterButton extends HookConsumerWidget {
               const Divider(height: 1, color: Colors.black),
 
               // Generate backup status options dynamically from enum
-              ...BackupStatusEnum.values.map((status) {
+              ...ExistingBackupStatusEnum.values.map((status) {
                 final isSelected =
                     sortAndFilterState.filteredBackupStatuses.contains(status);
 

@@ -7,6 +7,8 @@ import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
 import 'package:tts_mod_vault/src/state/backup/backup.dart';
 import 'package:tts_mod_vault/src/state/backup/existing_backups.dart';
 import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart';
+import 'package:tts_mod_vault/src/state/backup/import_backup.dart';
+import 'package:tts_mod_vault/src/state/backup/import_backup_state.dart';
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions.dart';
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup.dart';
@@ -77,6 +79,11 @@ final backupProvider = StateNotifierProvider<BackupNotifier, BackupState>(
   (ref) => BackupNotifier(ref),
 );
 
+final importBackupProvider =
+    StateNotifierProvider<ImportBackupNotifier, ImportBackupState>(
+  (ref) => ImportBackupNotifier(ref),
+);
+
 final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
   (ref) => SettingsNotifier(ref),
 );
@@ -142,14 +149,16 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
 });
 
 final actionInProgressProvider = Provider<bool>((ref) {
+  final modsAsyncValue = ref.watch(modsProvider);
   final downloading = ref.watch(downloadProvider).downloading;
   final bulkActionStatus = ref.watch(bulkActionsProvider).status;
-  final modsAsyncValue = ref.watch(modsProvider);
   final cleanUpStatus = ref.watch(cleanupProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
+  final importBackupStatus = ref.watch(importBackupProvider).status;
 
   return cleanUpStatus != CleanUpStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
+      importBackupStatus != ImportBackupStatusEnum.idle ||
       bulkActionStatus != BulkActionEnum.idle ||
       downloading ||
       modsAsyncValue is AsyncLoading;

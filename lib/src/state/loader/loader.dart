@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' show VoidCallback, debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show backupProvider, directoriesProvider, modsProvider;
+    show directoriesProvider, importBackupProvider, modsProvider;
 
 class LoaderNotifier {
   final Ref ref;
@@ -20,7 +20,8 @@ class LoaderNotifier {
     debugPrint("refreshAppData");
 
     await ref.read(modsProvider.notifier).loadModsData(
-          modJsonFileName: ref.read(backupProvider).lastImportedJsonFileName,
+          modJsonFileName:
+              ref.read(importBackupProvider).lastImportedJsonFileName,
         );
   }
 }

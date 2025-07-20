@@ -1,6 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart' show StateNotifier, Ref;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
-    show BackupStatusEnum;
+    show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
     show SortAndFilterState;
@@ -66,7 +66,7 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
     );
   }
 
-  void addFilteredBackupStatus(BackupStatusEnum status) {
+  void addFilteredBackupStatus(ExistingBackupStatusEnum status) {
     state = state.copyWith(
       filteredBackupStatuses: {...state.filteredBackupStatuses, status},
     );
@@ -102,8 +102,9 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
     state = state.copyWith(filteredSavedObjectsFolders: updatedSet);
   }
 
-  void removeFilteredBackupStatus(BackupStatusEnum status) {
-    final updatedSet = Set<BackupStatusEnum>.from(state.filteredBackupStatuses);
+  void removeFilteredBackupStatus(ExistingBackupStatusEnum status) {
+    final updatedSet =
+        Set<ExistingBackupStatusEnum>.from(state.filteredBackupStatuses);
     updatedSet.remove(status);
     state = state.copyWith(filteredBackupStatuses: updatedSet);
   }

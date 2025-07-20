@@ -5,7 +5,7 @@ import 'package:flutter_hooks/flutter_hooks.dart'
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show searchQueryProvider, selectedModTypeProvider;
+    show actionInProgressProvider, searchQueryProvider, selectedModTypeProvider;
 
 class Search extends HookConsumerWidget {
   const Search({super.key});
@@ -37,6 +37,8 @@ class Search extends HookConsumerWidget {
     }, []);
 
     void onSearchChanged(String value) {
+      if (ref.read(actionInProgressProvider)) return;
+
       debounceTimer.value?.cancel();
 
       debounceTimer.value = Timer(const Duration(milliseconds: 500), () {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, HookConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/mods/components/backup_overlay.dart'
-    show BackupOverlay;
+import 'package:tts_mod_vault/src/mods/components/import_backup_overlay.dart'
+    show ImportBackupOverlay;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         ErrorMessage,
@@ -100,7 +100,7 @@ class ModsPage extends HookConsumerWidget {
                 ),
               ],
             ),
-            BackupOverlay(),
+            ImportBackupOverlay(),
           ],
         ),
       ),

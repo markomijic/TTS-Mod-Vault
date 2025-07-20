@@ -8,9 +8,9 @@ import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
-        backupProvider,
         cleanupProvider,
-        loaderProvider;
+        loaderProvider,
+        importBackupProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialog, showSnackBar;
 
@@ -21,7 +21,7 @@ class Toolbar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
     final cleanupNotifier = ref.watch(cleanupProvider.notifier);
-    final backupNotifier = ref.watch(backupProvider.notifier);
+    final importBackupNotifier = ref.watch(importBackupProvider.notifier);
 
     return Row(
       spacing: 8,
@@ -83,18 +83,17 @@ class Toolbar extends ConsumerWidget {
           label: const Text('Refresh'),
         ),
         ElevatedButton.icon(
-          onPressed: () async {
-            if (actionInProgress) {
-              return;
-            }
+          onPressed: actionInProgress
+              ? null
+              : () async {
+                  final backupResult =
+                      await importBackupNotifier.importBackup();
 
-            final backupResult = await backupNotifier.importBackup();
-
-            if (backupResult && context.mounted) {
-              showSnackBar(context, 'Import finished, refreshing data');
-              await ref.read(loaderProvider).refreshAppData();
-            }
-          },
+                  if (backupResult && context.mounted) {
+                    showSnackBar(context, 'Import finished, refreshing data');
+                    await ref.read(loaderProvider).refreshAppData();
+                  }
+                },
           icon: const Icon(Icons.unarchive),
           label: const Text('Import backup'),
         ),

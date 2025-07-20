@@ -101,11 +101,15 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       type: AssetTypeEnum.pdf,
     );
 
-    state = state.copyWith(
+    resetState();
+  }
+
+  void resetState() {
+    state = DownloadState(
       downloading: false,
-      progress: null,
-      downloadingType: null,
       cancelledDownloads: false,
+      progress: 0.0,
+      downloadingType: null,
     );
   }
 
@@ -246,12 +250,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
 
       if (!downloadingAllFiles) {
-        state = state.copyWith(
-          downloading: false,
-          progress: null,
-          downloadingType: null,
-          cancelledDownloads: false,
-        );
+        resetState();
       }
     } catch (e) {
       state = state.copyWith(downloading: false);

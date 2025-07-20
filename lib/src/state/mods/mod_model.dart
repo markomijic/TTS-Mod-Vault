@@ -19,7 +19,7 @@ class Mod {
   final String jsonFileName;
   final String parentFolderName;
   final String saveName;
-  final BackupStatusEnum backupStatus;
+  final ExistingBackupStatusEnum backupStatus;
   final ExistingBackup? backup;
   final String? dateTimeStamp;
   final String? imageFilePath;
@@ -46,7 +46,7 @@ class Mod {
     String? jsonFilePath,
     String? parentFolderName,
     String? saveName,
-    BackupStatusEnum? backupStatus,
+    ExistingBackupStatusEnum? backupStatus,
     ExistingBackup? backup,
     String? dateTimeStamp,
     String? jsonFileName,

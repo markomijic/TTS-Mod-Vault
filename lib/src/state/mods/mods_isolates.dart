@@ -5,7 +5,7 @@ import 'package:flutter/material.dart' show debugPrint;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:path/path.dart' as path;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
-    show BackupStatusEnum;
+    show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
@@ -274,7 +274,7 @@ Future<Mod?> _processSingleFileOptimized(
       jsonFilePath: jsonPath,
       parentFolderName: parentFolder,
       saveName: saveName.isNotEmpty ? saveName : jsonFileName,
-      backupStatus: BackupStatusEnum.noBackup,
+      backupStatus: ExistingBackupStatusEnum.noBackup,
       dateTimeStamp: dateTimeStamp,
       jsonFileName: jsonFileName,
       imageFilePath: imageFilePath,

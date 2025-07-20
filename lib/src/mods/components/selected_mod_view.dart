@@ -14,9 +14,6 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupStatusEnum;
-import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
-    show BulkActionEnum;
-
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
@@ -25,7 +22,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         backupProvider,
-        bulkActionsProvider,
         downloadProvider,
         modsProvider,
         selectedModProvider,
@@ -139,7 +135,6 @@ class _SelectedModViewComponent extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final downloadState = ref.watch(downloadProvider);
     final backupStatus = ref.watch(backupProvider).status;
-    final bulkActionStatus = ref.watch(bulkActionsProvider).status;
 
     final listItems = useMemoized(() => _buildListItems(), [selectedMod]);
 
@@ -202,8 +197,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
           height: 80,
           child: downloadState.cancelledDownloads || downloadState.downloading
               ? DownloadProgressBar()
-              : backupStatus != BackupStatusEnum.idle &&
-                      bulkActionStatus != BulkActionEnum.idle
+              : backupStatus != BackupStatusEnum.idle
                   ? BackupProgressBar()
                   : listItems.isNotEmpty
                       ? SelectedModActionButtons(selectedMod: selectedMod)

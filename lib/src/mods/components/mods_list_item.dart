@@ -7,7 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
-    show BackupStatusEnum;
+    show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -167,12 +167,12 @@ class ModsListItem extends HookConsumerWidget {
                               message:
                                   'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
                                   'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}'
-                                  '${backupHasSameAssetCount ? '\n\nBackup contains ${displayMod.backup!.totalAssetCount} assets' : '\n\nYour backup assets count (${displayMod.backup!.totalAssetCount}) does not match existing assets count (${displayMod.totalExistsCount})'}',
+                                  '${backupHasSameAssetCount ? '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}' : '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}\nExisting asset files count: ${displayMod.totalExistsCount}'}',
                               child: Icon(
                                 Icons.folder_zip_outlined,
                                 size: 20,
                                 color: displayMod.backupStatus ==
-                                        BackupStatusEnum.upToDate
+                                        ExistingBackupStatusEnum.upToDate
                                     ? backupHasSameAssetCount
                                         ? Colors.green
                                         : Colors.yellow

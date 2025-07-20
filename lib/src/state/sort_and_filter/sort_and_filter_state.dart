@@ -1,5 +1,5 @@
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
-    show BackupStatusEnum;
+    show ExistingBackupStatusEnum;
 
 class SortAndFilterState {
   final Set<String> modsFolders;
@@ -10,7 +10,7 @@ class SortAndFilterState {
   final Set<String> filteredModsFolders;
   final Set<String> filteredSavesFolders;
   final Set<String> filteredSavedObjectsFolders;
-  final Set<BackupStatusEnum> filteredBackupStatuses;
+  final Set<ExistingBackupStatusEnum> filteredBackupStatuses;
 
   const SortAndFilterState({
     required this.modsFolders,
@@ -41,7 +41,7 @@ class SortAndFilterState {
     Set<String>? filteredModsFolders,
     Set<String>? filteredSavesFolders,
     Set<String>? filteredSavedObjectsFolders,
-    Set<BackupStatusEnum>? filteredBackupStatuses,
+    Set<ExistingBackupStatusEnum>? filteredBackupStatuses,
   }) {
     return SortAndFilterState(
       modsFolders: modsFolders ?? this.modsFolders,

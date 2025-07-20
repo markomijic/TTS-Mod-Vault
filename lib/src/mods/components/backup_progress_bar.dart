@@ -21,34 +21,26 @@ class BackupProgressBar extends HookConsumerWidget {
           : 0.0;
     }, [backup]);
 
+    final progressText = useMemoized(() {
+      return backup.totalCount > 0
+          ? "(${backup.currentCount}/${backup.totalCount})"
+          : "";
+    }, [backup.totalCount, backup.currentCount]);
+
     final message = useMemoized(() {
       if (selectedMod == null) return "";
 
       switch (backup.status) {
+        case BackupStatusEnum.awaitingBackupFolder:
+          return "Select a folder to backup ${selectedMod.saveName}";
+
+        case BackupStatusEnum.backingUp:
+          return "Backing up ${selectedMod.saveName}";
+
         case BackupStatusEnum.idle:
           return "";
-
-/*     case BackupStatusEnum.awaitingBackupFolder:
-          return "Select a folder to backup ${selectedMod.saveName}"; */
-
-        case BackupStatusEnum.importingBackup:
-          if (backup.importFileName.isNotEmpty) {
-            final progressText = backup.totalCount > 0
-                ? " (${backup.currentCount}/${backup.totalCount})"
-                : "";
-            return "Importing ${backup.importFileName}$progressText";
-          }
-
-          return "Select a backup to import";
-
-        case BackupStatusEnum.awaitingBackupFolder:
-        case BackupStatusEnum.backingUp:
-          final progressText = backup.totalCount > 0
-              ? " (${backup.currentCount}/${backup.totalCount})"
-              : "";
-          return "Backing up ${selectedMod.saveName}$progressText";
       }
-    }, [backup, selectedMod]);
+    }, [backup.status, selectedMod]);
 
     if (backup.status == BackupStatusEnum.idle) {
       return SizedBox.shrink();
@@ -59,12 +51,19 @@ class BackupProgressBar extends HookConsumerWidget {
       spacing: 4,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.end,
+          spacing: 4,
           children: [
             Text(
-              message,
+              progressText,
               style: TextStyle(fontSize: 16),
+            ),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

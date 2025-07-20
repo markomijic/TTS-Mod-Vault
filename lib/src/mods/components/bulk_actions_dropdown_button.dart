@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:tts_mod_vault/src/state/provider.dart';
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show actionInProgressProvider, bulkActionsProvider, filteredModsProvider;
 
 class BulkActionsDropDownButton extends HookConsumerWidget {
   const BulkActionsDropDownButton({super.key});
@@ -23,7 +24,7 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
           leadingIcon: Icon(Icons.download, color: Colors.black),
           child: Text('Download all', style: TextStyle(color: Colors.black)),
           onPressed: () {
-            if (ref.read(actionInProgressProvider)) return;
+            if (actionInProgress) return;
 
             ref
                 .read(bulkActionsProvider.notifier)
@@ -38,14 +39,14 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
           leadingIcon: Icon(Icons.archive, color: Colors.black),
           child: Text('Backup all', style: TextStyle(color: Colors.black)),
           onPressed: () {
-            if (ref.read(actionInProgressProvider)) return;
+            if (actionInProgress) return;
 
             ref
                 .read(bulkActionsProvider.notifier)
                 .backupAllMods(ref.read(filteredModsProvider));
           },
         ),
-        /* MenuItemButton(
+        MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -54,8 +55,14 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
           trailingIcon: Icon(Icons.archive, color: Colors.black),
           child: Text('Download & backup all',
               style: TextStyle(color: Colors.black)),
-          onPressed: () {},
-        ), */
+          onPressed: () {
+            if (actionInProgress) return;
+
+            ref
+                .read(bulkActionsProvider.notifier)
+                .downloadAndBackupAllMods(ref.read(filteredModsProvider));
+          },
+        ),
       ],
       builder: (
         BuildContext context,
@@ -63,15 +70,15 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
         Widget? child,
       ) {
         return ElevatedButton.icon(
-          onPressed: actionInProgress
-              ? null
-              : () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
+          onPressed: () {
+            if (actionInProgress) return;
+
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
           label: Text('Bulk actions'),
           icon: Icon(
             Icons.arrow_drop_down,

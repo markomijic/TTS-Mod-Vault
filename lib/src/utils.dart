@@ -536,7 +536,7 @@ String? formatTimestamp(String? timestamp) {
   try {
     final dateTime =
         DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp) * 1000);
-    return DateFormat('MMM dd, yyyy HH:mm').format(dateTime);
+    return DateFormat("d MMMM y HH:mm").format(dateTime);
   } catch (e) {
     return null;
   }

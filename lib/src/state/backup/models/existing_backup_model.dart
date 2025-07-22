@@ -10,4 +10,19 @@ class ExistingBackup {
     required this.lastModifiedTimestamp,
     required this.totalAssetCount,
   });
+
+  ExistingBackup copyWith({
+    String? filename,
+    String? filepath,
+    int? lastModifiedTimestamp,
+    int? totalAssetCount,
+  }) {
+    return ExistingBackup(
+      filename: filename ?? this.filename,
+      filepath: filepath ?? this.filepath,
+      lastModifiedTimestamp:
+          lastModifiedTimestamp ?? this.lastModifiedTimestamp,
+      totalAssetCount: totalAssetCount ?? this.totalAssetCount,
+    );
+  }
 }

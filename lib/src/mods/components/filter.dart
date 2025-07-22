@@ -201,7 +201,7 @@ class FilterButton extends HookConsumerWidget {
               ),
           ],
           child: SizedBox(
-            width: 80,
+            width: 85,
             child: Text(
               selectedFolders.isEmpty
                   ? 'Folders'
@@ -286,7 +286,7 @@ class FilterButton extends HookConsumerWidget {
               }),
             ],
             child: SizedBox(
-              width: 80,
+              width: 85,
               child: Text(
                 sortAndFilterState.filteredBackupStatuses.isEmpty
                     ? 'Backups'

@@ -10,7 +10,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         cleanupProvider,
         loaderProvider,
-        importBackupProvider;
+        importBackupProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialog, showSnackBar;
 
@@ -50,9 +51,14 @@ class Toolbar extends ConsumerWidget {
                   await cleanupNotifier.startCleanup(
                     (count) {
                       if (count > 0) {
+                        final itemTypes =
+                            ref.read(settingsProvider).showSavedObjects
+                                ? "mods, saves and saved objects"
+                                : "mods and saves";
+
                         showConfirmDialog(
                           context,
-                          '$count files found that are not used by any of your mods.\nAre you sure you want to delete them?',
+                          '$count files found that are not used by any of your $itemTypes.\nAre you sure you want to delete them?',
                           () async {
                             await cleanupNotifier.executeDelete();
                           },

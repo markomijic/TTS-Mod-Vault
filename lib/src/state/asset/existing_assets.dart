@@ -20,7 +20,7 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
   ExistingAssetsNotifier(this.ref) : super(ExistingAssetsListsState.empty());
 
   Future<void> loadExistingAssetsLists() async {
-    debugPrint('loadExistingAssetsLists');
+    debugPrint('loadExistingAssetsLists - started at ${DateTime.now()}');
 
     final directoryPaths = {
       for (final type in AssetTypeEnum.values)
@@ -56,6 +56,8 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
       pdf: resultMap[AssetTypeEnum.pdf]?.$1 ?? [],
       pdfFilepaths: resultMap[AssetTypeEnum.pdf]?.$2 ?? [],
     );
+
+    debugPrint('loadExistingAssetsLists - finished at ${DateTime.now()}');
   }
 
   Future<void> setExistingAssetsListByType(AssetTypeEnum type) async {

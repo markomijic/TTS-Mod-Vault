@@ -19,6 +19,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         storageProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show checkForUpdatesOnGitHub, showDownloadDialog;
+import 'package:window_manager/window_manager.dart' show windowManager;
 
 class SplashPage extends HookConsumerWidget {
   const SplashPage({super.key});
@@ -36,6 +37,14 @@ class SplashPage extends HookConsumerWidget {
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        // Small delay as a workaround for Windows Release issue
+        await Future.delayed(Duration(milliseconds: 100), () async {
+          if (await windowManager.isMaximizable() &&
+              !await windowManager.isMaximized()) {
+            await windowManager.maximize();
+          }
+        });
+
         // Initialize storage, TTS Data Directory and Settings
         await ref.read(storageProvider).initializeStorage();
         await ref.read(settingsProvider.notifier).initializeSettings();

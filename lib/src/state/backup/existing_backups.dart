@@ -84,12 +84,25 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     }
   }
 
+  ExistingBackup? _getMostRecentBackupByFilename(String filename) {
+    final matchingBackups =
+        state.backups.where((backup) => backup.filename == filename).toList();
+
+    if (matchingBackups.isEmpty) {
+      return null;
+    }
+
+    // Sort by lastModifiedTimestamp in descending order and take the first (most recent)
+    matchingBackups.sort(
+        (a, b) => b.lastModifiedTimestamp.compareTo(a.lastModifiedTimestamp));
+
+    return matchingBackups.first;
+  }
+
   ExistingBackup? getInitialBackupByMod(Mod mod) {
     try {
       final backupFileName = getBackupFilenameByMod(mod);
-
-      return state.backups
-          .firstWhereOrNull((backup) => backup.filename == backupFileName);
+      return _getMostRecentBackupByFilename(backupFileName);
     } catch (e) {
       return null;
     }
@@ -98,9 +111,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
   Future<ExistingBackup?> getCompleteBackup(Mod mod) async {
     try {
       final backupFileName = getBackupFilenameByMod(mod);
-
-      final backup = state.backups
-          .firstWhereOrNull((backup) => backup.filename == backupFileName);
+      final backup = _getMostRecentBackupByFilename(backupFileName);
 
       if (backup == null) {
         return backup;

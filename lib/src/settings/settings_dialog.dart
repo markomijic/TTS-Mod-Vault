@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
@@ -100,85 +102,88 @@ class SettingsDialog extends HookConsumerWidget {
       if (context.mounted) Navigator.pop(context);
     }
 
-    return Dialog(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 32,
-          children: [
-            const Text(
-              'Settings',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 32,
-              children: [
-                /// Column 1: User Interface & Network
-                Expanded(
-                  child: SettingsUINetworkColumn(
-                      useModsListViewBox: useModsListViewBox,
-                      showTitleOnCardsBox: showTitleOnCardsBox,
-                      textFieldController: textFieldController,
-                      textFieldFocusNode: textFieldFocusNode,
-                      numberValue: numberValue),
-                ),
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+      child: Dialog(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 32,
+            children: [
+              const Text(
+                'Settings',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 32,
+                children: [
+                  /// Column 1: User Interface & Network
+                  Expanded(
+                    child: SettingsUINetworkColumn(
+                        useModsListViewBox: useModsListViewBox,
+                        showTitleOnCardsBox: showTitleOnCardsBox,
+                        textFieldController: textFieldController,
+                        textFieldFocusNode: textFieldFocusNode,
+                        numberValue: numberValue),
+                  ),
 
-                /// Column 2: Features
-                Expanded(
-                  child: SettingsFeaturesColumn(
-                      checkForUpdatesOnStartBox: checkForUpdatesOnStartBox,
-                      showSavedObjects: showSavedObjects,
-                      showBackupState: showBackupState,
-                      enableTtsModdersFeatures: enableTtsModdersFeatures),
-                ),
+                  /// Column 2: Features
+                  Expanded(
+                    child: SettingsFeaturesColumn(
+                        checkForUpdatesOnStartBox: checkForUpdatesOnStartBox,
+                        showSavedObjects: showSavedObjects,
+                        showBackupState: showBackupState,
+                        enableTtsModdersFeatures: enableTtsModdersFeatures),
+                  ),
 
-                /// Column 3: Folders
-                Expanded(
-                  child: SettingsFoldersColumn(
-                      modsDir: modsDir,
-                      directoriesNotifier: directoriesNotifier,
-                      savesDir: savesDir,
-                      backupsDir: backupsDir),
-                ),
-              ],
-            ),
-            Row(
-              spacing: 8,
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    await ref
-                        .read(settingsProvider.notifier)
-                        .resetToDefaultSettings();
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                  child: const Text('Reset to default settings'),
-                ),
-                Spacer(),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final inputValue = int.tryParse(textFieldController.text);
-                    if (inputValue == null ||
-                        inputValue < 1 ||
-                        inputValue > 99) {
-                      showSnackBar(
-                          context, 'Please enter a number between 1 and 99');
+                  /// Column 3: Folders
+                  Expanded(
+                    child: SettingsFoldersColumn(
+                        modsDir: modsDir,
+                        directoriesNotifier: directoriesNotifier,
+                        savesDir: savesDir,
+                        backupsDir: backupsDir),
+                  ),
+                ],
+              ),
+              Row(
+                spacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      await ref
+                          .read(settingsProvider.notifier)
+                          .resetToDefaultSettings();
                       if (context.mounted) Navigator.pop(context);
-                      return;
-                    }
-                    await saveSettingsChanges(context);
-                  },
-                  icon: Icon(Icons.save),
-                  label: const Text('Save'),
-                ),
-              ],
-            ),
-          ],
+                    },
+                    child: const Text('Reset to default settings'),
+                  ),
+                  Spacer(),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final inputValue = int.tryParse(textFieldController.text);
+                      if (inputValue == null ||
+                          inputValue < 1 ||
+                          inputValue > 99) {
+                        showSnackBar(
+                            context, 'Please enter a number between 1 and 99');
+                        if (context.mounted) Navigator.pop(context);
+                        return;
+                      }
+                      await saveSettingsChanges(context);
+                    },
+                    icon: Icon(Icons.save),
+                    label: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

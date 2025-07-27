@@ -71,14 +71,7 @@ class HelpMenu extends ConsumerWidget {
               ? null
               : () => showDialog(
                     context: context,
-                    builder: (context) => Dialog(
-                      insetPadding: EdgeInsets.all(20),
-                      child: SizedBox(
-                        width: 1280 * 0.95,
-                        height: 720 * 0.95,
-                        child: RenameOldBackupsDialog(),
-                      ),
-                    ),
+                    builder: (context) => RenameOldBackupsDialog(),
                   ),
           leadingIcon: Icon(Icons.edit, color: Colors.black),
           child: Text(

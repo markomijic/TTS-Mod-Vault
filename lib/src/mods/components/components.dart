@@ -19,3 +19,4 @@ export 'mods_view.dart';
 export 'bulk_actions_dropdown_button.dart';
 export 'bulk_actions_progress_bar.dart';
 export 'backup_progress_bar.dart';
+export 'rename_old_backups_dialog.dart';

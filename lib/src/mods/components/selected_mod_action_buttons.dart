@@ -9,7 +9,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         downloadProvider,
         modsProvider;
-import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class SelectedModActionButtons extends HookConsumerWidget {
   final Mod selectedMod;

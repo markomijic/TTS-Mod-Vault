@@ -292,10 +292,6 @@ String getBackupFilenameByMod(Mod mod) {
   return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
 }
 
-String getOldBackupFilenameByMod(Mod mod) {
-  return sanitizeFileName("${mod.saveName}(${mod.jsonFileName}).ttsmod");
-}
-
 Future<void> openInFileExplorer(String filePath) async {
   try {
     if (Platform.isWindows) {

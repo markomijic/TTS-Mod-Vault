@@ -62,7 +62,7 @@ final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
 
 final cardModProvider =
     FutureProvider.family.autoDispose<Mod, String>((ref, jsonFileName) async {
-  await Future.delayed(Duration(milliseconds: Random().nextInt(500) + 1));
+  await Future.delayed(Duration(milliseconds: Random().nextInt(750) + 1));
 
   return ref.read(modsProvider.notifier).getCardMod(jsonFileName);
 });

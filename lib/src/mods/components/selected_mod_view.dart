@@ -153,6 +153,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
           alignment: Alignment.topLeft,
           padding: EdgeInsets.only(top: 8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             spacing: 8,
             children: [
               Expanded(

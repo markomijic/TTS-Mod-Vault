@@ -21,14 +21,9 @@ import 'package:tts_mod_vault/src/utils.dart'
     show showModContextMenu, formatTimestamp;
 
 class ModsListItem extends HookConsumerWidget {
-  final int index;
   final Mod mod;
 
-  const ModsListItem({
-    super.key,
-    required this.index,
-    required this.mod,
-  });
+  const ModsListItem({super.key, required this.mod});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,13 +48,12 @@ class ModsListItem extends HookConsumerWidget {
 
     final showAssetCount = useMemoized(() {
       return displayMod.totalExistsCount != null &&
-          displayMod.totalCount != null &&
-          displayMod.totalCount! > 0;
+          displayMod.totalCount != null;
     }, [displayMod]);
 
     final isSelected = useMemoized(() {
-      return selectedMod?.jsonFilePath == displayMod.jsonFilePath;
-    }, [selectedMod]);
+      return selectedMod?.jsonFilePath == mod.jsonFilePath;
+    }, [selectedMod, mod]);
 
     final backupHasSameAssetCount = useMemoized(() {
       if (displayMod.backup != null && displayMod.totalExistsCount != null) {
@@ -95,97 +89,95 @@ class ModsListItem extends HookConsumerWidget {
               width: 2,
             ),
           ),
-          child: Padding(
-            padding: EdgeInsets.all(4),
-            child: Row(
-              spacing: 8,
-              children: [
-                SizedBox.shrink(),
+          child: Row(
+            spacing: 8,
+            children: [
+              if (imageExists)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.file(
+                    File(displayMod.imageFilePath!),
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.fitHeight,
+                    cacheHeight: 64,
+                    cacheWidth: 64,
+                  ),
+                )
+              else
                 Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
-                    color: Colors.grey[700],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: imageExists
-                        ? Image.file(
-                            File(displayMod.imageFilePath!),
-                            width: 32,
-                            height: 32,
-                            fit: BoxFit.fitHeight,
-                          )
-                        : Icon(
-                            Icons.image,
-                            color: Colors.white,
-                          ),
-                  ),
+                  color: Colors.grey,
+                  width: 64,
+                  height: 64,
+                  child: Icon(Icons.image, size: 64),
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayMod.modType != ModTypeEnum.save
-                            ? displayMod.saveName
-                            : "${displayMod.saveName} - ${displayMod.jsonFileName}",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayMod.modType != ModTypeEnum.save
+                          ? displayMod.saveName
+                          : "${displayMod.saveName} - ${displayMod.jsonFileName}",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w500,
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        spacing: 4,
-                        children: [
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 4,
+                      children: [
+                        CustomTooltip(
+                          waitDuration: Duration(milliseconds: 300),
+                          message: showAssetCount
+                              ? (displayMod.totalCount! -
+                                          displayMod.totalExistsCount! >
+                                      0
+                                  ? '${displayMod.totalCount! - displayMod.totalExistsCount!} missing files'
+                                  : '')
+                              : '',
+                          child: Text(
+                            showAssetCount
+                                ? "${displayMod.totalExistsCount}/${displayMod.totalCount}"
+                                : " ",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                              color: displayMod.totalExistsCount ==
+                                      displayMod.totalCount
+                                  ? Colors.green
+                                  : Colors.white,
+                            ),
+                          ),
+                        ),
+                        if (displayMod.backup != null &&
+                            showAssetCount &&
+                            showBackupState)
                           CustomTooltip(
                             waitDuration: Duration(milliseconds: 300),
-                            message: showAssetCount
-                                ? (displayMod.totalCount! -
-                                            displayMod.totalExistsCount! >
-                                        0
-                                    ? '${displayMod.totalCount! - displayMod.totalExistsCount!} missing files'
-                                    : '')
-                                : '',
-                            child: Text(
-                              showAssetCount
-                                  ? "${displayMod.totalExistsCount}/${displayMod.totalCount}"
-                                  : " ",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: displayMod.totalExistsCount ==
-                                        displayMod.totalCount
-                                    ? Colors.green
-                                    : Colors.white,
-                              ),
+                            message:
+                                'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
+                                'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}'
+                                '${backupHasSameAssetCount ? '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}' : '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}\nExisting asset files count: ${displayMod.totalExistsCount}'}',
+                            child: Icon(
+                              Icons.folder_zip_outlined,
+                              size: 28,
+                              color: displayMod.backupStatus ==
+                                      ExistingBackupStatusEnum.upToDate
+                                  ? backupHasSameAssetCount
+                                      ? Colors.green
+                                      : Colors.yellow
+                                  : Colors.red,
                             ),
                           ),
-                          if (displayMod.backup != null && showBackupState)
-                            CustomTooltip(
-                              message:
-                                  'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
-                                  'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}'
-                                  '${backupHasSameAssetCount ? '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}' : '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}\nExisting asset files count: ${displayMod.totalExistsCount}'}',
-                              child: Icon(
-                                Icons.folder_zip_outlined,
-                                size: 20,
-                                color: displayMod.backupStatus ==
-                                        ExistingBackupStatusEnum.upToDate
-                                    ? backupHasSameAssetCount
-                                        ? Colors.green
-                                        : Colors.yellow
-                                    : Colors.red,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ));
   }

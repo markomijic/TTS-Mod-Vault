@@ -240,7 +240,8 @@ class SettingsFoldersColumn extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             CustomTooltip(
-              message: 'Saving changes to folders will refresh all data',
+              message:
+                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
               child: ElevatedButton(
                 onPressed: () async {
                   String? ttsDir;
@@ -294,7 +295,8 @@ class SettingsFoldersColumn extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             CustomTooltip(
-              message: 'Saving changes to folders will refresh all data',
+              message:
+                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
               child: ElevatedButton(
                 onPressed: () async {
                   String? ttsDir;
@@ -348,7 +350,8 @@ class SettingsFoldersColumn extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             CustomTooltip(
-              message: 'Saving changes to folders will refresh all data',
+              message:
+                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
               child: ElevatedButton(
                 onPressed: () async {
                   String? dir;

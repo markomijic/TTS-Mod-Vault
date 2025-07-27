@@ -50,10 +50,10 @@ class BackupNotifier extends StateNotifier<BackupState> {
       return "";
     }
 
+    state = state.copyWith(status: BackupStatusEnum.backingUp);
+
     String returnValue =
         "Backup of ${mod.saveName} has been created in $backupDirPath";
-
-    state = state.copyWith(status: BackupStatusEnum.backingUp);
 
     try {
       // Add filepaths of assets
@@ -183,10 +183,10 @@ class BackupNotifier extends StateNotifier<BackupState> {
       return "";
     }
 
+    state = state.copyWith(status: BackupStatusEnum.backingUp);
+
     String returnValue =
         "Backup of ${mod.saveName} has been created in $backupDirPath";
-
-    state = state.copyWith(status: BackupStatusEnum.backingUp);
 
     try {
       // Prepare file paths (same logic as original)

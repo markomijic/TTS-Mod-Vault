@@ -93,7 +93,7 @@ void showSnackBar(BuildContext context, String message) {
   final snackBar = SnackBar(
     content: Text(
       message,
-      style: TextStyle(fontSize: 16),
+      style: TextStyle(fontSize: 20),
     ),
     showCloseIcon: false,
   );
@@ -290,6 +290,10 @@ String getBackupFilenameByMod(Mod mod) {
   }
 
   return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
+}
+
+String getOldBackupFilenameByMod(Mod mod) {
+  return sanitizeFileName("${mod.saveName}(${mod.jsonFileName}).ttsmod");
 }
 
 Future<void> openInFileExplorer(String filePath) async {

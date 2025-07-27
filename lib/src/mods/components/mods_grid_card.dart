@@ -52,13 +52,12 @@ class ModsGridCard extends HookConsumerWidget {
 
     final showAssetCount = useMemoized(() {
       return displayMod.totalExistsCount != null &&
-          displayMod.totalCount != null &&
-          displayMod.totalCount! > 0;
+          displayMod.totalCount != null;
     }, [displayMod]);
 
     final isSelected = useMemoized(() {
-      return selectedMod?.jsonFilePath == displayMod.jsonFilePath;
-    }, [selectedMod]);
+      return selectedMod?.jsonFilePath == mod.jsonFilePath;
+    }, [selectedMod, mod]);
 
     final backupHasSameAssetCount = useMemoized(() {
       if (displayMod.backup != null && displayMod.totalExistsCount != null) {
@@ -159,7 +158,6 @@ class ModsGridCard extends HookConsumerWidget {
                           ),
                           padding: EdgeInsets.all(2),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             spacing: 4,
                             children: [

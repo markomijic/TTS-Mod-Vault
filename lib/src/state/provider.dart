@@ -159,7 +159,7 @@ final actionInProgressProvider = Provider<bool>((ref) {
   return cleanUpStatus != CleanUpStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
       importBackupStatus != ImportBackupStatusEnum.idle ||
-      bulkActionStatus != BulkActionEnum.idle ||
+      bulkActionStatus != BulkActionsStatusEnum.idle ||
       downloading ||
       modsAsyncValue is AsyncLoading;
 });

@@ -1,7 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart' show StateNotifier, Ref;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show ModTypeEnum, Mod;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show sortAndFilterProvider;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
     show SortAndFilterState;
 
@@ -9,6 +12,28 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   Ref ref;
 
   SortAndFilterNotifier(this.ref) : super(SortAndFilterState.initial());
+
+  void setFolders(List<Mod> mods) {
+    for (final mod in mods) {
+      switch (mod.modType) {
+        case ModTypeEnum.mod:
+          ref
+              .read(sortAndFilterProvider.notifier)
+              .addModFolder(mod.parentFolderName);
+          break;
+        case ModTypeEnum.save:
+          ref
+              .read(sortAndFilterProvider.notifier)
+              .addSaveFolder(mod.parentFolderName);
+          break;
+        case ModTypeEnum.savedObject:
+          ref
+              .read(sortAndFilterProvider.notifier)
+              .addSavedObjectFolder(mod.parentFolderName);
+          break;
+      }
+    }
+  }
 
   void resetState() {
     state = SortAndFilterState.initial();

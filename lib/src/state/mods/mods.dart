@@ -70,12 +70,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       ref.read(loadingMessageProvider.notifier).state =
           'Loading existing files';
 
-      await ref.read(existingBackupsProvider.notifier).loadExistingBackups();
-      await ref
-          .read(existingAssetListsProvider.notifier)
-          .loadExistingAssetsLists();
-
-      debugPrint('Loading existing files finished at ${DateTime.now()}');
+      await Future.wait([
+        ref.read(existingBackupsProvider.notifier).loadExistingBackups(),
+        ref.read(existingAssetListsProvider.notifier).loadExistingAssetsLists()
+      ]);
 
       ref.read(loadingMessageProvider.notifier).state =
           'Creating lists of items to load';
@@ -225,15 +223,27 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       for (final mod in allProcessedMods) {
         switch (mod.modType) {
           case ModTypeEnum.mod:
-            mods.add(_getModWithBackup(mod));
+            mods.add(_getModWithInitialBackup(mod));
             break;
           case ModTypeEnum.save:
-            saves.add(_getModWithBackup(mod));
+            saves.add(_getModWithInitialBackup(mod));
             break;
           case ModTypeEnum.savedObject:
-            if (showSavedObjects) savedObjects.add(_getModWithBackup(mod));
+            if (showSavedObjects) {
+              savedObjects.add(_getModWithInitialBackup(mod));
+            }
             break;
         }
+      }
+
+      // Set filters state
+      ref.read(sortAndFilterProvider.notifier).resetState();
+      ref.read(sortAndFilterProvider.notifier).setFolders(allProcessedMods);
+
+      // Artificial delay to ensure atleast 1 second of visual refresh indicator
+      final stateEndTime = DateTime.now();
+      if (stateEndTime.difference(startTime) < Duration(seconds: 1)) {
+        await Future.delayed(Duration(seconds: 1));
       }
 
       state = AsyncValue.data(ModsState(
@@ -241,25 +251,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         saves: saves,
         savedObjects: savedObjects,
       ));
-
-      // Set folders filters
-      ref.read(sortAndFilterProvider.notifier).resetState();
-      // TODO move to filters state
-      for (final mod in mods) {
-        ref
-            .read(sortAndFilterProvider.notifier)
-            .addModFolder(mod.parentFolderName);
-      }
-      for (final mod in saves) {
-        ref
-            .read(sortAndFilterProvider.notifier)
-            .addSaveFolder(mod.parentFolderName);
-      }
-      for (final mod in savedObjects) {
-        ref
-            .read(sortAndFilterProvider.notifier)
-            .addSavedObjectFolder(mod.parentFolderName);
-      }
 
       // If backup was imported set it as selected mod
       if (modJsonFileName.isNotEmpty) {
@@ -461,7 +452,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           ref.read(storageProvider).getModUrls(selectedMod.jsonFileName) ??
               await extractUrlsFromJson(selectedMod.jsonFilePath);
 
-      final updatedMod = _getCompleteMod(selectedMod, urls);
+      final updatedMod = await _getCompleteMod(selectedMod, urls);
 
       final updatedList = [...modList];
       updatedList[modIndex] = updatedMod;
@@ -486,10 +477,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod _getModWithBackup(Mod mod) {
+  Mod _getModWithInitialBackup(Mod mod) {
     try {
       final backup =
-          ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
+          ref.read(existingBackupsProvider.notifier).getInitialBackupByMod(mod);
 
       final backupStatus = backup == null
           ? ExistingBackupStatusEnum.noBackup
@@ -504,8 +495,27 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod _getCompleteMod(Mod mod, Map<String, String> jsonURLs) {
-    final modWithBackup = _getModWithBackup(mod);
+  Future<Mod> _getModWithBackup(Mod mod) async {
+    try {
+      final backup = await ref
+          .read(existingBackupsProvider.notifier)
+          .getCompleteBackup(mod);
+
+      final backupStatus = backup == null
+          ? ExistingBackupStatusEnum.noBackup
+          : (mod.dateTimeStamp == null ||
+                  backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
+              ? ExistingBackupStatusEnum.upToDate
+              : ExistingBackupStatusEnum.outOfDate;
+
+      return mod.copyWith(backup: backup, backupStatus: backupStatus);
+    } catch (e) {
+      return mod;
+    }
+  }
+
+  Future<Mod> _getCompleteMod(Mod mod, Map<String, String> jsonURLs) async {
+    final modWithBackup = await _getModWithBackup(mod);
     final assetLists = _getAssetListsFromUrls(jsonURLs);
 
     return modWithBackup.copyWith(

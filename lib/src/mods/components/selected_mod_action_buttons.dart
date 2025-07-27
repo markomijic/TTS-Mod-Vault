@@ -43,18 +43,12 @@ class SelectedModActionButtons extends HookConsumerWidget {
           child: const Text('Download'),
         ),
         ElevatedButton(
-          onPressed: () async {
+          onPressed: () {
             if (actionInProgress) {
               return;
             }
 
-            final result = await ref
-                .read(backupProvider.notifier)
-                .createBackup(selectedMod);
-
-            if (result.isNotEmpty && context.mounted) {
-              showSnackBar(context, result);
-            }
+            ref.read(backupProvider.notifier).createBackup(selectedMod);
           },
           child: const Text('Backup'),
         ),

@@ -1,4 +1,4 @@
-enum BulkActionEnum {
+enum BulkActionsStatusEnum {
   idle,
   downloadAll,
   backupAll,
@@ -6,14 +6,14 @@ enum BulkActionEnum {
 }
 
 class BulkActionsState {
-  final BulkActionEnum status;
+  final BulkActionsStatusEnum status;
   final bool cancelledBulkAction;
   final int currentModNumber;
   final int totalModNumber;
   final String statusMessage;
 
   const BulkActionsState({
-    this.status = BulkActionEnum.idle,
+    this.status = BulkActionsStatusEnum.idle,
     this.cancelledBulkAction = false,
     this.currentModNumber = 0,
     this.totalModNumber = 0,
@@ -21,7 +21,7 @@ class BulkActionsState {
   });
 
   BulkActionsState copyWith({
-    BulkActionEnum? status,
+    BulkActionsStatusEnum? status,
     bool? cancelledBulkAction,
     int? currentModNumber,
     int? totalModNumber,

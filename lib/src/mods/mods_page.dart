@@ -17,7 +17,7 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
 import 'package:tts_mod_vault/src/mods/components/filter.dart'
     show FilterButton;
 import 'package:tts_mod_vault/src/mods/hooks/hooks.dart'
-    show useCleanupSnackbar;
+    show useCleanupSnackbar, useBackupSnackbar;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show loadingMessageProvider, modsProvider;
 
@@ -30,6 +30,7 @@ class ModsPage extends HookConsumerWidget {
     final mods = ref.watch(modsProvider);
 
     useCleanupSnackbar(context, ref);
+    useBackupSnackbar(context, ref);
 
     return SafeArea(
       child: Scaffold(

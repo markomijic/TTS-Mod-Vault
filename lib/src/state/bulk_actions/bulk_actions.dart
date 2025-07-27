@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
-    show BulkActionEnum, BulkActionsState;
+    show BulkActionsStatusEnum, BulkActionsState;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -21,7 +21,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   void _resetState() {
     state = BulkActionsState(
-      status: BulkActionEnum.idle,
+      status: BulkActionsStatusEnum.idle,
       cancelledBulkAction: false,
       currentModNumber: 0,
       totalModNumber: 0,
@@ -43,7 +43,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   // Bulk actions methods
   Future<void> downloadAllMods(List<Mod> mods) async {
     state = state.copyWith(
-      status: BulkActionEnum.downloadAll,
+      status: BulkActionsStatusEnum.downloadAll,
       totalModNumber: mods.length,
     );
 
@@ -73,7 +73,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   Future<void> backupAllMods(List<Mod> mods) async {
     state = state.copyWith(
-      status: BulkActionEnum.backupAll,
+      status: BulkActionsStatusEnum.backupAll,
       totalModNumber: mods.length,
       statusMessage: "Select a folder to backup all mods",
     );
@@ -110,7 +110,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   Future<void> downloadAndBackupAllMods(List<Mod> mods) async {
     state = state.copyWith(
-      status: BulkActionEnum.downloadAndBackupAll,
+      status: BulkActionsStatusEnum.downloadAndBackupAll,
       totalModNumber: mods.length,
       statusMessage: "Select a folder to backup all mods",
     );
@@ -159,18 +159,18 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   // Cancel methods
   Future<void> cancelBulkAction() async {
     switch (state.status) {
-      case BulkActionEnum.idle:
+      case BulkActionsStatusEnum.idle:
         break;
 
-      case BulkActionEnum.downloadAll:
+      case BulkActionsStatusEnum.downloadAll:
         _cancelDownloadAll();
         break;
 
-      case BulkActionEnum.backupAll:
+      case BulkActionsStatusEnum.backupAll:
         _cancelAllBackups();
         break;
 
-      case BulkActionEnum.downloadAndBackupAll:
+      case BulkActionsStatusEnum.downloadAndBackupAll:
         _cancelDownloadAndBackupAll();
         break;
     }

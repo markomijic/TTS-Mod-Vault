@@ -1,5 +1,7 @@
 import 'dart:io' show Directory, File;
 import 'dart:isolate' show Isolate;
+import 'dart:math' show max, min;
+import 'dart:io' show Platform;
 
 import 'package:archive/archive.dart' show ZipDecoder;
 import 'package:collection/collection.dart';
@@ -20,19 +22,51 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
   ExistingBackupsStateNotifier(this.ref) : super(ExistingBackupsState.empty());
 
   Future<void> loadExistingBackups() async {
-    debugPrint('loadExistingBackups');
+    debugPrint('loadExistingBackups - started at ${DateTime.now()}');
 
     final backupsDir = ref.read(directoriesProvider).backupsDir;
+    final directory = Directory(backupsDir);
 
-    final backups = await Isolate.run(
-      () => _getBackupsFromDirectory(backupsDir),
-    );
+    if (backupsDir.isEmpty || !directory.existsSync()) {
+      state = ExistingBackupsState(backups: []);
+      return;
+    }
+
+    final files = await directory
+        .list(recursive: true)
+        .where((entity) => entity is File)
+        .cast<File>()
+        .where((file) => path.extension(file.path).toLowerCase() == '.ttsmod')
+        .toList();
+
+    if (files.isEmpty) {
+      state = ExistingBackupsState(backups: []);
+      return;
+    }
+
+    final numberOfIsolates = max(Platform.numberOfProcessors - 2, 2);
+    final chunkedFiles = _chunkList(files, numberOfIsolates);
+    final futures = chunkedFiles
+        .map((chunk) => Isolate.run(() => _processBackupFiles(chunk)))
+        .toList();
+
+    final results = await Future.wait(futures);
+    final backups = results.expand((list) => list).toList();
 
     state = ExistingBackupsState(backups: backups);
+    debugPrint('loadExistingBackups - finished at ${DateTime.now()}');
   }
 
-  bool doesBackupExist(String filename) {
-    return state.backups.any((backup) => backup.filename == filename);
+  List<List<T>> _chunkList<T>(List<T> list, int chunkSize) {
+    final chunks = <List<T>>[];
+    final itemsPerChunk = (list.length / chunkSize).ceil();
+
+    for (int i = 0; i < list.length; i += itemsPerChunk) {
+      final end = min(i + itemsPerChunk, list.length);
+      chunks.add(list.sublist(i, end));
+    }
+
+    return chunks;
   }
 
   void addBackup(ExistingBackup newBackup) {
@@ -50,7 +84,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     }
   }
 
-  ExistingBackup? getBackupByMod(Mod mod) {
+  ExistingBackup? getInitialBackupByMod(Mod mod) {
     try {
       final backupFileName = getBackupFilenameByMod(mod);
 
@@ -60,69 +94,86 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       return null;
     }
   }
+
+  Future<ExistingBackup?> getCompleteBackup(Mod mod) async {
+    try {
+      final backupFileName = getBackupFilenameByMod(mod);
+
+      final backup = state.backups
+          .firstWhereOrNull((backup) => backup.filename == backupFileName);
+
+      if (backup == null) {
+        return backup;
+      }
+
+      if (backup.totalAssetCount == -1) {
+        final full = await _getBackupWithTotalAssetCount(backup);
+        addBackup(full);
+        return full;
+      }
+
+      return backup;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<ExistingBackup> _getBackupWithTotalAssetCount(
+    ExistingBackup backup,
+  ) async {
+    final totalAssetCount = await _getTotalAssetCount(backup.filepath);
+
+    return backup.copyWith(totalAssetCount: totalAssetCount);
+  }
+
+  Future<int> _getTotalAssetCount(String ttsmodPath) async {
+    const targetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
+
+    try {
+      final file = File(ttsmodPath);
+      final bytes = await file.readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+
+      int totalCount = 0;
+
+      for (final entry in archive) {
+        if (entry.isFile) {
+          final parentFolderName = path.basename(path.dirname(entry.name));
+
+          for (final folder in targetFolders) {
+            if (parentFolderName == folder) {
+              totalCount++;
+              break;
+            }
+          }
+        }
+      }
+
+      return totalCount;
+    } catch (e) {
+      debugPrint('getTotalFileCount - error reading $ttsmodPath: $e');
+      return 0;
+    }
+  }
 }
 
 ///
 /// Top-level function required by Isolate.run
 ///
-Future<List<ExistingBackup>> _getBackupsFromDirectory(String dirPath) async {
-  final directory = Directory(dirPath);
-
-  if (dirPath.isEmpty || !directory.existsSync()) {
-    return <ExistingBackup>[];
-  }
-
-  final entities = await directory
-      .list(recursive: true)
-      .where((entity) => entity is File)
-      .cast<File>()
-      .where((file) => path.extension(file.path).toLowerCase() == '.ttsmod')
-      .toList();
-
+Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
   final backups = <ExistingBackup>[];
 
-  for (final entity in entities) {
-    final stat = await entity.stat();
-    final filename = path.basename(entity.path);
-    final totalAssetCount = await getTotalFileCount(entity.path);
+  for (final file in files) {
+    final stat = await file.stat();
+    final filename = path.basename(file.path);
 
     backups.add(ExistingBackup(
       filename: filename,
-      filepath: path.normalize(entity.path),
+      filepath: path.normalize(file.path),
       lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
-      totalAssetCount: totalAssetCount,
+      totalAssetCount: -1,
     ));
   }
 
   return backups;
-}
-
-Future<int> getTotalFileCount(String ttsmodPath) async {
-  const targetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
-
-  try {
-    final file = File(ttsmodPath);
-    final bytes = await file.readAsBytes();
-    final archive = ZipDecoder().decodeBytes(bytes);
-
-    int totalCount = 0;
-
-    for (final entry in archive) {
-      if (entry.isFile) {
-        final parentFolderName = path.basename(path.dirname(entry.name));
-
-        for (final folder in targetFolders) {
-          if (parentFolderName == folder) {
-            totalCount++;
-            break;
-          }
-        }
-      }
-    }
-
-    return totalCount;
-  } catch (e) {
-    debugPrint('getTotalFileCount - error reading $ttsmodPath: $e');
-    return 0;
-  }
 }

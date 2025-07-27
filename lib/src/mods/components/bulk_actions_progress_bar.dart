@@ -18,7 +18,7 @@ class BulkActionsProgressBar extends HookConsumerWidget {
           : 0.0;
     }, [bulkActionsState]);
 
-    if (bulkActionsState.status == BulkActionEnum.idle) {
+    if (bulkActionsState.status == BulkActionsStatusEnum.idle) {
       return SizedBox.shrink();
     }
 

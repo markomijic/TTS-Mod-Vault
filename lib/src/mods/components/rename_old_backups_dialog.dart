@@ -70,19 +70,19 @@ class RenameOldBackupsDialog extends HookConsumerWidget {
                   children: [
                     CustomTooltip(
                       message:
-                          'TTS Mod Vault versions 1.0.0 - 1.1.0 used a backup name format that did not fully match the one used by TTS Mod Backup.\n\n'
-                          'In version 1.2.0 the Backup State feature has been added and made to work with backups created by TTS Mod Backup.\n'
-                          'This tool can rename backups made with TTS Mod Vault 1.0.0 - 1.1.0 to use the new backup name format and therefore work with the new Backup State feature.\n\n'
+                          'TTS Mod Vault versions 1.0.0 - 1.1.0 used a mod backup name format that did not fully match the one used by TTS Mod Backup.\n\n'
+                          'In version 1.2.0 the Backup State feature has been added and made to work with mod backups created by TTS Mod Backup.\n'
+                          'This tool can rename mod backups made with TTS Mod Vault 1.0.0 - 1.1.0 to use the new mod backup name format and therefore work with the new Backup State feature.\n\n'
+                          'Note that this applies only to backups of mods and no other types (saves & saved objects)!\n'
                           'If you find any issue where the new format does not match what TTS Mod Backup would have created, please let me know (Help -> Help & Feedback).\n'
-                          'Apologies for any inconvenience this may have caused, and thank you for your understanding.\n\n\n'
-                          'New naming format examples:\n1234.json => modSaveName (1234).ttsmod\nfileName.json => modSaveName.ttsmod',
+                          'Apologies for any inconvenience this may have caused, and thank you for your understanding.',
                       child: Icon(
                         Icons.help_outline,
                         size: 30,
                       ),
                     ),
                     Text(
-                        'Rename backups created by TTS Mod Vault versions 1.0.0 - 1.1.0 to match backup naming format in 1.2.0 to work with Backup State feature'),
+                        'Rename mod backups created by TTS Mod Vault versions 1.0.0 - 1.1.0 to match backup naming format in 1.2.0 to work with Backup State feature'),
                   ],
                 ),
                 Expanded(

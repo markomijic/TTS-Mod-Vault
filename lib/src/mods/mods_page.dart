@@ -63,8 +63,8 @@ class ModsPage extends HookConsumerWidget {
                                         spacing: 8,
                                         children: [
                                           ModsSelector(),
-                                          Search(),
                                           BulkActionsDropDownButton(),
+                                          Search(),
                                           FilterButton(),
                                         ],
                                       ),

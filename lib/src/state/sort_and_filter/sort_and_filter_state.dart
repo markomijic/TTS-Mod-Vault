@@ -12,6 +12,9 @@ class SortAndFilterState {
   final Set<String> filteredSavedObjectsFolders;
   final Set<ExistingBackupStatusEnum> filteredBackupStatuses;
 
+  // Sort
+  final SortOptionEnum sortOption;
+
   const SortAndFilterState({
     required this.modsFolders,
     required this.savesFolders,
@@ -20,6 +23,7 @@ class SortAndFilterState {
     required this.filteredSavesFolders,
     required this.filteredSavedObjectsFolders,
     required this.filteredBackupStatuses,
+    required this.sortOption,
   });
 
   factory SortAndFilterState.initial() {
@@ -31,6 +35,7 @@ class SortAndFilterState {
       filteredSavesFolders: {},
       filteredSavedObjectsFolders: {},
       filteredBackupStatuses: {},
+      sortOption: SortOptionEnum.alphabeticalAsc,
     );
   }
 
@@ -42,6 +47,7 @@ class SortAndFilterState {
     Set<String>? filteredSavesFolders,
     Set<String>? filteredSavedObjectsFolders,
     Set<ExistingBackupStatusEnum>? filteredBackupStatuses,
+    SortOptionEnum? sortOption,
   }) {
     return SortAndFilterState(
       modsFolders: modsFolders ?? this.modsFolders,
@@ -53,6 +59,17 @@ class SortAndFilterState {
           filteredSavedObjectsFolders ?? this.filteredSavedObjectsFolders,
       filteredBackupStatuses:
           filteredBackupStatuses ?? this.filteredBackupStatuses,
+      sortOption: sortOption ?? this.sortOption,
     );
   }
+}
+
+enum SortOptionEnum {
+  alphabeticalAsc('Alphabetically'),
+  //alphabeticalDesc('Z-A'),
+  //dateCreatedAsc('Oldest first'),
+  dateCreatedDesc('Recently added');
+
+  final String label;
+  const SortOptionEnum(this.label);
 }

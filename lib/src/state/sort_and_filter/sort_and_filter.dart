@@ -6,7 +6,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show sortAndFilterProvider;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
-    show SortAndFilterState;
+    show SortAndFilterState, SortOptionEnum;
 
 class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   Ref ref;
@@ -33,6 +33,10 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
           break;
       }
     }
+  }
+
+  void setSortOption(SortOptionEnum sortOption) {
+    state = state.copyWith(sortOption: sortOption);
   }
 
   void resetState() {

@@ -59,8 +59,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Downloading all mods (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
 
+      final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
-          await ref.read(modsProvider.notifier).getCardMod(mod.jsonFileName);
+          ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
 
       ref.read(modsProvider.notifier).setSelectedMod(completeMod);
       await ref.read(downloadProvider.notifier).downloadAllFiles(completeMod);
@@ -96,8 +97,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Backing up all mods (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
 
+      final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
-          await ref.read(modsProvider.notifier).getCardMod(mod.jsonFileName);
+          ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
 
       ref.read(modsProvider.notifier).setSelectedMod(completeMod);
       await ref
@@ -133,8 +135,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Downloading & backing up all mods (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
 
+      final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
-          await ref.read(modsProvider.notifier).getCardMod(mod.jsonFileName);
+          ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
       ref.read(modsProvider.notifier).setSelectedMod(completeMod);
 
       await ref.read(downloadProvider.notifier).downloadAllFiles(completeMod);

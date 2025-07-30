@@ -35,7 +35,12 @@ class CustomTooltip extends StatelessWidget {
         border: Border.all(color: Colors.white, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
-      textStyle: richMessage == null ? TextStyle(color: Colors.white) : null,
+      textStyle: richMessage == null
+          ? TextStyle(
+              fontSize: 16,
+              color: Colors.white,
+            )
+          : null,
       message: message,
       richMessage: richMessage,
       child: child,

@@ -33,6 +33,8 @@ dependencies:
   hive_ce: ^2.11.3
   hive_ce_flutter: ^2.3.1
   open_filex: ^4.7.0
+  image: ^4.5.4
+  bson: ^5.0.7
 
 dev_dependencies:
   flutter_test:

@@ -268,6 +268,7 @@ Future<Mod?> _processSingleFileOptimized(
     final parentFolder = path.basename(path.dirname(jsonPath));
     final imageFilePath =
         await _getImageFilePathIsolate(jsonPath, jsonFileName);
+    final jsonFileStat = await File(jsonPath).stat();
 
     return Mod(
       modType: modType,
@@ -275,6 +276,7 @@ Future<Mod?> _processSingleFileOptimized(
       parentFolderName: parentFolder,
       saveName: saveName.isNotEmpty ? saveName : jsonFileName,
       backupStatus: ExistingBackupStatusEnum.noBackup,
+      createdAtTimestamp: jsonFileStat.changed.millisecondsSinceEpoch ~/ 1000,
       dateTimeStamp: dateTimeStamp,
       jsonFileName: jsonFileName,
       imageFilePath: imageFilePath,

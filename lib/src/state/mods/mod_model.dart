@@ -20,6 +20,7 @@ class Mod {
   final String parentFolderName;
   final String saveName;
   final ExistingBackupStatusEnum backupStatus;
+  final int createdAtTimestamp;
   final ExistingBackup? backup;
   final String? dateTimeStamp;
   final String? imageFilePath;
@@ -34,6 +35,7 @@ class Mod {
     required this.parentFolderName,
     required this.saveName,
     required this.backupStatus,
+    required this.createdAtTimestamp,
     this.backup,
     this.dateTimeStamp,
     this.imageFilePath,
@@ -48,6 +50,7 @@ class Mod {
     String? saveName,
     ExistingBackupStatusEnum? backupStatus,
     ExistingBackup? backup,
+    int? createdAtTimestamp,
     String? dateTimeStamp,
     String? jsonFileName,
     String? imageFilePath,
@@ -63,6 +66,7 @@ class Mod {
       saveName: saveName ?? this.saveName,
       backupStatus: backupStatus ?? this.backupStatus,
       backup: backup ?? this.backup,
+      createdAtTimestamp: createdAtTimestamp ?? this.createdAtTimestamp,
       dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
       imageFilePath: imageFilePath ?? this.imageFilePath,
       assetLists: assetLists ?? this.assetLists,

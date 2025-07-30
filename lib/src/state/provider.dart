@@ -1,5 +1,3 @@
-import 'dart:math' show Random;
-
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
@@ -60,13 +58,6 @@ final loaderProvider = Provider<LoaderNotifier>((ref) {
 final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
     () => ModsStateNotifier());
 
-final cardModProvider =
-    FutureProvider.family.autoDispose<Mod, String>((ref, jsonFileName) async {
-  await Future.delayed(Duration(milliseconds: Random().nextInt(750) + 1));
-
-  return ref.read(modsProvider.notifier).getCardMod(jsonFileName);
-});
-
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),
 );
@@ -98,6 +89,22 @@ final sortAndFilterProvider =
   (ref) => SortAndFilterNotifier(ref),
 );
 
+final actionInProgressProvider = Provider<bool>((ref) {
+  final modsAsyncValue = ref.watch(modsProvider);
+  final downloading = ref.watch(downloadProvider).downloading;
+  final bulkActionStatus = ref.watch(bulkActionsProvider).status;
+  final cleanUpStatus = ref.watch(cleanupProvider).status;
+  final backupStatus = ref.watch(backupProvider).status;
+  final importBackupStatus = ref.watch(importBackupProvider).status;
+
+  return cleanUpStatus != CleanUpStatusEnum.idle ||
+      backupStatus != BackupStatusEnum.idle ||
+      importBackupStatus != ImportBackupStatusEnum.idle ||
+      bulkActionStatus != BulkActionsStatusEnum.idle ||
+      downloading ||
+      modsAsyncValue is AsyncLoading;
+});
+
 final filteredModsProvider = Provider<List<Mod>>((ref) {
   final searchQuery = ref.watch(searchQueryProvider);
   final sortAndFilter = ref.watch(sortAndFilterProvider);
@@ -122,44 +129,40 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
     ModTypeEnum.savedObject => sortAndFilter.filteredSavesFolders,
   };
 
-  return mods.where((mod) {
-    // Filter by search query (only if query is not empty)
+  // Filter mods
+  List<Mod> filteredMods = mods.where((mod) {
     if (searchQuery.isNotEmpty) {
       if (!mod.saveName.toLowerCase().contains(searchQuery.toLowerCase())) {
         return false; // Exclude if doesn't match search
       }
     }
 
-    // Filter by selected folders (only if folders are selected)
     if (selectedFolders.isNotEmpty) {
       if (!selectedFolders.contains(mod.parentFolderName)) {
         return false; // Exclude if not in selected folders
       }
     }
 
-    // Filter by selected backup states (only if backup statuses are selected)
     if (selectedBackupStatuses.isNotEmpty) {
       if (!selectedBackupStatuses.contains(mod.backupStatus)) {
         return false; // Exclude if not in selected backup statuses
       }
     }
 
-    return true; // Include if passes all filters (or no filters applied)
+    return true;
   }).toList();
-});
 
-final actionInProgressProvider = Provider<bool>((ref) {
-  final modsAsyncValue = ref.watch(modsProvider);
-  final downloading = ref.watch(downloadProvider).downloading;
-  final bulkActionStatus = ref.watch(bulkActionsProvider).status;
-  final cleanUpStatus = ref.watch(cleanupProvider).status;
-  final backupStatus = ref.watch(backupProvider).status;
-  final importBackupStatus = ref.watch(importBackupProvider).status;
+  // Sort mods
+  switch (sortAndFilter.sortOption) {
+    case SortOptionEnum.alphabeticalAsc:
+      filteredMods.sort((a, b) =>
+          a.saveName.toLowerCase().compareTo(b.saveName.toLowerCase()));
+      break;
+    case SortOptionEnum.dateCreatedDesc:
+      filteredMods
+          .sort((a, b) => b.createdAtTimestamp.compareTo(a.createdAtTimestamp));
+      break;
+  }
 
-  return cleanUpStatus != CleanUpStatusEnum.idle ||
-      backupStatus != BackupStatusEnum.idle ||
-      importBackupStatus != ImportBackupStatusEnum.idle ||
-      bulkActionStatus != BulkActionsStatusEnum.idle ||
-      downloading ||
-      modsAsyncValue is AsyncLoading;
+  return filteredMods;
 });

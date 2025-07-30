@@ -3,8 +3,6 @@ import 'dart:isolate' show Isolate;
 import 'dart:math' show max, min;
 import 'dart:io' show Platform;
 
-import 'package:archive/archive.dart' show ZipDecoder;
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as path;
@@ -99,7 +97,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     return matchingBackups.first;
   }
 
-  ExistingBackup? getInitialBackupByMod(Mod mod) {
+  ExistingBackup? getBackupByMod(Mod mod) {
     try {
       final backupFileName = getBackupFilenameByMod(mod);
       return _getMostRecentBackupByFilename(backupFileName);
@@ -108,7 +106,8 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     }
   }
 
-  Future<ExistingBackup?> getCompleteBackup(Mod mod) async {
+// Disabled due to unresolved performance issues
+/*   Future<ExistingBackup?> getCompleteBackup(Mod mod) async {
     try {
       final backupFileName = getBackupFilenameByMod(mod);
       final backup = _getMostRecentBackupByFilename(backupFileName);
@@ -127,7 +126,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     } catch (e) {
       return null;
     }
-  }
+  } 
 
   Future<ExistingBackup> _getBackupWithTotalAssetCount(
     ExistingBackup backup,
@@ -135,7 +134,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     final totalAssetCount = await _getTotalAssetCount(backup.filepath);
 
     return backup.copyWith(totalAssetCount: totalAssetCount);
-  }
+  }  
 
   Future<int> _getTotalAssetCount(String ttsmodPath) async {
     const targetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
@@ -165,7 +164,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       debugPrint('getTotalFileCount - error reading $ttsmodPath: $e');
       return 0;
     }
-  }
+  } */
 }
 
 ///
@@ -182,7 +181,6 @@ Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
       filename: filename,
       filepath: path.normalize(file.path),
       lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
-      totalAssetCount: -1,
     ));
   }
 

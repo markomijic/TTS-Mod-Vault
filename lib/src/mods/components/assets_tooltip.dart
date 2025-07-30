@@ -47,10 +47,10 @@ class HelpTooltip extends StatelessWidget {
           TextSpan(
               text:
                   '• Download button: Attempts to download all missing asset files\n'),
-          TextSpan(text: '• Cancel button: Cancels all downloads\n'),
           TextSpan(
               text:
-                  '• Backup button: Creates a backup (even with missing asset files)'),
+                  '• Backup button: Creates a backup (even with missing asset files)\n'),
+          TextSpan(text: '• Cancel button: Cancels downloads'),
         ],
       ),
       child: Icon(

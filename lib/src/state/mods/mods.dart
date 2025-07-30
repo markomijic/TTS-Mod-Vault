@@ -214,7 +214,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       // Sort all mods alphabetically
-      allProcessedMods.sort((a, b) => a.saveName.compareTo(b.saveName));
+      //allProcessedMods.sort((a, b) => a.saveName.compareTo(b.saveName));
 
       final mods = <Mod>[];
       final saves = <Mod>[];
@@ -223,14 +223,14 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       for (final mod in allProcessedMods) {
         switch (mod.modType) {
           case ModTypeEnum.mod:
-            mods.add(_getModWithInitialBackup(mod));
+            mods.add(_getInitialModWithBackup(mod));
             break;
           case ModTypeEnum.save:
-            saves.add(_getModWithInitialBackup(mod));
+            saves.add(_getInitialModWithBackup(mod));
             break;
           case ModTypeEnum.savedObject:
             if (showSavedObjects) {
-              savedObjects.add(_getModWithInitialBackup(mod));
+              savedObjects.add(_getInitialModWithBackup(mod));
             }
             break;
         }
@@ -422,14 +422,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     return batches;
   }
 
-  Future<Mod> getCardMod(String jsonFileName) async {
-    final mod = getAllMods().firstWhere(
-      (m) => m.jsonFileName == jsonFileName,
-    );
-    final urls = ref.read(storageProvider).getModUrls(jsonFileName) ??
+  Future<Map<String, String>> getUrlsByMod(Mod mod) async {
+    return ref.read(storageProvider).getModUrls(mod.jsonFileName) ??
         await extractUrlsFromJson(mod.jsonFilePath);
-
-    return _getCompleteMod(mod, urls);
   }
 
   Future<void> updateSelectedMod(Mod selectedMod) async {
@@ -443,7 +438,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       };
 
       final modIndex = modList.indexWhere(
-        (m) => m.jsonFileName == selectedMod.jsonFileName,
+        (m) => m.jsonFilePath == selectedMod.jsonFilePath,
       );
 
       if (modIndex == -1) return;
@@ -452,7 +447,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           ref.read(storageProvider).getModUrls(selectedMod.jsonFileName) ??
               await extractUrlsFromJson(selectedMod.jsonFilePath);
 
-      final updatedMod = await _getCompleteMod(selectedMod, urls);
+      final updatedMod = getCompleteMod(selectedMod, urls);
 
       final updatedList = [...modList];
       updatedList[modIndex] = updatedMod;
@@ -472,15 +467,52 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           break;
       }
     } catch (e, stack) {
+      debugPrint('updateSelectedMod error: $e');
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  void updateMod(Mod mod) {
+    try {
+      if (!state.hasValue) return;
+
+      final modList = switch (mod.modType) {
+        ModTypeEnum.mod => state.value!.mods,
+        ModTypeEnum.save => state.value!.saves,
+        ModTypeEnum.savedObject => state.value!.savedObjects,
+      };
+
+      final modIndex = modList.indexWhere(
+        (m) => m.jsonFilePath == mod.jsonFilePath,
+      );
+
+      if (modIndex == -1) return;
+
+      final updatedList = [...modList];
+      updatedList[modIndex] = mod;
+
+      switch (mod.modType) {
+        case ModTypeEnum.mod:
+          state = AsyncValue.data(state.value!.copyWith(mods: updatedList));
+          break;
+        case ModTypeEnum.save:
+          state = AsyncValue.data(state.value!.copyWith(saves: updatedList));
+          break;
+        case ModTypeEnum.savedObject:
+          state =
+              AsyncValue.data(state.value!.copyWith(savedObjects: updatedList));
+          break;
+      }
+    } catch (e, stack) {
       debugPrint('updateMod error: $e');
       state = AsyncValue.error(e, stack);
     }
   }
 
-  Mod _getModWithInitialBackup(Mod mod) {
+  Mod _getInitialModWithBackup(Mod mod) {
     try {
       final backup =
-          ref.read(existingBackupsProvider.notifier).getInitialBackupByMod(mod);
+          ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
       final backupStatus = backup == null
           ? ExistingBackupStatusEnum.noBackup
@@ -495,30 +527,22 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<Mod> _getModWithBackup(Mod mod) async {
-    try {
-      final backup = await ref
-          .read(existingBackupsProvider.notifier)
-          .getCompleteBackup(mod);
+  Mod getCompleteMod(Mod mod, Map<String, String> jsonURLs) {
+    final backup =
+        ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
-      final backupStatus = backup == null
-          ? ExistingBackupStatusEnum.noBackup
-          : (mod.dateTimeStamp == null ||
-                  backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
-              ? ExistingBackupStatusEnum.upToDate
-              : ExistingBackupStatusEnum.outOfDate;
+    final backupStatus = backup == null
+        ? ExistingBackupStatusEnum.noBackup
+        : (mod.dateTimeStamp == null ||
+                backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
+            ? ExistingBackupStatusEnum.upToDate
+            : ExistingBackupStatusEnum.outOfDate;
 
-      return mod.copyWith(backup: backup, backupStatus: backupStatus);
-    } catch (e) {
-      return mod;
-    }
-  }
-
-  Future<Mod> _getCompleteMod(Mod mod, Map<String, String> jsonURLs) async {
-    final modWithBackup = await _getModWithBackup(mod);
     final assetLists = _getAssetListsFromUrls(jsonURLs);
 
-    return modWithBackup.copyWith(
+    return mod.copyWith(
+      backup: backup,
+      backupStatus: backupStatus,
       assetLists: assetLists.$1,
       totalCount: assetLists.$2,
       totalExistsCount: assetLists.$3,

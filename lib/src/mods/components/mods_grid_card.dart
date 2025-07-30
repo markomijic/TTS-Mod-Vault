@@ -1,20 +1,22 @@
 import 'dart:io' show File;
+import 'dart:math' show Random;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
+import 'package:flutter_hooks/flutter_hooks.dart'
+    show useMemoized, useState, useEffect;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show AsyncValue, AsyncValueX, HookConsumerWidget, WidgetRef;
+    show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
+
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
-        cardModProvider,
         modsProvider,
         selectedModProvider,
         settingsProvider;
@@ -30,19 +32,33 @@ class ModsGridCard extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
     final showBackupState = ref.watch(settingsProvider).showBackupState;
-
     final selectedMod = ref.watch(selectedModProvider);
+
     final isHovered = useState(false);
 
-    final loadedModAsync = mod.assetLists != null
-        ? AsyncValue.data(mod)
-        : ref.watch(cardModProvider(mod.jsonFileName));
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mod.assetLists == null) {
+          try {
+            await Future.delayed(
+                Duration(milliseconds: 500 + Random().nextInt(501)));
 
-    final displayMod = loadedModAsync.when(
-      data: (loadedMod) => loadedMod,
-      loading: () => mod,
-      error: (_, __) => mod,
-    );
+            if (context.mounted) {
+              final urls =
+                  await ref.read(modsProvider.notifier).getUrlsByMod(mod);
+              final completeMod =
+                  ref.read(modsProvider.notifier).getCompleteMod(mod, urls);
+
+              ref.read(modsProvider.notifier).updateMod(completeMod);
+            }
+          } catch (e) {
+            debugPrint('Error loading ${mod.modType} ${mod.saveName}: $e');
+          }
+        }
+      });
+
+      return null;
+    }, [mod.jsonFilePath]);
 
     final imageExists = useMemoized(() {
       return mod.imageFilePath != null
@@ -51,21 +67,30 @@ class ModsGridCard extends HookConsumerWidget {
     }, [mod.imageFilePath]);
 
     final showAssetCount = useMemoized(() {
-      return displayMod.totalExistsCount != null &&
-          displayMod.totalCount != null;
-    }, [displayMod]);
+      return mod.totalExistsCount != null && mod.totalCount != null;
+    }, [mod]);
 
     final isSelected = useMemoized(() {
       return selectedMod?.jsonFilePath == mod.jsonFilePath;
     }, [selectedMod, mod]);
 
-    final backupHasSameAssetCount = useMemoized(() {
+    final filesMessage = useMemoized(() {
+      if (mod.totalCount == null || mod.totalExistsCount == null) {
+        return "";
+      }
+      final missingCount = mod.totalCount! - mod.totalExistsCount!;
+      if (missingCount <= 0) return '';
+      final fileLabel = missingCount == 1 ? 'file' : 'files';
+      return '$missingCount missing $fileLabel';
+    }, [mod.totalExistsCount]);
+
+/*     final backupHasSameAssetCount = useMemoized(() {
       if (displayMod.backup != null && displayMod.totalExistsCount != null) {
         return displayMod.backup!.totalAssetCount ==
             displayMod.totalExistsCount!;
       }
       return true;
-    }, [displayMod.backup, displayMod.totalExistsCount]);
+    }, [displayMod.backup, displayMod.totalExistsCount]); */
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -73,19 +98,19 @@ class ModsGridCard extends HookConsumerWidget {
       onExit: (_) => isHovered.value = false,
       child: GestureDetector(
         onTap: () {
-          if (ref.read(actionInProgressProvider) || !loadedModAsync.hasValue) {
+          if (ref.read(actionInProgressProvider) || mod.assetLists == null) {
             return;
           }
 
-          ref.read(modsProvider.notifier).setSelectedMod(displayMod);
+          ref.read(modsProvider.notifier).setSelectedMod(mod);
         },
         onSecondaryTapDown: (details) {
-          if (ref.read(actionInProgressProvider) || !loadedModAsync.hasValue) {
+          if (ref.read(actionInProgressProvider) || mod.assetLists == null) {
             return;
           }
 
-          ref.read(modsProvider.notifier).setSelectedMod(displayMod);
-          showModContextMenu(context, ref, details.globalPosition, displayMod);
+          ref.read(modsProvider.notifier).setSelectedMod(mod);
+          showModContextMenu(context, ref, details.globalPosition, mod);
         },
         child: AnimatedContainer(
           duration: Duration(milliseconds: 150),
@@ -103,7 +128,7 @@ class ModsGridCard extends HookConsumerWidget {
             children: [
               imageExists
                   ? Image.file(
-                      File(displayMod.imageFilePath!),
+                      File(mod.imageFilePath!),
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
@@ -112,7 +137,7 @@ class ModsGridCard extends HookConsumerWidget {
                       color: Colors.grey[850],
                       alignment: Alignment.center,
                       child: Text(
-                        displayMod.saveName,
+                        mod.saveName,
                         maxLines: 5,
                         textAlign: TextAlign.center,
                         overflow: TextOverflow.ellipsis,
@@ -121,7 +146,7 @@ class ModsGridCard extends HookConsumerWidget {
                         ),
                       ),
                     ),
-              if (showTitleOnCards || displayMod.modType != ModTypeEnum.mod)
+              if (showTitleOnCards || mod.modType != ModTypeEnum.mod)
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: ClipRect(
@@ -132,9 +157,9 @@ class ModsGridCard extends HookConsumerWidget {
                         width: double.infinity,
                         padding: EdgeInsets.all(4),
                         child: Text(
-                          displayMod.modType != ModTypeEnum.save
-                              ? displayMod.saveName
-                              : '${displayMod.jsonFileName}\n${displayMod.saveName}',
+                          mod.modType != ModTypeEnum.save
+                              ? mod.saveName
+                              : '${mod.jsonFileName}\n${mod.saveName}',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                           ),
@@ -163,37 +188,31 @@ class ModsGridCard extends HookConsumerWidget {
                             children: [
                               CustomTooltip(
                                 waitDuration: Duration(milliseconds: 300),
-                                message: displayMod.totalCount! -
-                                            displayMod.totalExistsCount! >
-                                        0
-                                    ? '${displayMod.totalCount! - displayMod.totalExistsCount!} missing files'
-                                    : '',
+                                message: filesMessage,
                                 child: Text(
-                                  "${displayMod.totalExistsCount}/${displayMod.totalCount}",
+                                  "${mod.totalExistsCount}/${mod.totalCount}",
                                   style: TextStyle(
                                     fontWeight: FontWeight.w500,
-                                    color: displayMod.totalExistsCount ==
-                                            displayMod.totalCount
-                                        ? Colors.green
-                                        : Colors.white,
+                                    color:
+                                        mod.totalExistsCount == mod.totalCount
+                                            ? Colors.green
+                                            : Colors.white,
                                   ),
                                 ),
                               ),
-                              if (displayMod.backup != null && showBackupState)
+                              if (mod.backup != null && showBackupState)
                                 CustomTooltip(
                                   waitDuration: Duration(milliseconds: 300),
                                   message:
-                                      'Update: ${formatTimestamp(displayMod.dateTimeStamp!) ?? 'N/A'}\n'
-                                      'Backup: ${formatTimestamp(displayMod.backup!.lastModifiedTimestamp.toString())}'
-                                      '${backupHasSameAssetCount ? '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}' : '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}\nExisting asset files count: ${displayMod.totalExistsCount}'}',
+                                      'Update: ${formatTimestamp(mod.dateTimeStamp!) ?? 'N/A'}\n'
+                                      'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}',
+                                  //'${backupHasSameAssetCount ? '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}' : '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}\nExisting asset files count: ${displayMod.totalExistsCount}'}',
                                   child: Icon(
                                     Icons.folder_zip_outlined,
                                     size: 20,
-                                    color: displayMod.backupStatus ==
+                                    color: mod.backupStatus ==
                                             ExistingBackupStatusEnum.upToDate
-                                        ? backupHasSameAssetCount
-                                            ? Colors.green
-                                            : Colors.yellow
+                                        ? Colors.green
                                         : Colors.red,
                                   ),
                                 ),

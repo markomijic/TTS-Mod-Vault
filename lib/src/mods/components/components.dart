@@ -20,3 +20,5 @@ export 'bulk_actions_dropdown_button.dart';
 export 'bulk_actions_progress_bar.dart';
 export 'backup_progress_bar.dart';
 export 'rename_old_backups_dialog.dart';
+export 'tools_menu.dart';
+export 'download_mod_by_id_button.dart';

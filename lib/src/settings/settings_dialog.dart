@@ -23,6 +23,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         settingsProvider;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
     show SettingsState;
+import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
+    show SortOptionEnum;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class SettingsDialog extends HookConsumerWidget {
@@ -36,6 +38,7 @@ class SettingsDialog extends HookConsumerWidget {
     // User interface
     final useModsListViewBox = useState(settings.useModsListView);
     final showTitleOnCardsBox = useState(settings.showTitleOnCards);
+    final defaultSortOption = useState(settings.defaultSortOption);
 
     // Network
     final numberValue = useState(settings.concurrentDownloads);
@@ -75,6 +78,7 @@ class SettingsDialog extends HookConsumerWidget {
         enableTtsModdersFeatures: enableTtsModdersFeatures.value,
         showSavedObjects: showSavedObjects.value,
         showBackupState: showBackupState.value,
+        defaultSortOption: defaultSortOption.value,
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -91,7 +95,7 @@ class SettingsDialog extends HookConsumerWidget {
         if (await directoriesNotifier.isModsDirectoryValid(modsDir.value) &&
             await directoriesNotifier.isSavesDirectoryValid(savesDir.value)) {
           if (ref.read(directoriesProvider).backupsDir != backupsDir.value) {
-            await directoriesNotifier.isBackupsDirectoryValid(backupsDir.value);
+            directoriesNotifier.updateBackupsDirectory(backupsDir.value);
           }
 
           await directoriesNotifier.saveDirectories();
@@ -104,85 +108,97 @@ class SettingsDialog extends HookConsumerWidget {
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-      child: Dialog(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 32,
-            children: [
-              const Text(
-                'Settings',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: 720 * 0.7,
+        ),
+        child: Dialog(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 32,
                 children: [
-                  /// Column 1: User Interface & Network
-                  Expanded(
-                    child: SettingsUINetworkColumn(
-                        useModsListViewBox: useModsListViewBox,
-                        showTitleOnCardsBox: showTitleOnCardsBox,
-                        textFieldController: textFieldController,
-                        textFieldFocusNode: textFieldFocusNode,
-                        numberValue: numberValue),
+                  const Text(
+                    'Settings',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 32,
+                    children: [
+                      /// Column 1: User Interface & Network
+                      Expanded(
+                        child: SettingsUINetworkColumn(
+                            useModsListViewBox: useModsListViewBox,
+                            showTitleOnCardsBox: showTitleOnCardsBox,
+                            defaultSortOption: defaultSortOption,
+                            textFieldController: textFieldController,
+                            textFieldFocusNode: textFieldFocusNode,
+                            numberValue: numberValue),
+                      ),
 
-                  /// Column 2: Features
-                  Expanded(
-                    child: SettingsFeaturesColumn(
-                        checkForUpdatesOnStartBox: checkForUpdatesOnStartBox,
-                        showSavedObjects: showSavedObjects,
-                        showBackupState: showBackupState,
-                        enableTtsModdersFeatures: enableTtsModdersFeatures),
+                      /// Column 2: Features
+                      Expanded(
+                        child: SettingsFeaturesColumn(
+                            checkForUpdatesOnStartBox:
+                                checkForUpdatesOnStartBox,
+                            showSavedObjects: showSavedObjects,
+                            showBackupState: showBackupState,
+                            enableTtsModdersFeatures: enableTtsModdersFeatures),
+                      ),
+
+                      /// Column 3: Folders
+                      Expanded(
+                        child: SettingsFoldersColumn(
+                            modsDir: modsDir,
+                            directoriesNotifier: directoriesNotifier,
+                            savesDir: savesDir,
+                            backupsDir: backupsDir),
+                      ),
+                    ],
                   ),
-
-                  /// Column 3: Folders
-                  Expanded(
-                    child: SettingsFoldersColumn(
-                        modsDir: modsDir,
-                        directoriesNotifier: directoriesNotifier,
-                        savesDir: savesDir,
-                        backupsDir: backupsDir),
+                  Row(
+                    spacing: 8,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () async {
+                          await ref
+                              .read(settingsProvider.notifier)
+                              .resetToDefaultSettings();
+                          if (context.mounted) Navigator.pop(context);
+                        },
+                        child: const Text('Reset to default settings'),
+                      ),
+                      Spacer(),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final inputValue =
+                              int.tryParse(textFieldController.text);
+                          if (inputValue == null ||
+                              inputValue < 1 ||
+                              inputValue > 99) {
+                            showSnackBar(context,
+                                'Please enter a number between 1 and 99');
+                            if (context.mounted) Navigator.pop(context);
+                            return;
+                          }
+                          await saveSettingsChanges(context);
+                        },
+                        icon: Icon(Icons.save),
+                        label: const Text('Save'),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              Row(
-                spacing: 8,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      await ref
-                          .read(settingsProvider.notifier)
-                          .resetToDefaultSettings();
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                    child: const Text('Reset to default settings'),
-                  ),
-                  Spacer(),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final inputValue = int.tryParse(textFieldController.text);
-                      if (inputValue == null ||
-                          inputValue < 1 ||
-                          inputValue > 99) {
-                        showSnackBar(
-                            context, 'Please enter a number between 1 and 99');
-                        if (context.mounted) Navigator.pop(context);
-                        return;
-                      }
-                      await saveSettingsChanges(context);
-                    },
-                    icon: Icon(Icons.save),
-                    label: const Text('Save'),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -228,10 +244,11 @@ class SettingsFoldersColumn extends StatelessWidget {
       children: [
         SectionHeader(title: "Mods Folder"),
         Row(
+          spacing: 8,
           children: [
             Expanded(
               child: Container(
-                //padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.white),
                   borderRadius: BorderRadius.circular(4),
@@ -243,7 +260,6 @@ class SettingsFoldersColumn extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
             CustomTooltip(
               message:
                   'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
@@ -283,6 +299,7 @@ class SettingsFoldersColumn extends StatelessWidget {
         ),
         SectionHeader(title: "Saves Folder"),
         Row(
+          spacing: 8,
           children: [
             Expanded(
               child: Container(
@@ -298,7 +315,6 @@ class SettingsFoldersColumn extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
             CustomTooltip(
               message:
                   'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
@@ -338,6 +354,7 @@ class SettingsFoldersColumn extends StatelessWidget {
         ),
         SectionHeader(title: "Backups Folder"),
         Row(
+          spacing: 8,
           children: [
             Expanded(
               child: Container(
@@ -353,7 +370,6 @@ class SettingsFoldersColumn extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
             CustomTooltip(
               message:
                   'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
@@ -378,6 +394,15 @@ class SettingsFoldersColumn extends StatelessWidget {
                   }
                 },
                 child: const Text('Select'),
+              ),
+            ),
+            CustomTooltip(
+              message: 'Data will be refreshed if saving changes to a folder',
+              child: ElevatedButton(
+                onPressed: () {
+                  backupsDir.value = '';
+                },
+                child: const Text('Reset'),
               ),
             ),
           ],
@@ -469,6 +494,7 @@ class SettingsUINetworkColumn extends StatelessWidget {
     super.key,
     required this.useModsListViewBox,
     required this.showTitleOnCardsBox,
+    required this.defaultSortOption,
     required this.textFieldController,
     required this.textFieldFocusNode,
     required this.numberValue,
@@ -476,6 +502,7 @@ class SettingsUINetworkColumn extends StatelessWidget {
 
   final ValueNotifier<bool> useModsListViewBox;
   final ValueNotifier<bool> showTitleOnCardsBox;
+  final ValueNotifier<SortOptionEnum> defaultSortOption;
   final TextEditingController textFieldController;
   final FocusNode textFieldFocusNode;
   final ValueNotifier<int> numberValue;
@@ -505,6 +532,53 @@ class SettingsUINetworkColumn extends StatelessWidget {
           onChanged: (value) {
             showTitleOnCardsBox.value = value ?? showTitleOnCardsBox.value;
           },
+        ),
+// Add this to your SettingsUINetworkColumn
+
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Default sort:',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            DropdownButton<SortOptionEnum>(
+              value: defaultSortOption.value,
+              dropdownColor: Colors.white,
+              style: TextStyle(color: Colors.white),
+              underline: Container(
+                height: 2,
+                color: Colors.white,
+              ),
+              focusColor: Colors.transparent,
+              selectedItemBuilder: (BuildContext context) {
+                return SortOptionEnum.values.map<Widget>((SortOptionEnum item) {
+                  return Container(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      item.label,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  );
+                }).toList();
+              },
+              items: SortOptionEnum.values.map((sortOption) {
+                return DropdownMenuItem<SortOptionEnum>(
+                  value: sortOption,
+                  child: Text(
+                    sortOption.label,
+                    style: TextStyle(color: Colors.black),
+                  ),
+                );
+              }).toList(),
+              onChanged: (SortOptionEnum? newValue) {
+                if (newValue != null) {
+                  defaultSortOption.value = newValue;
+                }
+              },
+            ),
+          ],
         ),
         SectionHeader(title: "Network"),
         Row(

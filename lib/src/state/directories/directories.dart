@@ -124,12 +124,8 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     return result;
   }
 
-  Future<bool> isBackupsDirectoryValid(String backupsDir) async {
-    final result = await Directory(backupsDir).exists();
-    if (!result) return result;
-
+  void updateBackupsDirectory(String backupsDir) async {
     state = state.updateBackups(backupsDir);
-    return result;
   }
 
   String getDirectoryByType(AssetTypeEnum type) {

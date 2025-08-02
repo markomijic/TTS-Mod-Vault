@@ -4,14 +4,16 @@ import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show ModTypeEnum, Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show sortAndFilterProvider;
+    show settingsProvider, sortAndFilterProvider;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
     show SortAndFilterState, SortOptionEnum;
 
 class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   Ref ref;
 
-  SortAndFilterNotifier(this.ref) : super(SortAndFilterState.initial(null));
+  SortAndFilterNotifier(this.ref)
+      : super(SortAndFilterState.emptyFilters(
+            ref.read(settingsProvider).defaultSortOption));
 
   void setFolders(List<Mod> mods) {
     for (final mod in mods) {
@@ -40,7 +42,7 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   }
 
   void resetState() {
-    state = SortAndFilterState.initial(state.sortOption);
+    state = SortAndFilterState.emptyFilters(state.sortOption);
   }
 
   // Methods to add folders

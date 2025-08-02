@@ -274,7 +274,7 @@ Future<Mod?> _processSingleFileOptimized(
       modType: modType,
       jsonFilePath: jsonPath,
       parentFolderName: parentFolder,
-      saveName: saveName.isNotEmpty ? saveName : jsonFileName,
+      saveName: saveName.isNotEmpty ? saveName.trim() : jsonFileName,
       backupStatus: ExistingBackupStatusEnum.noBackup,
       createdAtTimestamp: jsonFileStat.changed.millisecondsSinceEpoch ~/ 1000,
       dateTimeStamp: dateTimeStamp,

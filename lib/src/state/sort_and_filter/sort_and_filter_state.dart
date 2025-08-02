@@ -26,7 +26,7 @@ class SortAndFilterState {
     required this.sortOption,
   });
 
-  factory SortAndFilterState.initial(SortOptionEnum? sortOption) {
+  factory SortAndFilterState.emptyFilters(SortOptionEnum sortOption) {
     return SortAndFilterState(
       modsFolders: {},
       savesFolders: {},
@@ -35,7 +35,7 @@ class SortAndFilterState {
       filteredSavesFolders: {},
       filteredSavedObjectsFolders: {},
       filteredBackupStatuses: {},
-      sortOption: sortOption ?? SortOptionEnum.alphabeticalAsc,
+      sortOption: sortOption,
     );
   }
 
@@ -72,4 +72,13 @@ enum SortOptionEnum {
 
   final String label;
   const SortOptionEnum(this.label);
+
+  static SortOptionEnum fromLabel(String label) {
+    for (SortOptionEnum option in SortOptionEnum.values) {
+      if (option.label == label) {
+        return option;
+      }
+    }
+    return alphabeticalAsc;
+  }
 }

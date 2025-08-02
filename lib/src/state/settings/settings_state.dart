@@ -1,3 +1,6 @@
+import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
+    show SortOptionEnum;
+
 class SettingsState {
   final bool useModsListView;
   final bool showTitleOnCards;
@@ -6,6 +9,7 @@ class SettingsState {
   final bool enableTtsModdersFeatures;
   final bool showSavedObjects;
   final bool showBackupState;
+  final SortOptionEnum defaultSortOption;
 
   const SettingsState({
     this.useModsListView = false,
@@ -15,6 +19,7 @@ class SettingsState {
     this.enableTtsModdersFeatures = false,
     this.showSavedObjects = false,
     this.showBackupState = true,
+    this.defaultSortOption = SortOptionEnum.alphabeticalAsc,
   });
 
   SettingsState copyWith({
@@ -25,6 +30,7 @@ class SettingsState {
     bool? enableTtsModdersFeatures,
     bool? showSavedObjects,
     bool? showBackupState,
+    SortOptionEnum? defaultSortOption,
   }) {
     return SettingsState(
       useModsListView: useModsListView ?? this.useModsListView,
@@ -36,6 +42,7 @@ class SettingsState {
           enableTtsModdersFeatures ?? this.enableTtsModdersFeatures,
       showSavedObjects: showSavedObjects ?? this.showSavedObjects,
       showBackupState: showBackupState ?? this.showBackupState,
+      defaultSortOption: defaultSortOption ?? this.defaultSortOption,
     );
   }
 
@@ -48,6 +55,7 @@ class SettingsState {
       'enableTtsModdersFeatures': enableTtsModdersFeatures,
       'showSavedObjects': showSavedObjects,
       'showBackupState': showBackupState,
+      'defaultSortOption': defaultSortOption.label,
     };
   }
 
@@ -61,7 +69,18 @@ class SettingsState {
           _parseBool(json['enableTtsModdersFeatures'], false),
       showSavedObjects: _parseBool(json['showSavedObjects'], false),
       showBackupState: _parseBool(json['showBackupState'], true),
+      defaultSortOption: _parseSortOptionEnum(
+          json['defaultSortOption'], SortOptionEnum.alphabeticalAsc),
     );
+  }
+
+  static SortOptionEnum _parseSortOptionEnum(
+      dynamic value, SortOptionEnum defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is String) {
+      return SortOptionEnum.fromLabel(value);
+    }
+    return defaultValue;
   }
 
   static bool _parseBool(dynamic value, bool defaultValue) {

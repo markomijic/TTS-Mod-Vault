@@ -23,3 +23,4 @@ export 'rename_old_backups_dialog.dart';
 export 'tools_menu.dart';
 export 'download_mod_by_id_dialog.dart';
 export 'sort_button.dart';
+export 'bulk_backup_dialog.dart';

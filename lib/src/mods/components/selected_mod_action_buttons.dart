@@ -3,8 +3,8 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:path/path.dart' as p;
-import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
-import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart';
+import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
+    show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -28,6 +28,7 @@ class SelectedModActionButtons extends HookConsumerWidget {
     }, [selectedMod]);
 
     final modsNotifier = ref.watch(modsProvider.notifier);
+    final backupNotifier = ref.watch(backupProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
 
@@ -56,23 +57,23 @@ class SelectedModActionButtons extends HookConsumerWidget {
             }
 
             if (selectedMod.backupStatus == ExistingBackupStatusEnum.noBackup) {
-              ref.read(backupProvider.notifier).createBackup(selectedMod);
+              await backupNotifier.createBackup(selectedMod);
+              await modsNotifier.updateSelectedMod(selectedMod);
               return;
             }
 
             showConfirmDialog(
               context,
               'Backup already exists. Replace existing file?',
-              () {
+              () async {
                 final backupFolder = p.dirname(selectedMod.backup!.filepath);
 
-                ref.read(backupProvider.notifier).createBackup(
-                      selectedMod,
-                      backupFolder,
-                    );
+                await backupNotifier.createBackup(selectedMod, backupFolder);
+                await modsNotifier.updateSelectedMod(selectedMod);
               },
-              () {
-                ref.read(backupProvider.notifier).createBackup(selectedMod);
+              () async {
+                await backupNotifier.createBackup(selectedMod);
+                await modsNotifier.updateSelectedMod(selectedMod);
               },
             );
           },

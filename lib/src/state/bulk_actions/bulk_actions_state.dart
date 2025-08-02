@@ -5,6 +5,16 @@ enum BulkActionsStatusEnum {
   downloadAndBackupAll;
 }
 
+enum BulkBackupBehaviorEnum {
+  skip('Skip'),
+  replace('Replace'),
+  replaceIfOutOfDate('Replace if out of date');
+
+  final String label;
+
+  const BulkBackupBehaviorEnum(this.label);
+}
+
 class BulkActionsState {
   final BulkActionsStatusEnum status;
   final bool cancelledBulkAction;

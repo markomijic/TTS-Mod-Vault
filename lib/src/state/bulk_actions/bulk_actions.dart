@@ -1,10 +1,13 @@
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
+import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupStatusEnum;
+import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
+    show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
-    show BulkActionsStatusEnum, BulkActionsState;
+    show BulkActionsState, BulkActionsStatusEnum, BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -72,15 +75,20 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     ref.read(downloadProvider.notifier).resetState();
   }
 
-  Future<void> backupAllMods(List<Mod> mods) async {
+  Future<void> backupAllMods(
+    List<Mod> mods,
+    BulkBackupBehaviorEnum backupBehavior,
+    String? folder,
+  ) async {
     state = state.copyWith(
       status: BulkActionsStatusEnum.backupAll,
       totalModNumber: mods.length,
       statusMessage: "Select a folder to backup all mods",
     );
 
-    final backupFolder = await _getBackupFolder();
-    if (backupFolder == null) {
+    final selectedBackupFolder =
+        folder != null && folder.isNotEmpty ? folder : await _getBackupFolder();
+    if (selectedBackupFolder == null) {
       _resetState();
       return;
     }
@@ -88,6 +96,30 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     for (final mod in mods) {
       if (state.cancelledBulkAction) {
         continue;
+      }
+
+      String modBackupFolder = selectedBackupFolder;
+
+      if (mod.backupStatus != ExistingBackupStatusEnum.noBackup) {
+        switch (backupBehavior) {
+          case BulkBackupBehaviorEnum.skip:
+            continue;
+
+          case BulkBackupBehaviorEnum.replace:
+            if (mod.backup != null) {
+              modBackupFolder = p.dirname(mod.backup!.filepath);
+            }
+            break;
+
+          case BulkBackupBehaviorEnum.replaceIfOutOfDate:
+            if (mod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
+              continue;
+            }
+            if (mod.backup != null) {
+              modBackupFolder = p.dirname(mod.backup!.filepath);
+            }
+            break;
+        }
       }
 
       debugPrint('Backing up: ${mod.saveName}');
@@ -104,21 +136,27 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       ref.read(modsProvider.notifier).setSelectedMod(completeMod);
       await ref
           .read(backupProvider.notifier)
-          .createBackup(completeMod, backupFolder);
+          .createBackup(completeMod, modBackupFolder);
+      await ref.read(modsProvider.notifier).updateSelectedMod(completeMod);
     }
 
     _resetState();
   }
 
-  Future<void> downloadAndBackupAllMods(List<Mod> mods) async {
+  Future<void> downloadAndBackupAllMods(
+    List<Mod> mods,
+    BulkBackupBehaviorEnum backupBehavior,
+    String? folder,
+  ) async {
     state = state.copyWith(
       status: BulkActionsStatusEnum.downloadAndBackupAll,
       totalModNumber: mods.length,
       statusMessage: "Select a folder to backup all mods",
     );
 
-    final backupFolder = await _getBackupFolder();
-    if (backupFolder == null) {
+    final selectedBackupFolder =
+        folder != null && folder.isNotEmpty ? folder : await _getBackupFolder();
+    if (selectedBackupFolder == null) {
       _resetState();
       return;
     }
@@ -147,11 +185,36 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
         continue;
       }
 
+      String modBackupFolder = selectedBackupFolder;
+
+      if (mod.backupStatus != ExistingBackupStatusEnum.noBackup) {
+        switch (backupBehavior) {
+          case BulkBackupBehaviorEnum.skip:
+            continue;
+
+          case BulkBackupBehaviorEnum.replace:
+            if (mod.backup != null) {
+              modBackupFolder = p.dirname(mod.backup!.filepath);
+            }
+            break;
+
+          case BulkBackupBehaviorEnum.replaceIfOutOfDate:
+            if (mod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
+              continue;
+            }
+            if (mod.backup != null) {
+              modBackupFolder = p.dirname(mod.backup!.filepath);
+            }
+            break;
+        }
+      }
+
       final selectedMod = ref.read(selectedModProvider);
       if (selectedMod != null) {
         await ref
             .read(backupProvider.notifier)
-            .createBackup(selectedMod, backupFolder);
+            .createBackup(selectedMod, modBackupFolder);
+        await ref.read(modsProvider.notifier).updateSelectedMod(selectedMod);
       }
     }
 

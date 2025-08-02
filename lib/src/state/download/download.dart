@@ -239,7 +239,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           state = state.copyWith(progress: progress.clamp(0.0, 1.0));
         }
       }
-
+    } catch (e) {
+      debugPrint('downloadAllFiles error: $e');
+    } finally {
       // Add successful downloads to existing assets list
       if (successfulDownloads.isNotEmpty) {
         final existingAssetsNotifier =
@@ -252,8 +254,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       if (!downloadingAllFiles) {
         resetState();
       }
-    } catch (e) {
-      state = state.copyWith(downloading: false);
     }
   }
 

@@ -23,11 +23,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        directoriesProvider,
-        existingBackupsProvider,
-        modsProvider,
-        bulkActionsProvider;
+    show directoriesProvider, existingBackupsProvider, bulkActionsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         getBackupFilenameByMod,
@@ -138,7 +134,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
           receivePort.close();
 
           if (message.success) {
-            // Add new backup to state, update mod
+            // Add new backup to state
             final newBackup = ExistingBackup(
               filename: backupFileName,
               filepath: targetBackupFilePath,
@@ -147,7 +143,6 @@ class BackupNotifier extends StateNotifier<BackupState> {
               totalAssetCount: totalAssetCount,
             );
             ref.read(existingBackupsProvider.notifier).addBackup(newBackup);
-            ref.read(modsProvider.notifier).updateSelectedMod(mod);
           }
 
           if (ref.read(bulkActionsProvider).status ==

@@ -533,8 +533,6 @@ class SettingsUINetworkColumn extends StatelessWidget {
             showTitleOnCardsBox.value = value ?? showTitleOnCardsBox.value;
           },
         ),
-// Add this to your SettingsUINetworkColumn
-
         Row(
           children: [
             Expanded(
@@ -553,7 +551,7 @@ class SettingsUINetworkColumn extends StatelessWidget {
               ),
               focusColor: Colors.transparent,
               selectedItemBuilder: (BuildContext context) {
-                return SortOptionEnum.values.map<Widget>((SortOptionEnum item) {
+                return SortOptionEnum.values.map<Widget>((item) {
                   return Container(
                     alignment: Alignment.centerLeft,
                     child: Text(

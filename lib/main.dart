@@ -13,7 +13,7 @@ void main() async {
 
   WindowOptions windowOptions = const WindowOptions(
     minimumSize: Size(1280, 720),
-    title: 'TTS Mod Vault 1.2.0-beta3',
+    title: 'TTS Mod Vault 1.2.0-beta4',
     center: true,
   );
 

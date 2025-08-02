@@ -3,6 +3,8 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
+import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -53,8 +55,9 @@ class SelectedModActionButtons extends HookConsumerWidget {
               return;
             }
 
-            if (selectedMod.backup == null) {
+            if (selectedMod.backupStatus == ExistingBackupStatusEnum.noBackup) {
               ref.read(backupProvider.notifier).createBackup(selectedMod);
+              return;
             }
 
             showConfirmDialog(

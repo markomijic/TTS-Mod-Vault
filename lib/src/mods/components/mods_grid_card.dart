@@ -84,13 +84,14 @@ class ModsGridCard extends HookConsumerWidget {
       return '$missingCount missing $fileLabel';
     }, [mod.totalExistsCount]);
 
-/*     final backupHasSameAssetCount = useMemoized(() {
-      if (displayMod.backup != null && displayMod.totalExistsCount != null) {
-        return displayMod.backup!.totalAssetCount ==
-            displayMod.totalExistsCount!;
+    final backupHasSameAssetCount = useMemoized(() {
+      if (mod.backup != null &&
+          mod.backup?.totalAssetCount != null &&
+          mod.totalExistsCount != null) {
+        return mod.backup!.totalAssetCount == mod.totalExistsCount!;
       }
       return true;
-    }, [displayMod.backup, displayMod.totalExistsCount]); */
+    }, [mod.backup, mod.totalExistsCount]);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -205,14 +206,16 @@ class ModsGridCard extends HookConsumerWidget {
                                   waitDuration: Duration(milliseconds: 300),
                                   message:
                                       'Update: ${formatTimestamp(mod.dateTimeStamp!) ?? 'N/A'}\n'
-                                      'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}',
-                                  //'${backupHasSameAssetCount ? '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}' : '\n\nBackup asset files count: ${displayMod.backup!.totalAssetCount}\nExisting asset files count: ${displayMod.totalExistsCount}'}',
+                                      'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}'
+                                      '${backupHasSameAssetCount || mod.backup!.totalAssetCount == null ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.totalExistsCount}'}',
                                   child: Icon(
                                     Icons.folder_zip_outlined,
                                     size: 20,
                                     color: mod.backupStatus ==
                                             ExistingBackupStatusEnum.upToDate
-                                        ? Colors.green
+                                        ? backupHasSameAssetCount
+                                            ? Colors.green
+                                            : Colors.yellow
                                         : Colors.red,
                                   ),
                                 ),

@@ -1,4 +1,4 @@
-import 'dart:io' show Directory, File;
+import 'dart:io' show Directory, File, Process, stderr;
 import 'dart:isolate' show Isolate;
 import 'dart:math' show max, min;
 import 'dart:io' show Platform;
@@ -105,70 +105,10 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       return null;
     }
   }
-
-// Disabled due to unresolved performance issues
-/*   Future<ExistingBackup?> getCompleteBackup(Mod mod) async {
-    try {
-      final backupFileName = getBackupFilenameByMod(mod);
-      final backup = _getMostRecentBackupByFilename(backupFileName);
-
-      if (backup == null) {
-        return backup;
-      }
-
-      if (backup.totalAssetCount == -1) {
-        final full = await _getBackupWithTotalAssetCount(backup);
-        addBackup(full);
-        return full;
-      }
-
-      return backup;
-    } catch (e) {
-      return null;
-    }
-  } 
-
-  Future<ExistingBackup> _getBackupWithTotalAssetCount(
-    ExistingBackup backup,
-  ) async {
-    final totalAssetCount = await _getTotalAssetCount(backup.filepath);
-
-    return backup.copyWith(totalAssetCount: totalAssetCount);
-  }  
-
-  Future<int> _getTotalAssetCount(String ttsmodPath) async {
-    const targetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
-
-    try {
-      final file = File(ttsmodPath);
-      final bytes = await file.readAsBytes();
-      final archive = ZipDecoder().decodeBytes(bytes);
-
-      int totalCount = 0;
-
-      for (final entry in archive) {
-        if (entry.isFile) {
-          final parentFolderName = path.basename(path.dirname(entry.name));
-
-          for (final folder in targetFolders) {
-            if (parentFolderName == folder) {
-              totalCount++;
-              break;
-            }
-          }
-        }
-      }
-
-      return totalCount;
-    } catch (e) {
-      debugPrint('getTotalFileCount - error reading $ttsmodPath: $e');
-      return 0;
-    }
-  } */
 }
 
 ///
-/// Top-level function required by Isolate.run
+/// Top-level functions required by Isolate.run
 ///
 Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
   final backups = <ExistingBackup>[];
@@ -176,13 +116,64 @@ Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
   for (final file in files) {
     final stat = await file.stat();
     final filename = path.basename(file.path);
+    final totalAssetCount = await listZipContents(file.path);
 
     backups.add(ExistingBackup(
       filename: filename,
       filepath: path.normalize(file.path),
       lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
+      totalAssetCount: totalAssetCount,
     ));
   }
 
   return backups;
+}
+
+Future<int?> listZipContents(String zipPath) async {
+  List<String> filePaths;
+  if (Platform.isWindows) {
+    filePaths = await _listWithTar(zipPath);
+  } else {
+    filePaths = await _listWithUnzip(zipPath);
+  }
+
+  final folderCounts = <String, int>{};
+  for (final path in filePaths) {
+    if (path.endsWith('/')) continue; // Skip folders
+    final folder =
+        path.contains('/') ? path.substring(0, path.lastIndexOf('/')) : 'root';
+    folderCounts.update(folder, (count) => count + 1, ifAbsent: () => 1);
+  }
+
+  // Calculate total for asset folders
+  const assetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
+  final assetTotal = assetFolders
+      .map((folder) => folderCounts['Mods/$folder'] ?? 0)
+      .fold(0, (a, b) => a + b);
+
+  return assetTotal;
+}
+
+Future<List<String>> _listWithUnzip(String zipPath) async {
+  final result = await Process.run('unzip', ['-Z1', zipPath]);
+
+  if (result.exitCode != 0) {
+    stderr.writeln('Error using unzip: ${result.stderr}');
+    return [];
+  }
+
+  final lines = (result.stdout as String).split('\n');
+  return lines.where((line) => line.trim().isNotEmpty).toList();
+}
+
+Future<List<String>> _listWithTar(String zipPath) async {
+  final result = await Process.run('tar', ['-tf', zipPath]);
+
+  if (result.exitCode != 0) {
+    stderr.writeln('Error using tar: ${result.stderr}');
+    return [];
+  }
+
+  final lines = (result.stdout as String).split('\n');
+  return lines.where((line) => line.trim().isNotEmpty).toList();
 }

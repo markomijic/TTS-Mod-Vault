@@ -79,7 +79,7 @@ class BulkBackupDialog extends HookConsumerWidget {
               spacing: 8,
               children: [
                 const Expanded(
-                  child: Text('Existing backup behavior:'),
+                  child: Text('Existing backups:'),
                 ),
                 DropdownButton<BulkBackupBehaviorEnum>(
                   value: selectedBehavior.value,

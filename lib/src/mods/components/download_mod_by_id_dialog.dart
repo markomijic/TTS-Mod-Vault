@@ -12,6 +12,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show CustomTooltip;
 import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
@@ -182,70 +184,75 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                         },
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton.icon(
-                  onPressed: downloading.value
-                      ? null
-                      : () async {
-                          try {
-                            final modId = textController.text;
-                            if (textController.text.isEmpty) {
-                              return;
-                            }
+                CustomTooltip(
+                  message:
+                      'Refresh data after successful download to load mod data',
+                  child: ElevatedButton.icon(
+                    onPressed: downloading.value
+                        ? null
+                        : () async {
+                            try {
+                              final modId = textController.text;
+                              if (textController.text.isEmpty) {
+                                return;
+                              }
 
-                            downloading.value = true;
+                              downloading.value = true;
 
-                            final url = Uri.parse(
-                              'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/',
-                            );
+                              final url = Uri.parse(
+                                'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/',
+                              );
 
-                            final response = await http.post(
-                              url,
-                              body: {
-                                'itemcount': '1',
-                                'publishedfileids[0]': modId.toString(),
-                              },
-                            );
+                              final response = await http.post(
+                                url,
+                                body: {
+                                  'itemcount': '1',
+                                  'publishedfileids[0]': modId.toString(),
+                                },
+                              );
 
-                            final responseData = json.decode(response.body);
-                            final fileDetails = responseData['response']
-                                ['publishedfiledetails'][0];
+                              final responseData = json.decode(response.body);
+                              final fileDetails = responseData['response']
+                                  ['publishedfiledetails'][0];
 
-                            final consumerAppId =
-                                fileDetails['consumer_app_id'];
-                            if (consumerAppId == 286160) {
-                              final fileUrl = fileDetails['file_url'];
-                              final previewUrl = fileDetails['preview_url'];
+                              final consumerAppId =
+                                  fileDetails['consumer_app_id'];
+                              if (consumerAppId == 286160) {
+                                final fileUrl = fileDetails['file_url'];
+                                final previewUrl = fileDetails['preview_url'];
 
-                              final resultMessage =
-                                  await downloadAndConvertBson(fileUrl, modId);
-                              await downloadAndResizeImage(previewUrl, modId);
+                                final resultMessage =
+                                    await downloadAndConvertBson(
+                                        fileUrl, modId);
+                                await downloadAndResizeImage(previewUrl, modId);
 
-                              if (context.mounted) {
-                                if (resultMessage.isNotEmpty) {
-                                  showSnackBar(context, resultMessage);
+                                if (context.mounted) {
+                                  if (resultMessage.isNotEmpty) {
+                                    showSnackBar(context, resultMessage);
+                                  }
+                                  Navigator.of(context).pop();
                                 }
-                                Navigator.of(context).pop();
+                              } else {
+                                debugPrint('Consumer app ID: $consumerAppId');
+                                if (context.mounted) {
+                                  showSnackBar(context,
+                                      'Consumer app ID does not match. Expected: 286160, Got: $consumerAppId');
+                                  Navigator.of(context).pop();
+                                }
                               }
-                            } else {
-                              debugPrint('Consumer app ID: $consumerAppId');
+                            } catch (e) {
+                              debugPrint('Error: $e');
                               if (context.mounted) {
-                                showSnackBar(context,
-                                    'Consumer app ID does not match. Expected: 286160, Got: $consumerAppId');
+                                showSnackBar(context, 'Error: $e');
                                 Navigator.of(context).pop();
                               }
+                            } finally {
+                              downloading.value = false;
                             }
-                          } catch (e) {
-                            debugPrint('Error: $e');
-                            if (context.mounted) {
-                              showSnackBar(context, 'Error: $e');
-                              Navigator.of(context).pop();
-                            }
-                          } finally {
-                            downloading.value = false;
-                          }
-                        },
-                  icon: Icon(Icons.download),
-                  label: const Text('Download'),
+                          },
+                    icon: Icon(Icons.download),
+                    label: const Text('Download'),
+                  ),
                 ),
               ],
             ),

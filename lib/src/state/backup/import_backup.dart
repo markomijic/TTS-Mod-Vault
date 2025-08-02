@@ -25,10 +25,13 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
         totalCount: 0,
       );
 
+      final backupsDir = ref.read(directoriesProvider).backupsDir;
+
       FilePickerResult? result;
       try {
         result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
+          initialDirectory: backupsDir.isEmpty ? null : backupsDir,
           allowedExtensions: ['ttsmod'],
           allowMultiple: false,
         );

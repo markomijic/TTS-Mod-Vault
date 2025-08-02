@@ -13,7 +13,8 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         Toolbar,
         ModsView,
         BulkActionsDropDownButton,
-        BulkActionsProgressBar;
+        BulkActionsProgressBar,
+        SortButton;
 import 'package:tts_mod_vault/src/mods/components/filter.dart'
     show FilterButton;
 import 'package:tts_mod_vault/src/mods/hooks/hooks.dart'
@@ -65,6 +66,7 @@ class ModsPage extends HookConsumerWidget {
                                           ModsSelector(),
                                           BulkActionsDropDownButton(),
                                           Search(),
+                                          SortButton(),
                                           FilterButton(),
                                         ],
                                       ),

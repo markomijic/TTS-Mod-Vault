@@ -240,10 +240,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       ref.read(sortAndFilterProvider.notifier).resetState();
       ref.read(sortAndFilterProvider.notifier).setFolders(allProcessedMods);
 
-      // Artificial delay to ensure atleast 1 second of visual refresh indicator
+      // Artificial delay to ensure at least 500ms of visual refresh indicator
       final stateEndTime = DateTime.now();
-      if (stateEndTime.difference(startTime) < Duration(seconds: 1)) {
-        await Future.delayed(Duration(seconds: 1));
+      final elapsed = stateEndTime.difference(startTime);
+      if (elapsed < Duration(milliseconds: 500)) {
+        final remainingTime = Duration(milliseconds: 500) - elapsed;
+        await Future.delayed(remainingTime);
       }
 
       state = AsyncValue.data(ModsState(

@@ -50,7 +50,7 @@ class ToolsMenu extends ConsumerWidget {
               },
             );
           },
-          leadingIcon: Icon(Icons.cleaning_services, color: Colors.black),
+          leadingIcon: Icon(Icons.delete, color: Colors.black),
           child: Text(
             'Cleanup',
             style: TextStyle(color: Colors.black),

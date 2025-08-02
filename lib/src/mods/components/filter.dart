@@ -11,8 +11,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModTypeProvider,
         settingsProvider,
         sortAndFilterProvider;
-import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
-    show SortOptionEnum;
 
 class FilterButton extends HookConsumerWidget {
   const FilterButton({super.key});
@@ -117,48 +115,6 @@ class FilterButton extends HookConsumerWidget {
             sortAndFilterNotifier.clearFilteredBackupStatuses();
             sortAndFilterNotifier.clearFilteredFolders(selectedModType);
           },
-        ),
-
-        // Main "Sort" submenu item
-        SubmenuButton(
-          style: MenuItemButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            iconColor: Colors.black,
-          ),
-          menuChildren: [
-            // Individual sort options
-            ...SortOptionEnum.values.map((sortOption) {
-              final isSelected = sortAndFilterState.sortOption == sortOption;
-
-              return MenuItemButton(
-                closeOnActivate: false,
-                style: MenuItemButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  iconColor: Colors.black,
-                ),
-                child: Row(
-                  spacing: 8,
-                  children: [
-                    Icon(isSelected ? Icons.check : null),
-                    Expanded(
-                      child: Text(
-                        sortOption.label,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                onPressed: () =>
-                    sortAndFilterNotifier.setSortOption(sortOption),
-              );
-            }),
-          ],
-          child: SizedBox(
-            width: 85,
-            child: Text('Sort'),
-          ),
         ),
 
         // Main "Folders" submenu item

@@ -26,8 +26,8 @@ class SortAndFilterState {
     required this.sortOption,
   });
 
-  factory SortAndFilterState.initial() {
-    return const SortAndFilterState(
+  factory SortAndFilterState.initial(SortOptionEnum? sortOption) {
+    return SortAndFilterState(
       modsFolders: {},
       savesFolders: {},
       savedObjectsFolders: {},
@@ -35,7 +35,7 @@ class SortAndFilterState {
       filteredSavesFolders: {},
       filteredSavedObjectsFolders: {},
       filteredBackupStatuses: {},
-      sortOption: SortOptionEnum.alphabeticalAsc,
+      sortOption: sortOption ?? SortOptionEnum.alphabeticalAsc,
     );
   }
 
@@ -65,10 +65,10 @@ class SortAndFilterState {
 }
 
 enum SortOptionEnum {
-  alphabeticalAsc('Alphabetically'),
+  alphabeticalAsc('A-Z'),
   //alphabeticalDesc('Z-A'),
-  //dateCreatedAsc('Oldest first'),
-  dateCreatedDesc('Recently added');
+  //dateCreatedAsc('Oldest'),
+  dateCreatedDesc('Newest');
 
   final String label;
   const SortOptionEnum(this.label);

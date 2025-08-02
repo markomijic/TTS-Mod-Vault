@@ -11,7 +11,7 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.da
 class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   Ref ref;
 
-  SortAndFilterNotifier(this.ref) : super(SortAndFilterState.initial());
+  SortAndFilterNotifier(this.ref) : super(SortAndFilterState.initial(null));
 
   void setFolders(List<Mod> mods) {
     for (final mod in mods) {
@@ -40,7 +40,7 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   }
 
   void resetState() {
-    state = SortAndFilterState.initial();
+    state = SortAndFilterState.initial(state.sortOption);
   }
 
   // Methods to add folders

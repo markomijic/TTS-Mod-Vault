@@ -44,7 +44,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
     state = state.copyWith(message: "");
   }
 
-  Future<void> createBackup(Mod mod, [String? backupAllDir]) async {
+  Future<void> createBackup(Mod mod, [String? backupDirectory]) async {
     state = state.copyWith(
       status: BackupStatusEnum.awaitingBackupFolder,
       currentCount: 0,
@@ -54,7 +54,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
     final backupsDir = ref.read(directoriesProvider).backupsDir;
 
-    final backupDirPath = backupAllDir ??
+    final backupDirPath = backupDirectory ??
         await FilePicker.platform.getDirectoryPath(
           lockParentWindow: true,
           initialDirectory: backupsDir.isEmpty ? null : backupsDir,

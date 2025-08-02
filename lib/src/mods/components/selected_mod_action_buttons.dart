@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -9,6 +10,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         downloadProvider,
         modsProvider;
+import 'package:tts_mod_vault/src/utils.dart' show showConfirmDialog;
 
 class SelectedModActionButtons extends HookConsumerWidget {
   final Mod selectedMod;
@@ -33,8 +35,12 @@ class SelectedModActionButtons extends HookConsumerWidget {
       spacing: 8,
       children: [
         ElevatedButton(
-          onPressed: hasMissingFiles && !actionInProgress
+          onPressed: hasMissingFiles
               ? () async {
+                  if (actionInProgress) {
+                    return;
+                  }
+
                   await downloadNotifier.downloadAllFiles(selectedMod);
                   await modsNotifier.updateSelectedMod(selectedMod);
                 }
@@ -42,12 +48,30 @@ class SelectedModActionButtons extends HookConsumerWidget {
           child: const Text('Download'),
         ),
         ElevatedButton(
-          onPressed: () {
+          onPressed: () async {
             if (actionInProgress) {
               return;
             }
 
-            ref.read(backupProvider.notifier).createBackup(selectedMod);
+            if (selectedMod.backup == null) {
+              ref.read(backupProvider.notifier).createBackup(selectedMod);
+            }
+
+            showConfirmDialog(
+              context,
+              'Backup already exists. Replace existing file?',
+              () {
+                final backupFolder = p.dirname(selectedMod.backup!.filepath);
+
+                ref.read(backupProvider.notifier).createBackup(
+                      selectedMod,
+                      backupFolder,
+                    );
+              },
+              () {
+                ref.read(backupProvider.notifier).createBackup(selectedMod);
+              },
+            );
           },
           child: const Text('Backup'),
         ),

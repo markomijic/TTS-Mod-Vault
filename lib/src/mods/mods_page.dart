@@ -15,7 +15,7 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         BulkActionsDropDownButton,
         BulkActionsProgressBar,
         SortButton;
-import 'package:tts_mod_vault/src/mods/components/filter.dart'
+import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
     show FilterButton;
 import 'package:tts_mod_vault/src/mods/hooks/hooks.dart'
     show useCleanupSnackbar, useBackupSnackbar;

@@ -25,7 +25,11 @@ class DownloadModByIdDialog extends HookConsumerWidget {
     final downloading = useState(false);
     final textController = useTextEditingController();
 
-    Future<void> downloadAndResizeImage(String imageUrl, String modId) async {
+    Future<void> downloadAndResizeImage(dynamic imageUrl, String modId) async {
+      if (imageUrl is! String) {
+        return;
+      }
+
       try {
         // Download the image
         final response = await http.get(Uri.parse(imageUrl));
@@ -82,12 +86,15 @@ class DownloadModByIdDialog extends HookConsumerWidget {
       }
     }
 
-    Future<void> downloadAndConvertBson(String fileUrl, String modId) async {
+    Future<String> downloadAndConvertBson(dynamic fileUrl, String modId) async {
+      if (fileUrl is! String) {
+        return "Invalid url: $fileUrl";
+      }
+
       try {
         final response = await http.get(Uri.parse(fileUrl));
         if (response.statusCode != 200) {
-          debugPrint('Failed to download BSON file');
-          return;
+          return "Failed to download BSON file from $fileUrl";
         }
 
         final bsonBinary = BsonBinary.from(response.bodyBytes);
@@ -101,9 +108,9 @@ class DownloadModByIdDialog extends HookConsumerWidget {
         final file = File(filePath);
 
         await file.writeAsString(jsonString);
-        debugPrint('JSON saved to: $filePath');
+        return 'Mod saved to: $filePath';
       } catch (e) {
-        debugPrint('Error processing BSON file: $e');
+        return 'Error for mod json file: $e';
       }
     }
 
@@ -200,7 +207,6 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                             );
 
                             final responseData = json.decode(response.body);
-
                             final fileDetails = responseData['response']
                                 ['publishedfiledetails'][0];
 
@@ -210,19 +216,30 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                               final fileUrl = fileDetails['file_url'];
                               final previewUrl = fileDetails['preview_url'];
 
-                              await downloadAndConvertBson(fileUrl, modId);
+                              final resultMessage =
+                                  await downloadAndConvertBson(fileUrl, modId);
                               await downloadAndResizeImage(previewUrl, modId);
+
                               if (context.mounted) {
+                                if (resultMessage.isNotEmpty) {
+                                  showSnackBar(context, resultMessage);
+                                }
                                 Navigator.of(context).pop();
                               }
                             } else {
-                              debugPrint(
-                                  'Consumer app ID does not match. Expected: 286160, Got: $consumerAppId');
+                              debugPrint('Consumer app ID: $consumerAppId');
+                              if (context.mounted) {
+                                showSnackBar(context,
+                                    'Consumer app ID does not match. Expected: 286160, Got: $consumerAppId');
+                                Navigator.of(context).pop();
+                              }
                             }
                           } catch (e) {
                             debugPrint('Error: $e');
-
-                            // TODO add show snackbar for errors
+                            if (context.mounted) {
+                              showSnackBar(context, 'Error: $e');
+                              Navigator.of(context).pop();
+                            }
                           } finally {
                             downloading.value = false;
                           }

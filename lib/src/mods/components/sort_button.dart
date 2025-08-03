@@ -36,7 +36,10 @@ class SortButton extends HookConsumerWidget {
             Icons.sort,
             size: 20,
           ),
-          label: Text(sortAndFilterState.sortOption.label),
+          label: Text(
+            sortAndFilterState.sortOption.label,
+            textAlign: TextAlign.center,
+          ),
         );
       },
       menuChildren: [

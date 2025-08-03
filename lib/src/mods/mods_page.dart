@@ -12,7 +12,6 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         SelectedModView,
         Toolbar,
         ModsView,
-        BulkActionsDropDownButton,
         BulkActionsProgressBar,
         SortButton;
 import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
@@ -64,7 +63,6 @@ class ModsPage extends HookConsumerWidget {
                                         spacing: 8,
                                         children: [
                                           ModsSelector(),
-                                          BulkActionsDropDownButton(),
                                           Search(),
                                           SortButton(),
                                           FilterButton(),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show HelpMenu, ToolsMenu;
+    show HelpMenu, ToolsMenu, BulkActionsDropDownButton;
 import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -59,6 +59,7 @@ class Toolbar extends ConsumerWidget {
           icon: const Icon(Icons.unarchive),
           label: const Text('Import backup'),
         ),
+        BulkActionsDropDownButton(),
         ToolsMenu(),
         HelpMenu(),
       ],

@@ -42,7 +42,9 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
   Future<void> createBackup(Mod mod, [String? backupDirectory]) async {
     state = state.copyWith(
-      status: BackupStatusEnum.awaitingBackupFolder,
+      status: backupDirectory != null && backupDirectory.isNotEmpty
+          ? BackupStatusEnum.backingUp
+          : BackupStatusEnum.awaitingBackupFolder,
       currentCount: 0,
       totalCount: 0,
       message: "",
@@ -50,11 +52,12 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
     final backupsDir = ref.read(directoriesProvider).backupsDir;
 
-    final backupDirPath = backupDirectory ??
-        await FilePicker.platform.getDirectoryPath(
-          lockParentWindow: true,
-          initialDirectory: backupsDir.isEmpty ? null : backupsDir,
-        );
+    final backupDirPath = backupDirectory != null && backupDirectory.isNotEmpty
+        ? backupDirectory
+        : await FilePicker.platform.getDirectoryPath(
+            lockParentWindow: true,
+            initialDirectory: backupsDir.isEmpty ? null : backupsDir,
+          );
 
     if (backupDirPath == null) {
       state = state.copyWith(status: BackupStatusEnum.idle);

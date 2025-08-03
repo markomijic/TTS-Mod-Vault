@@ -36,6 +36,28 @@ void showChangelogDialog(BuildContext context) {
 
 String getChangelog() {
   return """
+v1.2.0
+· Backup filename format changed
+Version 1.2.0 updates the backup file naming format to match TTS Mod Backup
+Backups created with TTS Mod Vault versions 1.0.0 to 1.1.0 must be renamed to work with the new Backup state feature.
+
+A renaming tool is available under:
+Tools → Rename old backups
+
+Features:
+· Backup state
+· Sort & Filter
+· Bulk actions:
+    Download All
+    Backup All
+    Download & Backup All
+· Download Workshop Mod by ID
+
+Changes:
+· UI updates
+· New settings options
+· General improvements and fixes
+
 v1.1.0
 Features:
 · Search

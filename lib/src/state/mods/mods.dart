@@ -424,7 +424,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     return batches;
   }
 
-  Future<Map<String, String>> getUrlsByMod(Mod mod) async {
+  Future<Map<String, String>> getUrlsByMod(Mod mod,
+      [bool forceExtraction = false]) async {
+    if (forceExtraction) {
+      return await extractUrlsFromJson(mod.jsonFilePath);
+    }
+
     return ref.read(storageProvider).getModUrls(mod.jsonFileName) ??
         await extractUrlsFromJson(mod.jsonFilePath);
   }
@@ -655,9 +660,15 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
             .setExistingAssetsListByType(assetType);
       }
 
-      await ref.read(storageProvider).deleteMod(selectedMod.jsonFileName);
+      final jsonURLs = await getUrlsByMod(selectedMod, true);
+      final completeMod = getCompleteMod(selectedMod, jsonURLs);
 
-      await updateSelectedMod(selectedMod);
+      await ref
+          .read(storageProvider)
+          .updateModUrls(selectedMod.jsonFileName, jsonURLs);
+
+      updateMod(completeMod);
+      setSelectedMod(completeMod);
     } catch (e) {
       debugPrint('updateModAsset error: $e');
       state = AsyncValue.error(e, StackTrace.current);
@@ -665,7 +676,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   Future<void> _renameAssetFile(
-      String currentFilePath, String newAssetUrl) async {
+    String currentFilePath,
+    String newAssetUrl,
+  ) async {
     final file = File(currentFilePath);
 
     final newPath = path.join(file.parent.path,
@@ -681,8 +694,16 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   ) async {
     String jsonString = await File(filePath).readAsString();
 
-    String updatedJsonString = jsonString.replaceAll(oldUrl, newUrl);
+    final oldUrlAsCloudUrl = oldUrl.startsWith(newSteamUserContentUrl)
+        ? oldUrl.replaceFirst(newSteamUserContentUrl, oldCloudUrl)
+        : '';
 
-    await File(filePath).writeAsString(updatedJsonString);
+    final targetUrl =
+        oldUrlAsCloudUrl.isNotEmpty && jsonString.contains(oldUrlAsCloudUrl)
+            ? oldUrlAsCloudUrl
+            : oldUrl;
+
+    await File(filePath)
+        .writeAsString(jsonString.replaceAll(targetUrl, newUrl));
   }
 }

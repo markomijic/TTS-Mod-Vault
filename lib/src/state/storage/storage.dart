@@ -99,18 +99,23 @@ class Storage {
     return _metadataBox.get('$modName$dateTimeStampSuffix');
   }
 
+  Future<void> updateModUrls(
+      String jsonFileName, Map<String, String> newUrls) async {
+    await _urlsBox.put(jsonFileName, newUrls);
+  }
+
   Map<String, String>? getModUrls(String jsonFileName) {
     final urls = _urlsBox.get(jsonFileName);
     if (urls == null) return null;
     return Map<String, String>.from(urls);
   }
 
-  Future<void> deleteMod(String modName) async {
+  /* Future<void> deleteMod(String modName) async {
     await Future.wait([
       _metadataBox.delete('$modName$dateTimeStampSuffix'),
       _urlsBox.delete(modName)
     ]);
-  }
+  } */
 
   // Bulk operations for better performance with many mods
   Future<void> saveAllModUrlsData(

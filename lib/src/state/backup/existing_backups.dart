@@ -43,17 +43,48 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       return;
     }
 
+    // Split files into ASCII and Unicode groups
+    final asciiFiles = <File>[];
+    final unicodeFiles = <File>[];
+
+    for (final file in files) {
+      if (_containsUnicode(file.path)) {
+        unicodeFiles.add(file);
+      } else {
+        asciiFiles.add(file);
+      }
+    }
+
+    debugPrint(
+        'loadExistingBackups - Processing ${asciiFiles.length} ASCII files in isolates, ${unicodeFiles.length} Unicode files in main thread');
+
     final numberOfIsolates = max(Platform.numberOfProcessors - 2, 2);
-    final chunkedFiles = _chunkList(files, numberOfIsolates);
-    final futures = chunkedFiles
+    final chunkedAsciiFiles = _chunkList(asciiFiles, numberOfIsolates);
+    final futures = chunkedAsciiFiles
         .map((chunk) => Isolate.run(() => _processBackupFiles(chunk)))
         .toList();
+
+    if (unicodeFiles.isNotEmpty) {
+      futures.add(_processBackupFiles(unicodeFiles));
+    }
 
     final results = await Future.wait(futures);
     final backups = results.expand((list) => list).toList();
 
     state = ExistingBackupsState(backups: backups);
     debugPrint('loadExistingBackups - finished at ${DateTime.now()}');
+  }
+
+  bool _containsUnicode(String filePath) {
+    final fileName = path.basename(filePath);
+
+    // Check if any character in the filename is outside ASCII range (0-127)
+    for (int i = 0; i < fileName.length; i++) {
+      if (fileName.codeUnitAt(i) > 127) {
+        return true;
+      }
+    }
+    return false;
   }
 
   List<List<T>> _chunkList<T>(List<T> list, int chunkSize) {
@@ -115,16 +146,20 @@ Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
   final backups = <ExistingBackup>[];
 
   for (final file in files) {
-    final stat = await file.stat();
-    final filename = path.basename(file.path);
-    final totalAssetCount = await listZipContents(file.path);
+    try {
+      final stat = await file.stat();
+      final filename = path.basename(file.path);
+      final totalAssetCount = await listZipContents(file.path);
 
-    backups.add(ExistingBackup(
-      filename: filename,
-      filepath: path.normalize(file.path),
-      lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
-      totalAssetCount: totalAssetCount,
-    ));
+      backups.add(ExistingBackup(
+        filename: filename,
+        filepath: path.normalize(file.path),
+        lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
+        totalAssetCount: totalAssetCount,
+      ));
+    } catch (e) {
+      debugPrint("_processBackupFiles error $e");
+    }
   }
 
   return backups;

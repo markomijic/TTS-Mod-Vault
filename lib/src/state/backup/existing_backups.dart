@@ -3,6 +3,7 @@ import 'dart:isolate' show Isolate;
 import 'dart:math' show max, min;
 import 'dart:io' show Platform;
 
+import 'package:archive/archive.dart' show ZipDecoder;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as path;
@@ -155,25 +156,53 @@ Future<int?> listZipContents(String zipPath) async {
 }
 
 Future<List<String>> _listWithUnzip(String zipPath) async {
-  final result = await Process.run('unzip', ['-Z1', zipPath]);
+  try {
+    final result = await Process.run('unzip', ['-Z1', zipPath]);
 
-  if (result.exitCode != 0) {
-    stderr.writeln('Error using unzip: ${result.stderr}');
-    return [];
+    if (result.exitCode != 0) {
+      stderr.writeln('_listWithUnzip result error: ${result.stderr}');
+      return _fallbackToDartZip(zipPath);
+    }
+
+    final lines = (result.stdout as String).split('\n');
+    return lines.where((line) => line.trim().isNotEmpty).toList();
+  } catch (e) {
+    stderr.writeln('_listWithUnzip error: $e');
+    return _fallbackToDartZip(zipPath);
   }
-
-  final lines = (result.stdout as String).split('\n');
-  return lines.where((line) => line.trim().isNotEmpty).toList();
 }
 
 Future<List<String>> _listWithTar(String zipPath) async {
-  final result = await Process.run('tar', ['-tf', zipPath]);
+  try {
+    final result = await Process.run('tar', ['-tf', zipPath]);
 
-  if (result.exitCode != 0) {
-    stderr.writeln('Error using tar: ${result.stderr}');
+    if (result.exitCode != 0) {
+      stderr.writeln('_listWithTar result error: ${result.stderr}');
+      return _fallbackToDartZip(zipPath);
+    }
+
+    final lines = (result.stdout as String).split('\n');
+    return lines.where((line) => line.trim().isNotEmpty).toList();
+  } catch (e) {
+    stderr.writeln('_listWithTar error: $e');
+    return _fallbackToDartZip(zipPath);
+  }
+}
+
+Future<List<String>> _fallbackToDartZip(String zipPath) async {
+  stderr.writeln('Falling back to Dart archive package for: $zipPath');
+
+  try {
+    final bytes = await File(zipPath).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    return archive.files
+        // Normalize to forward slashes to align with Tar and Unzip methods
+        .map((file) => file.name.trim().replaceAll('\\', '/'))
+        .where((name) => name.isNotEmpty)
+        .toList();
+  } catch (e) {
+    stderr.writeln('_fallbackToDartZip error: $e');
     return [];
   }
-
-  final lines = (result.stdout as String).split('\n');
-  return lines.where((line) => line.trim().isNotEmpty).toList();
 }

@@ -175,7 +175,7 @@ class ModsListItem extends HookConsumerWidget {
                           CustomTooltip(
                             waitDuration: Duration(milliseconds: 300),
                             message:
-                                'Update: ${formatTimestamp(mod.dateTimeStamp!) ?? 'N/A'}\n'
+                                'Update: ${formatTimestamp(mod.dateTimeStamp) ?? 'N/A'}\n'
                                 'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}'
                                 '${backupHasSameAssetCount || mod.backup!.totalAssetCount == null ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.totalExistsCount}'}',
                             child: Icon(

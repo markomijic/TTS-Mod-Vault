@@ -378,8 +378,21 @@ String? _extractDateTimeStampFromString(String jsonString) {
 
 String? _dateTimeToUnixTimestampSync(String dateValue) {
   try {
-    DateFormat format = DateFormat('M/d/yyyy h:mm:ss a');
-    DateTime dateTime = format.parse(dateValue);
+    DateFormat format;
+
+    if (dateValue.toUpperCase().contains('AM') ||
+        dateValue.toUpperCase().contains('PM')) {
+      format = DateFormat('M/d/yyyy h:mm:ss a');
+    } else {
+      format = DateFormat('MM/dd/yyyy HH:mm:ss');
+    }
+
+    final dateTime = format.tryParse(dateValue);
+
+    if (dateTime == null) {
+      return null;
+    }
+
     return (dateTime.millisecondsSinceEpoch ~/ 1000).toString();
   } catch (e) {
     return null;

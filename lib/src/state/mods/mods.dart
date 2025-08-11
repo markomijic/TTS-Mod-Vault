@@ -267,7 +267,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         final mod = allProcessedMods.firstWhereOrNull(
             (m) => m.jsonFilePath == selectedMod.jsonFilePath);
 
-        if (mod != null) updateSelectedMod(mod);
+        if (mod != null) {
+          updateSelectedMod(mod);
+        } else {
+          resetSelectedMod();
+        }
       }
 
       final endTime = DateTime.now();
@@ -636,6 +640,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
   void setSelectedMod(Mod mod) {
     ref.read(selectedModProvider.notifier).state = mod;
+  }
+
+  void resetSelectedMod() {
+    ref.read(selectedModProvider.notifier).state = null;
   }
 
   Future<void> updateModAsset({

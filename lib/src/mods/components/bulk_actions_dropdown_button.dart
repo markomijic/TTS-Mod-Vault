@@ -98,15 +98,15 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
         Widget? child,
       ) {
         return ElevatedButton.icon(
-          onPressed: () {
-            if (actionInProgress) return;
-
-            if (controller.isOpen) {
-              controller.close();
-            } else {
-              controller.open();
-            }
-          },
+          onPressed: actionInProgress
+              ? null
+              : () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
           label: Text('Bulk actions'),
           icon: Icon(
             Icons.arrow_drop_down,

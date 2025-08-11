@@ -15,6 +15,19 @@ class App extends StatelessWidget {
       darkTheme: darkTheme,
       themeMode: ThemeMode.dark,
       initialRoute: '/',
+      /* 
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child!,
+            Align(
+              alignment: Alignment.centerRight,
+              child: DebugConsole(height: 300),
+            ),
+          ],
+        );
+      },
+       */
       routes: {
         '/': (context) => const SplashPage(),
         '/mods': (context) => const ModsPage(),

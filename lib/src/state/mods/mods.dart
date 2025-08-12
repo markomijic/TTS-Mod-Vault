@@ -67,13 +67,19 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     state = const AsyncValue.loading();
 
     try {
-      ref.read(loadingMessageProvider.notifier).state =
-          'Loading existing files';
+      // Contains setting loading message provider
+      await ref.read(existingBackupsProvider.notifier).loadExistingBackups();
+    } catch (e) {
+      debugPrint("loadModsData - error on loading existing backups: $e");
+    }
 
-      await Future.wait([
-        ref.read(existingBackupsProvider.notifier).loadExistingBackups(),
-        ref.read(existingAssetListsProvider.notifier).loadExistingAssetsLists()
-      ]);
+    try {
+      ref.read(loadingMessageProvider.notifier).state =
+          'Loading existing asset files';
+
+      await ref
+          .read(existingAssetListsProvider.notifier)
+          .loadExistingAssetsLists();
 
       ref.read(loadingMessageProvider.notifier).state =
           'Creating lists of items to load';

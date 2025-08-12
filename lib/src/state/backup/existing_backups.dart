@@ -12,7 +12,8 @@ import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart'
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show directoriesProvider, loadingMessageProvider;
 import 'package:tts_mod_vault/src/utils.dart' show getBackupFilenameByMod;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
@@ -42,6 +43,8 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       state = ExistingBackupsState(backups: []);
       return;
     }
+
+    ref.read(loadingMessageProvider.notifier).state = 'Loading backup files';
 
     // Split files into ASCII and Unicode groups
     final asciiFiles = <File>[];

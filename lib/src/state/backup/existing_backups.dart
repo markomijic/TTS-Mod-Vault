@@ -28,6 +28,8 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     final directory = Directory(backupsDir);
 
     if (backupsDir.isEmpty || !directory.existsSync()) {
+      debugPrint(
+          'loadExistingBackups - finished at ${DateTime.now()} - backups dir is not set or directory does not exist');
       state = ExistingBackupsState(backups: []);
       return;
     }
@@ -40,6 +42,8 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
         .toList();
 
     if (files.isEmpty) {
+      debugPrint(
+          'loadExistingBackups - finished at ${DateTime.now()} - files are empty');
       state = ExistingBackupsState(backups: []);
       return;
     }

@@ -1,5 +1,9 @@
 import 'dart:isolate' show SendPort;
 
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+
 enum BackupStatusEnum {
   idle,
   awaitingBackupFolder,
@@ -68,4 +72,10 @@ class BackupIsolateData {
     required this.savesPath,
     required this.sendPort,
   });
+}
+
+class FilepathsIsolateData {
+  final Mod mod;
+  final Map<AssetTypeEnum, String> directories;
+  FilepathsIsolateData(this.mod, this.directories);
 }

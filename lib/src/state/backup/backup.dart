@@ -1,7 +1,7 @@
-import 'dart:io' show Directory, FileSystemEntity, File;
+import 'dart:io' show Directory, File;
 import 'dart:isolate' show ReceivePort, Isolate;
 
-import 'package:archive/archive.dart' show Archive, ArchiveFile, ZipEncoder;
+import 'package:archive/archive_io.dart' show ZipFileEncoder;
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart' show debugPrint;
@@ -10,11 +10,12 @@ import 'package:path/path.dart' as p
     show basenameWithoutExtension, join, normalize, relative;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show
-        BackupState,
-        BackupStatusEnum,
+        BackupCompleteMessage,
         BackupIsolateData,
         BackupProgressMessage,
-        BackupCompleteMessage;
+        BackupState,
+        BackupStatusEnum,
+        FilepathsIsolateData;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
@@ -67,46 +68,19 @@ class BackupNotifier extends StateNotifier<BackupState> {
     state = state.copyWith(status: BackupStatusEnum.backingUp);
 
     try {
-      // Prepare file paths
-      final filePaths = <String>[];
+      final filepathsData = FilepathsIsolateData(
+        mod,
+        {
+          for (final type in AssetTypeEnum.values)
+            type:
+                ref.read(directoriesProvider.notifier).getDirectoryByType(type)
+        },
+      );
 
-      for (final type in AssetTypeEnum.values) {
-        final directory = Directory(
-            ref.read(directoriesProvider.notifier).getDirectoryByType(type));
-        if (!await directory.exists()) continue;
+      final filePaths =
+          await Isolate.run(() => _getFilePathsIsolate(filepathsData));
+      final totalAssetCount = filePaths.$2;
 
-        final List<FileSystemEntity> files = directory.listSync();
-
-        mod.getAssetsByType(type).forEach((asset) {
-          final assetFile = files.firstWhereOrNull((file) {
-            if (asset.filePath == null) return false;
-
-            final name = p.basenameWithoutExtension(file.path);
-            final newUrlBase = p.basenameWithoutExtension(asset.filePath!);
-
-            final oldUrlBase = newUrlBase.replaceFirst(
-              getFileNameFromURL(newSteamUserContentUrl),
-              getFileNameFromURL(oldCloudUrl),
-            );
-
-            return name.startsWith(newUrlBase) || name.startsWith(oldUrlBase);
-          });
-
-          if (assetFile != null && assetFile.path.isNotEmpty) {
-            filePaths.add(p.normalize(assetFile.path));
-          }
-        });
-      }
-
-      final totalAssetCount = filePaths.length;
-
-      // Add JSON and image filepaths
-      filePaths.add(mod.jsonFilePath);
-      if (mod.imageFilePath != null && mod.imageFilePath!.isNotEmpty) {
-        filePaths.add(mod.imageFilePath!);
-      }
-
-      // Set up isolate communication
       final receivePort = ReceivePort();
       final backupFileName = getBackupFilenameByMod(mod);
       final targetBackupFilePath = p.join(backupDirPath, backupFileName);
@@ -115,7 +89,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
       final savesDir = Directory(ref.read(directoriesProvider).savesDir);
 
       final isolateData = BackupIsolateData(
-        filePaths: filePaths,
+        filePaths: filePaths.$1,
         targetBackupFilePath: targetBackupFilePath,
         modsParentPath: modsDir.parent.path,
         savesParentPath: savesDir.parent.path,
@@ -164,22 +138,62 @@ class BackupNotifier extends StateNotifier<BackupState> {
   }
 }
 
+(List<String>, int) _getFilePathsIsolate(FilepathsIsolateData data) {
+  final filePaths = <String>[];
+
+  for (final type in AssetTypeEnum.values) {
+    final dirPath = data.directories[type];
+    if (dirPath == null) continue;
+
+    final directory = Directory(dirPath);
+    if (!directory.existsSync()) continue;
+
+    final files = directory.listSync();
+    data.mod.getAssetsByType(type).forEach((asset) {
+      if (asset.filePath == null) return;
+
+      final newUrlBase = p.basenameWithoutExtension(asset.filePath!);
+      final oldUrlBase = newUrlBase.replaceFirst(
+        getFileNameFromURL(newSteamUserContentUrl),
+        getFileNameFromURL(oldCloudUrl),
+      );
+
+      final match = files.firstWhereOrNull((file) {
+        final base = p.basenameWithoutExtension(file.path);
+        return base.startsWith(newUrlBase) || base.startsWith(oldUrlBase);
+      });
+
+      if (match != null && match.path.isNotEmpty) {
+        filePaths.add(p.normalize(match.path));
+      }
+    });
+  }
+
+  final assetFilesCount = filePaths.length;
+
+  // Add JSON and image filepaths
+  filePaths.add(data.mod.jsonFilePath);
+  if (data.mod.imageFilePath != null && data.mod.imageFilePath!.isNotEmpty) {
+    filePaths.add(data.mod.imageFilePath!);
+  }
+
+  return (filePaths, assetFilesCount);
+}
+
 void _backupIsolate(BackupIsolateData data) async {
   try {
-    final archive = Archive();
+    final encoder = ZipFileEncoder();
+    encoder.create(data.targetBackupFilePath);
 
     for (int i = 0; i < data.filePaths.length; i++) {
       final filePath = data.filePaths[i];
       final file = File(filePath);
 
       if (!await file.exists()) {
-        // Skip missing files but continue
         continue;
       }
 
       try {
-        final fileData = await file.readAsBytes();
-
         final isInSavesPath = filePath.startsWith(p.normalize(data.savesPath));
 
         final relativePath = p.relative(
@@ -187,31 +201,22 @@ void _backupIsolate(BackupIsolateData data) async {
           from: isInSavesPath ? data.savesParentPath : data.modsParentPath,
         );
 
-        final archiveFile =
-            ArchiveFile(relativePath, fileData.length, fileData);
-        archive.addFile(archiveFile);
+        await encoder.addFile(file, relativePath);
 
-        // Send progress update
-        data.sendPort.send(BackupProgressMessage(i + 1, data.filePaths.length));
+        data.sendPort.send(
+          BackupProgressMessage(i + 1, data.filePaths.length),
+        );
       } catch (e) {
-        // Log error but continue with other files
-        debugPrint('Error reading file $filePath: $e');
+        debugPrint('Error adding file $filePath: $e');
       }
     }
 
-    if (archive.files.isEmpty) {
-      data.sendPort.send(
-          BackupCompleteMessage(false, 'No valid files to create a backup'));
-      return;
-    }
-
-    // Encode and write the archive
-    final zipData = ZipEncoder().encode(archive);
-    final backupFile = File(data.targetBackupFilePath);
-    await backupFile.writeAsBytes(zipData);
+    await encoder.close();
 
     data.sendPort.send(BackupCompleteMessage(
-        true, 'Backup has been created at ${data.targetBackupFilePath}'));
+      true,
+      'Backup has been created at ${data.targetBackupFilePath}',
+    ));
   } catch (e) {
     data.sendPort.send(BackupCompleteMessage(false, e.toString()));
   }

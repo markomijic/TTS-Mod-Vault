@@ -7,7 +7,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
-import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show directoriesProvider, settingsProvider;
 
 class BulkBackupDialog extends HookConsumerWidget {
   final String title;
@@ -24,6 +25,7 @@ class BulkBackupDialog extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final backupsDir = ref.watch(directoriesProvider).backupsDir;
+    final showBackupState = ref.watch(settingsProvider).showBackupState;
     final selectedBehavior = useState(initialBehavior);
     final selectedFolder = useState(ref.read(directoriesProvider).backupsDir);
 
@@ -118,6 +120,15 @@ class BulkBackupDialog extends HookConsumerWidget {
                 ),
               ],
             ),
+            if (backupsDir.isEmpty && showBackupState)
+              Row(
+                spacing: 4,
+                children: [
+                  Icon(Icons.warning),
+                  Text(
+                      'Set a backups folder in Settings to preserve backup state after restart or data refresh'),
+                ],
+              ),
             Text('Save folder: ${selectedFolder.value}'),
           ],
         ),

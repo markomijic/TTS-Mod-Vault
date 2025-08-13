@@ -64,7 +64,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
-          ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
+          await ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
 
       ref.read(modsProvider.notifier).setSelectedMod(completeMod);
       await ref.read(downloadProvider.notifier).downloadAllFiles(completeMod);
@@ -131,7 +131,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
-          ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
+          await ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
 
       ref.read(modsProvider.notifier).setSelectedMod(completeMod);
       await ref
@@ -175,7 +175,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
-          ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
+          await ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
       ref.read(modsProvider.notifier).setSelectedMod(completeMod);
 
       await ref.read(downloadProvider.notifier).downloadAllFiles(completeMod);

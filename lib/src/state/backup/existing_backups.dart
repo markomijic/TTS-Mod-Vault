@@ -144,11 +144,87 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       return null;
     }
   }
+
+  Future<int> listZipContents(String zipPath) async {
+    List<String> filePaths;
+    if (Platform.isWindows) {
+      filePaths = await _listWithTar(zipPath);
+    } else {
+      filePaths = await _listWithUnzip(zipPath);
+    }
+
+    final folderCounts = <String, int>{};
+    for (final path in filePaths) {
+      if (path.endsWith('/')) continue; // Skip folders
+      final folder = path.contains('/')
+          ? path.substring(0, path.lastIndexOf('/'))
+          : 'root';
+      folderCounts.update(folder, (count) => count + 1, ifAbsent: () => 1);
+    }
+
+    // Calculate total for asset folders
+    const assetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
+    final assetTotal = assetFolders
+        .map((folder) => folderCounts['Mods/$folder'] ?? 0)
+        .fold(0, (a, b) => a + b);
+
+    return assetTotal;
+  }
+
+  Future<List<String>> _listWithUnzip(String zipPath) async {
+    try {
+      final result = await Process.run('unzip', ['-Z1', zipPath]);
+
+      if (result.exitCode != 0) {
+        stderr.writeln('_listWithUnzip result error: ${result.stderr}');
+        return _fallbackToDartZip(zipPath);
+      }
+
+      final lines = (result.stdout as String).split('\n');
+      return lines.where((line) => line.trim().isNotEmpty).toList();
+    } catch (e) {
+      stderr.writeln('_listWithUnzip error: $e');
+      return _fallbackToDartZip(zipPath);
+    }
+  }
+
+  Future<List<String>> _listWithTar(String zipPath) async {
+    try {
+      final result = await Process.run('tar', ['-tf', zipPath]);
+
+      if (result.exitCode != 0) {
+        stderr.writeln('_listWithTar result error: ${result.stderr}');
+        return _fallbackToDartZip(zipPath);
+      }
+
+      final lines = (result.stdout as String).split('\n');
+      return lines.where((line) => line.trim().isNotEmpty).toList();
+    } catch (e) {
+      stderr.writeln('_listWithTar error: $e');
+      return _fallbackToDartZip(zipPath);
+    }
+  }
+
+  Future<List<String>> _fallbackToDartZip(String zipPath) async {
+    stderr.writeln('Falling back to Dart archive package for: $zipPath');
+
+    try {
+      final bytes = await File(zipPath).readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+
+      return archive.files
+          // Normalize to forward slashes to align with Tar and Unzip methods
+          .map((file) => file.name.trim().replaceAll('\\', '/'))
+          .where((name) => name.isNotEmpty)
+          .toList();
+    } catch (e) {
+      stderr.writeln('_fallbackToDartZip error: $e');
+      return [];
+    }
+  }
 }
 
-///
-/// Top-level functions required by Isolate.run
-///
+// Top-level function required by Isolate.run
 Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
   final backups = <ExistingBackup>[];
 
@@ -156,13 +232,13 @@ Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
     try {
       final stat = await file.stat();
       final filename = path.basename(file.path);
-      final totalAssetCount = await listZipContents(file.path);
+      //final totalAssetCount = await listZipContents(file.path);
 
       backups.add(ExistingBackup(
         filename: filename,
         filepath: path.normalize(file.path),
         lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
-        totalAssetCount: totalAssetCount,
+        totalAssetCount: null,
       ));
     } catch (e) {
       debugPrint("_processBackupFiles error $e");
@@ -170,81 +246,4 @@ Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
   }
 
   return backups;
-}
-
-Future<int?> listZipContents(String zipPath) async {
-  List<String> filePaths;
-  if (Platform.isWindows) {
-    filePaths = await _listWithTar(zipPath);
-  } else {
-    filePaths = await _listWithUnzip(zipPath);
-  }
-
-  final folderCounts = <String, int>{};
-  for (final path in filePaths) {
-    if (path.endsWith('/')) continue; // Skip folders
-    final folder =
-        path.contains('/') ? path.substring(0, path.lastIndexOf('/')) : 'root';
-    folderCounts.update(folder, (count) => count + 1, ifAbsent: () => 1);
-  }
-
-  // Calculate total for asset folders
-  const assetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
-  final assetTotal = assetFolders
-      .map((folder) => folderCounts['Mods/$folder'] ?? 0)
-      .fold(0, (a, b) => a + b);
-
-  return assetTotal;
-}
-
-Future<List<String>> _listWithUnzip(String zipPath) async {
-  try {
-    final result = await Process.run('unzip', ['-Z1', zipPath]);
-
-    if (result.exitCode != 0) {
-      stderr.writeln('_listWithUnzip result error: ${result.stderr}');
-      return _fallbackToDartZip(zipPath);
-    }
-
-    final lines = (result.stdout as String).split('\n');
-    return lines.where((line) => line.trim().isNotEmpty).toList();
-  } catch (e) {
-    stderr.writeln('_listWithUnzip error: $e');
-    return _fallbackToDartZip(zipPath);
-  }
-}
-
-Future<List<String>> _listWithTar(String zipPath) async {
-  try {
-    final result = await Process.run('tar', ['-tf', zipPath]);
-
-    if (result.exitCode != 0) {
-      stderr.writeln('_listWithTar result error: ${result.stderr}');
-      return _fallbackToDartZip(zipPath);
-    }
-
-    final lines = (result.stdout as String).split('\n');
-    return lines.where((line) => line.trim().isNotEmpty).toList();
-  } catch (e) {
-    stderr.writeln('_listWithTar error: $e');
-    return _fallbackToDartZip(zipPath);
-  }
-}
-
-Future<List<String>> _fallbackToDartZip(String zipPath) async {
-  stderr.writeln('Falling back to Dart archive package for: $zipPath');
-
-  try {
-    final bytes = await File(zipPath).readAsBytes();
-    final archive = ZipDecoder().decodeBytes(bytes);
-
-    return archive.files
-        // Normalize to forward slashes to align with Tar and Unzip methods
-        .map((file) => file.name.trim().replaceAll('\\', '/'))
-        .where((name) => name.isNotEmpty)
-        .toList();
-  } catch (e) {
-    stderr.writeln('_fallbackToDartZip error: $e');
-    return [];
-  }
 }

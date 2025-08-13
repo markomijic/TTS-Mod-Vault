@@ -13,6 +13,8 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
+import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
+    show ExistingBackup;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
@@ -464,7 +466,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           ref.read(storageProvider).getModUrls(selectedMod.jsonFileName) ??
               await extractUrlsFromJson(selectedMod.jsonFilePath);
 
-      final updatedMod = getCompleteMod(selectedMod, urls);
+      final updatedMod = await getCompleteMod(selectedMod, urls);
 
       final updatedList = [...modList];
       updatedList[modIndex] = updatedMod;
@@ -544,9 +546,18 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod getCompleteMod(Mod mod, Map<String, String> jsonURLs) {
-    final backup =
+  Future<Mod> getCompleteMod(Mod mod, Map<String, String> jsonURLs) async {
+    ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
+
+    if (backup != null && backup.totalAssetCount == null) {
+      final backupTotalAssetCount = await ref
+          .read(existingBackupsProvider.notifier)
+          .listZipContents(backup.filepath);
+
+      backup = backup.copyWith(totalAssetCount: backupTotalAssetCount);
+      ref.read(existingBackupsProvider.notifier).addBackup(backup);
+    }
 
     final backupStatus = backup == null
         ? ExistingBackupStatusEnum.noBackup
@@ -675,7 +686,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       final jsonURLs = await getUrlsByMod(selectedMod, true);
-      final completeMod = getCompleteMod(selectedMod, jsonURLs);
+      final completeMod = await getCompleteMod(selectedMod, jsonURLs);
 
       await ref
           .read(storageProvider)

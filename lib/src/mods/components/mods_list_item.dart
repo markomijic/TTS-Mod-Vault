@@ -40,8 +40,9 @@ class ModsListItem extends HookConsumerWidget {
             if (context.mounted) {
               final urls =
                   await ref.read(modsProvider.notifier).getUrlsByMod(mod);
-              final completeMod =
-                  ref.read(modsProvider.notifier).getCompleteMod(mod, urls);
+              final completeMod = await ref
+                  .read(modsProvider.notifier)
+                  .getCompleteMod(mod, urls);
 
               ref.read(modsProvider.notifier).updateMod(completeMod);
             }

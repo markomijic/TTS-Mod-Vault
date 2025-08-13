@@ -1,4 +1,4 @@
-import 'dart:io' show Directory, File, Process, stderr;
+import 'dart:io' show Directory, File, Process;
 import 'dart:isolate' show Isolate;
 import 'dart:math' show max, min;
 import 'dart:io' show Platform;
@@ -176,14 +176,14 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       final result = await Process.run('unzip', ['-Z1', zipPath]);
 
       if (result.exitCode != 0) {
-        stderr.writeln('_listWithUnzip result error: ${result.stderr}');
+        debugPrint('_listWithUnzip result error: ${result.stderr}');
         return _fallbackToDartZip(zipPath);
       }
 
       final lines = (result.stdout as String).split('\n');
       return lines.where((line) => line.trim().isNotEmpty).toList();
     } catch (e) {
-      stderr.writeln('_listWithUnzip error: $e');
+      debugPrint('_listWithUnzip error: $e');
       return _fallbackToDartZip(zipPath);
     }
   }
@@ -193,20 +193,20 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       final result = await Process.run('tar', ['-tf', zipPath]);
 
       if (result.exitCode != 0) {
-        stderr.writeln('_listWithTar result error: ${result.stderr}');
+        debugPrint('_listWithTar result error: ${result.stderr}');
         return _fallbackToDartZip(zipPath);
       }
 
       final lines = (result.stdout as String).split('\n');
       return lines.where((line) => line.trim().isNotEmpty).toList();
     } catch (e) {
-      stderr.writeln('_listWithTar error: $e');
+      debugPrint('_listWithTar error: $e');
       return _fallbackToDartZip(zipPath);
     }
   }
 
   Future<List<String>> _fallbackToDartZip(String zipPath) async {
-    stderr.writeln('Falling back to Dart archive package for: $zipPath');
+    debugPrint('Falling back to Dart archive package for: $zipPath');
 
     try {
       final bytes = await File(zipPath).readAsBytes();
@@ -218,7 +218,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
           .where((name) => name.isNotEmpty)
           .toList();
     } catch (e) {
-      stderr.writeln('_fallbackToDartZip error: $e');
+      debugPrint('_fallbackToDartZip error: $e');
       return [];
     }
   }

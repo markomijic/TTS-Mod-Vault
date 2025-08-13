@@ -36,6 +36,15 @@ void showChangelogDialog(BuildContext context) {
 
 String getChangelog() {
   return """
+v1.2.1
+Changes:
+· Fixed URL replacement not working with the old URL naming format (http://cloud-3.steamusercontent.com/)
+· Fixed loading failures caused by backup file names containing Unicode characters
+· Added support for an additional date format in mod JSON files
+· Reduced memory usage when creating a backup
+· Reduced loading times for backup files
+
+
 v1.2.0
 · Backup filename format changed
 Version 1.2.0 updates the backup file naming format to match TTS Mod Backup

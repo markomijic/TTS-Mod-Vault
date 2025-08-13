@@ -10,8 +10,10 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         backupProvider,
+        directoriesProvider,
         downloadProvider,
-        modsProvider;
+        modsProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showConfirmDialog;
 
 class SelectedModActionButtons extends HookConsumerWidget {
@@ -56,15 +58,40 @@ class SelectedModActionButtons extends HookConsumerWidget {
               return;
             }
 
+            final showWarningMessage =
+                ref.read(settingsProvider).showBackupState &&
+                    ref.read(directoriesProvider).backupsDir.isEmpty;
+
+            final setBackupFolderMessage =
+                "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable backup state feature in Settings to hide this warning";
+
             if (selectedMod.backupStatus == ExistingBackupStatusEnum.noBackup) {
-              await backupNotifier.createBackup(selectedMod);
-              await modsNotifier.updateSelectedMod(selectedMod);
+              if (showWarningMessage) {
+                showConfirmDialog(
+                  context,
+                  "$setBackupFolderMessage\n\nContinue with creating a backup?",
+                  () async {
+                    await backupNotifier.createBackup(selectedMod);
+                    await modsNotifier.updateSelectedMod(selectedMod);
+                  },
+                  () {},
+                );
+              } else {
+                await backupNotifier.createBackup(selectedMod);
+                await modsNotifier.updateSelectedMod(selectedMod);
+              }
               return;
             }
 
+            String backupMessage =
+                'Backup already exists. Replace existing file?';
+            String message = showWarningMessage
+                ? '$setBackupFolderMessage\n\n$backupMessage'
+                : backupMessage;
+
             showConfirmDialog(
               context,
-              'Backup already exists. Replace existing file?',
+              message,
               () async {
                 final backupFolder = p.dirname(selectedMod.backup!.filepath);
 

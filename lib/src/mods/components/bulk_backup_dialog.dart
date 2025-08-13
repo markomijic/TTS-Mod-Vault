@@ -122,11 +122,11 @@ class BulkBackupDialog extends HookConsumerWidget {
             ),
             if (backupsDir.isEmpty && showBackupState)
               Row(
-                spacing: 4,
+                spacing: 8,
                 children: [
                   Icon(Icons.warning),
                   Text(
-                      'Set a backups folder in Settings to preserve backup state after restart or data refresh'),
+                      "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable backup state feature in Settings to hide this warning"),
                 ],
               ),
             Text('Save folder: ${selectedFolder.value}'),

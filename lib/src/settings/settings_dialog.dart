@@ -108,96 +108,94 @@ class SettingsDialog extends HookConsumerWidget {
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: 720 * 0.7,
-        ),
-        child: Dialog(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 32,
-                children: [
-                  const Text(
-                    'Settings',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 32,
-                    children: [
-                      /// Column 1: User Interface & Network
-                      Expanded(
-                        child: SettingsUINetworkColumn(
-                            useModsListViewBox: useModsListViewBox,
-                            showTitleOnCardsBox: showTitleOnCardsBox,
-                            defaultSortOption: defaultSortOption,
-                            textFieldController: textFieldController,
-                            textFieldFocusNode: textFieldFocusNode,
-                            numberValue: numberValue),
+      child: Dialog(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 32,
+              children: [
+                const Text(
+                  'Settings',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 32,
+                  children: [
+                    // Column 1: User Interface & Network
+                    Expanded(
+                      child: SettingsUINetworkColumn(
+                        useModsListViewBox: useModsListViewBox,
+                        showTitleOnCardsBox: showTitleOnCardsBox,
+                        defaultSortOption: defaultSortOption,
+                        textFieldController: textFieldController,
+                        textFieldFocusNode: textFieldFocusNode,
+                        numberValue: numberValue,
                       ),
+                    ),
 
-                      /// Column 2: Features
-                      Expanded(
-                        child: SettingsFeaturesColumn(
-                            checkForUpdatesOnStartBox:
-                                checkForUpdatesOnStartBox,
-                            showSavedObjects: showSavedObjects,
-                            showBackupState: showBackupState,
-                            enableTtsModdersFeatures: enableTtsModdersFeatures),
+                    // Column 2: Features
+                    Expanded(
+                      child: SettingsFeaturesColumn(
+                        checkForUpdatesOnStartBox: checkForUpdatesOnStartBox,
+                        showSavedObjects: showSavedObjects,
+                        showBackupState: showBackupState,
+                        enableTtsModdersFeatures: enableTtsModdersFeatures,
                       ),
+                    ),
 
-                      /// Column 3: Folders
-                      Expanded(
-                        child: SettingsFoldersColumn(
-                            modsDir: modsDir,
-                            directoriesNotifier: directoriesNotifier,
-                            savesDir: savesDir,
-                            backupsDir: backupsDir),
+                    // Column 3: Folders
+                    Expanded(
+                      child: SettingsFoldersColumn(
+                        modsDir: modsDir,
+                        directoriesNotifier: directoriesNotifier,
+                        savesDir: savesDir,
+                        backupsDir: backupsDir,
                       ),
-                    ],
-                  ),
-                  Row(
-                    spacing: 8,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () async {
-                          await ref
-                              .read(settingsProvider.notifier)
-                              .resetToDefaultSettings();
+                    ),
+                  ],
+                ),
+                Row(
+                  spacing: 8,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        await ref
+                            .read(settingsProvider.notifier)
+                            .resetToDefaultSettings();
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                      child: const Text('Reset to default settings'),
+                    ),
+                    Spacer(),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final inputValue =
+                            int.tryParse(textFieldController.text);
+                        if (inputValue == null ||
+                            inputValue < 1 ||
+                            inputValue > 99) {
+                          showSnackBar(context,
+                              'Please enter a number between 1 and 99');
                           if (context.mounted) Navigator.pop(context);
-                        },
-                        child: const Text('Reset to default settings'),
-                      ),
-                      Spacer(),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final inputValue =
-                              int.tryParse(textFieldController.text);
-                          if (inputValue == null ||
-                              inputValue < 1 ||
-                              inputValue > 99) {
-                            showSnackBar(context,
-                                'Please enter a number between 1 and 99');
-                            if (context.mounted) Navigator.pop(context);
-                            return;
-                          }
-                          await saveSettingsChanges(context);
-                        },
-                        icon: Icon(Icons.save),
-                        label: const Text('Save'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                          return;
+                        }
+                        await saveSettingsChanges(context);
+                      },
+                      icon: Icon(Icons.save),
+                      label: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -216,9 +214,14 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
@@ -242,7 +245,17 @@ class SettingsFoldersColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: "Mods Folder"),
+        Row(
+          spacing: 4,
+          children: [
+            SectionHeader(title: "Mods Folder"),
+            CustomTooltip(
+              message:
+                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
+              child: Icon(Icons.info_outline),
+            ),
+          ],
+        ),
         Row(
           spacing: 8,
           children: [
@@ -260,44 +273,50 @@ class SettingsFoldersColumn extends StatelessWidget {
                 ),
               ),
             ),
-            CustomTooltip(
-              message:
-                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
-              child: ElevatedButton(
-                onPressed: () async {
-                  String? ttsDir;
-                  try {
-                    ttsDir = await FilePicker.platform.getDirectoryPath(
-                      lockParentWindow: true,
-                    );
-                  } catch (e) {
-                    debugPrint("File picker error $e");
-                    if (context.mounted) {
-                      showSnackBar(context, "Failed to open file picker");
-                      Navigator.pop(context);
-                    }
-                    return;
+            ElevatedButton(
+              onPressed: () async {
+                String? ttsDir;
+                try {
+                  ttsDir = await FilePicker.platform.getDirectoryPath(
+                    lockParentWindow: true,
+                  );
+                } catch (e) {
+                  debugPrint("File picker error $e");
+                  if (context.mounted) {
+                    showSnackBar(context, "Failed to open file picker");
+                    Navigator.pop(context);
                   }
+                  return;
+                }
 
-                  if (ttsDir == null) return;
+                if (ttsDir == null) return;
 
-                  if (!await directoriesNotifier.isModsDirectoryValid(
-                      ttsDir, false)) {
-                    if (context.mounted) {
-                      showSnackBar(context, 'Invalid Mods folder');
-                    }
-                  } else {
-                    modsDir.value = ttsDir.endsWith('Mods')
-                        ? ttsDir
-                        : path.join(ttsDir, 'Mods');
+                if (!await directoriesNotifier.isModsDirectoryValid(
+                    ttsDir, false)) {
+                  if (context.mounted) {
+                    showSnackBar(context, 'Invalid Mods folder');
                   }
-                },
-                child: const Text('Select'),
-              ),
+                } else {
+                  modsDir.value = ttsDir.endsWith('Mods')
+                      ? ttsDir
+                      : path.join(ttsDir, 'Mods');
+                }
+              },
+              child: const Text('Select'),
             ),
           ],
         ),
-        SectionHeader(title: "Saves Folder"),
+        Row(
+          spacing: 4,
+          children: [
+            SectionHeader(title: "Saves Folder"),
+            CustomTooltip(
+              message:
+                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
+              child: Icon(Icons.info_outline),
+            ),
+          ],
+        ),
         Row(
           spacing: 8,
           children: [
@@ -315,44 +334,50 @@ class SettingsFoldersColumn extends StatelessWidget {
                 ),
               ),
             ),
-            CustomTooltip(
-              message:
-                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
-              child: ElevatedButton(
-                onPressed: () async {
-                  String? ttsDir;
-                  try {
-                    ttsDir = await FilePicker.platform.getDirectoryPath(
-                      lockParentWindow: true,
-                    );
-                  } catch (e) {
-                    debugPrint("File picker error $e");
-                    if (context.mounted) {
-                      showSnackBar(context, "Failed to open file picker");
-                      Navigator.pop(context);
-                    }
-                    return;
+            ElevatedButton(
+              onPressed: () async {
+                String? ttsDir;
+                try {
+                  ttsDir = await FilePicker.platform.getDirectoryPath(
+                    lockParentWindow: true,
+                  );
+                } catch (e) {
+                  debugPrint("File picker error $e");
+                  if (context.mounted) {
+                    showSnackBar(context, "Failed to open file picker");
+                    Navigator.pop(context);
                   }
+                  return;
+                }
 
-                  if (ttsDir == null) return;
+                if (ttsDir == null) return;
 
-                  if (!await directoriesNotifier.isSavesDirectoryValid(
-                      ttsDir, false)) {
-                    if (context.mounted) {
-                      showSnackBar(context, 'Invalid Saves folder');
-                    }
-                  } else {
-                    savesDir.value = ttsDir.endsWith('Saves')
-                        ? ttsDir
-                        : path.join(ttsDir, 'Saves');
+                if (!await directoriesNotifier.isSavesDirectoryValid(
+                    ttsDir, false)) {
+                  if (context.mounted) {
+                    showSnackBar(context, 'Invalid Saves folder');
                   }
-                },
-                child: const Text('Select'),
-              ),
+                } else {
+                  savesDir.value = ttsDir.endsWith('Saves')
+                      ? ttsDir
+                      : path.join(ttsDir, 'Saves');
+                }
+              },
+              child: const Text('Select'),
             ),
           ],
         ),
-        SectionHeader(title: "Backups Folder"),
+        Row(
+          spacing: 4,
+          children: [
+            SectionHeader(title: "Backups Folder"),
+            CustomTooltip(
+              message:
+                  'Backup Folder is required for Backup State feature to work after a restart or data refresh\nData will be refreshed if saving changes to a folder',
+              child: Icon(Icons.info_outline),
+            ),
+          ],
+        ),
         Row(
           spacing: 8,
           children: [
@@ -370,40 +395,33 @@ class SettingsFoldersColumn extends StatelessWidget {
                 ),
               ),
             ),
-            CustomTooltip(
-              message:
-                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
-              child: ElevatedButton(
-                onPressed: () async {
-                  String? dir;
-                  try {
-                    dir = await FilePicker.platform.getDirectoryPath(
-                      lockParentWindow: true,
-                    );
-                  } catch (e) {
-                    debugPrint("File picker error $e");
-                    if (context.mounted) {
-                      showSnackBar(context, "Failed to open file picker");
-                      Navigator.pop(context);
-                    }
-                    return;
+            ElevatedButton(
+              onPressed: () async {
+                String? dir;
+                try {
+                  dir = await FilePicker.platform.getDirectoryPath(
+                    lockParentWindow: true,
+                  );
+                } catch (e) {
+                  debugPrint("File picker error $e");
+                  if (context.mounted) {
+                    showSnackBar(context, "Failed to open file picker");
+                    Navigator.pop(context);
                   }
+                  return;
+                }
 
-                  if (dir != null) {
-                    backupsDir.value = dir;
-                  }
-                },
-                child: const Text('Select'),
-              ),
+                if (dir != null) {
+                  backupsDir.value = dir;
+                }
+              },
+              child: const Text('Select'),
             ),
-            CustomTooltip(
-              message: 'Data will be refreshed if saving changes to a folder',
-              child: ElevatedButton(
-                onPressed: () {
-                  backupsDir.value = '';
-                },
-                child: const Text('Reset'),
-              ),
+            ElevatedButton(
+              onPressed: () {
+                backupsDir.value = '';
+              },
+              child: const Text('Reset'),
             ),
           ],
         ),
@@ -443,46 +461,66 @@ class SettingsFeaturesColumn extends StatelessWidget {
                 value ?? checkForUpdatesOnStartBox.value;
           },
         ),
-        CustomTooltip(
-          message:
-              "Show Saved Objects next to Mods and Saves, manual refresh of data is needed after enabling if TTS Mod Vault was opened while this setting was disabled",
-          child: CheckboxListTile(
-            title: const Text('Show Saved Objects'),
-            value: showSavedObjects.value,
-            checkColor: Colors.black,
-            activeColor: Colors.white,
-            contentPadding: EdgeInsets.all(0),
-            onChanged: (value) {
-              showSavedObjects.value = value ?? showSavedObjects.value;
-            },
+        CheckboxListTile(
+          title: Row(
+            spacing: 4,
+            children: [
+              const Text('Show Saved Objects'),
+              CustomTooltip(
+                message:
+                    "Show Saved Objects next to Mods and Saves, manual refresh of data is needed after enabling if TTS Mod Vault was opened while this setting was disabled",
+                child: Icon(Icons.info_outline),
+              ),
+            ],
           ),
+          value: showSavedObjects.value,
+          checkColor: Colors.black,
+          activeColor: Colors.white,
+          contentPadding: EdgeInsets.all(0),
+          onChanged: (value) {
+            showSavedObjects.value = value ?? showSavedObjects.value;
+          },
         ),
-        CustomTooltip(
-          message: "Backups folder is required to show backup state",
-          child: CheckboxListTile(
-            title: const Text('Show Backup State'),
-            value: showBackupState.value,
-            checkColor: Colors.black,
-            activeColor: Colors.white,
-            contentPadding: EdgeInsets.all(0),
-            onChanged: (value) {
-              showBackupState.value = value ?? showBackupState.value;
-            },
+        CheckboxListTile(
+          title: Row(
+            spacing: 4,
+            children: [
+              const Text('Show Backup State'),
+              CustomTooltip(
+                message:
+                    "Backups Folder is required to show Backup State after a restart or data refresh",
+                child: Icon(Icons.info_outline),
+              ),
+            ],
           ),
+          value: showBackupState.value,
+          checkColor: Colors.black,
+          activeColor: Colors.white,
+          contentPadding: EdgeInsets.all(0),
+          onChanged: (value) {
+            showBackupState.value = value ?? showBackupState.value;
+          },
         ),
-        CustomTooltip(
-          message: "Enables:\nReplace URL in asset lists and viewing images",
-          child: CheckboxListTile(
-            title: const Text('Enable TTS Modders features'),
-            value: enableTtsModdersFeatures.value,
-            checkColor: Colors.black,
-            activeColor: Colors.white,
-            contentPadding: EdgeInsets.all(0),
-            onChanged: (value) {
-              enableTtsModdersFeatures.value =
-                  value ?? enableTtsModdersFeatures.value;
-            },
+        CheckboxListTile(
+          title: Row(
+            spacing: 4,
+            children: [
+              const Text('Enable TTS Modders features'),
+              CustomTooltip(
+                message:
+                    "Enables:\nReplace URL feature, accessible via the context menus of asset URLs and images in the Image Viewer",
+                child: Icon(Icons.info_outline),
+              ),
+            ],
           ),
+          value: enableTtsModdersFeatures.value,
+          checkColor: Colors.black,
+          activeColor: Colors.white,
+          contentPadding: EdgeInsets.all(0),
+          onChanged: (value) {
+            enableTtsModdersFeatures.value =
+                value ?? enableTtsModdersFeatures.value;
+          },
         ),
       ],
     );
@@ -582,7 +620,20 @@ class SettingsUINetworkColumn extends StatelessWidget {
         Row(
           children: [
             const Expanded(
-              child: Text('Number of concurrent downloads\n(default: 5)'),
+              child: Row(
+                spacing: 4,
+                children: [
+                  Text(
+                    'Number of concurrent downloads',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  CustomTooltip(
+                    message:
+                        "Lower the value if you experience working URLs failing to download when downloading from multiple URLs at once\nDefault value: 5",
+                    child: Icon(Icons.info_outline),
+                  ),
+                ],
+              ),
             ),
             SizedBox(
               width: 50,

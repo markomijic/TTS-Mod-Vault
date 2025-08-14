@@ -1,6 +1,7 @@
 import 'dart:convert' show LineSplitter, utf8;
 import 'dart:io' show Directory, File;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:path/path.dart' as path;
@@ -129,10 +130,7 @@ Future<Map<String, String>> extractUrlsFromJson(String filePath) async {
 Map<String, String> _processUrl(String urlKey, String value) {
   final matches = urlRegex.allMatches(urlKey);
 
-  final urls = matches.map((m) => m.group(0)!).toList();
-
-  final Set<String> setovi = {};
-  setovi.addAll(urls);
+  final urls = matches.map((m) => m.group(0)).nonNulls.toList();
 
   Map<String, String> finalUrls = {};
   for (final entry in urls) {
@@ -261,8 +259,8 @@ Future<Mod?> _processSingleFileOptimized(
     final initialModMetaData = await _extractInitialModMetadataFromFile(
         jsonPath, jsonFileName, modType);
 
-    final saveName =
-        initialModMetaData['saveName']!; // Non-null (fallback to jsonFileName)
+    final saveName = initialModMetaData['saveName'] ??
+        ''; // Non-null (fallback to jsonFileName)
     final dateTimeStamp = initialModMetaData['dateTimeStamp']; // Can be null
 
     final parentFolder = path.basename(path.dirname(jsonPath));

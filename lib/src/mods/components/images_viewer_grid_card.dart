@@ -119,11 +119,15 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               break;
 
             case ContextMenuActionEnum.openInExplorer:
-              openInFileExplorer(asset.filePath!);
+              if (asset.filePath != null && asset.filePath!.isNotEmpty) {
+                openInFileExplorer(asset.filePath!);
+              }
               break;
 
             case ContextMenuActionEnum.openFile:
-              openFile(asset.filePath!);
+              if (asset.filePath != null && asset.filePath!.isNotEmpty) {
+                openFile(asset.filePath!);
+              }
               break;
 
             case ContextMenuActionEnum.copyUrl:

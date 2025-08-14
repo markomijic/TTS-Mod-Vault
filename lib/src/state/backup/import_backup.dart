@@ -47,7 +47,7 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
         return false;
       }
 
-      final filePath = result.files.single.path!;
+      final filePath = result.files.single.path ?? '';
       if (filePath.isEmpty) {
         state = state.copyWith(
           status: ImportBackupStatusEnum.idle,

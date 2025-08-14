@@ -37,15 +37,14 @@ class ModsListItem extends HookConsumerWidget {
             await Future.delayed(
                 Duration(milliseconds: 500 + Random().nextInt(501)));
 
-            if (context.mounted) {
-              final urls =
-                  await ref.read(modsProvider.notifier).getUrlsByMod(mod);
-              final completeMod = await ref
-                  .read(modsProvider.notifier)
-                  .getCompleteMod(mod, urls);
-
-              ref.read(modsProvider.notifier).updateMod(completeMod);
-            }
+            if (!context.mounted) return;
+            final urls =
+                await ref.read(modsProvider.notifier).getUrlsByMod(mod);
+            if (!context.mounted) return;
+            final completeMod =
+                await ref.read(modsProvider.notifier).getCompleteMod(mod, urls);
+            if (!context.mounted) return;
+            ref.read(modsProvider.notifier).updateMod(completeMod);
           } catch (e) {
             debugPrint('Error loading ${mod.modType} ${mod.saveName}: $e');
           }

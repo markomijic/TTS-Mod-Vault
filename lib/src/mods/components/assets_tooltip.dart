@@ -54,7 +54,7 @@ class HelpTooltip extends StatelessWidget {
         ],
       ),
       child: Icon(
-        Icons.help_outline,
+        Icons.info_outline,
         size: 26,
       ),
     );

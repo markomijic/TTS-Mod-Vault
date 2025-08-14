@@ -66,8 +66,11 @@ class RenameOldBackupsDialog extends HookConsumerWidget {
               spacing: 8,
               children: [
                 Row(
-                  spacing: 8,
+                  spacing: 4,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Text(
+                        'Rename mod backups created by TTS Mod Vault versions 1.0.0 - 1.1.0 to match backup naming format in 1.2.0 to work with Backup State feature'),
                     CustomTooltip(
                       message:
                           'TTS Mod Vault versions 1.0.0 - 1.1.0 used a mod backup name format that did not fully match the one used by TTS Mod Backup.\n\n'
@@ -77,12 +80,10 @@ class RenameOldBackupsDialog extends HookConsumerWidget {
                           'If you find any issue where the new format does not match what TTS Mod Backup would have created, please let me know (Help -> Help & Feedback).\n'
                           'Apologies for any inconvenience this may have caused, and thank you for your understanding.',
                       child: Icon(
-                        Icons.help_outline,
+                        Icons.info_outline,
                         size: 30,
                       ),
                     ),
-                    Text(
-                        'Rename mod backups created by TTS Mod Vault versions 1.0.0 - 1.1.0 to match backup naming format in 1.2.0 to work with Backup State feature'),
                   ],
                 ),
                 Expanded(

@@ -81,7 +81,7 @@ class BulkBackupDialog extends HookConsumerWidget {
               spacing: 8,
               children: [
                 const Expanded(
-                  child: Text('Existing backups:'),
+                  child: Text('If backup already exists:'),
                 ),
                 DropdownButton<BulkBackupBehaviorEnum>(
                   value: selectedBehavior.value,
@@ -126,10 +126,10 @@ class BulkBackupDialog extends HookConsumerWidget {
                 children: [
                   Icon(Icons.warning),
                   Text(
-                      "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable backup state feature in Settings to hide this warning"),
+                      "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable Backup State feature in Settings to hide this warning"),
                 ],
               ),
-            Text('Save folder: ${selectedFolder.value}'),
+            Text('Save new backups to: ${selectedFolder.value}'),
           ],
         ),
       ),

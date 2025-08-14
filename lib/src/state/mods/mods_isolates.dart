@@ -1,7 +1,6 @@
 import 'dart:convert' show LineSplitter, utf8;
 import 'dart:io' show Directory, File;
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:path/path.dart' as path;

@@ -38,7 +38,7 @@ String getChangelog() {
   return """
 v1.2.1
 Changes:
-· Fixed URL replacement not working with the old URL naming format (http://cloud-3.steamusercontent.com/)
+· Fixed URL replacement not working with the old URL format (http://cloud-3.steamusercontent.com/)
 · Fixed loading failures caused by backup file names containing Unicode characters
 · Added support for an additional date format in mod JSON files
 · Reduced memory usage when creating a backup
@@ -48,13 +48,13 @@ Changes:
 v1.2.0
 · Backup filename format changed
 Version 1.2.0 updates the backup file naming format to match TTS Mod Backup
-Backups created with TTS Mod Vault versions 1.0.0 to 1.1.0 must be renamed to work with the new Backup state feature.
+Backups created with TTS Mod Vault versions 1.0.0 to 1.1.0 must be renamed to work with the new Backup State feature.
 
 A renaming tool is available under:
 Tools → Rename old backups
 
 Features:
-· Backup state
+· Backup State
 · Sort & Filter
 · Bulk actions:
     Download All

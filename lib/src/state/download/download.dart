@@ -18,7 +18,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getExtensionByType, getFileNameFromURL;
+    show getExtensionByType, getFileNameFromURL, newSteamUserContentUrl;
 
 import 'package:path/path.dart' as path;
 
@@ -113,6 +113,23 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     );
   }
 
+  Future<void> _downloadUrl(
+    String url,
+    String tempPath,
+    CancelToken cancelToken,
+    int batchLength,
+  ) async {
+    await dio.download(
+      url,
+      tempPath,
+      cancelToken: cancelToken,
+      onReceiveProgress: (received, total) {
+        if (total <= 0 || batchLength > 1) return;
+        state = state.copyWith(progress: received / total);
+      },
+    );
+  }
+
   Future<void> downloadFiles({
     required List<String> modAssetListUrls,
     required AssetTypeEnum type,
@@ -173,16 +190,28 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
               return;
             }
 
-            await dio.download(
-              url,
-              tempPath,
-              cancelToken: cancelToken,
-              onReceiveProgress: (received, total) {
-                if (total <= 0 || batch.length > 1) return;
-                // Progress per file
-                state = state.copyWith(progress: received / total);
-              },
-            );
+            try {
+              await _downloadUrl(
+                url,
+                tempPath,
+                cancelToken,
+                batch.length,
+              );
+            } on DioException catch (e) {
+              // Check is Steam CDN url missing a trailing '/'
+              if (e.response?.statusCode == 404 &&
+                  url.startsWith(newSteamUserContentUrl) &&
+                  !url.endsWith('/')) {
+                await _downloadUrl(
+                  '$url/',
+                  tempPath,
+                  cancelToken,
+                  batch.length,
+                );
+              } else {
+                rethrow;
+              }
+            }
 
             final tempFile = File(tempPath);
             final bytes = await tempFile.readAsBytes();

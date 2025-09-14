@@ -575,7 +575,7 @@ class SettingsUINetworkColumn extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Default sort:',
+                'Default sort',
                 style: TextStyle(fontSize: 16),
               ),
             ),

@@ -14,7 +14,7 @@ import 'package:tts_mod_vault/src/utils.dart'
     show newSteamUserContentUrl, oldCloudUrl;
 
 final urlRegex = RegExp(
-  r'(?:[a-zA-Z]+:\/\/)?[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^\s{}"]*)?',
+  r'(?:[a-zA-Z]+:\/\/)?[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^{}"]*)?',
   caseSensitive: false,
 );
 

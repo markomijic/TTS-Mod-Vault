@@ -101,8 +101,8 @@ class DownloadModByIdDialog extends HookConsumerWidget {
 
         final bsonBinary = BsonBinary.from(response.bodyBytes);
         final decodedData = BsonCodec.deserialize(bsonBinary);
+        decodedData.removeWhere((key, value) => value is BsonBinary);
 
-        // Convert to pretty-printed JSON
         final jsonString =
             const JsonEncoder.withIndent('  ').convert(decodedData);
 

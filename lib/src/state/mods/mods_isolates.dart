@@ -132,8 +132,10 @@ Map<String, String> _processUrl(String urlKey, String value) {
   final urls = matches.map((m) => m.group(0)).nonNulls.toList();
 
   Map<String, String> finalUrls = {};
-  for (final entry in urls) {
-    finalUrls[entry] = value;
+  for (final url in urls) {
+    final trimmedUrl =
+        url.replaceAll(RegExp(r'\\[rn]'), ''); // Remove literal \r and \n
+    finalUrls[trimmedUrl] = value;
   }
 
   return finalUrls;

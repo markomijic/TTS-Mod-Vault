@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useState;
+import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/replace_url_dialog.dart'
@@ -16,6 +16,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         downloadProvider,
         modsProvider,
         selectedModProvider,
+        selectedUrlProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
@@ -39,7 +40,11 @@ class AssetsUrl extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isSelected = useState(false);
+    final selectedUrl = ref.watch(selectedUrlProvider);
+    final isSelected = useMemoized(
+      () => asset.url == selectedUrl,
+      [selectedUrl],
+    );
 
     void showURLContextMenu(BuildContext context, Offset position) {
       showMenu(
@@ -134,8 +139,6 @@ class AssetsUrl extends HookConsumerWidget {
             ),
         ],
       ).then((value) async {
-        isSelected.value = false;
-
         if (value != null) {
           switch (value) {
             case ContextMenuActionEnum.openFile:
@@ -202,26 +205,27 @@ class AssetsUrl extends HookConsumerWidget {
       });
     }
 
+    void onTapDown(TapDownDetails details) {
+      if (ref.read(actionInProgressProvider)) return;
+
+      if (!isSelected) {
+        showURLContextMenu(context, details.globalPosition);
+      }
+
+      ref.read(selectedUrlProvider.notifier).state =
+          isSelected ? '' : asset.url;
+    }
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTapDown: (details) {
-          if (ref.read(actionInProgressProvider)) return;
-
-          isSelected.value = true;
-          showURLContextMenu(context, details.globalPosition);
-        },
-        onSecondaryTapDown: (details) {
-          if (ref.read(actionInProgressProvider)) return;
-
-          isSelected.value = true;
-          showURLContextMenu(context, details.globalPosition);
-        },
+        onTapDown: (details) => onTapDown(details),
+        onSecondaryTapDown: (details) => onTapDown(details),
         child: Text(
           asset.url,
           style: TextStyle(
             fontSize: 12,
-            color: isSelected.value
+            color: isSelected
                 ? Colors.lightBlue
                 : asset.fileExists
                     ? Colors.green

@@ -35,7 +35,7 @@ class HelpTooltip extends StatelessWidget {
             style:
                 TextStyle(fontWeight: FontWeight.bold, color: Colors.lightBlue),
           ),
-          TextSpan(text: ' - Selected (clicked)\n\n'),
+          TextSpan(text: ' - Last selected URL\n\n'),
 
           // Actions
           TextSpan(

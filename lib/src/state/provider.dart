@@ -34,6 +34,8 @@ final selectedModTypeProvider =
 
 final loadingMessageProvider = StateProvider<String>((ref) => 'Loading');
 
+final selectedUrlProvider = StateProvider<String>((ref) => '');
+
 final storageProvider = Provider((ref) => Storage());
 
 final directoriesProvider =

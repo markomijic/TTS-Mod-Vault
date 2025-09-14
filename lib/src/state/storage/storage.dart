@@ -142,13 +142,8 @@ class Storage {
     return result;
   }
 
-  // Clear all mod data (for testing)
   Future<void> clearAllModData() async {
-    await Hive.deleteBoxFromDisk(urlsBox);
-    await Hive.deleteBoxFromDisk(metadataBox);
-
-    // Reopen the boxes (they'll be empty)
-    _urlsBox = await Hive.openBox<dynamic>(urlsBox);
-    _metadataBox = await Hive.openBox<String>(metadataBox);
+    await Hive.box<dynamic>(urlsBox).clear();
+    await Hive.box<String>(metadataBox).clear();
   }
 }

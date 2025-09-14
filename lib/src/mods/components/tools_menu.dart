@@ -4,7 +4,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show RenameOldBackupsDialog, DownloadModByIdDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show actionInProgressProvider, cleanupProvider, settingsProvider;
+    show
+        actionInProgressProvider,
+        cleanupProvider,
+        loaderProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialog, showSnackBar;
 
@@ -86,6 +90,27 @@ class ToolsMenu extends ConsumerWidget {
           leadingIcon: Icon(Icons.edit, color: Colors.black),
           child: Text(
             'Rename old backups',
+            style: TextStyle(color: Colors.black),
+          ),
+        ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          onPressed: () {
+            showConfirmDialog(
+              context,
+              'Are you sure you want to clear all cached mod data?\nData will be refreshed after clearing.',
+              () async => await ref.read(loaderProvider).refreshAppData(true),
+            );
+          },
+          leadingIcon: const Icon(
+            Icons.clear_all,
+            color: Colors.black,
+          ),
+          child: const Text(
+            'Clear cache',
             style: TextStyle(color: Colors.black),
           ),
         ),

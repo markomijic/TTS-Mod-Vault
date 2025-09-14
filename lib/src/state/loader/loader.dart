@@ -16,12 +16,13 @@ class LoaderNotifier {
     onDataLoaded();
   }
 
-  Future<void> refreshAppData() async {
+  Future<void> refreshAppData([bool clearCache = false]) async {
     debugPrint("refreshAppData");
 
     await ref.read(modsProvider.notifier).loadModsData(
           modJsonFileName:
               ref.read(importBackupProvider).lastImportedJsonFileName,
+          clearCache: clearCache,
         );
   }
 }

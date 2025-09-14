@@ -61,12 +61,21 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   Future<void> loadModsData({
     VoidCallback? onDataLoaded,
     String modJsonFileName = "",
+    bool clearCache = false,
   }) async {
     final startTime = DateTime.now();
     debugPrint('loadModsData START: $startTime');
 
     ref.read(loadingMessageProvider.notifier).state = 'Loading';
     state = const AsyncValue.loading();
+
+    try {
+      if (clearCache) {
+        await ref.read(storageProvider).clearAllModData();
+      }
+    } catch (e) {
+      debugPrint("loadModsData - error on clearing cache: $e");
+    }
 
     try {
       // Contains setting loading message provider
@@ -220,9 +229,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
         debugPrint('Bulk storage operations completed ${DateTime.now()}');
       }
-
-      // Sort all mods alphabetically
-      //allProcessedMods.sort((a, b) => a.saveName.compareTo(b.saveName));
 
       final mods = <Mod>[];
       final saves = <Mod>[];

@@ -85,7 +85,7 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                   ),
                   SizedBox(height: 32),
                   Text(
-                    'Old URL prefix:',
+                    'Old prefix',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
@@ -103,7 +103,7 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'New URL prefix:',
+                    'New prefix',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

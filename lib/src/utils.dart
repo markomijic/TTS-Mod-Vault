@@ -24,12 +24,15 @@ import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
 const oldCloudUrl = "http://cloud-3.steamusercontent.com/";
 const newSteamUserContentUrl = "https://steamusercontent-a.akamaihd.net/";
+
 const nexusModsDownloadPageUrl =
     "https://www.nexusmods.com/tabletopsimulator/mods/426";
 const steamDiscussionUrl =
     "https://steamcommunity.com/app/286160/discussions/0/591772542952298985/";
+
 const String updateUrlsHelp = '''
-The Update URLs feature works by replacing the beginning of a URL
+The Update URLs feature works by replacing the beginning of a URL. 
+You can also replace an entire URL by entering it in the "Old prefix" field.
 
 Example (single old prefix):
 • Old prefix: http://pastebin.com/raw.php?i=
@@ -44,7 +47,6 @@ Example (multiple old prefixes):
 
 If your mod contains: http://pastebin.com/raw.php?i=abcd, http://pastebin.com/raw/5678, http://pastebin.com/example2
 They will be updated to: https://pastebin.com/raw/abcd, https://pastebin.com/raw/5678, https://pastebin.com/raw/example2''';
-
 const String updateUrlsInstruction =
     'You can enter multiple old prefixes by separating them with the | symbol\nFor example: http://pastebin.com/raw.php?i=|http://pastebin.com/raw/|http://pastebin.com/\n\nThere must be exactly one new prefix, for example: https://pastebin.com/raw/';
 

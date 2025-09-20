@@ -353,10 +353,10 @@ packages:
     dependency: "direct main"
     description:
       name: hive_ce
-      sha256: "74461ee89e97fe347dd894fd6ea1dbdc8c745ea6fe0d6e0b1746530abd02eb95"
+      sha256: "89746b555109029a30780e0a601978460b8065643592667f6e43a238faccb8a4"
       url: "https://pub.dev"
     source: hosted
-    version: "2.12.0"
+    version: "2.13.2"
   hive_ce_flutter:
     dependency: "direct main"
     description:
@@ -641,10 +641,10 @@ packages:
     dependency: transitive
     description:
       name: pool
-      sha256: "20fe868b6314b322ea036ba325e6fc0711a22948856475e2c2b6306e8ab39c2a"
+      sha256: "978783255c543aa3586a1b3c21f6e9d720eb315376a915872c61ef8b5c20177d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.5.1"
+    version: "1.5.2"
   posix:
     dependency: transitive
     description:

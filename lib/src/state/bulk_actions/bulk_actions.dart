@@ -278,13 +278,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       await ref.read(storageProvider).saveAllModUrlsData(allModUrlsData);
     }
 
-    await (Future.delayed(
-      Duration(seconds: 2),
-      () {
-        _resetState();
-        ref.read(loaderProvider).refreshAppData();
-      },
-    ));
+    _resetState();
+    ref.read(loaderProvider).refreshAppData();
   }
 
   // Cancel methods

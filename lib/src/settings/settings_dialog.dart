@@ -549,8 +549,8 @@ the JSON filename (ExampleGame.ttsmod).""",
               const Text('Enable URL replacement features'),
               CustomTooltip(
                 message: """Enables:
-Replace URL - accessible from the context menu of asset URLs and images in the Image Viewer
-Update URLs - accessible next to the Download and Backup buttons, and in Bulk Actions""",
+Replace URL - available from the context menu of asset URLs and images in the Image Viewer
+Update URLs - available next to the Download and Backup buttons, and in Bulk Actions""",
                 child: Icon(Icons.info_outline),
               ),
             ],

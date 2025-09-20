@@ -42,7 +42,7 @@ The new URL replacement features are disabled by default and can be enabled in S
 
 Features:
 · Clear cache - available under Tools
-· Update URLs - available as an action for a selected mod and as a bulk action
+· Update URLs - lets you replace prefixes or entire URLs, either for a single item or as a bulk action
 
 Changes:
 · New Setting - Force JSON filename inclusion in backup filename for all cases
@@ -52,6 +52,7 @@ Changes:
 · Fixed URLs with spaces breaking UI and cache checks
 · Fixed URLs with '\\r' or '\\n' suffixes breaking cache checks and downloads
 · Fixed 'Download Workshop Mod by ID' failing to create a JSON file in cases where BsonBinary exists within JSON data
+
 
 v1.2.1
 Changes:
@@ -83,6 +84,7 @@ Changes:
 · UI updates
 · New settings options
 · General improvements and fixes
+
 
 v1.1.0
 Features:

@@ -3,6 +3,8 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
@@ -33,6 +35,8 @@ class SelectedModActionButtons extends HookConsumerWidget {
     final backupNotifier = ref.watch(backupProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
+    final enableTtsModdersFeatures =
+        ref.watch(settingsProvider).enableTtsModdersFeatures;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -106,6 +110,17 @@ class SelectedModActionButtons extends HookConsumerWidget {
           },
           child: const Text('Backup'),
         ),
+        if (enableTtsModdersFeatures)
+          ElevatedButton(
+            onPressed: () async {
+              if (actionInProgress) {
+                return;
+              }
+
+              showUpdateUrlsDialog(context, ref, selectedMod);
+            },
+            child: const Text('Update URLs'),
+          ),
       ],
     );
   }

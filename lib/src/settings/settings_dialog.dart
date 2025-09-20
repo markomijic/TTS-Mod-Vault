@@ -505,10 +505,11 @@ class SettingsFeaturesColumn extends StatelessWidget {
           title: Row(
             spacing: 4,
             children: [
-              const Text('Enable TTS Modders features'),
+              const Text('Enable URL replacement features'),
               CustomTooltip(
-                message:
-                    "Enables:\nReplace URL feature, accessible via the context menus of asset URLs and images in the Image Viewer",
+                message: """Enables:
+Replace URL - accessible via the context menu of asset URLs and images in the Image Viewer
+Update URLs - accessible next to the Download and Backup buttons of a selected mod and in bulk actions""",
                 child: Icon(Icons.info_outline),
               ),
             ],

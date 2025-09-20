@@ -6,7 +6,11 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show actionInProgressProvider, bulkActionsProvider, filteredModsProvider;
+    show
+        actionInProgressProvider,
+        bulkActionsProvider,
+        filteredModsProvider,
+        settingsProvider;
 
 class BulkActionsDropDownButton extends HookConsumerWidget {
   const BulkActionsDropDownButton({super.key});
@@ -14,6 +18,8 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
+    final enableTtsModdersFeatures =
+        ref.watch(settingsProvider).enableTtsModdersFeatures;
 
     return MenuAnchor(
       style: MenuStyle(
@@ -61,6 +67,34 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
+        if (enableTtsModdersFeatures)
+          MenuItemButton(
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            leadingIcon: Icon(Icons.edit, color: Colors.black),
+            child:
+                Text('Update all URLs', style: TextStyle(color: Colors.black)),
+            onPressed: () {
+              if (actionInProgress) return;
+
+              /* showDialog(
+              context: context,
+              builder: (context) => BulkBackupDialog(
+                title: 'Backup all',
+                initialBehavior: BulkBackupBehaviorEnum.replaceIfOutOfDate,
+                onConfirm: (behavior, folder) {
+                  ref.read(bulkActionsProvider.notifier).backupAllMods(
+                        ref.read(filteredModsProvider),
+                        behavior,
+                        folder,
+                      );
+                },
+              ),
+            ); */
+            },
+          ),
         MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,

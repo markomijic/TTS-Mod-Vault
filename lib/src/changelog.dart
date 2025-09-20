@@ -36,13 +36,18 @@ void showChangelogDialog(BuildContext context) {
 
 String getChangelog() {
   return """
-v1.2.2
-Due to asset URL bug fixes in this version, it is recommended to clear the cache on first run (Tools -> Clear cache)
+v1.3.0
+Due to asset URL bug fixes in this version, it is recommended to clear the cache on the first run
+The new URL replacement features are disabled by default and can be enabled in Settings
+
+Features:
+· Clear cache - available under Tools
+· Update URLs - available as an action for a selected mod and as a bulk action
 
 Changes:
-· Added clear cache to Tools
-· Last selected asset URL stays highlighted after closing context menu
-· Fixed Steam CDN URLs not downloading if a trailing '/' was missing
+· Last selected asset URL now stays highlighted after closing the context menu
+· Removed the tool for renaming old backups
+· Fixed Steam CDN URLs not downloading when a trailing / was missing
 · Fixed URLs with spaces breaking UI and cache checks
 · Fixed URLs with '\\r' or '\\n' suffixes breaking cache checks and downloads
 · Fixed 'Download Workshop Mod by ID' failing to create a JSON file in cases where BsonBinary exists within JSON data

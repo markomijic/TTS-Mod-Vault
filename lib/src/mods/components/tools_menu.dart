@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show RenameOldBackupsDialog, DownloadModByIdDialog;
+    show DownloadModByIdDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -60,25 +60,8 @@ class ToolsMenu extends ConsumerWidget {
             style: TextStyle(color: Colors.black),
           ),
         ),
-        MenuItemButton(
-          style: MenuItemButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-          ),
-          onPressed: () => showDialog(
-            context: context,
-            builder: (context) => DownloadModByIdDialog(),
-          ),
-          leadingIcon: const Icon(
-            Icons.download,
-            color: Colors.black,
-          ),
-          child: const Text('Download Workshop Mod by ID',
-              style: TextStyle(
-                color: Colors.black,
-              )),
-        ),
-        MenuItemButton(
+
+        /* MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -92,7 +75,7 @@ class ToolsMenu extends ConsumerWidget {
             'Rename old backups',
             style: TextStyle(color: Colors.black),
           ),
-        ),
+        ), */
         MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
@@ -113,6 +96,24 @@ class ToolsMenu extends ConsumerWidget {
             'Clear cache',
             style: TextStyle(color: Colors.black),
           ),
+        ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          onPressed: () => showDialog(
+            context: context,
+            builder: (context) => DownloadModByIdDialog(),
+          ),
+          leadingIcon: const Icon(
+            Icons.download,
+            color: Colors.black,
+          ),
+          child: const Text('Download Workshop Mod by ID',
+              style: TextStyle(
+                color: Colors.black,
+              )),
         ),
       ],
       builder: (

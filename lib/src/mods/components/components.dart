@@ -24,3 +24,4 @@ export 'tools_menu.dart';
 export 'download_mod_by_id_dialog.dart';
 export 'sort_button.dart';
 export 'bulk_backup_dialog.dart';
+export 'update_urls_dialog.dart';

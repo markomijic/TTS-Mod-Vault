@@ -706,16 +706,24 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<void> _renameAssetFile(
+  Future<bool> _renameAssetFile(
     String currentFilePath,
     String newAssetUrl,
   ) async {
-    final file = File(currentFilePath);
+    try {
+      final file = File(currentFilePath);
 
-    final newPath = path.join(file.parent.path,
-        '${getFileNameFromURL(newAssetUrl)}${path.extension(currentFilePath)}');
+      if (!file.existsSync()) return false;
 
-    await file.rename(newPath);
+      final newPath = path.join(file.parent.path,
+          '${getFileNameFromURL(newAssetUrl)}${path.extension(currentFilePath)}');
+
+      await file.rename(newPath);
+      return true;
+    } catch (e) {
+      debugPrint('_renameAssetFileError: $e');
+      return false;
+    }
   }
 
   Future<void> _replaceUrlInJsonFile(
@@ -736,5 +744,52 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
     await File(filePath)
         .writeAsString(jsonString.replaceAll(targetUrl, newUrl));
+  }
+
+  Future<void> updateUrlPrefixes(
+    Mod mod,
+    List<String> oldPrefixes,
+    String newPrefix,
+    bool renameFile,
+  ) async {
+    String jsonString = await File(mod.jsonFilePath).readAsString();
+    bool refreshExistingAssets = false;
+
+    final allModAssets = mod.getAllAssets();
+
+    for (final asset in allModAssets) {
+      for (final oldPrefix in oldPrefixes) {
+        if (asset.url.startsWith(oldPrefix)) {
+          final url = asset.url;
+          final newUrl = url.replaceFirst(oldPrefix, newPrefix);
+
+          jsonString = jsonString.replaceAll(url, newUrl);
+
+          if (renameFile && asset.filePath != null) {
+            final fileRenamed = await _renameAssetFile(asset.filePath!, newUrl);
+
+            if (fileRenamed && !refreshExistingAssets) {
+              refreshExistingAssets = true;
+            }
+          }
+        }
+      }
+    }
+
+    await File(mod.jsonFilePath).writeAsString(jsonString);
+
+    if (refreshExistingAssets) {
+      await ref
+          .read(existingAssetListsProvider.notifier)
+          .loadExistingAssetsLists();
+    }
+
+    final jsonURLs = await getUrlsByMod(mod, true);
+    final completeMod = await getCompleteMod(mod, jsonURLs);
+
+    await ref.read(storageProvider).updateModUrls(mod.jsonFileName, jsonURLs);
+
+    updateMod(completeMod);
+    setSelectedMod(completeMod);
   }
 }

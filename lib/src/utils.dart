@@ -28,6 +28,25 @@ const nexusModsDownloadPageUrl =
     "https://www.nexusmods.com/tabletopsimulator/mods/426";
 const steamDiscussionUrl =
     "https://steamcommunity.com/app/286160/discussions/0/591772542952298985/";
+const String updateUrlsHelp = '''
+The Update URLs feature works by replacing the beginning of a URL
+
+Example (single old prefix):
+• Old prefix: http://pastebin.com/raw.php?i=
+• New prefix: https://pastebin.com/raw/
+
+If your mod contains: http://pastebin.com/raw.php?i=1234, http://pastebin.com/raw.php?i=example
+They will be updated to: https://pastebin.com/raw/1234, https://pastebin.com/raw/example
+
+Example (multiple old prefixes):
+• Old prefixes: http://pastebin.com/raw.php?i=|http://pastebin.com/raw/|http://pastebin.com/
+• New prefix: https://pastebin.com/raw/
+
+If your mod contains: http://pastebin.com/raw.php?i=abcd, http://pastebin.com/raw/5678, http://pastebin.com/example2
+They will be updated to: https://pastebin.com/raw/abcd, https://pastebin.com/raw/5678, https://pastebin.com/raw/example2''';
+
+const String updateUrlsInstruction =
+    'You can enter multiple old prefixes by separating them with the | symbol\nFor example: http://pastebin.com/raw.php?i=|http://pastebin.com/raw/|http://pastebin.com/\n\nThere must be exactly one new prefix, for example: https://pastebin.com/raw/';
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
@@ -291,6 +310,19 @@ String getBackupFilenameByMod(Mod mod) {
 
   return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
 }
+
+/* String getBackupFilenameByMod(Mod mod, bool includeJsonFilename) {
+  // If json file name is not a number -> do not include it in backup filename
+  final nameAsNumber = int.tryParse(mod.jsonFileName);
+
+  if (nameAsNumber == null &&
+      mod.modType == ModTypeEnum.mod &&
+      !includeJsonFilename) {
+    return sanitizeFileName("${mod.saveName}.ttsmod");
+  }
+
+  return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
+} */
 
 Future<void> openInFileExplorer(String filePath) async {
   try {

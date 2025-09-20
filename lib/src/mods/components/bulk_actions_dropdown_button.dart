@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show BulkBackupDialog;
+    show BulkBackupDialog, showBulkUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -79,20 +79,20 @@ class BulkActionsDropDownButton extends HookConsumerWidget {
             onPressed: () {
               if (actionInProgress) return;
 
-              /* showDialog(
-              context: context,
-              builder: (context) => BulkBackupDialog(
-                title: 'Backup all',
-                initialBehavior: BulkBackupBehaviorEnum.replaceIfOutOfDate,
-                onConfirm: (behavior, folder) {
-                  ref.read(bulkActionsProvider.notifier).backupAllMods(
+              showBulkUpdateUrlsDialog(
+                context,
+                ref,
+                (oldUrlPrefix, newUrlPrefix, renameFile) {
+                  ref
+                      .read(bulkActionsProvider.notifier)
+                      .updateUrlPrefixesAllMods(
                         ref.read(filteredModsProvider),
-                        behavior,
-                        folder,
+                        oldUrlPrefix.split('|'),
+                        newUrlPrefix,
+                        renameFile,
                       );
                 },
-              ),
-            ); */
+              );
             },
           ),
         MenuItemButton(

@@ -2,6 +2,7 @@ enum BulkActionsStatusEnum {
   idle,
   downloadAll,
   backupAll,
+  updateUrls,
   downloadAndBackupAll;
 }
 

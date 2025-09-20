@@ -11,7 +11,7 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/utils.dart'
-    show newSteamUserContentUrl, oldCloudUrl;
+    show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
 final urlRegex = RegExp(
   r'(?:[a-zA-Z]+:\/\/)?[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^{}"]*)?',
@@ -52,6 +52,32 @@ class ModStorageUpdate {
   });
 }
 
+class UpdateUrlPrefixesParams {
+  final String modJsonFilePath;
+  final List<String> oldPrefixes;
+  final String newPrefix;
+  final bool renameFile;
+  final Map<String, String?> assets;
+
+  UpdateUrlPrefixesParams(
+    this.modJsonFilePath,
+    this.oldPrefixes,
+    this.newPrefix,
+    this.renameFile,
+    this.assets,
+  );
+}
+
+class UpdateUrlPrefixesResult {
+  final bool updated;
+  final String jsonString;
+
+  UpdateUrlPrefixesResult({
+    required this.updated,
+    required this.jsonString,
+  });
+}
+
 Future<IsolateWorkResult> processMultipleBatchesInIsolate(
     IsolateWorkData workData) async {
   final List<Mod> allProcessedMods = [];
@@ -80,10 +106,7 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
           allStorageUpdates.add(ModStorageUpdate(
             jsonFileName: mod.jsonFileName,
             dateTimeStamp: mod.dateTimeStamp ?? '',
-            jsonURLs: jsonURLs.map((key, value) => MapEntry(
-                  key.replaceAll(oldCloudUrl, newSteamUserContentUrl),
-                  value,
-                )),
+            jsonURLs: jsonURLs,
           ));
         }
 
@@ -121,7 +144,33 @@ Future<Map<String, String>> extractUrlsFromJson(String filePath) async {
     finalUrls.addAll(processedUrls);
   }
 
-  return finalUrls;
+  return finalUrls.map((key, value) => MapEntry(
+        key.replaceAll(oldCloudUrl, newSteamUserContentUrl),
+        value,
+      ));
+}
+
+Map<String, String> extractUrlsFromJsonString(String jsonString) {
+  Map<String, String> urls = {};
+
+  try {
+    // Use regex extraction instead of full JSON parsing
+    urls = _extractUrlsWithRegex(jsonString);
+  } catch (e) {
+    debugPrint('extractUrlsFromJson error: $e');
+  }
+
+  Map<String, String> finalUrls = {};
+
+  for (final url in urls.entries) {
+    final processedUrls = _processUrl(url.key, url.value);
+    finalUrls.addAll(processedUrls);
+  }
+
+  return finalUrls.map((key, value) => MapEntry(
+        key.replaceAll(oldCloudUrl, newSteamUserContentUrl),
+        value,
+      ));
 }
 
 // Separates one url into multiple entries and/or removes {prefix} such as {en}
@@ -192,6 +241,66 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
 
   return urls;
 } */
+
+Future<UpdateUrlPrefixesResult> updateUrlPrefixesFilesIsolate(
+  UpdateUrlPrefixesParams params,
+) async {
+  bool updatedFiles = false;
+  String jsonString = await File(params.modJsonFilePath).readAsString();
+
+  for (final asset in params.assets.entries) {
+    final url = asset.key;
+    final filePath = asset.value;
+
+    for (final oldPrefix in params.oldPrefixes) {
+      if (oldPrefix.contains('http://cloud-3.steamusercontent.com') &&
+          params.newPrefix
+              .contains('https://steamusercontent-a.akamaihd.net')) {
+        jsonString = jsonString.replaceAll(oldPrefix, params.newPrefix);
+        updatedFiles = true;
+        continue;
+      }
+
+      if (url.startsWith(oldPrefix)) {
+        final newUrl = url.replaceFirst(oldPrefix, params.newPrefix);
+        jsonString = jsonString.replaceAll(url, newUrl);
+        updatedFiles = true;
+
+        if (params.renameFile && filePath != null) {
+          await renameAssetFile(filePath, newUrl);
+        }
+      }
+    }
+  }
+
+  if (updatedFiles) {
+    await File(params.modJsonFilePath).writeAsString(jsonString);
+  }
+
+  return UpdateUrlPrefixesResult(
+    updated: updatedFiles,
+    jsonString: jsonString,
+  );
+}
+
+Future<void> renameAssetFile(
+  String currentFilePath,
+  String newAssetUrl,
+) async {
+  try {
+    final file = File(currentFilePath);
+
+    if (!file.existsSync()) return;
+
+    final newFileName = getFileNameFromURL(newAssetUrl);
+    final fileExtension = path.extension(currentFilePath);
+    final newPath = path.join(file.parent.path, '$newFileName$fileExtension');
+
+    await file.rename(newPath);
+  } catch (e) {
+    debugPrint('_renameAssetFileError: $e');
+  }
+}
 
 Future<String?> _getImageFilePathIsolate(
   String modDirectory,

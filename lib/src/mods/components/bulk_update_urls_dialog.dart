@@ -7,35 +7,29 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart' show modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show updateUrlsHelp, updateUrlsInstruction;
 
-void showUpdateUrlsDialog(
+void showBulkUpdateUrlsDialog(
   BuildContext context,
   WidgetRef ref,
-  Mod mod,
+  Function(String oldUrlPrefix, String newUrlPrefix, bool renameFile) onConfirm,
 ) {
   if (context.mounted) {
     showDialog(
       context: context,
       builder: (context) {
-        return UpdateUrlsDialog(
-          mod: mod,
-        );
+        return BulkUpdateUrlsDialog(onConfirm: onConfirm);
       },
     );
   }
 }
 
-class UpdateUrlsDialog extends HookConsumerWidget {
-  final Mod mod;
+class BulkUpdateUrlsDialog extends HookConsumerWidget {
+  final Function(String oldUrlPrefix, String newUrlPrefix, bool renameFile)
+      onConfirm;
 
-  const UpdateUrlsDialog({
-    super.key,
-    required this.mod,
-  });
+  const BulkUpdateUrlsDialog({super.key, required this.onConfirm});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +37,6 @@ class UpdateUrlsDialog extends HookConsumerWidget {
     final newPrefixTextFieldController = useTextEditingController();
 
     final renameFileBox = useState(true);
-    final replacingUrl = useState(false);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -53,7 +46,7 @@ class UpdateUrlsDialog extends HookConsumerWidget {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Update URLs'),
+                Text('Bulk Update URLs'),
                 CustomTooltip(
                   message: updateUrlsHelp,
                   child: Icon(
@@ -155,38 +148,17 @@ class UpdateUrlsDialog extends HookConsumerWidget {
 
                   if (newUrlPrefix.isEmpty || oldUrlPrefix.isEmpty) return;
 
-                  try {
-                    replacingUrl.value = true;
-
-                    await ref.read(modsProvider.notifier).updateUrlPrefixes(
-                          mod,
-                          oldUrlPrefix.split('|'),
-                          newUrlPrefix,
-                          renameFileBox.value,
-                        );
-
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                    }
-                  } catch (e) {
-                    debugPrint('Replacing URL error: $e');
-                  } finally {
-                    replacingUrl.value = false;
-                  }
+                  onConfirm.call(
+                    oldUrlPrefix,
+                    newUrlPrefix,
+                    renameFileBox.value,
+                  );
+                  Navigator.pop(context);
                 },
                 child: Text('Apply'),
               ),
             ],
           ),
-          if (replacingUrl.value)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black54,
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-              ),
-            ),
         ],
       ),
     );

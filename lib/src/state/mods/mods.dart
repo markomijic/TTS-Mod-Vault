@@ -3,8 +3,8 @@ import 'dart:isolate' show Isolate;
 import 'dart:math' show max;
 
 import 'package:collection/collection.dart' show IterableExtension;
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart' show VoidCallback, debugPrint;
-import 'package:path/path.dart' as path;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncNotifier, AsyncValue, AsyncValueX;
 import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart'
@@ -25,10 +25,14 @@ import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
         IsolateWorkData,
         IsolateWorkResult,
         ModStorageUpdate,
+        UpdateUrlPrefixesParams,
         extractUrlsFromJson,
+        extractUrlsFromJsonString,
         getJsonFilesInDirectory,
         processInitialModsInIsolate,
-        processMultipleBatchesInIsolate;
+        processMultipleBatchesInIsolate,
+        renameAssetFile,
+        updateUrlPrefixesFilesIsolate;
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -685,7 +689,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           selectedMod.jsonFilePath, oldAsset.url, newAssetUrl);
 
       if (renameFile && oldAsset.filePath != null) {
-        await _renameAssetFile(oldAsset.filePath!, newAssetUrl);
+        await renameAssetFile(oldAsset.filePath!, newAssetUrl);
         await ref
             .read(existingAssetListsProvider.notifier)
             .setExistingAssetsListByType(assetType);
@@ -703,26 +707,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     } catch (e) {
       debugPrint('updateModAsset error: $e');
       state = AsyncValue.error(e, StackTrace.current);
-    }
-  }
-
-  Future<bool> _renameAssetFile(
-    String currentFilePath,
-    String newAssetUrl,
-  ) async {
-    try {
-      final file = File(currentFilePath);
-
-      if (!file.existsSync()) return false;
-
-      final newPath = path.join(file.parent.path,
-          '${getFileNameFromURL(newAssetUrl)}${path.extension(currentFilePath)}');
-
-      await file.rename(newPath);
-      return true;
-    } catch (e) {
-      debugPrint('_renameAssetFileError: $e');
-      return false;
     }
   }
 
@@ -752,44 +736,33 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     String newPrefix,
     bool renameFile,
   ) async {
-    String jsonString = await File(mod.jsonFilePath).readAsString();
-    bool refreshExistingAssets = false;
+    final assets = Map.fromEntries(
+        mod.getAllAssets().map((a) => MapEntry(a.url, a.filePath)));
+    final modJsonFilePath = mod.jsonFilePath;
 
-    final allModAssets = mod.getAllAssets();
+    final result = await compute(
+      updateUrlPrefixesFilesIsolate,
+      UpdateUrlPrefixesParams(
+        modJsonFilePath,
+        oldPrefixes,
+        newPrefix,
+        renameFile,
+        assets,
+      ),
+    );
 
-    for (final asset in allModAssets) {
-      for (final oldPrefix in oldPrefixes) {
-        if (asset.url.startsWith(oldPrefix)) {
-          final url = asset.url;
-          final newUrl = url.replaceFirst(oldPrefix, newPrefix);
-
-          jsonString = jsonString.replaceAll(url, newUrl);
-
-          if (renameFile && asset.filePath != null) {
-            final fileRenamed = await _renameAssetFile(asset.filePath!, newUrl);
-
-            if (fileRenamed && !refreshExistingAssets) {
-              refreshExistingAssets = true;
-            }
-          }
-        }
-      }
-    }
-
-    await File(mod.jsonFilePath).writeAsString(jsonString);
-
-    if (refreshExistingAssets) {
+    if (result.updated) {
       await ref
           .read(existingAssetListsProvider.notifier)
           .loadExistingAssetsLists();
+
+      final jsonURLs = extractUrlsFromJsonString(result.jsonString);
+      final completeMod = await getCompleteMod(mod, jsonURLs);
+
+      await ref.read(storageProvider).updateModUrls(mod.jsonFileName, jsonURLs);
+
+      updateMod(completeMod);
+      setSelectedMod(completeMod);
     }
-
-    final jsonURLs = await getUrlsByMod(mod, true);
-    final completeMod = await getCompleteMod(mod, jsonURLs);
-
-    await ref.read(storageProvider).updateModUrls(mod.jsonFileName, jsonURLs);
-
-    updateMod(completeMod);
-    setSelectedMod(completeMod);
   }
 }

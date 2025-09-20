@@ -31,6 +31,7 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
       try {
         result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
+          lockParentWindow: true,
           initialDirectory: backupsDir.isEmpty ? null : backupsDir,
           allowedExtensions: ['ttsmod'],
           allowMultiple: false,

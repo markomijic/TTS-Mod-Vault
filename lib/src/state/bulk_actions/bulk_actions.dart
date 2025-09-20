@@ -1,5 +1,5 @@
 import 'package:file_picker/file_picker.dart' show FilePicker;
-import 'package:flutter/material.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show compute, debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
@@ -9,13 +9,17 @@ import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkActionsState, BulkActionsStatusEnum, BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart';
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         backupProvider,
         directoriesProvider,
         downloadProvider,
+        loaderProvider,
         modsProvider,
-        selectedModProvider;
+        selectedModProvider,
+        selectedModTypeProvider,
+        storageProvider;
 
 class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   final Ref ref;
@@ -60,7 +64,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       state = state.copyWith(
           currentModNumber: mods.indexOf(mod) + 1,
           statusMessage:
-              'Downloading all mods (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
+              'Downloading all ${ref.read(selectedModTypeProvider).label}s (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
 
       final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
@@ -83,7 +87,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     state = state.copyWith(
       status: BulkActionsStatusEnum.backupAll,
       totalModNumber: mods.length,
-      statusMessage: "Select a folder to backup all mods",
+      statusMessage:
+          "Select a folder to backup all ${ref.read(selectedModTypeProvider).label}s",
     );
 
     final selectedBackupFolder =
@@ -127,7 +132,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       state = state.copyWith(
           currentModNumber: mods.indexOf(mod) + 1,
           statusMessage:
-              'Backing up all mods (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
+              'Backing up all ${ref.read(selectedModTypeProvider).label}s (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
 
       final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
@@ -151,7 +156,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     state = state.copyWith(
       status: BulkActionsStatusEnum.downloadAndBackupAll,
       totalModNumber: mods.length,
-      statusMessage: "Select a folder to backup all mods",
+      statusMessage:
+          "Select a folder to backup all ${ref.read(selectedModTypeProvider).label}s",
     );
 
     final selectedBackupFolder =
@@ -171,7 +177,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       state = state.copyWith(
           currentModNumber: mods.indexOf(mod) + 1,
           statusMessage:
-              'Downloading & backing up all mods (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
+              'Downloading & backing up all ${ref.read(selectedModTypeProvider).label}s (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
 
       final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
       final completeMod =
@@ -222,10 +228,73 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     ref.read(downloadProvider.notifier).resetState();
   }
 
+  Future<void> updateUrlPrefixesAllMods(
+    List<Mod> mods,
+    List<String> oldPrefixes,
+    String newPrefix,
+    bool renameFile,
+  ) async {
+    state = state.copyWith(
+      status: BulkActionsStatusEnum.updateUrls,
+      totalModNumber: mods.length,
+    );
+
+    Map<String, Map<String, String>> allModUrlsData = {};
+
+    for (final mod in mods) {
+      if (state.cancelledBulkAction) {
+        continue;
+      }
+
+      debugPrint('Updating URLs: ${mod.saveName}');
+
+      state = state.copyWith(
+          currentModNumber: mods.indexOf(mod) + 1,
+          statusMessage:
+              'Updating URLs of all ${ref.read(selectedModTypeProvider).label}s (${mods.indexOf(mod) + 1}/${state.totalModNumber})');
+
+      final assets = Map.fromEntries(
+          mod.getAllAssets().map((a) => MapEntry(a.url, a.filePath)));
+      final modJsonFilePath = mod.jsonFilePath;
+
+      final result = await compute(
+        updateUrlPrefixesFilesIsolate,
+        UpdateUrlPrefixesParams(
+          modJsonFilePath,
+          oldPrefixes,
+          newPrefix,
+          renameFile,
+          assets,
+        ),
+      );
+
+      if (result.updated) {
+        final jsonURLs = extractUrlsFromJsonString(result.jsonString);
+        allModUrlsData[mod.jsonFileName] = jsonURLs;
+      }
+    }
+
+    if (allModUrlsData.isNotEmpty) {
+      await ref.read(storageProvider).saveAllModUrlsData(allModUrlsData);
+    }
+
+    await (Future.delayed(
+      Duration(seconds: 2),
+      () {
+        _resetState();
+        ref.read(loaderProvider).refreshAppData();
+      },
+    ));
+  }
+
   // Cancel methods
   Future<void> cancelBulkAction() async {
     switch (state.status) {
       case BulkActionsStatusEnum.idle:
+        break;
+
+      case BulkActionsStatusEnum.updateUrls:
+        _cancelUpdateUrls();
         break;
 
       case BulkActionsStatusEnum.downloadAll:
@@ -247,14 +316,24 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
     state = state.copyWith(
       cancelledBulkAction: true,
-      statusMessage: "Cancelling all downloads",
+      statusMessage:
+          "Cancelling download of all ${ref.read(selectedModTypeProvider).label}s",
     );
   }
 
   void _cancelAllBackups() async {
     state = state.copyWith(
       cancelledBulkAction: true,
-      statusMessage: "Cancelling backing up all mods",
+      statusMessage:
+          "Cancelling backup of all ${ref.read(selectedModTypeProvider).label}s",
+    );
+  }
+
+  void _cancelUpdateUrls() async {
+    state = state.copyWith(
+      cancelledBulkAction: true,
+      statusMessage:
+          "Cancelling URL update for all ${ref.read(selectedModTypeProvider).label}s",
     );
   }
 
@@ -265,7 +344,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
     state = state.copyWith(
       cancelledBulkAction: true,
-      statusMessage: "Cancelling downloading & backing up all mods",
+      statusMessage:
+          "Cancelling download & backup of all ${ref.read(selectedModTypeProvider).label}s",
     );
   }
 }

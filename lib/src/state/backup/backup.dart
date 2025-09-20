@@ -24,7 +24,11 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, existingBackupsProvider, bulkActionsProvider;
+    show
+        bulkActionsProvider,
+        directoriesProvider,
+        existingBackupsProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         getBackupFilenameByMod,
@@ -82,7 +86,10 @@ class BackupNotifier extends StateNotifier<BackupState> {
       final totalAssetCount = filePaths.$2;
 
       final receivePort = ReceivePort();
-      final backupFileName = getBackupFilenameByMod(mod);
+      final forceBackupJsonFilename =
+          ref.read(settingsProvider).forceBackupJsonFilename;
+      final backupFileName =
+          getBackupFilenameByMod(mod, forceBackupJsonFilename);
       final targetBackupFilePath = p.join(backupDirPath, backupFileName);
 
       final modsDir = Directory(ref.read(directoriesProvider).modsDir);

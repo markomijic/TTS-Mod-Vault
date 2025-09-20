@@ -138,7 +138,7 @@ class ModsGridCard extends HookConsumerWidget {
                       color: Colors.grey[850],
                       alignment: Alignment.center,
                       child: Text(
-                        mod.saveName,
+                        '${mod.saveName}\n${mod.jsonFileName}',
                         maxLines: 5,
                         textAlign: TextAlign.center,
                         overflow: TextOverflow.ellipsis,

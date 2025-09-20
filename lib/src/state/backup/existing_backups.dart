@@ -11,9 +11,10 @@ import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart'
     show ExistingBackupsState;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, loadingMessageProvider;
+    show directoriesProvider, loadingMessageProvider, settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show getBackupFilenameByMod;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
@@ -138,7 +139,28 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
 
   ExistingBackup? getBackupByMod(Mod mod) {
     try {
-      final backupFileName = getBackupFilenameByMod(mod);
+      final forceBackupJsonFilename =
+          ref.read(settingsProvider).forceBackupJsonFilename;
+
+      if (forceBackupJsonFilename && mod.modType == ModTypeEnum.mod) {
+        // Try to find backup name which includes JSON filename
+        final backupFileNameWithJson = getBackupFilenameByMod(mod, true);
+        final backupFileWithJson =
+            _getMostRecentBackupByFilename(backupFileNameWithJson);
+
+        if (backupFileWithJson != null) {
+          return backupFileWithJson;
+        }
+
+        // Try to find backup name which doesn't force inclusion of JSON filename
+        final standardBackupFileName = getBackupFilenameByMod(mod, false);
+        final standardBackup =
+            _getMostRecentBackupByFilename(standardBackupFileName);
+
+        return standardBackup;
+      }
+
+      final backupFileName = getBackupFilenameByMod(mod, false);
       return _getMostRecentBackupByFilename(backupFileName);
     } catch (e) {
       return null;

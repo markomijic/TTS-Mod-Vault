@@ -45,6 +45,7 @@ Features:
 · Update URLs - available as an action for a selected mod and as a bulk action
 
 Changes:
+· New Setting - Force JSON filename inclusion in backup filename for all cases
 · Last selected asset URL now stays highlighted after closing the context menu
 · Removed the tool for renaming old backups
 · Fixed Steam CDN URLs not downloading when a trailing / was missing

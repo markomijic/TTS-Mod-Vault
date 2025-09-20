@@ -141,21 +141,26 @@ class BulkUpdateUrlsDialog extends HookConsumerWidget {
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel'),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  final oldUrlPrefix = oldPrefixTextFieldController.text.trim();
-                  final newUrlPrefix = newPrefixTextFieldController.text.trim();
+              CustomTooltip(
+                message: 'Data will be refreshed after the bulk action ends',
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final oldUrlPrefix =
+                        oldPrefixTextFieldController.text.trim();
+                    final newUrlPrefix =
+                        newPrefixTextFieldController.text.trim();
 
-                  if (newUrlPrefix.isEmpty || oldUrlPrefix.isEmpty) return;
+                    if (newUrlPrefix.isEmpty || oldUrlPrefix.isEmpty) return;
 
-                  onConfirm.call(
-                    oldUrlPrefix,
-                    newUrlPrefix,
-                    renameFileBox.value,
-                  );
-                  Navigator.pop(context);
-                },
-                child: Text('Apply'),
+                    onConfirm.call(
+                      oldUrlPrefix,
+                      newUrlPrefix,
+                      renameFileBox.value,
+                    );
+                    Navigator.pop(context);
+                  },
+                  child: Text('Apply'),
+                ),
               ),
             ],
           ),

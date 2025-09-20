@@ -141,7 +141,9 @@ class ModsListItem extends HookConsumerWidget {
                   children: [
                     Text(
                       mod.modType != ModTypeEnum.save
-                          ? mod.saveName
+                          ? imageExists
+                              ? mod.saveName
+                              : '${mod.saveName} - ${mod.jsonFileName}'
                           : "${mod.saveName} - ${mod.jsonFileName}",
                       style: TextStyle(
                         fontSize: 24,

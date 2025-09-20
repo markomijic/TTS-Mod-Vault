@@ -10,6 +10,7 @@ class SettingsState {
   final bool showSavedObjects;
   final bool showBackupState;
   final SortOptionEnum defaultSortOption;
+  final bool forceBackupJsonFilename;
 
   const SettingsState({
     this.useModsListView = false,
@@ -20,6 +21,7 @@ class SettingsState {
     this.showSavedObjects = false,
     this.showBackupState = true,
     this.defaultSortOption = SortOptionEnum.alphabeticalAsc,
+    this.forceBackupJsonFilename = false,
   });
 
   SettingsState copyWith({
@@ -31,6 +33,7 @@ class SettingsState {
     bool? showSavedObjects,
     bool? showBackupState,
     SortOptionEnum? defaultSortOption,
+    bool? forceBackupJsonFilename,
   }) {
     return SettingsState(
       useModsListView: useModsListView ?? this.useModsListView,
@@ -43,6 +46,8 @@ class SettingsState {
       showSavedObjects: showSavedObjects ?? this.showSavedObjects,
       showBackupState: showBackupState ?? this.showBackupState,
       defaultSortOption: defaultSortOption ?? this.defaultSortOption,
+      forceBackupJsonFilename:
+          forceBackupJsonFilename ?? this.forceBackupJsonFilename,
     );
   }
 
@@ -56,6 +61,7 @@ class SettingsState {
       'showSavedObjects': showSavedObjects,
       'showBackupState': showBackupState,
       'defaultSortOption': defaultSortOption.label,
+      'forceBackupJsonFilename': forceBackupJsonFilename,
     };
   }
 
@@ -71,6 +77,8 @@ class SettingsState {
       showBackupState: _parseBool(json['showBackupState'], true),
       defaultSortOption: _parseSortOptionEnum(
           json['defaultSortOption'], SortOptionEnum.alphabeticalAsc),
+      forceBackupJsonFilename:
+          _parseBool(json['forceBackupJsonFilename'], false),
     );
   }
 

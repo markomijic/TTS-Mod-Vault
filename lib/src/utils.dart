@@ -300,29 +300,18 @@ String sanitizeFileName(String input) {
   return sanitized.trim().replaceAll(RegExp(r'^\.+|\.+$'), '');
 }
 
-String getBackupFilenameByMod(Mod mod) {
-  // If json file name is not a number -> do not include it in backup filename
+String getBackupFilenameByMod(Mod mod, bool forceIncludeJsonFilename) {
+  // If json file name is not a number -> do not include it in backup filename unless modified by Setting
   final nameAsNumber = int.tryParse(mod.jsonFileName);
 
-  if (nameAsNumber == null && mod.modType == ModTypeEnum.mod) {
+  if (!forceIncludeJsonFilename &&
+      nameAsNumber == null &&
+      mod.modType == ModTypeEnum.mod) {
     return sanitizeFileName("${mod.saveName}.ttsmod");
   }
 
   return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
 }
-
-/* String getBackupFilenameByMod(Mod mod, bool includeJsonFilename) {
-  // If json file name is not a number -> do not include it in backup filename
-  final nameAsNumber = int.tryParse(mod.jsonFileName);
-
-  if (nameAsNumber == null &&
-      mod.modType == ModTypeEnum.mod &&
-      !includeJsonFilename) {
-    return sanitizeFileName("${mod.saveName}.ttsmod");
-  }
-
-  return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
-} */
 
 Future<void> openInFileExplorer(String filePath) async {
   try {

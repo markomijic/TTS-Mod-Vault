@@ -47,6 +47,7 @@ class SettingsDialog extends HookConsumerWidget {
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
     final enableTtsModdersFeatures =
         useState(settings.enableTtsModdersFeatures);
+    final forceBackupJsonFilename = useState(settings.forceBackupJsonFilename);
     final showSavedObjects = useState(settings.showSavedObjects);
     final showBackupState = useState(settings.showBackupState);
 
@@ -79,6 +80,7 @@ class SettingsDialog extends HookConsumerWidget {
         showSavedObjects: showSavedObjects.value,
         showBackupState: showBackupState.value,
         defaultSortOption: defaultSortOption.value,
+        forceBackupJsonFilename: forceBackupJsonFilename.value,
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -145,6 +147,7 @@ class SettingsDialog extends HookConsumerWidget {
                         showSavedObjects: showSavedObjects,
                         showBackupState: showBackupState,
                         enableTtsModdersFeatures: enableTtsModdersFeatures,
+                        forceBackupJsonFilename: forceBackupJsonFilename,
                       ),
                     ),
 
@@ -437,12 +440,14 @@ class SettingsFeaturesColumn extends StatelessWidget {
     required this.showSavedObjects,
     required this.showBackupState,
     required this.enableTtsModdersFeatures,
+    required this.forceBackupJsonFilename,
   });
 
   final ValueNotifier<bool> checkForUpdatesOnStartBox;
   final ValueNotifier<bool> showSavedObjects;
   final ValueNotifier<bool> showBackupState;
   final ValueNotifier<bool> enableTtsModdersFeatures;
+  final ValueNotifier<bool> forceBackupJsonFilename;
 
   @override
   Widget build(BuildContext context) {
@@ -479,6 +484,42 @@ class SettingsFeaturesColumn extends StatelessWidget {
           contentPadding: EdgeInsets.all(0),
           onChanged: (value) {
             showSavedObjects.value = value ?? showSavedObjects.value;
+          },
+        ),
+        CheckboxListTile(
+          title: Row(
+            spacing: 4,
+            children: [
+              const Text(
+                'Force JSON name in Backup filename',
+                overflow: TextOverflow.ellipsis,
+              ),
+              CustomTooltip(
+                message:
+                    """By default, the JSON filename is included in the Mod backup filename only if the JSON filename is a number.
+This setting has no effect on backups of Saves and Saved Objects because they already always include the JSON filename.
+
+Mod backup filenames example:
+JSON file name: 1234.json + Mod name: ExampleGame => Backup name: ExampleGame (1234).ttsmod
+JSON file name: test.json + Mod name: ExampleGame => Backup name: ExampleGame.ttsmod
+
+By enabling this setting, the JSON filename will be included even if it's not a number.
+JSON file name: test.json + Mod name: ExampleGame => Backup name: ExampleGame (test).ttsmod
+
+Additionally, when this setting is enabled and the tool tries to find a matching backup file, it will first try to find it
+by name containing the JSON filename (ExampleGame (test).ttsmod). If that fails, it will try to find it without
+the JSON filename (ExampleGame.ttsmod).""",
+                child: Icon(Icons.info_outline),
+              ),
+            ],
+          ),
+          value: forceBackupJsonFilename.value,
+          checkColor: Colors.black,
+          activeColor: Colors.white,
+          contentPadding: EdgeInsets.all(0),
+          onChanged: (value) {
+            forceBackupJsonFilename.value =
+                value ?? forceBackupJsonFilename.value;
           },
         ),
         CheckboxListTile(

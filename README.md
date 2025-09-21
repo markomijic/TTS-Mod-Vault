@@ -13,8 +13,8 @@ Features:
 - Backup state - See which of your mods have a backup file and is it out of date or up to date
 - Cleanup - Remove unused cached files that aren't part of your installed mods, saves or saved objects
 - View Images - View all downloaded images of a specific mod in one place
-- Replace URL - Replace any URL in the JSON file with a new URL.
-- Update URLs - Replaces prefixes or entire URLs, either for a single item or as a bulk action.
+- Replace URL – replace any asset URL with a new one
+- Update URLs – replace prefixes or entire URLs, either for a single item or as a bulk action
 - Mods & Saves paths - Separately set what paths are used for your Mods folder and your Saves folder in the Settings
 - Open Files - You can open Audio, Images and PDF files
 - Download Workshop Mod by ID - Enter the ID of TTS Mod you want to download and the tool will download both the JSON and image files

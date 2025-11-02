@@ -3,6 +3,7 @@ import 'dart:io' show File;
 import 'dart:ui' show ImageFilter;
 
 import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
+import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart'
@@ -103,8 +104,12 @@ class DownloadModByIdDialog extends HookConsumerWidget {
         final decodedData = BsonCodec.deserialize(bsonBinary);
         decodedData.removeWhere((key, value) => value is BsonBinary);
 
-        final jsonString =
-            const JsonEncoder.withIndent('  ').convert(decodedData);
+        final jsonEncoder = JsonEncoder.withIndent('  ', (object) {
+          if (object is Int64) return object.toString();
+          return object;
+        });
+
+        final jsonString = jsonEncoder.convert(decodedData);
 
         final filePath = '${targetDirectory.value}/$modId.json';
         final file = File(filePath);

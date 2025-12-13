@@ -1,5 +1,6 @@
 class DirectoriesState {
   final String backupsDir;
+  final String tempDownloadDir;
   final String savesDir;
   final String savedObjectsDir;
   final String workshopDir;
@@ -14,6 +15,7 @@ class DirectoriesState {
 
   const DirectoriesState({
     required this.backupsDir,
+    required this.tempDownloadDir,
     required this.savesDir,
     required this.savedObjectsDir,
     required this.workshopDir,
@@ -31,10 +33,12 @@ class DirectoriesState {
     String modsDir,
     String savesDir,
     String backupsDir,
+    String tempDownloadDir,
   ) {
     return DirectoriesState(
       // Backups
       backupsDir: backupsDir,
+      tempDownloadDir: tempDownloadDir,
       // Saves
       savesDir: savesDir,
       savedObjectsDir: '$savesDir/Saved Objects',
@@ -55,6 +59,7 @@ class DirectoriesState {
     const emptyPath = '';
     return const DirectoriesState(
       backupsDir: emptyPath,
+      tempDownloadDir: emptyPath,
       savesDir: emptyPath,
       savedObjectsDir: emptyPath,
       workshopDir: emptyPath,
@@ -75,6 +80,7 @@ extension DirectoriesStateExtensions on DirectoriesState {
     return DirectoriesState(
       // Backups
       backupsDir: backupsDir,
+      tempDownloadDir: tempDownloadDir,
       // Saves
       savesDir: newSavesDir,
       savedObjectsDir: '$newSavesDir/Saved Objects',
@@ -95,6 +101,7 @@ extension DirectoriesStateExtensions on DirectoriesState {
     return DirectoriesState(
       // Backups
       backupsDir: backupsDir,
+      tempDownloadDir: tempDownloadDir,
       // Saves
       savesDir: savesDir,
       savedObjectsDir: savedObjectsDir,
@@ -115,6 +122,28 @@ extension DirectoriesStateExtensions on DirectoriesState {
     return DirectoriesState(
       // Backups
       backupsDir: newBackupsDir,
+      tempDownloadDir: tempDownloadDir,
+      // Saves
+      savesDir: savesDir,
+      savedObjectsDir: savedObjectsDir,
+      // Mods
+      workshopDir: workshopDir,
+      modsDir: modsDir,
+      assetBundlesDir: assetBundlesDir,
+      audioDir: audioDir,
+      imagesDir: imagesDir,
+      imagesRawDir: imagesRawDir,
+      modelsDir: modelsDir,
+      modelsRawDir: modelsRawDir,
+      pdfDir: pdfDir,
+    );
+  }
+
+  DirectoriesState updateTempDownload(String newTempDownloadDir) {
+    return DirectoriesState(
+      // Backups
+      backupsDir: backupsDir,
+      tempDownloadDir: newTempDownloadDir,
       // Saves
       savesDir: savesDir,
       savedObjectsDir: savedObjectsDir,

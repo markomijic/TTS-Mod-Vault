@@ -92,6 +92,8 @@ class SettingsDialog extends HookConsumerWidget {
     final modsDir = useState(ref.read(directoriesProvider).modsDir);
     final savesDir = useState(ref.read(directoriesProvider).savesDir);
     final backupsDir = useState(ref.read(directoriesProvider).backupsDir);
+    final tempDownloadDir =
+        useState(ref.read(directoriesProvider).tempDownloadDir);
 
     Future<void> saveSettingsChanges() async {
       int concurrentDownloads = int.tryParse(textFieldController.text) ?? 5;
@@ -122,11 +124,18 @@ class SettingsDialog extends HookConsumerWidget {
 
       if (ref.read(directoriesProvider).modsDir != modsDir.value ||
           ref.read(directoriesProvider).savesDir != savesDir.value ||
-          ref.read(directoriesProvider).backupsDir != backupsDir.value) {
+          ref.read(directoriesProvider).backupsDir != backupsDir.value ||
+          ref.read(directoriesProvider).tempDownloadDir !=
+              tempDownloadDir.value) {
         if (await directoriesNotifier.isModsDirectoryValid(modsDir.value) &&
             await directoriesNotifier.isSavesDirectoryValid(savesDir.value)) {
           if (ref.read(directoriesProvider).backupsDir != backupsDir.value) {
             directoriesNotifier.updateBackupsDirectory(backupsDir.value);
+          }
+          if (ref.read(directoriesProvider).tempDownloadDir !=
+              tempDownloadDir.value) {
+            directoriesNotifier
+                .updateTempDownloadDirectory(tempDownloadDir.value);
           }
 
           await directoriesNotifier.saveDirectories();
@@ -204,6 +213,7 @@ class SettingsDialog extends HookConsumerWidget {
                                 directoriesNotifier: directoriesNotifier,
                                 savesDir: savesDir,
                                 backupsDir: backupsDir,
+                                tempDownloadDir: tempDownloadDir,
                               ),
                             ],
                           ),
@@ -287,12 +297,14 @@ class SettingsFoldersColumn extends StatelessWidget {
     required this.directoriesNotifier,
     required this.savesDir,
     required this.backupsDir,
+    required this.tempDownloadDir,
   });
 
   final ValueNotifier<String> modsDir;
   final DirectoriesNotifier directoriesNotifier;
   final ValueNotifier<String> savesDir;
   final ValueNotifier<String> backupsDir;
+  final ValueNotifier<String> tempDownloadDir;
 
   @override
   Widget build(BuildContext context) {
@@ -476,6 +488,65 @@ class SettingsFoldersColumn extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 backupsDir.value = '';
+              },
+              child: const Text('Reset'),
+            ),
+          ],
+        ),
+        SizedBox(height: 16),
+        Row(
+          spacing: 4,
+          children: [
+            SectionHeader(title: "Temporary Download Folder"),
+            CustomTooltip(
+              message:
+                  'Optional folder for temporary downloads when using the "delete after backup" option',
+              child: Icon(Icons.info_outline),
+            ),
+          ],
+        ),
+        Row(
+          spacing: 8,
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white),
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.white,
+                ),
+                child: SelectableText(
+                  tempDownloadDir.value,
+                  style: const TextStyle(color: Colors.black),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                String? dir;
+                try {
+                  dir = await FilePicker.platform.getDirectoryPath(
+                    lockParentWindow: true,
+                  );
+                } catch (e) {
+                  debugPrint("File picker error $e");
+                  if (context.mounted) {
+                    showSnackBar(context, "Failed to open file picker");
+                    Navigator.pop(context);
+                  }
+                  return;
+                }
+
+                if (dir != null) {
+                  tempDownloadDir.value = dir;
+                }
+              },
+              child: const Text('Select'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                tempDownloadDir.value = '';
               },
               child: const Text('Reset'),
             ),

@@ -21,6 +21,7 @@ class Storage {
   static const String modsDirKey = 'ModsDir';
   static const String savesDirKey = 'SavesDir';
   static const String backupsDirKey = 'BackupsDir';
+  static const String tempDownloadDirKey = 'TempDownloadDir';
   static const String settingsKey = 'TTSModVaultSettings';
 
   Future<void> initializeStorage() async {
@@ -92,6 +93,19 @@ class Storage {
 
   Future<void> deleteBackupsDir() async {
     await _appDataBox.delete(backupsDirKey);
+  }
+
+  // TEMP DOWNLOAD DIR
+  Future<void> saveTempDownloadDir(String value) async {
+    await _appDataBox.put(tempDownloadDirKey, value);
+  }
+
+  String? getTempDownloadDir() {
+    return _appDataBox.get(tempDownloadDirKey);
+  }
+
+  Future<void> deleteTempDownloadDir() async {
+    await _appDataBox.delete(tempDownloadDirKey);
   }
 
   // MOD DATA

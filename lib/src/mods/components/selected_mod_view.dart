@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerWidget, HookConsumerWidget, WidgetRef;
+    show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         SelectedModActionButtons,
@@ -26,6 +26,15 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         selectedModProvider,
         selectedModTypeProvider;
+
+enum ExistingAssetsFilter {
+  all('All'),
+  missingOnly('Missing only'),
+  downloadedOnly('Downloaded only');
+
+  final String label;
+  const ExistingAssetsFilter(this.label);
+}
 
 abstract class _ListItem {}
 
@@ -134,7 +143,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedAssetTypeFilter = useState<AssetTypeEnum?>(null);
-    final showDownloadedAssets = useState(true);
+    final downloadFilter = useState(ExistingAssetsFilter.all);
 
     final downloadState = ref.watch(downloadProvider);
     final backupStatus = ref.watch(backupProvider).status;
@@ -144,6 +153,10 @@ class _SelectedModViewComponent extends HookConsumerWidget {
       return AssetTypeEnum.values.where((type) {
         return selectedMod.getAssetsByType(type).isNotEmpty;
       }).toList();
+    }, [selectedMod]);
+
+    useMemoized(() {
+      selectedAssetTypeFilter.value = null;
     }, [selectedMod]);
 
     return Column(
@@ -189,27 +202,51 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             spacing: 8,
             runSpacing: 4,
             children: [
-              FilterChip(
-                showCheckmark: false,
-                label: const Text('Show downloaded'),
-                selected: showDownloadedAssets.value,
-                onSelected: (selected) {
-                  showDownloadedAssets.value = selected;
+              MenuAnchor(
+                builder: (context, controller, child) {
+                  return ElevatedButton.icon(
+                    onPressed: () {
+                      if (controller.isOpen) {
+                        controller.close();
+                      } else {
+                        controller.open();
+                      }
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.all(Colors.white),
+                      foregroundColor: WidgetStateProperty.all(Colors.black),
+                    ),
+                    icon: Icon(Icons.arrow_drop_down, size: 26),
+                    label: Text(downloadFilter.value.label),
+                  );
                 },
-                selectedColor: Colors.white,
-                checkmarkColor: Colors.white,
+                menuChildren: [
+                  ...ExistingAssetsFilter.values.map((filter) {
+                    final isSelected = downloadFilter.value == filter;
+                    return MenuItemButton(
+                      closeOnActivate: true,
+                      style: MenuItemButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        iconColor: Colors.black,
+                      ),
+                      child: Row(
+                        spacing: 8,
+                        children: [
+                          Icon(isSelected ? Icons.check : null),
+                          Expanded(
+                            child: Text(
+                              filter.label,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      onPressed: () => downloadFilter.value = filter,
+                    );
+                  }),
+                ],
               ),
-              if (availableAssetTypes.length > 1)
-                FilterChip(
-                  showCheckmark: false,
-                  label: const Text('All'),
-                  selected: selectedAssetTypeFilter.value == null,
-                  onSelected: (selected) {
-                    selectedAssetTypeFilter.value = null;
-                  },
-                  selectedColor: Colors.white,
-                  checkmarkColor: Colors.white,
-                ),
               ...availableAssetTypes.map((type) {
                 return FilterChip(
                   showCheckmark: false,
@@ -220,6 +257,11 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                   },
                   selectedColor: Colors.white,
                   checkmarkColor: Colors.white,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 );
               }),
             ],
@@ -255,8 +297,14 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                   return const SizedBox.shrink();
                 }
 
-                // Filter by showDownloadedAssets checkbox
-                if (!showDownloadedAssets.value && item.asset.fileExists) {
+                // Filter by download status
+                if (downloadFilter.value == ExistingAssetsFilter.missingOnly &&
+                    item.asset.fileExists) {
+                  return const SizedBox.shrink();
+                }
+                if (downloadFilter.value ==
+                        ExistingAssetsFilter.downloadedOnly &&
+                    !item.asset.fileExists) {
                   return const SizedBox.shrink();
                 }
 

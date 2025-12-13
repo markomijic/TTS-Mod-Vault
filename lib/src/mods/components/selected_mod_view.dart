@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
+import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show HookConsumerWidget, WidgetRef;
+    show ConsumerWidget, HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         SelectedModActionButtons,
@@ -133,10 +133,18 @@ class _SelectedModViewComponent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selectedAssetTypeFilter = useState<AssetTypeEnum?>(null);
+    final showDownloadedAssets = useState(true);
+
     final downloadState = ref.watch(downloadProvider);
     final backupStatus = ref.watch(backupProvider).status;
 
     final listItems = useMemoized(() => _buildListItems(), [selectedMod]);
+    final availableAssetTypes = useMemoized(() {
+      return AssetTypeEnum.values.where((type) {
+        return selectedMod.getAssetsByType(type).isNotEmpty;
+      }).toList();
+    }, [selectedMod]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,6 +182,48 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              FilterChip(
+                showCheckmark: false,
+                label: const Text('Show downloaded'),
+                selected: showDownloadedAssets.value,
+                onSelected: (selected) {
+                  showDownloadedAssets.value = selected;
+                },
+                selectedColor: Colors.white,
+                checkmarkColor: Colors.white,
+              ),
+              if (availableAssetTypes.length > 1)
+                FilterChip(
+                  showCheckmark: false,
+                  label: const Text('All'),
+                  selected: selectedAssetTypeFilter.value == null,
+                  onSelected: (selected) {
+                    selectedAssetTypeFilter.value = null;
+                  },
+                  selectedColor: Colors.white,
+                  checkmarkColor: Colors.white,
+                ),
+              ...availableAssetTypes.map((type) {
+                return FilterChip(
+                  showCheckmark: false,
+                  label: Text(type.label),
+                  selected: selectedAssetTypeFilter.value == type,
+                  onSelected: (selected) {
+                    selectedAssetTypeFilter.value = selected ? type : null;
+                  },
+                  selectedColor: Colors.white,
+                  checkmarkColor: Colors.white,
+                );
+              }),
+            ],
+          ),
+        ),
         Expanded(
           child: ListView.builder(
             key: ValueKey(selectedMod.jsonFileName),
@@ -184,6 +234,17 @@ class _SelectedModViewComponent extends HookConsumerWidget {
               if (item is _HeaderItem) {
                 return _buildHeader(context, ref, item, selectedMod);
               } else if (item is _AssetItem) {
+                // Filter by selected asset type
+                if (selectedAssetTypeFilter.value != null &&
+                    item.type != selectedAssetTypeFilter.value) {
+                  return const SizedBox.shrink();
+                }
+
+                // Filter by showDownloadedAssets checkbox
+                if (!showDownloadedAssets.value && item.asset.fileExists) {
+                  return const SizedBox.shrink();
+                }
+
                 return Padding(
                   padding: EdgeInsets.symmetric(vertical: 2),
                   child: AssetsUrl(asset: item.asset, type: item.type),

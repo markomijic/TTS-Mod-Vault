@@ -54,28 +54,12 @@ class ToolsMenu extends ConsumerWidget {
               },
             );
           },
-          leadingIcon: Icon(Icons.delete, color: Colors.black),
+          leadingIcon: Icon(Icons.delete_sweep, color: Colors.black),
           child: Text(
-            'Cleanup',
+            'Clean up unused files',
             style: TextStyle(color: Colors.black),
           ),
         ),
-
-        /* MenuItemButton(
-          style: MenuItemButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-          ),
-          onPressed: () => showDialog(
-            context: context,
-            builder: (context) => RenameOldBackupsDialog(),
-          ),
-          leadingIcon: Icon(Icons.edit, color: Colors.black),
-          child: Text(
-            'Rename old backups',
-            style: TextStyle(color: Colors.black),
-          ),
-        ), */
         MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
@@ -84,16 +68,16 @@ class ToolsMenu extends ConsumerWidget {
           onPressed: () {
             showConfirmDialog(
               context,
-              'Are you sure you want to clear all cached mod data?\nData will be refreshed after clearing.',
+              'This will clear the Vault\'s cache and reload mod information from your files.\n\nYour downloaded asset files will not be affected.\n\nContinue?',
               () async => await ref.read(loaderProvider).refreshAppData(true),
             );
           },
           leadingIcon: const Icon(
-            Icons.clear_all,
+            Icons.refresh,
             color: Colors.black,
           ),
           child: const Text(
-            'Clear cache',
+            'Clear Vault cache',
             style: TextStyle(color: Colors.black),
           ),
         ),

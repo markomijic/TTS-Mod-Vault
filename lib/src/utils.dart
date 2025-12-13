@@ -89,6 +89,18 @@ final ThemeData darkTheme = ThemeData(
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(foregroundColor: Colors.blue),
   ),
+  navigationRailTheme: NavigationRailThemeData(
+    selectedIconTheme: IconThemeData(color: Colors.black),
+    unselectedIconTheme: IconThemeData(color: Colors.white),
+    selectedLabelTextStyle: TextStyle(
+      color: Colors.white,
+      fontSize: 16,
+    ),
+    unselectedLabelTextStyle: TextStyle(
+      color: Colors.white,
+      fontSize: 16,
+    ),
+  ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
     fillColor: Colors.black87,

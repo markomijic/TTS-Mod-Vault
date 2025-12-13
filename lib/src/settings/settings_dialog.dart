@@ -27,6 +27,36 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.da
     show SortOptionEnum;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
+enum SettingsSection {
+  uiNetwork,
+  features,
+  folders,
+}
+
+extension SettingsSectionX on SettingsSection {
+  String get label {
+    switch (this) {
+      case SettingsSection.uiNetwork:
+        return 'Interface & Network';
+      case SettingsSection.features:
+        return 'Features';
+      case SettingsSection.folders:
+        return 'Folders';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case SettingsSection.uiNetwork:
+        return Icons.palette_outlined;
+      case SettingsSection.features:
+        return Icons.extension_outlined;
+      case SettingsSection.folders:
+        return Icons.folder_outlined;
+    }
+  }
+}
+
 class SettingsDialog extends HookConsumerWidget {
   const SettingsDialog({super.key});
 
@@ -35,13 +65,19 @@ class SettingsDialog extends HookConsumerWidget {
     final directoriesNotifier = ref.watch(directoriesProvider.notifier);
     final settings = ref.watch(settingsProvider);
 
-    // User interface
+    final selectedSection =
+        useState<SettingsSection>(SettingsSection.uiNetwork);
+
+    // UI
     final useModsListViewBox = useState(settings.useModsListView);
     final showTitleOnCardsBox = useState(settings.showTitleOnCards);
     final defaultSortOption = useState(settings.defaultSortOption);
 
     // Network
     final numberValue = useState(settings.concurrentDownloads);
+    final textFieldController =
+        useTextEditingController(text: numberValue.value.toString());
+    final textFieldFocusNode = useFocusNode();
 
     // Features
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
@@ -55,21 +91,10 @@ class SettingsDialog extends HookConsumerWidget {
     final modsDir = useState(ref.read(directoriesProvider).modsDir);
     final savesDir = useState(ref.read(directoriesProvider).savesDir);
     final backupsDir = useState(ref.read(directoriesProvider).backupsDir);
-    final textFieldController =
-        useTextEditingController(text: numberValue.value.toString());
-    final textFieldFocusNode = useFocusNode();
 
-    textFieldFocusNode.addListener(() {
-      if (!textFieldFocusNode.hasFocus && textFieldController.text.isEmpty) {
-        textFieldController.text = "5";
-      }
-    });
-
-    Future<void> saveSettingsChanges(BuildContext context) async {
+    Future<void> saveSettingsChanges() async {
       int concurrentDownloads = int.tryParse(textFieldController.text) ?? 5;
-      if (concurrentDownloads < 1 || concurrentDownloads > 99) {
-        concurrentDownloads = 5;
-      }
+      concurrentDownloads = concurrentDownloads.clamp(1, 99);
 
       final newState = SettingsState(
         useModsListView: useModsListViewBox.value,
@@ -90,78 +115,82 @@ class SettingsDialog extends HookConsumerWidget {
       }
 
       await ref.read(settingsProvider.notifier).saveSettings(newState);
-
-      if (ref.read(directoriesProvider).modsDir != modsDir.value ||
-          ref.read(directoriesProvider).savesDir != savesDir.value ||
-          ref.read(directoriesProvider).backupsDir != backupsDir.value) {
-        if (await directoriesNotifier.isModsDirectoryValid(modsDir.value) &&
-            await directoriesNotifier.isSavesDirectoryValid(savesDir.value)) {
-          if (ref.read(directoriesProvider).backupsDir != backupsDir.value) {
-            directoriesNotifier.updateBackupsDirectory(backupsDir.value);
-          }
-
-          await directoriesNotifier.saveDirectories();
-          ref.read(modsProvider.notifier).loadModsData();
-        }
-      }
-
       if (context.mounted) Navigator.pop(context);
     }
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
       child: Dialog(
-        child: SingleChildScrollView(
+        child: SizedBox(
+          width: 900,
+          height: 520,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 32,
               children: [
-                const Text(
-                  'Settings',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Settings',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 32,
-                  children: [
-                    // Column 1: User Interface & Network
-                    Expanded(
-                      child: SettingsUINetworkColumn(
-                        useModsListViewBox: useModsListViewBox,
-                        showTitleOnCardsBox: showTitleOnCardsBox,
-                        defaultSortOption: defaultSortOption,
-                        textFieldController: textFieldController,
-                        textFieldFocusNode: textFieldFocusNode,
-                        numberValue: numberValue,
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Row(
+                    children: [
+                      NavigationRail(
+                        extended: true,
+                        selectedIndex: selectedSection.value.index,
+                        onDestinationSelected: (index) {
+                          selectedSection.value = SettingsSection.values[index];
+                        },
+                        destinations: SettingsSection.values.map((section) {
+                          return NavigationRailDestination(
+                            icon: Icon(section.icon),
+                            label: Text(section.label),
+                          );
+                        }).toList(),
                       ),
-                    ),
-
-                    // Column 2: Features
-                    Expanded(
-                      child: SettingsFeaturesColumn(
-                        checkForUpdatesOnStartBox: checkForUpdatesOnStartBox,
-                        showSavedObjects: showSavedObjects,
-                        showBackupState: showBackupState,
-                        enableTtsModdersFeatures: enableTtsModdersFeatures,
-                        forceBackupJsonFilename: forceBackupJsonFilename,
+                      const VerticalDivider(width: 1),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 24),
+                          child: IndexedStack(
+                            index: selectedSection.value.index,
+                            children: [
+                              SettingsUINetworkColumn(
+                                useModsListViewBox: useModsListViewBox,
+                                showTitleOnCardsBox: showTitleOnCardsBox,
+                                defaultSortOption: defaultSortOption,
+                                textFieldController: textFieldController,
+                                textFieldFocusNode: textFieldFocusNode,
+                                numberValue: numberValue,
+                              ),
+                              SettingsFeaturesColumn(
+                                checkForUpdatesOnStartBox:
+                                    checkForUpdatesOnStartBox,
+                                showSavedObjects: showSavedObjects,
+                                showBackupState: showBackupState,
+                                enableTtsModdersFeatures:
+                                    enableTtsModdersFeatures,
+                                forceBackupJsonFilename:
+                                    forceBackupJsonFilename,
+                              ),
+                              SettingsFoldersColumn(
+                                modsDir: modsDir,
+                                directoriesNotifier: directoriesNotifier,
+                                savesDir: savesDir,
+                                backupsDir: backupsDir,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-
-                    // Column 3: Folders
-                    Expanded(
-                      child: SettingsFoldersColumn(
-                        modsDir: modsDir,
-                        directoriesNotifier: directoriesNotifier,
-                        savesDir: savesDir,
-                        backupsDir: backupsDir,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 12),
                 Row(
                   spacing: 8,
                   children: [
@@ -172,7 +201,7 @@ class SettingsDialog extends HookConsumerWidget {
                             .resetToDefaultSettings();
                         if (context.mounted) Navigator.pop(context);
                       },
-                      child: const Text('Reset to default settings'),
+                      child: const Text('Reset to defaults'),
                     ),
                     Spacer(),
                     ElevatedButton(
@@ -191,7 +220,7 @@ class SettingsDialog extends HookConsumerWidget {
                           if (context.mounted) Navigator.pop(context);
                           return;
                         }
-                        await saveSettingsChanges(context);
+                        await saveSettingsChanges();
                       },
                       icon: Icon(Icons.save),
                       label: const Text('Save'),
@@ -309,6 +338,7 @@ class SettingsFoldersColumn extends StatelessWidget {
             ),
           ],
         ),
+        SizedBox(height: 16),
         Row(
           spacing: 4,
           children: [
@@ -370,6 +400,7 @@ class SettingsFoldersColumn extends StatelessWidget {
             ),
           ],
         ),
+        SizedBox(height: 16),
         Row(
           spacing: 4,
           children: [
@@ -454,7 +485,6 @@ class SettingsFeaturesColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: "Features"),
         CheckboxListTile(
           title: const Text('Check for updates on start'),
           value: checkForUpdatesOnStartBox.value,
@@ -592,7 +622,7 @@ class SettingsUINetworkColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: "User Interface"),
+        SectionHeader(title: "Interface"),
         CheckboxListTile(
           title: const Text('Display mods as a list instead of grid'),
           value: useModsListViewBox.value,
@@ -658,6 +688,7 @@ class SettingsUINetworkColumn extends StatelessWidget {
             ),
           ],
         ),
+        SizedBox(height: 24),
         SectionHeader(title: "Network"),
         Row(
           children: [

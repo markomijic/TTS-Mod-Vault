@@ -166,6 +166,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       // Create work data for each isolate
+      final ignoreAudio = ref.read(settingsProvider).ignoreAudioAssets;
       final List<IsolateWorkData> isolateWorkData =
           batchesPerIsolate.map((batches) {
         // Get all mods for this isolate to prepare relevant cached data
@@ -183,6 +184,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
                     mod.jsonFileName,
                     cachedUrls[mod.jsonFileName],
                   ))),
+          ignoreAudioAssets: ignoreAudio,
         );
       }).toList();
 
@@ -615,12 +617,18 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   (AssetLists, int, int) _getAssetListsFromUrls(Map<String, String> data) {
+    final ignoreAudio = ref.read(settingsProvider).ignoreAudioAssets;
+
     Map<AssetTypeEnum, List<String>> urlsByType = {
       for (final type in AssetTypeEnum.values) type: [],
     };
 
     for (final element in data.entries) {
       for (final assetType in AssetTypeEnum.values) {
+        if (ignoreAudio && assetType == AssetTypeEnum.audio) {
+          continue;
+        }
+
         if (assetType.subtypes.contains(element.value)) {
           urlsByType[assetType]!.add(element.key);
           break;

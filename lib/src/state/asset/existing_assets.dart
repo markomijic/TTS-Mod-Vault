@@ -1,7 +1,6 @@
 import 'dart:io' show Directory, File;
 import 'dart:isolate' show Isolate;
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as path;
@@ -141,25 +140,15 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
   bool doesAssetFileExist(String assetFileName, AssetTypeEnum type) {
     switch (type) {
       case AssetTypeEnum.assetBundle:
-        return state.assetBundles
-                .firstWhereOrNull((element) => element == assetFileName) !=
-            null;
+        return state.assetBundles.contains(assetFileName);
       case AssetTypeEnum.audio:
-        return state.audio
-                .firstWhereOrNull((element) => element == assetFileName) !=
-            null;
+        return state.audio.contains(assetFileName);
       case AssetTypeEnum.image:
-        return state.images
-                .firstWhereOrNull((element) => element == assetFileName) !=
-            null;
+        return state.images.contains(assetFileName);
       case AssetTypeEnum.model:
-        return state.models
-                .firstWhereOrNull((element) => element == assetFileName) !=
-            null;
+        return state.models.contains(assetFileName);
       case AssetTypeEnum.pdf:
-        return state.pdf
-                .firstWhereOrNull((element) => element == assetFileName) !=
-            null;
+        return state.pdf.contains(assetFileName);
     }
   }
 

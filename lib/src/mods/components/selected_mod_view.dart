@@ -182,8 +182,9 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
+        Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
           child: Wrap(
             spacing: 8,
             runSpacing: 4,
@@ -232,7 +233,21 @@ class _SelectedModViewComponent extends HookConsumerWidget {
               final item = listItems[index];
 
               if (item is _HeaderItem) {
-                return _buildHeader(context, ref, item, selectedMod);
+                // Filter by selected asset type - hide header if not matching
+                if (selectedAssetTypeFilter.value != null &&
+                    item.type != selectedAssetTypeFilter.value) {
+                  return const SizedBox.shrink();
+                }
+
+                // Check if this is the first visible header
+                final isFirstHeader = !listItems.take(index).any((prevItem) {
+                  if (prevItem is! _HeaderItem) return false;
+                  return selectedAssetTypeFilter.value == null ||
+                      prevItem.type == selectedAssetTypeFilter.value;
+                });
+
+                return _buildHeader(
+                    context, ref, item, selectedMod, isFirstHeader);
               } else if (item is _AssetItem) {
                 // Filter by selected asset type
                 if (selectedAssetTypeFilter.value != null &&
@@ -274,11 +289,12 @@ class _SelectedModViewComponent extends HookConsumerWidget {
     WidgetRef ref,
     _HeaderItem headerItem,
     Mod selectedMod,
+    bool isFirstHeader,
   ) {
     final actionInProgress = ref.watch(actionInProgressProvider);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 8.0),
+      padding: EdgeInsets.only(top: isFirstHeader ? 0.0 : 8.0),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(

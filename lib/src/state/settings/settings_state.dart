@@ -11,6 +11,7 @@ class SettingsState {
   final bool showBackupState;
   final SortOptionEnum defaultSortOption;
   final bool forceBackupJsonFilename;
+  final bool ignoreAudioAssets;
 
   const SettingsState({
     this.useModsListView = false,
@@ -22,6 +23,7 @@ class SettingsState {
     this.showBackupState = true,
     this.defaultSortOption = SortOptionEnum.alphabeticalAsc,
     this.forceBackupJsonFilename = false,
+    this.ignoreAudioAssets = false,
   });
 
   SettingsState copyWith({
@@ -34,6 +36,7 @@ class SettingsState {
     bool? showBackupState,
     SortOptionEnum? defaultSortOption,
     bool? forceBackupJsonFilename,
+    bool? ignoreAudioAssets,
   }) {
     return SettingsState(
       useModsListView: useModsListView ?? this.useModsListView,
@@ -48,6 +51,7 @@ class SettingsState {
       defaultSortOption: defaultSortOption ?? this.defaultSortOption,
       forceBackupJsonFilename:
           forceBackupJsonFilename ?? this.forceBackupJsonFilename,
+      ignoreAudioAssets: ignoreAudioAssets ?? this.ignoreAudioAssets,
     );
   }
 
@@ -62,6 +66,7 @@ class SettingsState {
       'showBackupState': showBackupState,
       'defaultSortOption': defaultSortOption.label,
       'forceBackupJsonFilename': forceBackupJsonFilename,
+      'ignoreAudioAssets': ignoreAudioAssets,
     };
   }
 
@@ -79,6 +84,7 @@ class SettingsState {
           json['defaultSortOption'], SortOptionEnum.alphabeticalAsc),
       forceBackupJsonFilename:
           _parseBool(json['forceBackupJsonFilename'], false),
+      ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], false),
     );
   }
 

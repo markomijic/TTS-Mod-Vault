@@ -22,11 +22,13 @@ class IsolateWorkData {
   final List<List<Mod>> batches;
   final Map<String, String?> cachedDateTimeStamps;
   final Map<String, Map<String, String>?> cachedAssetLists;
+  final bool ignoreAudioAssets;
 
   IsolateWorkData({
     required this.batches,
     required this.cachedDateTimeStamps,
     required this.cachedAssetLists,
+    required this.ignoreAudioAssets,
   });
 }
 
@@ -101,7 +103,8 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
         Map<String, String>? jsonURLs;
 
         if (needsRefresh) {
-          jsonURLs = await extractUrlsFromJson(mod.jsonFilePath);
+          jsonURLs =
+              await extractUrlsFromJson(mod.jsonFilePath);
 
           allStorageUpdates.add(ModStorageUpdate(
             jsonFileName: mod.jsonFileName,

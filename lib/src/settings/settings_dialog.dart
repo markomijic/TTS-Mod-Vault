@@ -86,6 +86,7 @@ class SettingsDialog extends HookConsumerWidget {
     final forceBackupJsonFilename = useState(settings.forceBackupJsonFilename);
     final showSavedObjects = useState(settings.showSavedObjects);
     final showBackupState = useState(settings.showBackupState);
+    final ignoreAudioAssets = useState(settings.ignoreAudioAssets);
 
     // Folders
     final modsDir = useState(ref.read(directoriesProvider).modsDir);
@@ -106,6 +107,7 @@ class SettingsDialog extends HookConsumerWidget {
         showBackupState: showBackupState.value,
         defaultSortOption: defaultSortOption.value,
         forceBackupJsonFilename: forceBackupJsonFilename.value,
+        ignoreAudioAssets: ignoreAudioAssets.value,
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -114,7 +116,26 @@ class SettingsDialog extends HookConsumerWidget {
         ref.read(selectedModProvider.notifier).state = null;
       }
 
+      final oldIgnoreAudioAssets = ref.read(settingsProvider).ignoreAudioAssets;
+
       await ref.read(settingsProvider.notifier).saveSettings(newState);
+
+      if (ref.read(directoriesProvider).modsDir != modsDir.value ||
+          ref.read(directoriesProvider).savesDir != savesDir.value ||
+          ref.read(directoriesProvider).backupsDir != backupsDir.value) {
+        if (await directoriesNotifier.isModsDirectoryValid(modsDir.value) &&
+            await directoriesNotifier.isSavesDirectoryValid(savesDir.value)) {
+          if (ref.read(directoriesProvider).backupsDir != backupsDir.value) {
+            directoriesNotifier.updateBackupsDirectory(backupsDir.value);
+          }
+
+          await directoriesNotifier.saveDirectories();
+          ref.read(modsProvider.notifier).loadModsData();
+        }
+      } else if (oldIgnoreAudioAssets != ignoreAudioAssets.value) {
+        ref.read(modsProvider.notifier).loadModsData();
+      }
+
       if (context.mounted) Navigator.pop(context);
     }
 
@@ -176,6 +197,7 @@ class SettingsDialog extends HookConsumerWidget {
                                     enableTtsModdersFeatures,
                                 forceBackupJsonFilename:
                                     forceBackupJsonFilename,
+                                ignoreAudioAssets: ignoreAudioAssets,
                               ),
                               SettingsFoldersColumn(
                                 modsDir: modsDir,
@@ -472,6 +494,7 @@ class SettingsFeaturesColumn extends StatelessWidget {
     required this.showBackupState,
     required this.enableTtsModdersFeatures,
     required this.forceBackupJsonFilename,
+    required this.ignoreAudioAssets,
   });
 
   final ValueNotifier<bool> checkForUpdatesOnStartBox;
@@ -479,6 +502,7 @@ class SettingsFeaturesColumn extends StatelessWidget {
   final ValueNotifier<bool> showBackupState;
   final ValueNotifier<bool> enableTtsModdersFeatures;
   final ValueNotifier<bool> forceBackupJsonFilename;
+  final ValueNotifier<bool> ignoreAudioAssets;
 
   @override
   Widget build(BuildContext context) {
@@ -592,6 +616,26 @@ Update URLs - available next to the Download and Backup buttons, and in Bulk Act
           onChanged: (value) {
             enableTtsModdersFeatures.value =
                 value ?? enableTtsModdersFeatures.value;
+          },
+        ),
+        CheckboxListTile(
+          title: Row(
+            spacing: 4,
+            children: [
+              const Text('Exclude audio assets'),
+              CustomTooltip(
+                message:
+                    "When enabled, audio assets will not be available for download and backup\nData will be refreshed after changing this setting",
+                child: Icon(Icons.info_outline),
+              ),
+            ],
+          ),
+          value: ignoreAudioAssets.value,
+          checkColor: Colors.black,
+          activeColor: Colors.white,
+          contentPadding: EdgeInsets.all(0),
+          onChanged: (value) {
+            ignoreAudioAssets.value = value ?? ignoreAudioAssets.value;
           },
         ),
       ],

@@ -216,11 +216,19 @@ class AssetsUrl extends HookConsumerWidget {
           isSelected ? '' : asset.url;
     }
 
+    void onSecondaryTapDown(TapDownDetails details) {
+      if (ref.read(actionInProgressProvider)) return;
+
+      showURLContextMenu(context, details.globalPosition);
+
+      ref.read(selectedUrlProvider.notifier).state = asset.url;
+    }
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTapDown: (details) => onTapDown(details),
-        onSecondaryTapDown: (details) => onTapDown(details),
+        onSecondaryTapDown: (details) => onSecondaryTapDown(details),
         child: Text(
           asset.url,
           style: TextStyle(

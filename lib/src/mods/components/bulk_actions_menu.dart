@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show CustomTooltip;
+
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show
+        actionInProgressProvider,
+        searchQueryProvider,
+        selectedModTypeProvider,
+        sortAndFilterProvider;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show BulkBackupDialog, showBulkUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
@@ -12,8 +23,52 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         filteredModsProvider,
         settingsProvider;
 
-class BulkActionsDropDownButton extends HookConsumerWidget {
-  const BulkActionsDropDownButton({super.key});
+class BulkActionsMenu extends HookConsumerWidget {
+  const BulkActionsMenu({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actionInProgress = ref.watch(actionInProgressProvider);
+    final selectedModType = ref.watch(selectedModTypeProvider);
+    final sortAndFilterState = ref.watch(sortAndFilterProvider);
+    final searchQuery = ref.watch(searchQueryProvider);
+
+    final selectedFolders = useMemoized(() {
+      Set<String> selectedFolders = switch (selectedModType) {
+        ModTypeEnum.mod => sortAndFilterState.filteredModsFolders,
+        ModTypeEnum.save => sortAndFilterState.filteredSavesFolders,
+        ModTypeEnum.savedObject =>
+          sortAndFilterState.filteredSavedObjectsFolders,
+      };
+
+      return selectedFolders;
+    }, [selectedModType, sortAndFilterState]);
+
+    final bulkActionLimited = useMemoized(() {
+      return ((selectedFolders.length +
+                  sortAndFilterState.filteredBackupStatuses.length) >
+              0) ||
+          searchQuery.isNotEmpty;
+    }, [selectedFolders, sortAndFilterState, searchQuery]);
+
+    return CustomTooltip(
+      message: bulkActionLimited
+          ? 'Bulk actions will apply only to the current selection because of the applied search/filters'
+          : '',
+      waitDuration: Duration(milliseconds: 750),
+      child: Badge(
+        backgroundColor: Colors.grey,
+        textColor: Colors.white,
+        smallSize: 12,
+        isLabelVisible: bulkActionLimited && !actionInProgress,
+        child: _BulkActionsDropDownButton(),
+      ),
+    );
+  }
+}
+
+class _BulkActionsDropDownButton extends HookConsumerWidget {
+  const _BulkActionsDropDownButton();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -13,7 +13,8 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         Toolbar,
         ModsView,
         BulkActionsProgressBar,
-        SortButton;
+        SortButton,
+        BulkActionsMenu;
 import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
     show FilterButton;
 import 'package:tts_mod_vault/src/mods/hooks/hooks.dart'
@@ -53,22 +54,18 @@ class ModsPage extends HookConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
-                                  padding: EdgeInsets.only(top: 8, left: 8),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: SizedBox(
-                                      height: 32,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        spacing: 8,
-                                        children: [
-                                          ModsSelector(),
-                                          Search(),
-                                          SortButton(),
-                                          FilterButton(),
-                                        ],
-                                      ),
-                                    ),
+                                  padding: EdgeInsets.only(
+                                      top: 8, left: 8, right: 8),
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      ModsSelector(),
+                                      Search(),
+                                      BulkActionsMenu(),
+                                      SortButton(),
+                                      FilterButton(),
+                                    ],
                                   ),
                                 ),
                                 Expanded(

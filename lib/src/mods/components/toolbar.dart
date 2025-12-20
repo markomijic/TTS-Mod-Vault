@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show HelpMenu, ToolsMenu, BulkActionsDropDownButton;
-import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
+    show HelpMenu, ToolsMenu;
 import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        actionInProgressProvider,
-        importBackupProvider,
-        loaderProvider,
-        searchQueryProvider,
-        selectedModTypeProvider,
-        sortAndFilterProvider;
+    show actionInProgressProvider, importBackupProvider, loaderProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialog, showSnackBar;
 
@@ -26,28 +17,6 @@ class Toolbar extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
     final importBackupNotifier = ref.watch(importBackupProvider.notifier);
-
-    final searchQuery = ref.watch(searchQueryProvider);
-    final selectedModType = ref.watch(selectedModTypeProvider);
-    final sortAndFilterState = ref.watch(sortAndFilterProvider);
-
-    final selectedFolders = useMemoized(() {
-      Set<String> selectedFolders = switch (selectedModType) {
-        ModTypeEnum.mod => sortAndFilterState.filteredModsFolders,
-        ModTypeEnum.save => sortAndFilterState.filteredSavesFolders,
-        ModTypeEnum.savedObject =>
-          sortAndFilterState.filteredSavedObjectsFolders,
-      };
-
-      return selectedFolders;
-    }, [selectedModType, sortAndFilterState]);
-
-    final bulkActionLimited = useMemoized(() {
-      return ((selectedFolders.length +
-                  sortAndFilterState.filteredBackupStatuses.length) >
-              0) ||
-          searchQuery.isNotEmpty;
-    }, [selectedFolders, sortAndFilterState, searchQuery]);
 
     return Row(
       spacing: 8,
@@ -89,19 +58,6 @@ class Toolbar extends HookConsumerWidget {
                 },
           icon: const Icon(Icons.unarchive),
           label: const Text('Import backup'),
-        ),
-        CustomTooltip(
-          message: bulkActionLimited
-              ? 'Bulk actions will apply only to the current selection because of the applied search/filters'
-              : '',
-          waitDuration: Duration(milliseconds: 750),
-          child: Badge(
-            backgroundColor: Colors.grey,
-            textColor: Colors.white,
-            smallSize: 12,
-            isLabelVisible: bulkActionLimited && !actionInProgress,
-            child: BulkActionsDropDownButton(),
-          ),
         ),
         ToolsMenu(),
         HelpMenu(),

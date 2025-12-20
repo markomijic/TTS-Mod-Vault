@@ -48,6 +48,7 @@ class Search extends HookConsumerWidget {
 
     return SizedBox(
       width: 343,
+      height: 32,
       child: TextField(
         controller: controller,
         onChanged: onSearchChanged,

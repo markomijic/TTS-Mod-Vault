@@ -22,8 +22,7 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     final savesDir = ref.read(storageProvider).getSavesDir() ??
         path.joinAll([_getDefaultTtsDirectory(), 'Saves']);
     final backupsDir = ref.read(storageProvider).getBackupsDir() ?? "";
-    final tempDownloadDir = ref.read(storageProvider).getTempDownloadDir() ?? "";
-    state = DirectoriesState.fromDirs(modsDir, savesDir, backupsDir, tempDownloadDir);
+    state = DirectoriesState.fromDirs(modsDir, savesDir, backupsDir);
   }
 
   String _getDefaultTtsDirectory() {
@@ -69,7 +68,6 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
     await ref.read(storageProvider).saveModsDir(state.modsDir);
     await ref.read(storageProvider).saveSavesDir(state.savesDir);
     await ref.read(storageProvider).saveBackupsDir(state.backupsDir);
-    await ref.read(storageProvider).saveTempDownloadDir(state.tempDownloadDir);
   }
 
   Future<bool> isModsDirectoryValid(
@@ -128,10 +126,6 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
 
   void updateBackupsDirectory(String backupsDir) async {
     state = state.updateBackups(backupsDir);
-  }
-
-  void updateTempDownloadDirectory(String tempDownloadDir) async {
-    state = state.updateTempDownload(tempDownloadDir);
   }
 
   String getDirectoryByType(AssetTypeEnum type) {

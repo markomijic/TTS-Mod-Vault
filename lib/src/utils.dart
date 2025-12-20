@@ -273,6 +273,27 @@ String getExtensionByType(
         final mimeType = lookupMimeType(filePath, headerBytes: bytes);
 
         switch (mimeType) {
+          // Unsupported by TTS 14.0
+          case 'image/gif':
+            return '.gif';
+
+          case 'image/bmp':
+          case 'image/x-windows-bmp':
+            return '.bmp';
+
+          case 'image/svg+xml':
+            return '.svg';
+
+          case 'image/tiff':
+            return '.tiff';
+
+          case 'image/x-icon':
+            return '.ico';
+
+          case 'image/avif':
+            return '.avif';
+
+          // Supported by TTS 14.0
           case 'image/jpeg':
             return '.jpg';
 

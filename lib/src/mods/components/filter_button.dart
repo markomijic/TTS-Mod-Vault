@@ -60,12 +60,16 @@ class FilterButton extends HookConsumerWidget {
           sortAndFilterState.filteredBackupStatuses.length;
     }, [selectedFolders, sortAndFilterState]);
 
+    final filtersText = useMemoized(() {
+      return totalFilters > 0 ? "Filters ($totalFilters)" : "Filters";
+    }, [totalFilters]);
+
     return SizedBox(
       height: 32,
       child: MenuAnchor(
         builder: (context, controller, child) {
-          return IconButton(
-            alignment: Alignment.center,
+          return ElevatedButton.icon(
+            label: Text(filtersText),
             onPressed: () {
               if (actionInProgress) return;
 
@@ -80,16 +84,7 @@ class FilterButton extends HookConsumerWidget {
                   WidgetStateProperty.all(Colors.white), // Background
               foregroundColor: WidgetStateProperty.all(Colors.black), // Icon
             ),
-            icon: Badge(
-              backgroundColor: Colors.black,
-              textColor: Colors.white,
-              isLabelVisible: totalFilters > 0,
-              label: Text('$totalFilters'),
-              child: const Icon(
-                Icons.filter_list,
-                size: 20,
-              ),
-            ),
+            icon: Icon(Icons.filter_list, size: 20),
           );
         },
         menuChildren: [

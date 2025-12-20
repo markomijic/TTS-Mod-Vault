@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
 import 'package:tts_mod_vault/src/mods/components/import_backup_overlay.dart'
     show ImportBackupOverlay;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
@@ -56,15 +57,30 @@ class ModsPage extends HookConsumerWidget {
                                 Padding(
                                   padding: EdgeInsets.only(
                                       top: 8, left: 8, right: 8),
-                                  child: Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      ModsSelector(),
-                                      Search(),
-                                      BulkActionsMenu(),
-                                      SortButton(),
-                                      FilterButton(),
+                                      Expanded(
+                                        child: Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: [
+                                            ModsSelector(),
+                                            Search(),
+                                            BulkActionsMenu(),
+                                            SortButton(),
+                                            FilterButton(),
+                                          ],
+                                        ),
+                                      ),
+                                      CustomTooltip(
+                                        message:
+                                            '• Right-click a mod to see options\n• Bulk actions are affected by sort, filters and search',
+                                        child: Icon(
+                                          Icons.info_outline,
+                                          size: 26,
+                                        ),
+                                      )
                                     ],
                                   ),
                                 ),

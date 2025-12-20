@@ -43,7 +43,6 @@ class HelpTooltip extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           TextSpan(text: '• Click a URL to see options\n'),
-          TextSpan(text: '• Right-click a Mod to see options\n'),
           TextSpan(
               text:
                   '• Download button: Attempts to download all missing asset files\n'),

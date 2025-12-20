@@ -11,6 +11,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModTypeProvider,
         settingsProvider,
         sortAndFilterProvider;
+import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart';
 
 class FilterButton extends HookConsumerWidget {
   const FilterButton({super.key});
@@ -55,9 +56,14 @@ class FilterButton extends HookConsumerWidget {
       return selectedFolders;
     }, [selectedModType, sortAndFilterState]);
 
+    final selectedAssetCounts = useMemoized(() {
+      return sortAndFilterState.filteredAssetCounts;
+    }, [sortAndFilterState]);
+
     final totalFilters = useMemoized(() {
       return selectedFolders.length +
-          sortAndFilterState.filteredBackupStatuses.length;
+          sortAndFilterState.filteredBackupStatuses.length +
+          selectedAssetCounts.length;
     }, [selectedFolders, sortAndFilterState]);
 
     final filtersText = useMemoized(() {
@@ -111,7 +117,63 @@ class FilterButton extends HookConsumerWidget {
             onPressed: () {
               sortAndFilterNotifier.clearFilteredBackupStatuses();
               sortAndFilterNotifier.clearFilteredFolders(selectedModType);
+              sortAndFilterNotifier.clearFilteredAssetCounts();
             },
+          ),
+
+          // Main "Assets" submenu item
+          SubmenuButton(
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              iconColor: Colors.black,
+            ),
+            menuChildren: [
+              ...FilterAssetCountEnum.values.map((assetCount) {
+                final isSelected = selectedAssetCounts.contains(assetCount);
+
+                return MenuItemButton(
+                  closeOnActivate: false,
+                  style: MenuItemButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    iconColor: Colors.black,
+                  ),
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        isSelected
+                            ? Icons.check_box
+                            : Icons.check_box_outline_blank,
+                      ),
+                      Expanded(
+                        child: Text(
+                          assetCount.label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  onPressed: () {
+                    if (isSelected) {
+                      sortAndFilterNotifier
+                          .removeFilteredAssetCount(assetCount);
+                    } else {
+                      sortAndFilterNotifier.addFilteredAssetCount(assetCount);
+                    }
+                  },
+                );
+              }),
+            ],
+            child: SizedBox(
+              width: 85,
+              child: Text(
+                selectedAssetCounts.isEmpty
+                    ? 'Assets'
+                    : 'Assets (${selectedAssetCounts.length})',
+              ),
+            ),
           ),
 
           // Main "Folders" submenu item

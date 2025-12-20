@@ -1,6 +1,15 @@
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 
+enum FilterAssetCountEnum {
+  missing('Missing'),
+  complete('Complete');
+
+  const FilterAssetCountEnum(this.label);
+
+  final String label;
+}
+
 class SortAndFilterState {
   final Set<String> modsFolders;
   final Set<String> savesFolders;
@@ -10,6 +19,7 @@ class SortAndFilterState {
   final Set<String> filteredModsFolders;
   final Set<String> filteredSavesFolders;
   final Set<String> filteredSavedObjectsFolders;
+  final Set<FilterAssetCountEnum> filteredAssetCounts;
   final Set<ExistingBackupStatusEnum> filteredBackupStatuses;
 
   // Sort
@@ -22,6 +32,7 @@ class SortAndFilterState {
     required this.filteredModsFolders,
     required this.filteredSavesFolders,
     required this.filteredSavedObjectsFolders,
+    required this.filteredAssetCounts,
     required this.filteredBackupStatuses,
     required this.sortOption,
   });
@@ -34,6 +45,7 @@ class SortAndFilterState {
       filteredModsFolders: {},
       filteredSavesFolders: {},
       filteredSavedObjectsFolders: {},
+      filteredAssetCounts: {},
       filteredBackupStatuses: {},
       sortOption: sortOption,
     );
@@ -46,6 +58,7 @@ class SortAndFilterState {
     Set<String>? filteredModsFolders,
     Set<String>? filteredSavesFolders,
     Set<String>? filteredSavedObjectsFolders,
+    Set<FilterAssetCountEnum>? filteredAssetCounts,
     Set<ExistingBackupStatusEnum>? filteredBackupStatuses,
     SortOptionEnum? sortOption,
   }) {
@@ -57,6 +70,7 @@ class SortAndFilterState {
       filteredSavesFolders: filteredSavesFolders ?? this.filteredSavesFolders,
       filteredSavedObjectsFolders:
           filteredSavedObjectsFolders ?? this.filteredSavedObjectsFolders,
+      filteredAssetCounts: filteredAssetCounts ?? this.filteredAssetCounts,
       filteredBackupStatuses:
           filteredBackupStatuses ?? this.filteredBackupStatuses,
       sortOption: sortOption ?? this.sortOption,
@@ -66,8 +80,6 @@ class SortAndFilterState {
 
 enum SortOptionEnum {
   alphabeticalAsc('A-Z'),
-  //alphabeticalDesc('Z-A'),
-  //dateCreatedAsc('Oldest'),
   dateCreatedDesc('Newest'),
   missingAssets('Missing assets');
 

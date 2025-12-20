@@ -506,8 +506,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         ModTypeEnum.savedObject => state.value!.savedObjects,
       };
 
+      final normalizedPath = p.normalize(mod.jsonFilePath);
       final modIndex = modList.indexWhere(
-        (m) => m.jsonFilePath == mod.jsonFilePath,
+        (m) => p.normalize(m.jsonFilePath) == normalizedPath,
       );
 
       if (modIndex == -1) return;
@@ -570,26 +571,51 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         ref.read(storageProvider).saveAllModMetadata(metadata),
       ]);
 
-      // Add to appropriate list
+      // Add to appropriate list or replace if already exists
       final currentState = state.value!;
+      final normalizedPath = p.normalize(completeMod.jsonFilePath);
 
       switch (modType) {
         case ModTypeEnum.mod:
-          final updatedList = [...currentState.mods, completeMod];
+          final existingIndex = currentState.mods.indexWhere(
+              (mod) => p.normalize(mod.jsonFilePath) == normalizedPath);
+          final updatedList = existingIndex >= 0
+              ? [
+                  ...currentState.mods.sublist(0, existingIndex),
+                  completeMod,
+                  ...currentState.mods.sublist(existingIndex + 1),
+                ]
+              : [...currentState.mods, completeMod];
           state = AsyncValue.data(currentState.copyWith(mods: updatedList));
           ref
               .read(sortAndFilterProvider.notifier)
               .addModFolder(completeMod.parentFolderName);
           break;
         case ModTypeEnum.save:
-          final updatedList = [...currentState.saves, completeMod];
+          final existingIndex = currentState.saves.indexWhere(
+              (mod) => p.normalize(mod.jsonFilePath) == normalizedPath);
+          final updatedList = existingIndex >= 0
+              ? [
+                  ...currentState.saves.sublist(0, existingIndex),
+                  completeMod,
+                  ...currentState.saves.sublist(existingIndex + 1),
+                ]
+              : [...currentState.saves, completeMod];
           state = AsyncValue.data(currentState.copyWith(saves: updatedList));
           ref
               .read(sortAndFilterProvider.notifier)
               .addSaveFolder(completeMod.parentFolderName);
           break;
         case ModTypeEnum.savedObject:
-          final updatedList = [...currentState.savedObjects, completeMod];
+          final existingIndex = currentState.savedObjects.indexWhere(
+              (mod) => p.normalize(mod.jsonFilePath) == normalizedPath);
+          final updatedList = existingIndex >= 0
+              ? [
+                  ...currentState.savedObjects.sublist(0, existingIndex),
+                  completeMod,
+                  ...currentState.savedObjects.sublist(existingIndex + 1),
+                ]
+              : [...currentState.savedObjects, completeMod];
           state =
               AsyncValue.data(currentState.copyWith(savedObjects: updatedList));
           ref

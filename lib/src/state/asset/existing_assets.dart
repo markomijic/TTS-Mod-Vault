@@ -29,31 +29,25 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
     final futures = AssetTypeEnum.values.map((type) async {
       final directoryPath = directoryPaths[type] ?? '';
 
-      final (filenames, filepaths) = await Isolate.run(
+      final assetMap = await Isolate.run(
         () => _getDirectoryFileNamesAndPaths(directoryPath),
       );
 
-      return (type, filenames, filepaths);
+      return (type, assetMap);
     });
 
     final results = await Future.wait(futures);
 
-    final Map<AssetTypeEnum, (List<String>, List<String>)> resultMap = {
-      for (final (type, filenames, filepaths) in results)
-        type: (filenames, filepaths)
+    final Map<AssetTypeEnum, Map<String, String>> resultMap = {
+      for (final (type, assetMap) in results) type: assetMap
     };
 
     state = ExistingAssetsListsState(
-      assetBundles: resultMap[AssetTypeEnum.assetBundle]?.$1 ?? [],
-      assetBundlesFilepaths: resultMap[AssetTypeEnum.assetBundle]?.$2 ?? [],
-      audio: resultMap[AssetTypeEnum.audio]?.$1 ?? [],
-      audioFilepaths: resultMap[AssetTypeEnum.audio]?.$2 ?? [],
-      images: resultMap[AssetTypeEnum.image]?.$1 ?? [],
-      imagesFilepaths: resultMap[AssetTypeEnum.image]?.$2 ?? [],
-      models: resultMap[AssetTypeEnum.model]?.$1 ?? [],
-      modelsFilepaths: resultMap[AssetTypeEnum.model]?.$2 ?? [],
-      pdf: resultMap[AssetTypeEnum.pdf]?.$1 ?? [],
-      pdfFilepaths: resultMap[AssetTypeEnum.pdf]?.$2 ?? [],
+      assetBundles: resultMap[AssetTypeEnum.assetBundle] ?? {},
+      audio: resultMap[AssetTypeEnum.audio] ?? {},
+      images: resultMap[AssetTypeEnum.image] ?? {},
+      models: resultMap[AssetTypeEnum.model] ?? {},
+      pdf: resultMap[AssetTypeEnum.pdf] ?? {},
     );
 
     debugPrint('loadExistingAssetsLists - finished at ${DateTime.now()}');
@@ -63,127 +57,59 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
     final directoryPath =
         ref.read(directoriesProvider.notifier).getDirectoryByType(type);
 
-    final (filenames, filepaths) = await Isolate.run(
+    final assetMap = await Isolate.run(
       () => _getDirectoryFileNamesAndPaths(directoryPath),
     );
 
-    _updateStateByType(type, filenames, filepaths);
+    _updateStateByType(type, assetMap);
   }
 
   void addExistingAsset(AssetTypeEnum type, String filename, String filepath) {
-    switch (type) {
-      case AssetTypeEnum.assetBundle:
-        final newFilenames = [filename, ...state.assetBundles];
-        final newFilepaths = [filepath, ...state.assetBundlesFilepaths];
-        state = state.copyWith(
-          assetBundles: newFilenames,
-          assetBundlesFilepaths: newFilepaths,
-        );
-        break;
-      case AssetTypeEnum.audio:
-        final newFilenames = [filename, ...state.audio];
-        final newFilepaths = [filepath, ...state.audioFilepaths];
-        state = state.copyWith(
-          audio: newFilenames,
-          audioFilepaths: newFilepaths,
-        );
-        break;
-      case AssetTypeEnum.image:
-        final newFilenames = [filename, ...state.images];
-        final newFilepaths = [filepath, ...state.imagesFilepaths];
-        state = state.copyWith(
-          images: newFilenames,
-          imagesFilepaths: newFilepaths,
-        );
-        break;
-      case AssetTypeEnum.model:
-        final newFilenames = [filename, ...state.models];
-        final newFilepaths = [filepath, ...state.modelsFilepaths];
-        state = state.copyWith(
-          models: newFilenames,
-          modelsFilepaths: newFilepaths,
-        );
-        break;
-      case AssetTypeEnum.pdf:
-        final newFilenames = [filename, ...state.pdf];
-        final newFilepaths = [filepath, ...state.pdfFilepaths];
-        state = state.copyWith(
-          pdf: newFilenames,
-          pdfFilepaths: newFilepaths,
-        );
-        break;
-    }
+    final currentMap = _getAssetMapByType(type);
+    final updatedMap = Map<String, String>.from(currentMap)..[filename] = filepath;
+    _updateStateByType(type, updatedMap);
   }
 
-  void _updateStateByType(
-      AssetTypeEnum type, List<String> filenames, List<String> filepaths) {
-    switch (type) {
-      case AssetTypeEnum.assetBundle:
-        state = state.copyWith(
-            assetBundles: filenames, assetBundlesFilepaths: filepaths);
-        break;
-      case AssetTypeEnum.audio:
-        state = state.copyWith(audio: filenames, audioFilepaths: filepaths);
-        break;
-      case AssetTypeEnum.image:
-        state = state.copyWith(images: filenames, imagesFilepaths: filepaths);
-        break;
-      case AssetTypeEnum.model:
-        state = state.copyWith(models: filenames, modelsFilepaths: filepaths);
-        break;
-      case AssetTypeEnum.pdf:
-        state = state.copyWith(pdf: filenames, pdfFilepaths: filepaths);
-        break;
-    }
+  Map<String, String> _getAssetMapByType(AssetTypeEnum type) {
+    return switch (type) {
+      AssetTypeEnum.assetBundle => state.assetBundles,
+      AssetTypeEnum.audio => state.audio,
+      AssetTypeEnum.image => state.images,
+      AssetTypeEnum.model => state.models,
+      AssetTypeEnum.pdf => state.pdf,
+    };
+  }
+
+  void _updateStateByType(AssetTypeEnum type, Map<String, String> assetMap) {
+    state = switch (type) {
+      AssetTypeEnum.assetBundle => state.copyWith(assetBundles: assetMap),
+      AssetTypeEnum.audio => state.copyWith(audio: assetMap),
+      AssetTypeEnum.image => state.copyWith(images: assetMap),
+      AssetTypeEnum.model => state.copyWith(models: assetMap),
+      AssetTypeEnum.pdf => state.copyWith(pdf: assetMap),
+    };
   }
 
   bool doesAssetFileExist(String assetFileName, AssetTypeEnum type) {
-    switch (type) {
-      case AssetTypeEnum.assetBundle:
-        return state.assetBundles.contains(assetFileName);
-      case AssetTypeEnum.audio:
-        return state.audio.contains(assetFileName);
-      case AssetTypeEnum.image:
-        return state.images.contains(assetFileName);
-      case AssetTypeEnum.model:
-        return state.models.contains(assetFileName);
-      case AssetTypeEnum.pdf:
-        return state.pdf.contains(assetFileName);
-    }
+    return _getAssetMapByType(type).containsKey(assetFileName);
   }
 
   String? getAssetFilePath(String assetFilename, AssetTypeEnum type) {
-    switch (type) {
-      case AssetTypeEnum.assetBundle:
-        final index = state.assetBundles.indexOf(assetFilename);
-        return index < 0
-            ? null
-            : path.normalize(state.assetBundlesFilepaths[index]);
-      case AssetTypeEnum.audio:
-        final index = state.audio.indexOf(assetFilename);
-        return index < 0 ? null : path.normalize(state.audioFilepaths[index]);
-      case AssetTypeEnum.image:
-        final index = state.images.indexOf(assetFilename);
-        return index < 0 ? null : path.normalize(state.imagesFilepaths[index]);
-      case AssetTypeEnum.model:
-        final index = state.models.indexOf(assetFilename);
-        return index < 0 ? null : path.normalize(state.modelsFilepaths[index]);
-      case AssetTypeEnum.pdf:
-        final index = state.pdf.indexOf(assetFilename);
-        return index < 0 ? null : path.normalize(state.pdfFilepaths[index]);
-    }
+    final filepath = _getAssetMapByType(type)[assetFilename];
+    return filepath != null ? path.normalize(filepath) : null;
   }
 }
 
 ///
 /// Top-level function required by Isolate.run
+/// Returns a map of filename -> filepath for O(1) lookups
 ///
-Future<(List<String>, List<String>)> _getDirectoryFileNamesAndPaths(
+Future<Map<String, String>> _getDirectoryFileNamesAndPaths(
     String dirPath) async {
   final directory = Directory(dirPath);
 
   if (!directory.existsSync()) {
-    return (<String>[], <String>[]);
+    return <String, String>{};
   }
 
   final files = await directory
@@ -192,8 +118,7 @@ Future<(List<String>, List<String>)> _getDirectoryFileNamesAndPaths(
       .cast<File>()
       .toList();
 
-  final filenames = <String>[];
-  final filepaths = <String>[];
+  final assetMap = <String, String>{};
 
   for (final file in files) {
     final filename = p.basenameWithoutExtension(file.path);
@@ -202,9 +127,8 @@ Future<(List<String>, List<String>)> _getDirectoryFileNamesAndPaths(
             getFileNameFromURL(newSteamUserContentUrl))
         : filename;
 
-    filenames.add(mappedFilename);
-    filepaths.add(file.path);
+    assetMap[mappedFilename] = file.path;
   }
 
-  return (filenames, filepaths);
+  return assetMap;
 }

@@ -1,10 +1,9 @@
 import 'dart:io' show File;
-import 'dart:math' show Random;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart'
-    show useMemoized, useState, useEffect;
+    show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
@@ -35,30 +34,6 @@ class ModsGridCard extends HookConsumerWidget {
     final selectedMod = ref.watch(selectedModProvider);
 
     final isHovered = useState(false);
-
-    useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (mod.assetLists == null) {
-          try {
-            await Future.delayed(
-                Duration(milliseconds: 500 + Random().nextInt(501)));
-
-            if (!context.mounted) return;
-            final urls =
-                await ref.read(modsProvider.notifier).getUrlsByMod(mod);
-            if (!context.mounted) return;
-            final completeMod =
-                await ref.read(modsProvider.notifier).getCompleteMod(mod, urls);
-            if (!context.mounted) return;
-            ref.read(modsProvider.notifier).updateMod(completeMod);
-          } catch (e) {
-            debugPrint('Error loading ${mod.modType} ${mod.saveName}: $e');
-          }
-        }
-      });
-
-      return null;
-    }, [mod.jsonFilePath]);
 
     final imageExists = useMemoized(() {
       return mod.imageFilePath != null
@@ -99,14 +74,14 @@ class ModsGridCard extends HookConsumerWidget {
       onExit: (_) => isHovered.value = false,
       child: GestureDetector(
         onTap: () {
-          if (ref.read(actionInProgressProvider) || mod.assetLists == null) {
+          if (ref.read(actionInProgressProvider)) {
             return;
           }
 
           ref.read(modsProvider.notifier).setSelectedMod(mod);
         },
         onSecondaryTapDown: (details) {
-          if (ref.read(actionInProgressProvider) || mod.assetLists == null) {
+          if (ref.read(actionInProgressProvider)) {
             return;
           }
 

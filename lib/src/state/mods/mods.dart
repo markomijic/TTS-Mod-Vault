@@ -166,6 +166,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // Create work data for each isolate
       final ignoreAudio = ref.read(settingsProvider).ignoreAudioAssets;
+      final existingAssets = ref.read(existingAssetListsProvider);
+
       final List<IsolateWorkData> isolateWorkData =
           batchesPerIsolate.map((batches) {
         // Get all mods for this isolate to prepare relevant cached data
@@ -184,6 +186,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
                     cachedUrls[mod.jsonFileName],
                   ))),
           ignoreAudioAssets: ignoreAudio,
+          // Pass asset maps for O(1) existence checks in isolate
+          existingAssetBundles: existingAssets.assetBundles,
+          existingAudio: existingAssets.audio,
+          existingImages: existingAssets.images,
+          existingModels: existingAssets.models,
+          existingPdf: existingAssets.pdf,
         );
       }).toList();
 
@@ -681,33 +689,34 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
-  List<Asset> _getAssetsByType(List<String> urls, AssetTypeEnum type) {
-    final assetUrls = <String>[];
-
-    for (final url in urls) {
-      assetUrls.add(url.replaceAll(oldCloudUrl, newSteamUserContentUrl));
-    }
-
-    final existenceChecks = assetUrls
-        .map((assetUrl) => ref
-            .read(existingAssetListsProvider.notifier)
-            .doesAssetFileExist(getFileNameFromURL(assetUrl), type))
-        .toList();
-
-    return List.generate(
-      assetUrls.length,
-      (i) => Asset(
-        url: assetUrls[i],
-        fileExists: existenceChecks[i],
-        filePath: existenceChecks[i]
-            ? ref
-                .read(existingAssetListsProvider.notifier)
-                .getAssetFilePath(getFileNameFromURL(assetUrls[i]), type)
-            : null,
-      ),
-    );
+  Map<String, String> _getAssetMapByType(AssetTypeEnum type) {
+    final existingAssets = ref.read(existingAssetListsProvider);
+    return switch (type) {
+      AssetTypeEnum.assetBundle => existingAssets.assetBundles,
+      AssetTypeEnum.audio => existingAssets.audio,
+      AssetTypeEnum.image => existingAssets.images,
+      AssetTypeEnum.model => existingAssets.models,
+      AssetTypeEnum.pdf => existingAssets.pdf,
+    };
   }
 
+  List<Asset> _getAssetsByType(List<String> urls, AssetTypeEnum type) {
+    final assetMap = _getAssetMapByType(type);
+
+    return urls.map((url) {
+      final normalizedUrl = url.replaceAll(oldCloudUrl, newSteamUserContentUrl);
+      final filename = getFileNameFromURL(normalizedUrl);
+      final filepath = assetMap[filename]; // O(1) lookup!
+
+      return Asset(
+        url: normalizedUrl,
+        fileExists: filepath != null,
+        filePath: filepath,
+      );
+    }).toList();
+  }
+
+  // TODO remove/replace with isolate method?
   (AssetLists, int, int) _getAssetListsFromUrls(Map<String, String> data) {
     final ignoreAudio = ref.read(settingsProvider).ignoreAudioAssets;
 

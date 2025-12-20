@@ -4,6 +4,10 @@ import 'dart:io' show Directory, File;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:path/path.dart' as path;
+import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart'
+    show AssetLists;
+import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
+    show Asset;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -23,12 +27,23 @@ class IsolateWorkData {
   final Map<String, String?> cachedDateTimeStamps;
   final Map<String, Map<String, String>?> cachedAssetLists;
   final bool ignoreAudioAssets;
+  // Asset existence maps for O(1) lookups
+  final Map<String, String> existingAssetBundles;
+  final Map<String, String> existingAudio;
+  final Map<String, String> existingImages;
+  final Map<String, String> existingModels;
+  final Map<String, String> existingPdf;
 
   IsolateWorkData({
     required this.batches,
     required this.cachedDateTimeStamps,
     required this.cachedAssetLists,
     required this.ignoreAudioAssets,
+    required this.existingAssetBundles,
+    required this.existingAudio,
+    required this.existingImages,
+    required this.existingModels,
+    required this.existingPdf,
   });
 }
 
@@ -110,9 +125,31 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
             dateTimeStamp: mod.dateTimeStamp ?? '',
             jsonURLs: jsonURLs,
           ));
+        } else {
+          // Use cached URLs
+          jsonURLs = workData.cachedAssetLists[mod.jsonFileName];
         }
 
-        allProcessedMods.add(mod);
+        // Build asset lists eagerly in isolate with O(1) lookups
+        if (jsonURLs != null) {
+          final assetLists = _buildAssetListsFromUrls(
+            jsonURLs,
+            workData.existingAssetBundles,
+            workData.existingAudio,
+            workData.existingImages,
+            workData.existingModels,
+            workData.existingPdf,
+            workData.ignoreAudioAssets,
+          );
+
+          final completeMod = mod.copyWith(
+            assetLists: assetLists.$1,
+            totalCount: assetLists.$2,
+            totalExistsCount: assetLists.$3,
+          );
+
+          allProcessedMods.add(completeMod);
+        }
       } catch (e) {
         debugPrint(
             'Isolate error processing mod ${mod.jsonFileName}: ${e.toString()}');
@@ -205,6 +242,80 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
   }
 
   return urls;
+}
+
+/// Builds AssetLists from URLs with O(1) existence checks
+/// This function runs in isolate and doesn't have access to Riverpod
+(AssetLists, int, int) _buildAssetListsFromUrls(
+  Map<String, String> urlsData,
+  Map<String, String> assetBundles,
+  Map<String, String> audio,
+  Map<String, String> images,
+  Map<String, String> models,
+  Map<String, String> pdf,
+  bool ignoreAudio,
+) {
+  // Group URLs by type
+  Map<AssetTypeEnum, List<String>> urlsByType = {
+    for (final type in AssetTypeEnum.values) type: [],
+  };
+
+  for (final entry in urlsData.entries) {
+    for (final assetType in AssetTypeEnum.values) {
+      if (ignoreAudio && assetType == AssetTypeEnum.audio) {
+        continue;
+      }
+
+      if (assetType.subtypes.contains(entry.value)) {
+        urlsByType[assetType]!.add(entry.key);
+        break;
+      }
+    }
+  }
+
+  // Build Asset objects with O(1) lookups
+  final allAssets = <List<Asset>>[];
+
+  for (final type in AssetTypeEnum.values) {
+    final assetMap = switch (type) {
+      AssetTypeEnum.assetBundle => assetBundles,
+      AssetTypeEnum.audio => audio,
+      AssetTypeEnum.image => images,
+      AssetTypeEnum.model => models,
+      AssetTypeEnum.pdf => pdf,
+    };
+
+    final assets = urlsByType[type]!.map((url) {
+      final filename = getFileNameFromURL(url);
+      final filepath = assetMap[filename]; // O(1) lookup!
+
+      return Asset(
+        url: url,
+        fileExists: filepath != null,
+        filePath: filepath,
+      );
+    }).toList();
+
+    allAssets.add(assets);
+  }
+
+  final totalCount = allAssets.expand((list) => list).length;
+  final existingFilesCount = allAssets
+      .expand((list) => list)
+      .where((asset) => asset.fileExists)
+      .length;
+
+  return (
+    AssetLists(
+      assetBundles: allAssets[0],
+      audio: allAssets[1],
+      images: allAssets[2],
+      models: allAssets[3],
+      pdf: allAssets[4],
+    ),
+    totalCount,
+    existingFilesCount,
+  );
 }
 
 // Original URL extraction method

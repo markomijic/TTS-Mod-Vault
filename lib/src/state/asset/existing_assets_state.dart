@@ -1,64 +1,39 @@
 class ExistingAssetsListsState {
-  final List<String> assetBundles;
-  final List<String> assetBundlesFilepaths;
-  final List<String> audio;
-  final List<String> audioFilepaths;
-  final List<String> images;
-  final List<String> imagesFilepaths;
-  final List<String> models;
-  final List<String> modelsFilepaths;
-  final List<String> pdf;
-  final List<String> pdfFilepaths;
+  // Maps: filename -> filepath for O(1) lookups
+  final Map<String, String> assetBundles;
+  final Map<String, String> audio;
+  final Map<String, String> images;
+  final Map<String, String> models;
+  final Map<String, String> pdf;
 
   ExistingAssetsListsState({
     required this.assetBundles,
-    required this.assetBundlesFilepaths,
     required this.audio,
-    required this.audioFilepaths,
     required this.images,
-    required this.imagesFilepaths,
     required this.models,
-    required this.modelsFilepaths,
     required this.pdf,
-    required this.pdfFilepaths,
   });
 
   ExistingAssetsListsState.empty()
-      : assetBundles = [],
-        assetBundlesFilepaths = [],
-        audio = [],
-        audioFilepaths = [],
-        images = [],
-        imagesFilepaths = [],
-        models = [],
-        modelsFilepaths = [],
-        pdf = [],
-        pdfFilepaths = [];
+      : assetBundles = {},
+        audio = {},
+        images = {},
+        models = {},
+        pdf = {};
 
   ExistingAssetsListsState copyWith({
-    List<String>? assetBundles,
-    List<String>? assetBundlesFilepaths,
-    List<String>? audio,
-    List<String>? audioFilepaths,
-    List<String>? images,
-    List<String>? imagesFilepaths,
-    List<String>? models,
-    List<String>? modelsFilepaths,
-    List<String>? pdf,
-    List<String>? pdfFilepaths,
+    Map<String, String>? assetBundles,
+    Map<String, String>? audio,
+    Map<String, String>? images,
+    Map<String, String>? models,
+    Map<String, String>? pdf,
   }) {
     return ExistingAssetsListsState(
       assetBundles: assetBundles ?? this.assetBundles,
-      assetBundlesFilepaths:
-          assetBundlesFilepaths ?? this.assetBundlesFilepaths,
       audio: audio ?? this.audio,
-      audioFilepaths: audioFilepaths ?? this.audioFilepaths,
       images: images ?? this.images,
-      imagesFilepaths: imagesFilepaths ?? this.imagesFilepaths,
       models: models ?? this.models,
-      modelsFilepaths: modelsFilepaths ?? this.modelsFilepaths,
       pdf: pdf ?? this.pdf,
-      pdfFilepaths: pdfFilepaths ?? this.pdfFilepaths,
     );
   }
 }

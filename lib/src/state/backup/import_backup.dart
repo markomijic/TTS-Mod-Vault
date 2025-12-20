@@ -9,18 +9,21 @@ import 'package:path/path.dart' as p
     show basenameWithoutExtension, extension, normalize, split;
 import 'package:tts_mod_vault/src/state/backup/import_backup_state.dart'
     show ImportBackupState, ImportBackupStatusEnum;
-import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show directoriesProvider, modsProvider;
 
 class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
   final Ref ref;
 
   ImportBackupNotifier(this.ref) : super(const ImportBackupState());
 
-  Future<bool> importBackup() async {
+  Future<void> importBackup() async {
+    String? importedJsonFilePath;
+    ModTypeEnum? modType;
     try {
       state = state.copyWith(
         status: ImportBackupStatusEnum.awaitingBackupFile,
-        lastImportedJsonFileName: "",
         currentCount: 0,
         totalCount: 0,
       );
@@ -38,14 +41,14 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
         );
       } catch (e) {
         debugPrint("importBackup - file picker error: $e");
-        return false;
+        return;
       }
 
       if (result == null || result.files.isEmpty) {
         state = state.copyWith(
           status: ImportBackupStatusEnum.idle,
         );
-        return false;
+        return;
       }
 
       final filePath = result.files.single.path ?? '';
@@ -53,7 +56,7 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
         state = state.copyWith(
           status: ImportBackupStatusEnum.idle,
         );
-        return false;
+        return;
       }
 
       state = state.copyWith(
@@ -65,6 +68,8 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
       final archive = ZipDecoder().decodeBytes(bytes);
       final modsDir = Directory(ref.read(directoriesProvider).modsDir);
       final savesDir = Directory(ref.read(directoriesProvider).savesDir);
+      final savedObjectsDir =
+          Directory(ref.read(directoriesProvider).savedObjectsDir);
 
       for (final file in archive) {
         if (file.isFile) {
@@ -81,8 +86,19 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
           final outputFile = File('$targetDir/$filename');
 
           if (_isJsonFile(filename)) {
-            state = state.copyWith(
-                lastImportedJsonFileName: p.basenameWithoutExtension(filename));
+            importedJsonFilePath = outputFile.path;
+
+            // Determine mod type based on the path
+            if (outputFile.path.contains(savedObjectsDir.path)) {
+              modType = ModTypeEnum.savedObject;
+            } else if (outputFile.path.contains(savesDir.path)) {
+              modType = ModTypeEnum.save;
+            } else if (outputFile.path.contains(modsDir.path)) {
+              modType = ModTypeEnum.mod;
+            } else {
+              // Default to mod if we can't determine
+              modType = ModTypeEnum.mod;
+            }
           }
 
           try {
@@ -97,24 +113,21 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
           }
         }
       }
+
+      if (importedJsonFilePath != null && modType != null) {
+        await ref.read(modsProvider.notifier).addSingleMod(
+              importedJsonFilePath,
+              modType,
+            );
+      }
     } catch (e) {
       debugPrint('importBackup error: $e');
-      state = state.copyWith(
-        status: ImportBackupStatusEnum.idle,
-        importFileName: "",
-      );
-      return false;
     }
 
     state = state.copyWith(
       status: ImportBackupStatusEnum.idle,
       importFileName: "",
     );
-    return true;
-  }
-
-  void resetLastImportedJsonFileName() {
-    state = state.copyWith(lastImportedJsonFileName: "");
   }
 
   bool _isJsonFile(String inputPath) {

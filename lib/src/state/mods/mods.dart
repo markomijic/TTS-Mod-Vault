@@ -1,14 +1,13 @@
-import 'dart:convert' show json;
 import 'dart:io' show File, Platform;
 import 'dart:isolate' show Isolate;
 import 'dart:math' show max;
-import 'package:path/path.dart' as p;
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart' show VoidCallback, debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncNotifier, AsyncValue, AsyncValueX;
+import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/asset/models/asset_lists_model.dart'
     show AssetLists;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
@@ -41,7 +40,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         directoriesProvider,
         existingAssetListsProvider,
         existingBackupsProvider,
-        importBackupProvider,
         loadingMessageProvider,
         selectedModProvider,
         settingsProvider,
@@ -66,7 +64,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
   Future<void> loadModsData({
     VoidCallback? onDataLoaded,
-    String modJsonFileName = "",
     bool clearCache = false,
   }) async {
     final startTime = DateTime.now();
@@ -276,16 +273,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         savedObjects: savedObjects,
       ));
 
-      // If backup was imported set it as selected mod
-      if (modJsonFileName.isNotEmpty) {
-        ref.read(importBackupProvider.notifier).resetLastImportedJsonFileName();
-        _setImportedModAsSelected(allProcessedMods, modJsonFileName);
-      }
-
       final selectedMod = ref.read(selectedModProvider);
 
-      // If there was previously a mod selected and there was no import - update and set selected mod
-      if (selectedMod != null && modJsonFileName.isEmpty) {
+      // If there was previously a mod selected - update selected mod
+      if (selectedMod != null) {
         final mod = allProcessedMods.firstWhereOrNull(
             (m) => m.jsonFilePath == selectedMod.jsonFilePath);
 
@@ -543,57 +534,39 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   Future<void> addSingleMod(String jsonFilePath, ModTypeEnum modType) async {
+    debugPrint('addSingleMod - path: $jsonFilePath, type: ${modType.label}');
+
     try {
       if (!state.hasValue) return;
 
-      // Create initial mod from the file
-      final file = File(jsonFilePath);
-      if (!file.existsSync()) return;
+      final initialMod = await Isolate.run(
+          () => processInitialModsInIsolate(InitialModsIsolateData(
+                jsonsPaths: [p.normalize(jsonFilePath)],
+                modType: modType,
+              )));
 
-      final fileName = p.basename(jsonFilePath);
-      final parentFolder = p.basename(p.dirname(jsonFilePath));
-      final jsonFileName = fileName.replaceAll('.json', '');
+      if (initialMod.isEmpty) {
+        debugPrint('addSingleMod - failed to create initial mod');
+        return;
+      }
 
-      // Read basic mod info
-      final jsonString = await file.readAsString();
-      final jsonData = json.decode(jsonString);
-
-      final createdAtTimestamp =
-          file.statSync().modified.millisecondsSinceEpoch;
-      final saveName = jsonData['SaveName'] ?? jsonFileName;
-      final dateTimeStamp = jsonData['Date']?.toString();
-
-      // Check for image file
-      final imageFilePath = jsonFilePath.replaceAll('.json', '.png');
-      final imageExists = File(imageFilePath).existsSync();
-
-      // Create initial mod
-      final newMod = Mod(
-        modType: modType,
-        jsonFilePath: jsonFilePath,
-        jsonFileName: jsonFileName,
-        parentFolderName: parentFolder,
-        saveName: saveName,
-        backupStatus: ExistingBackupStatusEnum.noBackup,
-        createdAtTimestamp: createdAtTimestamp,
-        dateTimeStamp: dateTimeStamp,
-        imageFilePath: imageExists ? imageFilePath : null,
-      );
+      final newMod = initialMod.first;
 
       // Get URLs and complete mod data
-      final urls = await extractUrlsFromJson(jsonFilePath);
+      final urls = await extractUrlsFromJson(newMod.jsonFilePath);
       final completeMod = await getCompleteMod(newMod, urls);
 
       // Save to storage
       final Map<String, String> metadata = {
-        jsonFileName: jsonFileName,
+        newMod.jsonFileName: newMod.jsonFileName,
       };
-      if (dateTimeStamp != null) {
-        metadata['$jsonFileName${Storage.dateTimeStampSuffix}'] = dateTimeStamp;
+      if (newMod.dateTimeStamp != null) {
+        metadata['${newMod.jsonFileName}${Storage.dateTimeStampSuffix}'] =
+            newMod.dateTimeStamp!;
       }
 
       await Future.wait([
-        ref.read(storageProvider).updateModUrls(jsonFileName, urls),
+        ref.read(storageProvider).updateModUrls(newMod.jsonFileName, urls),
         ref.read(storageProvider).saveAllModMetadata(metadata),
       ]);
 
@@ -604,12 +577,16 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         case ModTypeEnum.mod:
           final updatedList = [...currentState.mods, completeMod];
           state = AsyncValue.data(currentState.copyWith(mods: updatedList));
-          ref.read(sortAndFilterProvider.notifier).addModFolder(parentFolder);
+          ref
+              .read(sortAndFilterProvider.notifier)
+              .addModFolder(completeMod.parentFolderName);
           break;
         case ModTypeEnum.save:
           final updatedList = [...currentState.saves, completeMod];
           state = AsyncValue.data(currentState.copyWith(saves: updatedList));
-          ref.read(sortAndFilterProvider.notifier).addSaveFolder(parentFolder);
+          ref
+              .read(sortAndFilterProvider.notifier)
+              .addSaveFolder(completeMod.parentFolderName);
           break;
         case ModTypeEnum.savedObject:
           final updatedList = [...currentState.savedObjects, completeMod];
@@ -617,7 +594,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
               AsyncValue.data(currentState.copyWith(savedObjects: updatedList));
           ref
               .read(sortAndFilterProvider.notifier)
-              .addSavedObjectFolder(parentFolder);
+              .addSavedObjectFolder(completeMod.parentFolderName);
           break;
       }
 
@@ -746,20 +723,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       totalCount,
       existingFilesCount,
     );
-  }
-
-  Future<void> _setImportedModAsSelected(
-    List<Mod> mods,
-    String jsonFileName,
-  ) async {
-    if (mods.isNotEmpty) {
-      final foundMod =
-          mods.firstWhereOrNull((mod) => mod.jsonFileName == jsonFileName);
-
-      if (foundMod != null) {
-        await updateSelectedMod(foundMod);
-      }
-    }
   }
 
   void setSelectedMod(Mod mod) {

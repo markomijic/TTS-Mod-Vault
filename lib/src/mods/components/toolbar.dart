@@ -7,8 +7,7 @@ import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show actionInProgressProvider, importBackupProvider, loaderProvider;
-import 'package:tts_mod_vault/src/utils.dart'
-    show showConfirmDialog, showSnackBar;
+import 'package:tts_mod_vault/src/utils.dart' show showConfirmDialog;
 
 class Toolbar extends HookConsumerWidget {
   const Toolbar({super.key});
@@ -48,13 +47,7 @@ class Toolbar extends HookConsumerWidget {
           onPressed: actionInProgress
               ? null
               : () async {
-                  final backupResult =
-                      await importBackupNotifier.importBackup();
-
-                  if (backupResult && context.mounted) {
-                    showSnackBar(context, 'Import finished, refreshing data');
-                    await ref.read(loaderProvider).refreshAppData();
-                  }
+                  await importBackupNotifier.importBackup();
                 },
           icon: const Icon(Icons.unarchive),
           label: const Text('Import backup'),

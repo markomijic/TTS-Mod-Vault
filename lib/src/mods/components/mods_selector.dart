@@ -68,54 +68,75 @@ class ModsSelector extends HookConsumerWidget {
       ];
     }, [showSavedObjects]);
 
+    final menuController = useMemoized(() => MenuController());
+
+    String getTypeLabel(ModTypeEnum type) {
+      switch (type) {
+        case ModTypeEnum.mod:
+          return 'Mods';
+        case ModTypeEnum.save:
+          return 'Saves';
+        case ModTypeEnum.savedObject:
+          return 'Saved Objects';
+      }
+    }
+
     return CustomTooltip(
       message: tooltipMessage,
       waitDuration: const Duration(milliseconds: 300),
-      child: ToggleButtons(
-        // Unselect items colors
-        color: Colors.white,
-        borderColor: Colors.white,
-        // Selected items colors
-        selectedColor: Colors.black, // Text
-        fillColor: Colors.white, // Background
-        selectedBorderColor: Colors.white,
-
-        isSelected: segments.map((type) => type == selectedModType).toList(),
-        onPressed: (index) {
-          if (ref.read(actionInProgressProvider)) {
-            return;
-          }
-
-          final selectedType = segments[index];
-          ref.read(selectedModTypeProvider.notifier).state = selectedType;
-          ref.read(selectedModProvider.notifier).state = null;
-          ref.read(searchQueryProvider.notifier).state = '';
-        },
-        borderRadius: BorderRadius.circular(16),
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              'Mods',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 11),
-            child: Text(
-              'Saves',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          if (showSavedObjects)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                'Saved Objects',
-                style: TextStyle(fontWeight: FontWeight.w500),
+      child: Container(
+        constraints: BoxConstraints(minWidth: 118),
+        child: MenuAnchor(
+          controller: menuController,
+          menuChildren: segments.map((type) {
+            final isSelected = type == selectedModType;
+            return MenuItemButton(
+              closeOnActivate: true,
+              style: MenuItemButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                iconColor: Colors.black,
               ),
-            ),
-        ],
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(isSelected ? Icons.check : null),
+                  Expanded(
+                    child: Text(
+                      getTypeLabel(type),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              onPressed: () {
+                if (ref.read(actionInProgressProvider)) {
+                  return;
+                }
+                ref.read(selectedModTypeProvider.notifier).state = type;
+                ref.read(selectedModProvider.notifier).state = null;
+                ref.read(searchQueryProvider.notifier).state = '';
+              },
+            );
+          }).toList(),
+          builder: (context, controller, child) {
+            return ElevatedButton.icon(
+              onPressed: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
+              },
+              style: ButtonStyle(
+                backgroundColor: WidgetStateProperty.all(Colors.white),
+                foregroundColor: WidgetStateProperty.all(Colors.black),
+              ),
+              icon: Icon(Icons.arrow_drop_down, size: 26),
+              label: Text(getTypeLabel(selectedModType)),
+            );
+          },
+        ),
       ),
     );
   }

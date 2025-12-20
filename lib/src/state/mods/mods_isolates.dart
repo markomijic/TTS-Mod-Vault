@@ -103,8 +103,7 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
         Map<String, String>? jsonURLs;
 
         if (needsRefresh) {
-          jsonURLs =
-              await extractUrlsFromJson(mod.jsonFilePath);
+          jsonURLs = await extractUrlsFromJson(mod.jsonFilePath);
 
           allStorageUpdates.add(ModStorageUpdate(
             jsonFileName: mod.jsonFileName,
@@ -128,29 +127,10 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
 }
 
 Future<Map<String, String>> extractUrlsFromJson(String filePath) async {
-  Map<String, String> urls = {};
+  final file = File(filePath);
+  final jsonString = await file.readAsString();
 
-  try {
-    final file = File(filePath);
-    final jsonString = await file.readAsString();
-
-    // Use regex extraction instead of full JSON parsing
-    urls = _extractUrlsWithRegex(jsonString);
-  } catch (e) {
-    debugPrint('extractUrlsFromJson error: $e');
-  }
-
-  Map<String, String> finalUrls = {};
-
-  for (final url in urls.entries) {
-    final processedUrls = _processUrl(url.key, url.value);
-    finalUrls.addAll(processedUrls);
-  }
-
-  return finalUrls.map((key, value) => MapEntry(
-        key.replaceAll(oldCloudUrl, newSteamUserContentUrl),
-        value,
-      ));
+  return extractUrlsFromJsonString(jsonString);
 }
 
 Map<String, String> extractUrlsFromJsonString(String jsonString) {
@@ -166,6 +146,10 @@ Map<String, String> extractUrlsFromJsonString(String jsonString) {
   Map<String, String> finalUrls = {};
 
   for (final url in urls.entries) {
+    if (url.key.startsWith("file:/")) {
+      continue;
+    }
+
     final processedUrls = _processUrl(url.key, url.value);
     finalUrls.addAll(processedUrls);
   }

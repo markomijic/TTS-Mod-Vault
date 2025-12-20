@@ -352,13 +352,15 @@ String getBackupFilenameByMod(Mod mod, bool forceIncludeJsonFilename) {
 }
 
 Future<void> openInFileExplorer(String filePath) async {
+  final normalizedPath = p.normalize(filePath);
+
   try {
     if (Platform.isWindows) {
-      await Process.run('explorer.exe', ['/select,', filePath]);
+      await Process.run('explorer.exe', ['/select,', normalizedPath]);
     } else if (Platform.isMacOS) {
-      await Process.run('open', ['-R', filePath]);
+      await Process.run('open', ['-R', normalizedPath]);
     } else if (Platform.isLinux) {
-      final directory = Directory(p.dirname(filePath));
+      final directory = Directory(p.dirname(normalizedPath));
       await Process.run('xdg-open', [directory.path]);
     }
   } catch (e) {
@@ -367,8 +369,10 @@ Future<void> openInFileExplorer(String filePath) async {
 }
 
 Future<void> openFile(String filePath) async {
+  final normalizedPath = p.normalize(filePath);
+
   try {
-    await OpenFilex.open(filePath);
+    await OpenFilex.open(normalizedPath);
   } catch (e) {
     debugPrint('openFile error: $e');
   }

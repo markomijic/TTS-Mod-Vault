@@ -9,9 +9,11 @@ import 'package:path/path.dart' as p
     show basenameWithoutExtension, extension, normalize, split;
 import 'package:tts_mod_vault/src/state/backup/import_backup_state.dart'
     show ImportBackupState, ImportBackupStatusEnum;
+import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
+    show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, modsProvider;
+    show directoriesProvider, existingAssetListsProvider, modsProvider;
 
 class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
   final Ref ref;
@@ -19,7 +21,6 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
   ImportBackupNotifier(this.ref) : super(const ImportBackupState());
 
   Future<void> importBackup() async {
-    String? importedJsonFilePath;
     ModTypeEnum? modType;
     try {
       state = state.copyWith(
@@ -71,20 +72,22 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
       final savedObjectsDir =
           Directory(ref.read(directoriesProvider).savedObjectsDir);
 
+      final Map<AssetTypeEnum, Map<String, String>> extractedAssets = {
+        for (final type in AssetTypeEnum.values) type: {},
+      };
+      String? importedJsonFilePath;
+
       for (final file in archive) {
         if (file.isFile) {
           final filename = file.name;
           String targetDir = modsDir.parent.path;
 
-          if (filename.startsWith('Mods')) {
-            targetDir = modsDir.parent.path;
-          } else if (filename.startsWith('Saves')) {
+          if (filename.startsWith('Saves')) {
             targetDir = savesDir.parent.path;
           }
 
           final data = file.content as List<int>;
           final outputFile = File('$targetDir/$filename');
-
           if (_isJsonFile(filename)) {
             importedJsonFilePath = outputFile.path;
 
@@ -98,6 +101,13 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
             } else {
               // Default to mod if we can't determine
               modType = ModTypeEnum.mod;
+            }
+          } else {
+            // Track asset files by their type based on directory
+            final assetType = _getAssetTypeFromPath(file.name);
+            if (assetType != null) {
+              final assetFilename = p.basenameWithoutExtension(outputFile.path);
+              extractedAssets[assetType]![assetFilename] = outputFile.path;
             }
           }
 
@@ -115,6 +125,20 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
       }
 
       if (importedJsonFilePath != null && modType != null) {
+        // Add only the newly extracted assets instead of rescanning all directories
+        for (final entry in extractedAssets.entries) {
+          final assetType = entry.key;
+          final assets = entry.value;
+
+          for (final asset in assets.entries) {
+            ref.read(existingAssetListsProvider.notifier).addExistingAsset(
+                  assetType,
+                  asset.key,
+                  asset.value,
+                );
+          }
+        }
+
         await ref.read(modsProvider.notifier).addSingleMod(
               importedJsonFilePath,
               modType,
@@ -137,5 +161,20 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
     final containsWorkshop = p.split(filePath).contains('Workshop');
 
     return isJsonFile && containsWorkshop;
+  }
+
+  AssetTypeEnum? _getAssetTypeFromPath(String filePath) {
+    final normalizedPath = p.normalize(filePath);
+    final pathParts =
+        p.split(normalizedPath).map((part) => part.toLowerCase()).toList();
+
+    // Check if path contains any of the asset type directory names (case-insensitive)
+    for (final assetType in AssetTypeEnum.values) {
+      if (pathParts.contains(assetType.label.toLowerCase())) {
+        return assetType;
+      }
+    }
+
+    return null;
   }
 }

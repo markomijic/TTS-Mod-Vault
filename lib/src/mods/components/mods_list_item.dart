@@ -36,7 +36,7 @@ class ModsListItem extends HookConsumerWidget {
     }, [mod.imageFilePath]);
 
     final showAssetCount = useMemoized(() {
-      return mod.totalExistsCount != null && mod.totalCount != null;
+      return mod.existingAssetCount != null && mod.assetCount != null;
     }, [mod]);
 
     final isSelected = useMemoized(() {
@@ -44,23 +44,20 @@ class ModsListItem extends HookConsumerWidget {
     }, [selectedMod, mod]);
 
     final filesMessage = useMemoized(() {
-      if (mod.totalCount == null || mod.totalExistsCount == null) {
-        return "";
-      }
-      final missingCount = mod.totalCount! - mod.totalExistsCount!;
+      final missingCount = mod.missingAssetCount ?? 0;
       if (missingCount <= 0) return '';
       final fileLabel = missingCount == 1 ? 'file' : 'files';
       return '$missingCount missing $fileLabel';
-    }, [mod.totalExistsCount]);
+    }, [mod.existingAssetCount]);
 
     final backupHasSameAssetCount = useMemoized(() {
       if (mod.backup != null &&
           mod.backup?.totalAssetCount != null &&
-          mod.totalExistsCount != null) {
-        return mod.backup!.totalAssetCount == mod.totalExistsCount!;
+          mod.existingAssetCount != null) {
+        return mod.backup!.totalAssetCount == mod.existingAssetCount!;
       }
       return true;
-    }, [mod.backup, mod.totalExistsCount]);
+    }, [mod.backup, mod.existingAssetCount]);
 
     return GestureDetector(
         onTap: () {
@@ -135,12 +132,12 @@ class ModsListItem extends HookConsumerWidget {
                           message: filesMessage,
                           child: Text(
                             showAssetCount
-                                ? "${mod.totalExistsCount}/${mod.totalCount}"
+                                ? "${mod.existingAssetCount}/${mod.assetCount}"
                                 : " ",
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w500,
-                              color: mod.totalExistsCount == mod.totalCount
+                              color: mod.existingAssetCount == mod.assetCount
                                   ? Colors.green
                                   : Colors.white,
                             ),
@@ -154,7 +151,7 @@ class ModsListItem extends HookConsumerWidget {
                             message:
                                 'Update: ${formatTimestamp(mod.dateTimeStamp) ?? 'N/A'}\n'
                                 'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}'
-                                '${backupHasSameAssetCount || mod.backup!.totalAssetCount == null ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.totalExistsCount}'}',
+                                '${backupHasSameAssetCount || mod.backup!.totalAssetCount == null ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.existingAssetCount}'}',
                             child: Icon(
                               Icons.folder_zip_outlined,
                               size: 28,

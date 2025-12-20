@@ -25,8 +25,9 @@ class Mod {
   final String? dateTimeStamp;
   final String? imageFilePath;
   final AssetLists? assetLists;
-  final int? totalCount;
-  final int? totalExistsCount;
+  final int? assetCount;
+  final int? existingAssetCount;
+  final int? missingAssetCount;
 
   Mod({
     required this.modType,
@@ -40,8 +41,9 @@ class Mod {
     this.dateTimeStamp,
     this.imageFilePath,
     this.assetLists,
-    this.totalCount,
-    this.totalExistsCount,
+    this.assetCount,
+    this.existingAssetCount,
+    this.missingAssetCount,
   });
 
   Mod copyWith({
@@ -55,8 +57,9 @@ class Mod {
     String? jsonFileName,
     String? imageFilePath,
     AssetLists? assetLists,
-    int? totalCount,
-    int? totalExistsCount,
+    int? assetCount,
+    int? existingAssetCount,
+    int? missingAssetCount,
   }) {
     return Mod(
       modType: modType,
@@ -70,8 +73,9 @@ class Mod {
       dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
       imageFilePath: imageFilePath ?? this.imageFilePath,
       assetLists: assetLists ?? this.assetLists,
-      totalCount: totalCount ?? this.totalCount,
-      totalExistsCount: totalExistsCount ?? this.totalExistsCount,
+      assetCount: assetCount ?? this.assetCount,
+      existingAssetCount: existingAssetCount ?? this.existingAssetCount,
+      missingAssetCount: missingAssetCount ?? this.missingAssetCount,
     );
   }
 

@@ -144,8 +144,9 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
 
           final completeMod = mod.copyWith(
             assetLists: assetLists.$1,
-            totalCount: assetLists.$2,
-            totalExistsCount: assetLists.$3,
+            assetCount: assetLists.$2,
+            existingAssetCount: assetLists.$3,
+            missingAssetCount: assetLists.$2 - assetLists.$3,
           );
 
           allProcessedMods.add(completeMod);

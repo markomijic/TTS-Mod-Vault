@@ -68,7 +68,8 @@ enum SortOptionEnum {
   alphabeticalAsc('A-Z'),
   //alphabeticalDesc('Z-A'),
   //dateCreatedAsc('Oldest'),
-  dateCreatedDesc('Newest');
+  dateCreatedDesc('Newest'),
+  missingAssets('Missing assets');
 
   final String label;
   const SortOptionEnum(this.label);

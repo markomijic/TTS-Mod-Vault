@@ -164,6 +164,9 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
       filteredMods
           .sort((a, b) => b.createdAtTimestamp.compareTo(a.createdAtTimestamp));
       break;
+    case SortOptionEnum.missingAssets:
+      filteredMods.sort((a, b) =>
+          (b.missingAssetCount ?? 0).compareTo(a.missingAssetCount ?? 0));
   }
 
   return filteredMods;

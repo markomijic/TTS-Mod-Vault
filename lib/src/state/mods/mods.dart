@@ -1,6 +1,8 @@
+import 'dart:convert' show json;
 import 'dart:io' show File, Platform;
 import 'dart:isolate' show Isolate;
 import 'dart:math' show max;
+import 'package:path/path.dart' as p;
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart' show compute;
@@ -536,6 +538,93 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
     } catch (e, stack) {
       debugPrint('updateMod error: $e');
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  Future<void> addSingleMod(String jsonFilePath, ModTypeEnum modType) async {
+    try {
+      if (!state.hasValue) return;
+
+      // Create initial mod from the file
+      final file = File(jsonFilePath);
+      if (!file.existsSync()) return;
+
+      final fileName = p.basename(jsonFilePath);
+      final parentFolder = p.basename(p.dirname(jsonFilePath));
+      final jsonFileName = fileName.replaceAll('.json', '');
+
+      // Read basic mod info
+      final jsonString = await file.readAsString();
+      final jsonData = json.decode(jsonString);
+
+      final createdAtTimestamp =
+          file.statSync().modified.millisecondsSinceEpoch;
+      final saveName = jsonData['SaveName'] ?? jsonFileName;
+      final dateTimeStamp = jsonData['Date']?.toString();
+
+      // Check for image file
+      final imageFilePath = jsonFilePath.replaceAll('.json', '.png');
+      final imageExists = File(imageFilePath).existsSync();
+
+      // Create initial mod
+      final newMod = Mod(
+        modType: modType,
+        jsonFilePath: jsonFilePath,
+        jsonFileName: jsonFileName,
+        parentFolderName: parentFolder,
+        saveName: saveName,
+        backupStatus: ExistingBackupStatusEnum.noBackup,
+        createdAtTimestamp: createdAtTimestamp,
+        dateTimeStamp: dateTimeStamp,
+        imageFilePath: imageExists ? imageFilePath : null,
+      );
+
+      // Get URLs and complete mod data
+      final urls = await extractUrlsFromJson(jsonFilePath);
+      final completeMod = await getCompleteMod(newMod, urls);
+
+      // Save to storage
+      final Map<String, String> metadata = {
+        jsonFileName: jsonFileName,
+      };
+      if (dateTimeStamp != null) {
+        metadata['$jsonFileName${Storage.dateTimeStampSuffix}'] = dateTimeStamp;
+      }
+
+      await Future.wait([
+        ref.read(storageProvider).updateModUrls(jsonFileName, urls),
+        ref.read(storageProvider).saveAllModMetadata(metadata),
+      ]);
+
+      // Add to appropriate list
+      final currentState = state.value!;
+
+      switch (modType) {
+        case ModTypeEnum.mod:
+          final updatedList = [...currentState.mods, completeMod];
+          state = AsyncValue.data(currentState.copyWith(mods: updatedList));
+          ref.read(sortAndFilterProvider.notifier).addModFolder(parentFolder);
+          break;
+        case ModTypeEnum.save:
+          final updatedList = [...currentState.saves, completeMod];
+          state = AsyncValue.data(currentState.copyWith(saves: updatedList));
+          ref.read(sortAndFilterProvider.notifier).addSaveFolder(parentFolder);
+          break;
+        case ModTypeEnum.savedObject:
+          final updatedList = [...currentState.savedObjects, completeMod];
+          state =
+              AsyncValue.data(currentState.copyWith(savedObjects: updatedList));
+          ref
+              .read(sortAndFilterProvider.notifier)
+              .addSavedObjectFolder(parentFolder);
+          break;
+      }
+
+      // Set as selected mod
+      setSelectedMod(completeMod);
+    } catch (e, stack) {
+      debugPrint('addSingleMod error: $e');
       state = AsyncValue.error(e, stack);
     }
   }

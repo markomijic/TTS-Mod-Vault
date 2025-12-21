@@ -1,6 +1,9 @@
 import 'dart:io' show File;
 
+import 'package:flutter/gestures.dart'
+    show PointerDeviceKind, kPrimaryButton, kSecondaryButton;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HardwareKeyboard;
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
@@ -15,7 +18,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         modsProvider,
         selectedModProvider,
-        settingsProvider;
+        settingsProvider,
+        multiSelectModsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showModContextMenu, formatTimestamp;
 
@@ -28,6 +32,7 @@ class ModsListItem extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showBackupState = ref.watch(settingsProvider).showBackupState;
     final selectedMod = ref.watch(selectedModProvider);
+    final multiSelectMods = ref.watch(multiSelectModsProvider);
 
     final imageExists = useMemoized(() {
       return mod.imageFilePath != null
@@ -40,8 +45,9 @@ class ModsListItem extends HookConsumerWidget {
     }, [mod]);
 
     final isSelected = useMemoized(() {
-      return selectedMod?.jsonFilePath == mod.jsonFilePath;
-    }, [selectedMod, mod]);
+      return selectedMod?.jsonFilePath == mod.jsonFilePath ||
+          multiSelectMods.contains(mod.jsonFilePath);
+    }, [selectedMod, multiSelectMods, mod]);
 
     final filesMessage = useMemoized(() {
       final missingCount = mod.missingAssetCount ?? 0;
@@ -59,21 +65,41 @@ class ModsListItem extends HookConsumerWidget {
       return true;
     }, [mod.backup, mod.existingAssetCount]);
 
-    return GestureDetector(
-        onTap: () {
+    return Listener(
+        onPointerDown: (event) {
           if (ref.read(actionInProgressProvider)) {
             return;
           }
 
-          ref.read(modsProvider.notifier).setSelectedMod(mod);
-        },
-        onSecondaryTapDown: (details) {
-          if (ref.read(actionInProgressProvider)) {
-            return;
-          }
+          final isCtrlPressed = event.kind == PointerDeviceKind.mouse &&
+              (event.buttons == kPrimaryButton) &&
+              (HardwareKeyboard.instance.isControlPressed ||
+                  HardwareKeyboard.instance.isMetaPressed);
 
-          ref.read(modsProvider.notifier).setSelectedMod(mod);
-          showModContextMenu(context, ref, details.globalPosition, mod);
+          if (event.buttons == kSecondaryButton) {
+            // Right-click
+
+            ref.read(modsProvider.notifier).setSelectedMod(mod);
+            showModContextMenu(context, ref, event.position, mod);
+          } else if (event.buttons == kPrimaryButton) {
+            // Left-click
+            if (isCtrlPressed) {
+              // Ctrl+Click: Toggle multi-selection
+              final currentSelected = ref.read(multiSelectModsProvider);
+              final newSelected = Set<String>.from(currentSelected);
+
+              if (newSelected.contains(mod.jsonFilePath)) {
+                newSelected.remove(mod.jsonFilePath);
+              } else {
+                newSelected.add(mod.jsonFilePath);
+              }
+
+              ref.read(multiSelectModsProvider.notifier).state = newSelected;
+            } else {
+              // Normal left-click: Single selection
+              ref.read(modsProvider.notifier).setSelectedMod(mod);
+            }
+          }
         },
         child: Card(
           margin: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -81,7 +107,11 @@ class ModsListItem extends HookConsumerWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(4),
             side: BorderSide(
-              color: isSelected ? Colors.white : Colors.transparent,
+              color: isSelected
+                  ? multiSelectMods.length > 1
+                      ? Colors.cyan
+                      : Colors.white
+                  : Colors.transparent,
               width: 2,
             ),
           ),

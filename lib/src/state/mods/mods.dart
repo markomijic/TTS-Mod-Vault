@@ -44,7 +44,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider,
         settingsProvider,
         sortAndFilterProvider,
-        storageProvider;
+        storageProvider,
+        multiSelectModsProvider;
 import 'package:tts_mod_vault/src/state/storage/storage.dart' show Storage;
 import 'package:tts_mod_vault/src/utils.dart'
     show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
@@ -762,6 +763,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   void setSelectedMod(Mod mod) {
+    ref.read(multiSelectModsProvider.notifier).state = {mod.jsonFilePath};
     ref.read(selectedModProvider.notifier).state = mod;
   }
 

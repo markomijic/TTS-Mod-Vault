@@ -27,6 +27,8 @@ import 'package:tts_mod_vault/src/state/storage/storage.dart';
 
 final selectedModProvider = StateProvider<Mod?>((ref) => null);
 
+final multiSelectModsProvider = StateProvider<Set<String>>((ref) => {});
+
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
 final selectedModTypeProvider =

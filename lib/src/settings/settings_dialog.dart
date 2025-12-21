@@ -48,7 +48,7 @@ extension SettingsSectionX on SettingsSection {
   IconData get icon {
     switch (this) {
       case SettingsSection.uiNetwork:
-        return Icons.palette_outlined;
+        return Icons.display_settings;
       case SettingsSection.features:
         return Icons.extension_outlined;
       case SettingsSection.folders:

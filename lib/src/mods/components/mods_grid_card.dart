@@ -1,7 +1,10 @@
 import 'dart:io' show File;
 import 'dart:ui' show ImageFilter;
 
+import 'package:flutter/gestures.dart'
+    show kPrimaryButton, kSecondaryButton, PointerDeviceKind;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HardwareKeyboard;
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
@@ -11,12 +14,12 @@ import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
-
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         modsProvider,
         selectedModProvider,
+        multiSelectModsProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showModContextMenu, formatTimestamp;
@@ -31,6 +34,7 @@ class ModsGridCard extends HookConsumerWidget {
     final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
     final showBackupState = ref.watch(settingsProvider).showBackupState;
     final selectedMod = ref.watch(selectedModProvider);
+    final multiSelectMods = ref.watch(multiSelectModsProvider);
 
     final isHovered = useState(false);
 
@@ -45,8 +49,9 @@ class ModsGridCard extends HookConsumerWidget {
     }, [mod]);
 
     final isSelected = useMemoized(() {
-      return selectedMod?.jsonFilePath == mod.jsonFilePath;
-    }, [selectedMod, mod]);
+      return selectedMod?.jsonFilePath == mod.jsonFilePath ||
+          multiSelectMods.contains(mod.jsonFilePath);
+    }, [selectedMod, multiSelectMods, mod]);
 
     final filesMessage = useMemoized(() {
       final missingCount = mod.missingAssetCount ?? 0;
@@ -68,21 +73,41 @@ class ModsGridCard extends HookConsumerWidget {
       cursor: SystemMouseCursors.click,
       onEnter: (_) => isHovered.value = true,
       onExit: (_) => isHovered.value = false,
-      child: GestureDetector(
-        onTap: () {
+      child: Listener(
+        onPointerDown: (event) {
           if (ref.read(actionInProgressProvider)) {
             return;
           }
 
-          ref.read(modsProvider.notifier).setSelectedMod(mod);
-        },
-        onSecondaryTapDown: (details) {
-          if (ref.read(actionInProgressProvider)) {
-            return;
-          }
+          final isCtrlPressed = event.kind == PointerDeviceKind.mouse &&
+              (event.buttons == kPrimaryButton) &&
+              (HardwareKeyboard.instance.isControlPressed ||
+                  HardwareKeyboard.instance.isMetaPressed);
 
-          ref.read(modsProvider.notifier).setSelectedMod(mod);
-          showModContextMenu(context, ref, details.globalPosition, mod);
+          if (event.buttons == kSecondaryButton) {
+            // Right-click
+
+            ref.read(modsProvider.notifier).setSelectedMod(mod);
+            showModContextMenu(context, ref, event.position, mod);
+          } else if (event.buttons == kPrimaryButton) {
+            // Left-click
+            if (isCtrlPressed) {
+              // Ctrl+Click: Toggle multi-selection
+              final currentSelected = ref.read(multiSelectModsProvider);
+              final newSelected = Set<String>.from(currentSelected);
+
+              if (newSelected.contains(mod.jsonFilePath)) {
+                newSelected.remove(mod.jsonFilePath);
+              } else {
+                newSelected.add(mod.jsonFilePath);
+              }
+
+              ref.read(multiSelectModsProvider.notifier).state = newSelected;
+            } else {
+              // Normal left-click: Single selection
+              ref.read(modsProvider.notifier).setSelectedMod(mod);
+            }
+          }
         },
         child: AnimatedContainer(
           duration: Duration(milliseconds: 150),
@@ -90,7 +115,9 @@ class ModsGridCard extends HookConsumerWidget {
             border: Border.all(
               width: 4,
               color: isSelected
-                  ? Colors.white
+                  ? multiSelectMods.length > 1
+                      ? Colors.cyan
+                      : Colors.white
                   : isHovered.value
                       ? Colors.white70
                       : Colors.transparent,

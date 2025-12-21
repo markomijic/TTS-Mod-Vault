@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart'
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p
-    show basenameWithoutExtension, extension, normalize, split;
+    show basename, basenameWithoutExtension, extension, join, normalize, split;
 import 'package:tts_mod_vault/src/state/backup/import_backup_state.dart'
     show ImportBackupState, ImportBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -19,6 +19,38 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
   final Ref ref;
 
   ImportBackupNotifier(this.ref) : super(const ImportBackupState());
+
+  Future<void> importJson(
+    String sourcePath,
+    String destinationFolder,
+    ModTypeEnum modType,
+  ) async {
+    try {
+      state = state.copyWith(
+        status: ImportBackupStatusEnum.importingBackup,
+        importFileName: p.basenameWithoutExtension(sourcePath),
+        currentCount: 0,
+        totalCount: 0,
+      );
+
+      // Get the filename from the source path
+      final fileName = p.basename(sourcePath);
+
+      // Copy the JSON file to the selected directory
+      final targetPath = p.join(destinationFolder, fileName);
+      await File(sourcePath).copy(targetPath);
+
+      // Add the mod to the app state
+      await ref.read(modsProvider.notifier).addSingleMod(targetPath, modType);
+    } catch (e) {
+      debugPrint('importJson error: $e');
+    }
+
+    state = state.copyWith(
+      status: ImportBackupStatusEnum.idle,
+      importFileName: "",
+    );
+  }
 
   Future<void> importBackup() async {
     ModTypeEnum? modType;

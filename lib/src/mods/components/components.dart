@@ -26,3 +26,5 @@ export 'bulk_backup_dialog.dart';
 export 'update_urls_dialog.dart';
 export 'bulk_update_urls_dialog.dart';
 export 'bulk_actions_menu.dart';
+export 'sidebar.dart';
+export 'import_json_dialog.dart';

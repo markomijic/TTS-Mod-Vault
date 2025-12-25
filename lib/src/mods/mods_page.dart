@@ -40,34 +40,32 @@ class ModsPage extends HookConsumerWidget {
       child: Scaffold(
         body: Stack(
           children: [
-            Expanded(
-              child: mods.when(
-                data: (data) {
-                  return Stack(
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(width: sidebarWidth.value),
-                          Expanded(
-                            flex: 2,
-                            child: ModsColumn(),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: SelectedModView(),
-                          ),
-                        ],
-                      ),
-                      Sidebar(width: sidebarWidth.value),
-                    ],
-                  );
-                },
-                error: (e, st) => Center(
-                  child: ErrorMessage(e: e),
-                ),
-                loading: () => Center(
-                  child: MessageProgressIndicator(message: loadingMessage),
-                ),
+            mods.when(
+              data: (data) {
+                return Stack(
+                  children: [
+                    Row(
+                      children: [
+                        SizedBox(width: sidebarWidth.value),
+                        Expanded(
+                          flex: 2,
+                          child: ModsColumn(),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: SelectedModView(),
+                        ),
+                      ],
+                    ),
+                    Sidebar(width: sidebarWidth.value),
+                  ],
+                );
+              },
+              error: (e, st) => Center(
+                child: ErrorMessage(e: e),
+              ),
+              loading: () => Center(
+                child: MessageProgressIndicator(message: loadingMessage),
               ),
             ),
             ImportBackupOverlay(),

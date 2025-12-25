@@ -142,6 +142,41 @@ class Storage {
     return result;
   }
 
+  /// Get all mod URLs at once (more efficient than individual getModUrls calls)
+  Map<String, Map<String, String>?> getAllModUrls() {
+    final allData = _urlsBox.toMap();
+    final Map<String, Map<String, String>?> result = {};
+
+    for (final entry in allData.entries) {
+      if (entry.value != null) {
+        result[entry.key.toString()] = Map<String, String>.from(entry.value);
+      } else {
+        result[entry.key.toString()] = null;
+      }
+    }
+
+    return result;
+  }
+
+  /// Get all mod date timestamps at once (more efficient than individual getModDateTimeStamp calls)
+  Map<String, String?> getAllModDateTimeStamps() {
+    final allData = _metadataBox.toMap();
+    final Map<String, String?> timestamps = {};
+
+    for (final entry in allData.entries) {
+      if (entry.key.endsWith(dateTimeStampSuffix)) {
+        // Remove the suffix to get the mod name
+        final modName = entry.key.substring(
+          0,
+          entry.key.length - dateTimeStampSuffix.length,
+        );
+        timestamps[modName] = entry.value;
+      }
+    }
+
+    return timestamps;
+  }
+
   Future<void> clearAllModData() async {
     await Hive.box<dynamic>(urlsBox).clear();
     await Hive.box<String>(metadataBox).clear();

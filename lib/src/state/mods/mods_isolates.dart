@@ -21,6 +21,8 @@ final urlRegex = RegExp(
   r'(?:[a-zA-Z]+:\/\/)?[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^{}"]*)?',
   caseSensitive: false,
 );
+final nicknameRegex = RegExp(r'"Nickname"\s*:\s*"([^"]*)"');
+final saveNameRegex = RegExp(r'"SaveName"\s*:\s*"([^"]*)"');
 
 class IsolateWorkData {
   final List<List<Mod>> batches;
@@ -502,7 +504,7 @@ Future<Map<String, String?>> _extractInitialModMetadataFromFile(
 
   String? saveName;
   String? dateTimeStamp;
-  const chunkSize = 50;
+  const chunkSize = 10;
 
   await for (final chunk in _readFileInChunks(file, chunkSize)) {
     // Try to extract data from current chunk
@@ -549,12 +551,10 @@ String? _extractSaveNameFromString(String jsonString, ModTypeEnum modType) {
   try {
     if (modType == ModTypeEnum.savedObject) {
       // Look for "Nickname":"value" pattern in ObjectStates
-      final nicknameRegex = RegExp(r'"Nickname"\s*:\s*"([^"]*)"');
       final match = nicknameRegex.firstMatch(jsonString);
       return match?.group(1);
     } else {
       // Look for "SaveName":"value" pattern
-      final saveNameRegex = RegExp(r'"SaveName"\s*:\s*"([^"]*)"');
       final match = saveNameRegex.firstMatch(jsonString);
       return match?.group(1);
     }

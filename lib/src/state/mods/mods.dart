@@ -133,6 +133,22 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       final initialMods = await getInitialMods(allPaths);
 
+      // Prepare cached data for all mods using bulk reads
+      debugPrint('Loading cached data from storage');
+      final allCachedDateTimeStamps =
+          ref.read(storageProvider).getAllModDateTimeStamps();
+      final allCachedUrls = ref.read(storageProvider).getAllModUrls();
+
+      // Filter to only the mods we need
+      final Map<String, String?> cachedDateTimeStamps = {};
+      final Map<String, Map<String, String>?> cachedUrls = {};
+
+      for (final mod in initialMods) {
+        cachedDateTimeStamps[mod.jsonFileName] =
+            allCachedDateTimeStamps[mod.jsonFileName];
+        cachedUrls[mod.jsonFileName] = allCachedUrls[mod.jsonFileName];
+      }
+
       // Create adaptive batches based on file sizes
       debugPrint('loadModsData - creating adaptive batches, ${DateTime.now()}');
       final List<List<Mod>> adaptiveBatches =
@@ -140,22 +156,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       debugPrint(
           'loadModsData - created ${adaptiveBatches.length} adaptive batches');
 
+      // Distribute batches across isolates
       final numberOfIsolates = max(Platform.numberOfProcessors - 2, 2);
       debugPrint(
           'Using $numberOfIsolates isolates for ${adaptiveBatches.length} batches');
 
-      // Prepare cached data for all mods
-      final Map<String, String?> cachedDateTimeStamps = {};
-      final Map<String, Map<String, String>?> cachedUrls = {};
-
-      for (final mod in initialMods) {
-        cachedDateTimeStamps[mod.jsonFileName] =
-            ref.read(storageProvider).getModDateTimeStamp(mod.jsonFileName);
-        cachedUrls[mod.jsonFileName] =
-            ref.read(storageProvider).getModUrls(mod.jsonFileName);
-      }
-
-      // Distribute batches across isolates
       final batchesPerIsolate =
           _distributeBatchesAcrossIsolates(adaptiveBatches, numberOfIsolates);
       debugPrint('Batch distribution:');

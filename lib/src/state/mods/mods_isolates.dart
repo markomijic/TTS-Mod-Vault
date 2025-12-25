@@ -645,3 +645,69 @@ Future<List<String>> getJsonFilesInDirectory({
 
   return jsonFilePaths;
 }
+
+/// Creates adaptive batches based on file sizes and complexity
+Future<List<List<Mod>>> createAdaptiveBatchesInIsolate(List<Mod> mods) async {
+  const int targetBatchSizeBytes = 50 * 1024 * 1024; // 50MB per batch
+  const int maxModsPerBatch = 100;
+  const int minModsPerBatch = 5;
+  const int parallelStatChunkSize = 100; // Process 100 file stats at a time
+
+  // Get all file sizes in parallel chunks
+  final List<(Mod, int)> modsWithSizes = [];
+
+  for (int i = 0; i < mods.length; i += parallelStatChunkSize) {
+    final chunk = mods.skip(i).take(parallelStatChunkSize).toList();
+
+    // Process this chunk in parallel
+    final chunkResults = await Future.wait(
+      chunk.map((mod) async {
+        try {
+          final file = File(mod.jsonFilePath);
+          return (mod, await file.length());
+        } catch (e) {
+          debugPrint(
+              'createAdaptiveBatchesInIsolate - error getting file size for ${mod.jsonFilePath}: $e');
+          return (mod, 0);
+        }
+      }),
+    );
+
+    modsWithSizes.addAll(chunkResults);
+  }
+
+  // Now create batches using the sizes we collected
+  List<List<Mod>> batches = [];
+  List<Mod> currentBatch = [];
+  int currentBatchSize = 0;
+
+  for (final (mod, fileSizeInBytes) in modsWithSizes) {
+    if (fileSizeInBytes == 0) continue; // Skip files we couldn't read
+
+    final shouldCreateNewBatch = currentBatch.isNotEmpty &&
+        (currentBatch.length >= maxModsPerBatch ||
+            (currentBatchSize + fileSizeInBytes > targetBatchSizeBytes &&
+                currentBatch.length >= minModsPerBatch));
+
+    if (shouldCreateNewBatch) {
+      batches.add(List.from(currentBatch));
+      currentBatch = [mod];
+      currentBatchSize = fileSizeInBytes;
+    } else {
+      currentBatch.add(mod);
+      currentBatchSize += fileSizeInBytes;
+    }
+  }
+
+  // Add the last batch if it's not empty
+  if (currentBatch.isNotEmpty) {
+    batches.add(currentBatch);
+  }
+
+  // If there are no batches, create one with all mods
+  if (batches.isEmpty && mods.isNotEmpty) {
+    batches.add(mods);
+  }
+
+  return batches;
+}

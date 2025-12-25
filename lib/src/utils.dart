@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
 import 'package:open_filex/open_filex.dart' show OpenFilex;
+import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -173,6 +174,91 @@ void showConfirmDialog(
         onCancel();
       }
       break;
+  }
+}
+
+Future<void> showConfirmDialogWithCheckbox(
+  BuildContext context, {
+  required String message,
+  required void Function(bool checkboxValue) onConfirm,
+  required String checkboxLabel,
+  required String checkboxInfoMessage,
+}) async {
+  bool checkboxValue = false;
+
+  final result = await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+            child: AlertDialog(
+              content: Column(
+                spacing: 16,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  Row(
+                    spacing: 4,
+                    children: [
+                      Checkbox(
+                        value: checkboxValue,
+                        checkColor: Colors.black,
+                        activeColor: Colors.white,
+                        onChanged: (value) {
+                          setState(() {
+                            checkboxValue = value ?? false;
+                          });
+                        },
+                      ),
+                      Text(
+                        checkboxLabel,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      CustomTooltip(
+                        message: checkboxInfoMessage ?? "",
+                        child: Icon(
+                          Icons.info_outline,
+                          size: 26,
+                        ),
+                      )
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop({
+                    'action': 'cancel',
+                    'checkboxValue': checkboxValue,
+                  }),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop({
+                    'action': 'confirm',
+                    'checkboxValue': checkboxValue,
+                  }),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+
+  if (result != null && result['action'] == 'confirm') {
+    Future.delayed(
+      kThemeChangeDuration,
+      () => onConfirm(result['checkboxValue'] as bool),
+    );
   }
 }
 

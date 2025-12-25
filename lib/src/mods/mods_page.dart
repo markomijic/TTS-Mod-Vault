@@ -89,7 +89,6 @@ class ModsColumn extends StatelessWidget {
         Padding(
           padding: EdgeInsets.only(
             top: 8,
-            left: 4,
             right: 4,
           ),
           child: Row(
@@ -121,9 +120,10 @@ class ModsColumn extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 4,
-              vertical: 8,
+            padding: EdgeInsets.only(
+              top: 8,
+              bottom: 8,
+              right: 4,
             ),
             child: ModsView(),
           ),

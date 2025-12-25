@@ -1,5 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useState;
+import 'package:flutter_hooks/flutter_hooks.dart' show useRef, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
@@ -20,7 +22,8 @@ import 'package:tts_mod_vault/src/utils.dart'
         checkForUpdatesOnGitHub,
         showDownloadDialog,
         openUrl,
-        steamDiscussionUrl;
+        steamDiscussionUrl,
+        showConfirmDialogWithCheckbox;
 import 'package:tts_mod_vault/src/changelog.dart' show showChangelogDialog;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
@@ -31,14 +34,25 @@ class Sidebar extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isHovered = useState(false);
+    final hoverTimer = useRef<Timer?>(null);
+
     final actionInProgress = ref.watch(actionInProgressProvider);
     final scaffoldBackgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
     return MouseRegion(
-      onEnter: (_) => isHovered.value = true,
-      onExit: (_) => isHovered.value = false,
+      onEnter: (_) {
+        hoverTimer.value?.cancel();
+        hoverTimer.value = Timer(
+          const Duration(milliseconds: 300),
+          () => isHovered.value = true,
+        );
+      },
+      onExit: (_) {
+        hoverTimer.value?.cancel();
+        isHovered.value = false;
+      },
       child: Container(
-        width: isHovered.value ? 300 : width,
+        width: isHovered.value ? 270 : width,
         decoration: BoxDecoration(
           gradient: isHovered.value
               ? LinearGradient(
@@ -57,9 +71,10 @@ class Sidebar extends HookConsumerWidget {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 8,
           children: [
-            Spacer(),
+            const Spacer(),
             _SidebarItem(
               icon: Icons.extension_sharp,
               label: 'Mods',
@@ -86,61 +101,26 @@ class Sidebar extends HookConsumerWidget {
                 },
               ),
             ),
-            Spacer(),
-            _SidebarItem(
-              icon: Icons.unarchive,
-              label: 'Import backup',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () async {
-                await ref.read(importBackupProvider.notifier).importBackup();
-              },
-            ),
-            _SidebarItem(
-              icon: Icons.file_upload,
-              label: 'Import JSON',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => ImportJsonDialog(
-                  onConfirm: (jsonFilePath, destinationFolder, modType) {
-                    ref.read(importBackupProvider.notifier).importJson(
-                          jsonFilePath,
-                          destinationFolder,
-                          modType,
-                        );
-                  },
-                ),
-              ),
-            ),
-            _SidebarItem(
-              icon: Icons.download,
-              label: 'Download Workshop Mod',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => DownloadModByIdDialog(),
-              ),
-            ),
-            Spacer(),
+            _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
               icon: Icons.refresh,
-              label: 'Refresh data',
+              label: 'Refresh',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
-              onPressed: () => showConfirmDialog(
+              onPressed: () => showConfirmDialogWithCheckbox(
                 context,
-                'Are you sure you want to refresh data for all mods?',
-                () async {
-                  await ref.read(loaderProvider).refreshAppData();
-                },
+                message: 'Refresh all data?',
+                onConfirm: (checkboxValue) async => await ref
+                    .read(loaderProvider)
+                    .refreshAppData(checkboxValue),
+                checkboxInfoMessage:
+                    'This option reloads everything from your files instead of using saved information from cache\n\nIt will take longer depending on number of items to load',
+                checkboxLabel: "Clear Vault cache",
               ),
             ),
             _SidebarItem(
               icon: Icons.delete_sweep,
-              label: 'Clean up unused files',
+              label: 'Cleanup',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
               onPressed: () async {
@@ -170,21 +150,45 @@ class Sidebar extends HookConsumerWidget {
                 );
               },
             ),
+            _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
-              icon: Icons.clear_all,
-              label: 'Clear Vault cache',
+              icon: Icons.unarchive,
+              label: 'Import backup',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
-              onPressed: () {
-                showConfirmDialog(
-                  context,
-                  'This will clear the Vault\'s cache and reload mod information from your files.\n\nYour downloaded asset files will not be affected.\n\nContinue?',
-                  () async =>
-                      await ref.read(loaderProvider).refreshAppData(true),
-                );
+              onPressed: () async {
+                await ref.read(importBackupProvider.notifier).importBackup();
               },
             ),
-            Spacer(),
+            _SidebarItem(
+              icon: Icons.upload_file,
+              label: 'Import JSON',
+              isExpanded: isHovered.value,
+              isDisabled: actionInProgress,
+              onPressed: () => showDialog(
+                context: context,
+                builder: (context) => ImportJsonDialog(
+                  onConfirm: (jsonFilePath, destinationFolder, modType) {
+                    ref.read(importBackupProvider.notifier).importJson(
+                          jsonFilePath,
+                          destinationFolder,
+                          modType,
+                        );
+                  },
+                ),
+              ),
+            ),
+            _SidebarItem(
+              icon: Icons.download,
+              label: 'Download Workshop Mod',
+              isExpanded: isHovered.value,
+              isDisabled: actionInProgress,
+              onPressed: () => showDialog(
+                context: context,
+                builder: (context) => DownloadModByIdDialog(),
+              ),
+            ),
+            _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
               icon: Icons.update,
               label: 'Check for updates',
@@ -209,6 +213,14 @@ class Sidebar extends HookConsumerWidget {
               },
             ),
             _SidebarItem(
+              icon: Icons.article,
+              label: 'Changelog',
+              isExpanded: isHovered.value,
+              isDisabled: actionInProgress,
+              onPressed: () => showChangelogDialog(context),
+            ),
+            _GradientDivider(isExpanded: isHovered.value),
+            _SidebarItem(
               icon: Icons.help_outline,
               label: 'Help & Feedback',
               isExpanded: isHovered.value,
@@ -221,13 +233,6 @@ class Sidebar extends HookConsumerWidget {
               },
             ),
             _SidebarItem(
-              icon: Icons.article,
-              label: 'Changelog',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showChangelogDialog(context),
-            ),
-            _SidebarItem(
               icon: Icons.settings,
               label: 'Settings',
               isExpanded: isHovered.value,
@@ -237,7 +242,7 @@ class Sidebar extends HookConsumerWidget {
                 builder: (context) => SettingsDialog(),
               ),
             ),
-            Spacer(),
+            const Spacer(),
           ],
         ),
       ),
@@ -270,9 +275,10 @@ class _SidebarItem extends StatelessWidget {
           onTap: isDisabled ? null : onPressed,
           child: Row(
             spacing: 4,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              SizedBox.shrink(),
+              const SizedBox.shrink(),
               Icon(
                 icon,
                 size: 32,
@@ -280,22 +286,46 @@ class _SidebarItem extends StatelessWidget {
                     ? Theme.of(context).disabledColor
                     : Theme.of(context).colorScheme.onSurface,
               ),
-              Expanded(
-                child: Text(
+              if (isExpanded)
+                Text(
                   label,
                   style: TextStyle(
-                    fontSize: isExpanded ? 16 : 0,
+                    fontSize: 16,
                     color: isDisabled
                         ? Theme.of(context).disabledColor
                         : Theme.of(context).colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _GradientDivider extends StatelessWidget {
+  final bool isExpanded;
+
+  const _GradientDivider({required this.isExpanded});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      decoration: BoxDecoration(
+          gradient: isExpanded
+              ? LinearGradient(
+                  colors: [
+                    Colors.white,
+                    Colors.white.withAlpha(128),
+                    Colors.transparent,
+                  ],
+                )
+              : null,
+          color: isExpanded ? null : Colors.white),
     );
   }
 }

@@ -10,10 +10,13 @@ import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
+        AppPage,
         actionInProgressProvider,
         cleanupProvider,
+        directoriesProvider,
         importBackupProvider,
         loaderProvider,
+        selectedPageProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
@@ -37,6 +40,7 @@ class Sidebar extends HookConsumerWidget {
     final hoverTimer = useRef<Timer?>(null);
 
     final actionInProgress = ref.watch(actionInProgressProvider);
+    final backupsDir = ref.watch(directoriesProvider).backupsDir;
     final scaffoldBackgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
     return MouseRegion(
@@ -80,27 +84,21 @@ class Sidebar extends HookConsumerWidget {
               label: 'Mods',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
-              onPressed: () => showConfirmDialog(
-                context,
-                'Are you sure you want to refresh data for all mods?',
-                () async {
-                  await ref.read(loaderProvider).refreshAppData();
+              onPressed: () {
+                ref.read(selectedPageProvider.notifier).state = AppPage.mods;
+              },
+            ),
+            if (backupsDir.isNotEmpty)
+              _SidebarItem(
+                icon: Icons.folder_zip,
+                label: 'Backups',
+                isExpanded: isHovered.value,
+                isDisabled: actionInProgress,
+                onPressed: () {
+                  ref.read(selectedPageProvider.notifier).state =
+                      AppPage.backups;
                 },
               ),
-            ),
-            _SidebarItem(
-              icon: Icons.folder_zip,
-              label: 'Backups',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showConfirmDialog(
-                context,
-                'Are you sure you want to refresh data for all mods?',
-                () async {
-                  await ref.read(loaderProvider).refreshAppData();
-                },
-              ),
-            ),
             _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
               icon: Icons.refresh,

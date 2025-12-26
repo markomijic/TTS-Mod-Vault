@@ -647,6 +647,51 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
+  Future<void> updateModBackup(Mod mod) async {
+    ExistingBackup? backup =
+        ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
+
+    if (backup != null && backup.totalAssetCount == null) {
+      final backupTotalAssetCount = await ref
+          .read(existingBackupsProvider.notifier)
+          .listZipContents(backup.filepath);
+
+      backup = backup.copyWith(totalAssetCount: backupTotalAssetCount);
+      ref.read(existingBackupsProvider.notifier).addBackup(backup);
+    }
+
+    final backupStatus = backup == null
+        ? ExistingBackupStatusEnum.noBackup
+        : (mod.dateTimeStamp == null ||
+                backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
+            ? ExistingBackupStatusEnum.upToDate
+            : ExistingBackupStatusEnum.outOfDate;
+
+    // Creating new Mod object because copyWith returns previous backup value if new one is null
+    final updatedMod = Mod(
+      modType: mod.modType,
+      jsonFilePath: mod.jsonFilePath,
+      jsonFileName: mod.jsonFileName,
+      parentFolderName: mod.parentFolderName,
+      saveName: mod.saveName,
+      backupStatus: backupStatus,
+      createdAtTimestamp: mod.createdAtTimestamp,
+      backup: backup,
+      dateTimeStamp: mod.dateTimeStamp,
+      imageFilePath: mod.imageFilePath,
+      assetLists: mod.assetLists,
+      assetCount: mod.assetCount,
+      existingAssetCount: mod.existingAssetCount,
+      missingAssetCount: mod.missingAssetCount,
+    );
+
+    updateMod(updatedMod);
+
+    if (ref.read(selectedModProvider)?.jsonFilePath == mod.jsonFilePath) {
+      setSelectedMod(updatedMod);
+    }
+  }
+
   Map<String, String> _getAssetMapByType(AssetTypeEnum type) {
     final existingAssets = ref.read(existingAssetListsProvider);
     return switch (type) {

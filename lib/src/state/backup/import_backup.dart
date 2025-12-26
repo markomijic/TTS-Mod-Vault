@@ -52,8 +52,11 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
     );
   }
 
+  Future<void> importBackupFromPath(String filePath) async {
+    await _performImport(filePath);
+  }
+
   Future<void> importBackup() async {
-    ModTypeEnum? modType;
     try {
       state = state.copyWith(
         status: ImportBackupStatusEnum.awaitingBackupFile,
@@ -92,9 +95,22 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
         return;
       }
 
+      await _performImport(filePath);
+    } catch (e) {
+      debugPrint('importBackup error: $e');
+      state = state.copyWith(
+        status: ImportBackupStatusEnum.idle,
+        importFileName: "",
+      );
+    }
+  }
+
+  Future<void> _performImport(String filePath) async {
+    ModTypeEnum? modType;
+    try {
       state = state.copyWith(
         status: ImportBackupStatusEnum.importingBackup,
-        importFileName: p.basenameWithoutExtension(result.files.single.name),
+        importFileName: p.basenameWithoutExtension(filePath),
       );
 
       final bytes = await File(filePath).readAsBytes();

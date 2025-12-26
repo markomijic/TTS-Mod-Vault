@@ -23,7 +23,7 @@ class SettingsState {
     this.showBackupState = true,
     this.defaultSortOption = SortOptionEnum.alphabeticalAsc,
     this.forceBackupJsonFilename = false,
-    this.ignoreAudioAssets = false,
+    this.ignoreAudioAssets = true,
   });
 
   SettingsState copyWith({
@@ -84,7 +84,7 @@ class SettingsState {
           json['defaultSortOption'], SortOptionEnum.alphabeticalAsc),
       forceBackupJsonFilename:
           _parseBool(json['forceBackupJsonFilename'], false),
-      ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], false),
+      ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], true),
     );
   }
 

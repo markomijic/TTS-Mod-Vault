@@ -72,7 +72,7 @@ class SplashPage extends HookConsumerWidget {
 
         if (modsDirExists && savesDirExists) {
           await loaderNotifier.loadApp(
-            () => Navigator.of(context).pushReplacementNamed('/mods'),
+            () => Navigator.of(context).pushReplacementNamed('/vault'),
           );
         } else {
           initialModsDirExists.value = modsDirExists;

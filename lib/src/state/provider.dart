@@ -7,6 +7,7 @@ import 'package:tts_mod_vault/src/state/backup/existing_backups.dart';
 import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart';
 import 'package:tts_mod_vault/src/state/backup/import_backup.dart';
 import 'package:tts_mod_vault/src/state/backup/import_backup_state.dart';
+import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart';
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions.dart';
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup.dart';
@@ -24,6 +25,10 @@ import 'package:tts_mod_vault/src/state/settings/settings_state.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart';
 import 'package:tts_mod_vault/src/state/storage/storage.dart';
+
+enum AppPage { mods, backups }
+
+final selectedPageProvider = StateProvider<AppPage>((ref) => AppPage.mods);
 
 final selectedModProvider = StateProvider<Mod?>((ref) => null);
 
@@ -100,13 +105,26 @@ final actionInProgressProvider = Provider<bool>((ref) {
   final cleanUpStatus = ref.watch(cleanupProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
   final importBackupStatus = ref.watch(importBackupProvider).status;
+  final deletingBackup = ref.watch(existingBackupsProvider).deletingBackup;
 
   return cleanUpStatus != CleanUpStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
       importBackupStatus != ImportBackupStatusEnum.idle ||
       bulkActionStatus != BulkActionsStatusEnum.idle ||
       downloading ||
-      modsAsyncValue is AsyncLoading;
+      modsAsyncValue is AsyncLoading ||
+      deletingBackup;
+});
+
+final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
+  final existingBackups = ref.watch(existingBackupsProvider);
+
+  final filteredBackups = existingBackups.backups;
+
+  filteredBackups.sort(
+      (a, b) => a.filename.toLowerCase().compareTo(b.filename.toLowerCase()));
+
+  return filteredBackups;
 });
 
 final filteredModsProvider = Provider<List<Mod>>((ref) {
@@ -121,7 +139,7 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
     return [];
   }
 
-  List<Mod> mods = switch (selectedModType) {
+  List<Mod> allMods = switch (selectedModType) {
     ModTypeEnum.mod => modsState.mods,
     ModTypeEnum.save => modsState.saves,
     ModTypeEnum.savedObject => modsState.savedObjects,
@@ -134,7 +152,7 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
   };
 
   // Filter mods
-  List<Mod> filteredMods = mods.where((mod) {
+  List<Mod> filteredMods = allMods.where((mod) {
     if (searchQuery.isNotEmpty) {
       if (!mod.saveName.toLowerCase().contains(searchQuery.toLowerCase())) {
         return false; // Exclude if doesn't match search

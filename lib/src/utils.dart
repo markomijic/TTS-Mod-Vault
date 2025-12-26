@@ -11,13 +11,18 @@ import 'package:open_filex/open_filex.dart' show OpenFilex;
 import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
+import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
+    show ExistingBackup;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show actionInProgressProvider;
+    show
+        actionInProgressProvider,
+        existingBackupsProvider,
+        importBackupProvider;
 import 'package:url_launcher/url_launcher.dart'
     show LaunchMode, canLaunchUrl, launchUrl;
 import 'package:http/http.dart' as http;
@@ -221,7 +226,7 @@ Future<void> showConfirmDialogWithCheckbox(
                         style: TextStyle(fontSize: 16),
                       ),
                       CustomTooltip(
-                        message: checkboxInfoMessage ?? "",
+                        message: checkboxInfoMessage,
                         child: Icon(
                           Icons.info_outline,
                           size: 26,
@@ -669,6 +674,118 @@ void showModContextMenu(
         case ContextMenuActionEnum.copyFilename:
           if (context.mounted) {
             copyToClipboard(context, mod.jsonFileName);
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+  });
+}
+
+void showBackupContextMenu(
+  BuildContext context,
+  WidgetRef ref,
+  Offset position,
+  ExistingBackup backup,
+  bool hasMatchingMod,
+) {
+  showMenu(
+    context: context,
+    color: Theme.of(context).scaffoldBackgroundColor,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+      side: BorderSide(color: Colors.white, width: 2),
+    ),
+    position: RelativeRect.fromLTRB(
+      position.dx,
+      position.dy,
+      position.dx,
+      position.dy,
+    ),
+    items: [
+      PopupMenuItem(
+        value: 'import',
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.unarchive),
+            Text('Import Backup'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'openInExplorer',
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.folder_open),
+            Text('Open in File Explorer'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'copyFilename',
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.file_copy),
+            Text('Copy Filename'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'delete',
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.delete, color: Colors.red),
+            Text('Delete', style: TextStyle(color: Colors.red)),
+          ],
+        ),
+      ),
+    ],
+  ).then((value) async {
+    if (value != null) {
+      switch (value) {
+        case 'import':
+          await ref
+              .read(importBackupProvider.notifier)
+              .importBackupFromPath(backup.filepath);
+          break;
+
+        case 'openInExplorer':
+          openInFileExplorer(backup.filepath);
+          break;
+
+        case 'copyFilename':
+          if (context.mounted) {
+            copyToClipboard(context, backup.filename);
+          }
+          break;
+
+        case 'delete':
+          if (context.mounted) {
+            showConfirmDialog(
+              context,
+              'Are you sure you want to delete this backup?\n\n${backup.filename}',
+              () async {
+                try {
+                  await ref
+                      .read(existingBackupsProvider.notifier)
+                      .deleteBackup(backup);
+
+                  if (context.mounted) {
+                    showSnackBar(context, 'Backup deleted successfully');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    showSnackBar(context, 'Failed to delete backup: $e');
+                  }
+                }
+              },
+            );
           }
           break;
 

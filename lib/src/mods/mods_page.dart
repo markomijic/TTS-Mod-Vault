@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, HookConsumerWidget, WidgetRef;
 
-import 'package:tts_mod_vault/src/mods/components/import_backup_overlay.dart'
-    show ImportBackupOverlay;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         ErrorMessage,
@@ -16,12 +13,10 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         BulkActionsProgressBar,
         SortButton,
         BulkActionsMenu,
-        Sidebar,
         CustomTooltip;
 import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
     show FilterButton;
-import 'package:tts_mod_vault/src/mods/hooks/hooks.dart'
-    show useCleanupSnackbar, useBackupSnackbar;
+
 import 'package:tts_mod_vault/src/state/provider.dart'
     show loadingMessageProvider, modsProvider;
 
@@ -32,44 +27,32 @@ class ModsPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loadingMessage = ref.watch(loadingMessageProvider);
     final mods = ref.watch(modsProvider);
-    final sidebarWidth = useState<double>(40);
-    useCleanupSnackbar(context, ref);
-    useBackupSnackbar(context, ref);
 
-    return SafeArea(
-      child: Scaffold(
-        body: Stack(
+    return mods.when(
+      data: (data) {
+        return Row(
           children: [
-            mods.when(
-              data: (data) {
-                return Stack(
-                  children: [
-                    Row(
-                      children: [
-                        SizedBox(width: sidebarWidth.value),
-                        Expanded(
-                          flex: 2,
-                          child: ModsColumn(),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: SelectedModView(),
-                        ),
-                      ],
-                    ),
-                    Sidebar(width: sidebarWidth.value),
-                  ],
-                );
-              },
-              error: (e, st) => Center(
-                child: ErrorMessage(e: e),
-              ),
-              loading: () => Center(
-                child: MessageProgressIndicator(message: loadingMessage),
-              ),
+            Expanded(
+              flex: 2,
+              child: ModsColumn(),
             ),
-            ImportBackupOverlay(),
+            Expanded(
+              flex: 1,
+              child: SelectedModView(),
+            ),
           ],
+        );
+      },
+      error: (e, st) => Center(
+        child: Padding(
+          padding: const EdgeInsets.only(right: 40),
+          child: ErrorMessage(e: e),
+        ),
+      ),
+      loading: () => Center(
+        child: Padding(
+          padding: const EdgeInsets.only(right: 40),
+          child: MessageProgressIndicator(message: loadingMessage),
         ),
       ),
     );
@@ -77,9 +60,7 @@ class ModsPage extends HookConsumerWidget {
 }
 
 class ModsColumn extends StatelessWidget {
-  const ModsColumn({
-    super.key,
-  });
+  const ModsColumn({super.key});
 
   @override
   Widget build(BuildContext context) {

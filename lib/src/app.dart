@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:tts_mod_vault/src/mods/images_viewer_page.dart'
     show ImagesViewerPage;
-import 'package:tts_mod_vault/src/mods/mods_page.dart' show ModsPage;
 import 'package:tts_mod_vault/src/splash/splash_page.dart' show SplashPage;
 import 'package:tts_mod_vault/src/utils.dart' show darkTheme;
+import 'package:tts_mod_vault/src/mods/vault.dart' show Vault;
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -26,11 +26,11 @@ class App extends StatelessWidget {
             ),
           ],
         );
-      },
+      }, 
        */
       routes: {
         '/': (context) => const SplashPage(),
-        '/mods': (context) => const ModsPage(),
+        '/vault': (context) => const Vault(),
         '/images-viewer': (context) => const ImagesViewerPage(),
       },
     );

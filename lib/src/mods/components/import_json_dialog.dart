@@ -12,8 +12,10 @@ import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
 
 class ImportJsonDialog extends HookConsumerWidget {
   final Function(
-          String jsonFilePath, String destinationFolder, ModTypeEnum modType)
-      onConfirm;
+    String jsonFilePath,
+    String destinationFolder,
+    ModTypeEnum modType,
+  ) onConfirm;
 
   const ImportJsonDialog({
     super.key,

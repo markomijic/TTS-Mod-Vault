@@ -14,7 +14,11 @@ import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, loadingMessageProvider, settingsProvider;
+    show
+        directoriesProvider,
+        loadingMessageProvider,
+        settingsProvider,
+        modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show getBackupFilenameByMod;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
@@ -80,6 +84,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     final backups = results.expand((list) => list).toList();
 
     state = ExistingBackupsState(backups: backups);
+
     debugPrint('loadExistingBackups - finished at ${DateTime.now()}');
   }
 
@@ -142,29 +147,50 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
       final forceBackupJsonFilename =
           ref.read(settingsProvider).forceBackupJsonFilename;
 
+      ExistingBackup? foundBackup;
+
       if (forceBackupJsonFilename && mod.modType == ModTypeEnum.mod) {
         // Try to find backup name which includes JSON filename
         final backupFileNameWithJson = getBackupFilenameByMod(mod, true);
-        final backupFileWithJson =
-            _getMostRecentBackupByFilename(backupFileNameWithJson);
+        foundBackup = _getMostRecentBackupByFilename(backupFileNameWithJson);
 
-        if (backupFileWithJson != null) {
-          return backupFileWithJson;
+        if (foundBackup == null) {
+          // Try to find backup name which doesn't force inclusion of JSON filename
+          final standardBackupFileName = getBackupFilenameByMod(mod, false);
+          foundBackup = _getMostRecentBackupByFilename(standardBackupFileName);
         }
-
-        // Try to find backup name which doesn't force inclusion of JSON filename
-        final standardBackupFileName = getBackupFilenameByMod(mod, false);
-        final standardBackup =
-            _getMostRecentBackupByFilename(standardBackupFileName);
-
-        return standardBackup;
+      } else {
+        final backupFileName = getBackupFilenameByMod(mod, false);
+        foundBackup = _getMostRecentBackupByFilename(backupFileName);
       }
 
-      final backupFileName = getBackupFilenameByMod(mod, false);
-      return _getMostRecentBackupByFilename(backupFileName);
+      // If backup found, update its state with the matching mod's image path
+      if (foundBackup != null && foundBackup.matchingModImagePath == null) {
+        return _updateBackupWithModImage(foundBackup, mod.imageFilePath);
+      }
+
+      return foundBackup;
     } catch (e) {
       return null;
     }
+  }
+
+  ExistingBackup _updateBackupWithModImage(
+      ExistingBackup backup, String? imagePath) {
+    final backupIndex = state.backups.indexWhere(
+      (b) => b.filename == backup.filename && b.filepath == backup.filepath,
+    );
+
+    if (backupIndex >= 0) {
+      final updatedBackups = [...state.backups];
+      final updatedBackup = backup.copyWith(matchingModImagePath: imagePath);
+      updatedBackups[backupIndex] = updatedBackup;
+
+      state = ExistingBackupsState(backups: updatedBackups);
+      return updatedBackup;
+    }
+
+    return backup;
   }
 
   Future<int> listZipContents(String zipPath) async {
@@ -242,6 +268,55 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     } catch (e) {
       debugPrint('_fallbackToDartZip error: $e');
       return [];
+    }
+  }
+
+  Future<void> deleteBackup(ExistingBackup backup) async {
+    try {
+      state = state.copyWith(deletingBackup: true);
+
+      final file = File(backup.filepath);
+
+      if (file.existsSync()) {
+        await file.delete();
+
+        // Remove backup from state after successful deletion
+        final updatedBackups =
+            state.backups.where((b) => b.filepath != backup.filepath).toList();
+        state = ExistingBackupsState(backups: updatedBackups);
+
+        // Find and refresh any mods that matched this backup
+        final modsAsyncValue = ref.read(modsProvider);
+        if (modsAsyncValue.hasValue) {
+          final modsState = modsAsyncValue.value!;
+          final backupFilenameWithoutExt =
+              backup.filename.replaceAll('.ttsmod', '');
+
+          final allMods = [
+            ...modsState.mods,
+            ...modsState.saves,
+            ...modsState.savedObjects,
+          ];
+
+          for (final mod in allMods) {
+            final backupName1 =
+                getBackupFilenameByMod(mod, false).replaceAll('.ttsmod', '');
+            final backupName2 =
+                getBackupFilenameByMod(mod, true).replaceAll('.ttsmod', '');
+
+            if (backupFilenameWithoutExt == backupName1 ||
+                backupFilenameWithoutExt == backupName2) {
+              // Refresh this mod's backup status
+              await ref.read(modsProvider.notifier).updateModBackup(mod);
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      rethrow;
+    } finally {
+      state = state.copyWith(deletingBackup: false);
     }
   }
 }

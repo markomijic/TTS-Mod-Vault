@@ -54,12 +54,18 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       totalModNumber: mods.length,
     );
 
+    final modsNotifier = ref.read(modsProvider.notifier);
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+
     for (int i = 0; i < mods.length; i++) {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
         continue;
       }
+
+      // Yield to UI thread on every iteration to keep app responsive
+      await Future.delayed(Duration.zero);
 
       debugPrint('Downloading: ${mod.saveName}');
 
@@ -68,17 +74,16 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Downloading all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
 
-      final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
-      final completeMod =
-          await ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
+      final modUrls = await modsNotifier.getUrlsByMod(mod);
+      final completeMod = await modsNotifier.getCompleteMod(mod, modUrls);
 
-      ref.read(modsProvider.notifier).setSelectedMod(completeMod);
-      await ref.read(downloadProvider.notifier).downloadAllFiles(completeMod);
-      await ref.read(modsProvider.notifier).updateSelectedMod(completeMod);
+      modsNotifier.setSelectedMod(completeMod);
+      await downloadNotifier.downloadAllFiles(completeMod);
+      modsNotifier.updateMod(completeMod);
     }
 
     _resetState();
-    ref.read(downloadProvider.notifier).resetState();
+    downloadNotifier.resetState();
   }
 
   Future<void> backupAllMods(
@@ -100,12 +105,18 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       return;
     }
 
+    final modsNotifier = ref.read(modsProvider.notifier);
+    final backupNotifier = ref.read(backupProvider.notifier);
+
     for (int i = 0; i < mods.length; i++) {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
         continue;
       }
+
+      // Yield to UI thread on every iteration to keep app responsive
+      await Future.delayed(Duration.zero);
 
       String modBackupFolder = selectedBackupFolder;
 
@@ -138,15 +149,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Backing up all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
 
-      final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
-      final completeMod =
-          await ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
+      final modUrls = await modsNotifier.getUrlsByMod(mod);
+      final completeMod = await modsNotifier.getCompleteMod(mod, modUrls);
 
-      ref.read(modsProvider.notifier).setSelectedMod(completeMod);
-      await ref
-          .read(backupProvider.notifier)
-          .createBackup(completeMod, modBackupFolder);
-      await ref.read(modsProvider.notifier).updateSelectedMod(completeMod);
+      modsNotifier.setSelectedMod(completeMod);
+      await backupNotifier.createBackup(completeMod, modBackupFolder);
+      modsNotifier.updateMod(completeMod);
     }
 
     _resetState();
@@ -171,12 +179,19 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       return;
     }
 
+    final modsNotifier = ref.read(modsProvider.notifier);
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+    final backupNotifier = ref.read(backupProvider.notifier);
+
     for (int i = 0; i < mods.length; i++) {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
         continue;
       }
+
+      // Yield to UI thread on every iteration to keep app responsive
+      await Future.delayed(Duration.zero);
 
       debugPrint('Downloading & backing up: ${mod.saveName}');
 
@@ -185,13 +200,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Downloading & backing up all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
 
-      final modUrls = await ref.read(modsProvider.notifier).getUrlsByMod(mod);
-      final completeMod =
-          await ref.read(modsProvider.notifier).getCompleteMod(mod, modUrls);
-      ref.read(modsProvider.notifier).setSelectedMod(completeMod);
+      final modUrls = await modsNotifier.getUrlsByMod(mod);
+      final completeMod = await modsNotifier.getCompleteMod(mod, modUrls);
+      modsNotifier.setSelectedMod(completeMod);
 
-      await ref.read(downloadProvider.notifier).downloadAllFiles(completeMod);
-      await ref.read(modsProvider.notifier).updateSelectedMod(completeMod);
+      await downloadNotifier.downloadAllFiles(completeMod);
+      modsNotifier.updateMod(completeMod);
 
       if (state.cancelledBulkAction) {
         continue;
@@ -223,15 +237,13 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       final selectedMod = ref.read(selectedModProvider);
       if (selectedMod != null) {
-        await ref
-            .read(backupProvider.notifier)
-            .createBackup(selectedMod, modBackupFolder);
-        await ref.read(modsProvider.notifier).updateSelectedMod(selectedMod);
+        await backupNotifier.createBackup(selectedMod, modBackupFolder);
+        modsNotifier.updateMod(selectedMod);
       }
     }
 
     _resetState();
-    ref.read(downloadProvider.notifier).resetState();
+    downloadNotifier.resetState();
   }
 
   Future<void> updateUrlPrefixesAllMods(
@@ -253,6 +265,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       if (state.cancelledBulkAction) {
         continue;
       }
+
+      // Yield to UI thread on every iteration to keep app responsive
+      await Future.delayed(Duration.zero);
 
       debugPrint('Updating URLs: ${mod.saveName}');
 

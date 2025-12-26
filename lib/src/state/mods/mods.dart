@@ -416,6 +416,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         await extractUrlsFromJson(mod.jsonFilePath);
   }
 
+  // TODO remove & replace with getCompleteMod + updateMod?
   Future<void> updateSelectedMod(Mod selectedMod) async {
     try {
       if (!state.hasValue) return;

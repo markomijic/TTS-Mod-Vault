@@ -82,9 +82,9 @@ class ModsColumn extends StatelessWidget {
                   children: [
                     ModsSelector(),
                     Search(),
-                    BulkActionsMenu(),
                     SortButton(),
                     FilterButton(),
+                    BulkActionsMenu(),
                   ],
                 ),
               ),

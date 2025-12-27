@@ -74,12 +74,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Downloading all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
 
-      final modUrls = await modsNotifier.getUrlsByMod(mod);
-      final completeMod = await modsNotifier.getCompleteMod(mod, modUrls);
-
-      modsNotifier.setSelectedMod(completeMod);
-      await downloadNotifier.downloadAllFiles(completeMod);
-      modsNotifier.updateMod(completeMod);
+      modsNotifier.setSelectedMod(mod);
+      await downloadNotifier.downloadAllFiles(mod);
+      await modsNotifier.updateSelectedMod(mod);
     }
 
     _resetState();
@@ -149,12 +146,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Backing up all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
 
-      final modUrls = await modsNotifier.getUrlsByMod(mod);
-      final completeMod = await modsNotifier.getCompleteMod(mod, modUrls);
-
-      modsNotifier.setSelectedMod(completeMod);
-      await backupNotifier.createBackup(completeMod, modBackupFolder);
-      modsNotifier.updateMod(completeMod);
+      modsNotifier.setSelectedMod(mod);
+      await backupNotifier.createBackup(mod, modBackupFolder);
+      modsNotifier.updateModBackup(mod);
     }
 
     _resetState();
@@ -205,7 +199,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       modsNotifier.setSelectedMod(completeMod);
 
       await downloadNotifier.downloadAllFiles(completeMod);
-      modsNotifier.updateMod(completeMod);
+      await modsNotifier.updateSelectedMod(completeMod);
 
       if (state.cancelledBulkAction) {
         continue;
@@ -238,7 +232,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       final selectedMod = ref.read(selectedModProvider);
       if (selectedMod != null) {
         await backupNotifier.createBackup(selectedMod, modBackupFolder);
-        modsNotifier.updateMod(selectedMod);
+        modsNotifier.updateModBackup(selectedMod);
       }
     }
 

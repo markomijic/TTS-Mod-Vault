@@ -761,7 +761,10 @@ void showBackupContextMenu(
 
         case 'copyFilename':
           if (context.mounted) {
-            copyToClipboard(context, backup.filename);
+            copyToClipboard(
+              context,
+              p.basenameWithoutExtension(backup.filename),
+            );
           }
           break;
 

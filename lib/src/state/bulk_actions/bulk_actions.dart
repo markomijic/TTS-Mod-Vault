@@ -72,7 +72,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       state = state.copyWith(
           currentModNumber: i + 1,
           statusMessage:
-              'Downloading all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
+              'Downloading "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
       modsNotifier.setSelectedMod(mod);
       await downloadNotifier.downloadAllFiles(mod);
@@ -144,7 +144,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       state = state.copyWith(
           currentModNumber: i + 1,
           statusMessage:
-              'Backing up all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
+              'Backing up "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
       modsNotifier.setSelectedMod(mod);
       await backupNotifier.createBackup(mod, modBackupFolder);
@@ -192,7 +192,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       state = state.copyWith(
           currentModNumber: i + 1,
           statusMessage:
-              'Downloading & backing up all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
+              'Downloading & backing up "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
       final modUrls = await modsNotifier.getUrlsByMod(mod);
       final completeMod = await modsNotifier.getCompleteMod(mod, modUrls);
@@ -268,7 +268,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       state = state.copyWith(
           currentModNumber: i + 1,
           statusMessage:
-              'Updating URLs of all ${ref.read(selectedModTypeProvider).label}s (${i + 1}/${state.totalModNumber})');
+              'Updating URLs for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
       final assets = Map.fromEntries(
           mod.getAllAssets().map((a) => MapEntry(a.url, a.filePath)));

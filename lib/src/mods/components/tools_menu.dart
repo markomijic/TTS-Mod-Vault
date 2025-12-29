@@ -22,7 +22,7 @@ class ToolsMenu extends ConsumerWidget {
 
     return MenuAnchor(
       style: MenuStyle(
-        backgroundColor: WidgetStateProperty.all(Colors.black),
+        backgroundColor: WidgetStateProperty.all(Colors.white),
       ),
       menuChildren: <Widget>[
         MenuItemButton(

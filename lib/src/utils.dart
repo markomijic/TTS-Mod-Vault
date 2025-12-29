@@ -544,9 +544,10 @@ bool _checkIfLatestVersionIsNewer(String current, String latest) {
   return false;
 }
 
-Future<void> copyToClipboard(BuildContext context, String textToCopy) async {
+Future<void> copyToClipboard(BuildContext context, String textToCopy,
+    {bool showSnackBarAfterCopying = true}) async {
   await Clipboard.setData(ClipboardData(text: textToCopy));
-  if (context.mounted) {
+  if (context.mounted && showSnackBarAfterCopying) {
     showSnackBar(
       context,
       '$textToCopy copied to clipboard',
@@ -578,20 +579,14 @@ void showModContextMenu(
         value: ContextMenuActionEnum.openImagesViewer,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.image),
-            Text('View Images'),
-          ],
+          children: [Icon(Icons.image), Text('View Images')],
         ),
       ),
       PopupMenuItem(
         value: ContextMenuActionEnum.openInExplorer,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.folder_open),
-            Text('Open in File Explorer'),
-          ],
+          children: [Icon(Icons.folder_open), Text('Open in File Explorer')],
         ),
       ),
       if (mod.backup != null)
@@ -601,7 +596,7 @@ void showModContextMenu(
             spacing: 8,
             children: [
               Icon(Icons.folder_zip_outlined),
-              Text('Open Backup in File Explorer'),
+              Text('Open Backup in File Explorer')
             ],
           ),
         ),
@@ -612,7 +607,7 @@ void showModContextMenu(
             spacing: 8,
             children: [
               Icon(Icons.open_in_browser),
-              Text('Open Steam Workshop page'),
+              Text('Open Steam Workshop page')
             ],
           ),
         ),
@@ -620,22 +615,23 @@ void showModContextMenu(
         value: ContextMenuActionEnum.copySaveName,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.content_copy),
-            Text('Copy Name'),
-          ],
+          children: [Icon(Icons.content_copy), Text('Copy Name')],
         ),
       ),
       PopupMenuItem(
         value: ContextMenuActionEnum.copyFilename,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.file_copy),
-            Text('Copy Filename'),
-          ],
+          children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
+      if (mod.backup != null)
+        PopupMenuItem(
+            value: ContextMenuActionEnum.deleteBackup,
+            child: Row(
+              spacing: 8,
+              children: [Icon(Icons.delete), Text('Delete Backup')],
+            ))
     ],
   ).then((value) async {
     if (value != null) {
@@ -674,6 +670,30 @@ void showModContextMenu(
         case ContextMenuActionEnum.copyFilename:
           if (context.mounted) {
             copyToClipboard(context, mod.jsonFileName);
+          }
+          break;
+
+        case ContextMenuActionEnum.deleteBackup:
+          if (context.mounted && mod.backup != null) {
+            showConfirmDialog(
+              context,
+              'Are you sure you want to delete this backup?\n\n${mod.backup!.filename}',
+              () async {
+                try {
+                  await ref
+                      .read(existingBackupsProvider.notifier)
+                      .deleteBackup(mod.backup!);
+
+                  if (context.mounted) {
+                    showSnackBar(context, 'Backup deleted successfully');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    showSnackBar(context, 'Failed to delete backup: $e');
+                  }
+                }
+              },
+            );
           }
           break;
 

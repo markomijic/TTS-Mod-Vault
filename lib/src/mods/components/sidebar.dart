@@ -112,7 +112,7 @@ class Sidebar extends HookConsumerWidget {
                     .read(loaderProvider)
                     .refreshAppData(checkboxValue),
                 checkboxInfoMessage:
-                    'This option reloads everything from your files instead of using saved information from cache\n\nIt will take longer depending on number of items to load',
+                    'This option reloads everything from your files instead of using saved information from cache\n\nIt will take longer depending on number of items to load\n\nYour asset files will NOT be affected',
                 checkboxLabel: "Clear Vault cache",
               ),
             ),
@@ -133,7 +133,7 @@ class Sidebar extends HookConsumerWidget {
 
                       showConfirmDialog(
                         context,
-                        '$count files found that are not used by any of your $itemTypes.\nAre you sure you want to delete them?',
+                        '$count asset files found that are not used by any of your $itemTypes.\n\nAre you sure you want to delete them?',
                         () async {
                           await cleanupNotifier.executeDelete();
                         },

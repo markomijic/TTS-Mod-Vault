@@ -16,6 +16,9 @@ class SortButton extends HookConsumerWidget {
     final sortAndFilterNotifier = ref.read(sortAndFilterProvider.notifier);
 
     return MenuAnchor(
+      style: MenuStyle(
+        backgroundColor: WidgetStateProperty.all(Colors.white),
+      ),
       builder: (context, controller, child) {
         return ElevatedButton.icon(
           //alignment: Alignment.center,

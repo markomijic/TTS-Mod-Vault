@@ -78,7 +78,7 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
 
     return MenuAnchor(
       style: MenuStyle(
-        backgroundColor: WidgetStateProperty.all(Colors.black),
+        backgroundColor: WidgetStateProperty.all(Colors.white),
       ),
       menuChildren: <Widget>[
         MenuItemButton(
@@ -122,34 +122,6 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
-        if (enableTtsModdersFeatures)
-          MenuItemButton(
-            style: MenuItemButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            ),
-            leadingIcon: Icon(Icons.edit, color: Colors.black),
-            child:
-                Text('Update all URLs', style: TextStyle(color: Colors.black)),
-            onPressed: () {
-              if (actionInProgress) return;
-
-              showBulkUpdateUrlsDialog(
-                context,
-                ref,
-                (oldUrlPrefix, newUrlPrefix, renameFile) {
-                  ref
-                      .read(bulkActionsProvider.notifier)
-                      .updateUrlPrefixesAllMods(
-                        ref.read(filteredModsProvider),
-                        oldUrlPrefix.split('|'),
-                        newUrlPrefix,
-                        renameFile,
-                      );
-                },
-              );
-            },
-          ),
         MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
@@ -180,6 +152,36 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
+        if (enableTtsModdersFeatures) ...[
+          Divider(color: Colors.grey, thickness: 1),
+          MenuItemButton(
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            leadingIcon: Icon(Icons.edit, color: Colors.black),
+            child:
+                Text('Update all URLs', style: TextStyle(color: Colors.black)),
+            onPressed: () {
+              if (actionInProgress) return;
+
+              showBulkUpdateUrlsDialog(
+                context,
+                ref,
+                (oldUrlPrefix, newUrlPrefix, renameFile) {
+                  ref
+                      .read(bulkActionsProvider.notifier)
+                      .updateUrlPrefixesAllMods(
+                        ref.read(filteredModsProvider),
+                        oldUrlPrefix.split('|'),
+                        newUrlPrefix,
+                        renameFile,
+                      );
+                },
+              );
+            },
+          ),
+        ],
       ],
       builder: (
         BuildContext context,

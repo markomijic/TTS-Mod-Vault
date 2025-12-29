@@ -73,6 +73,9 @@ class FilterButton extends HookConsumerWidget {
     return SizedBox(
       height: 32,
       child: MenuAnchor(
+        style: MenuStyle(
+          backgroundColor: WidgetStateProperty.all(Colors.white),
+        ),
         builder: (context, controller, child) {
           return ElevatedButton.icon(
             label: Text(filtersText),

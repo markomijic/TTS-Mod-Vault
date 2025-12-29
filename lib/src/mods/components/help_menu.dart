@@ -18,7 +18,7 @@ class HelpMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MenuAnchor(
       style: MenuStyle(
-        backgroundColor: WidgetStateProperty.all(Colors.black),
+        backgroundColor: WidgetStateProperty.all(Colors.white),
       ),
       menuChildren: <Widget>[
         MenuItemButton(

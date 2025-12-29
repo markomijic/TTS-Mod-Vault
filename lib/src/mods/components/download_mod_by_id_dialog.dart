@@ -90,11 +90,11 @@ class DownloadModByIdDialog extends HookConsumerWidget {
     }
 
     Future<String> downloadAndConvertBson(dynamic fileUrl, String modId) async {
-      if (fileUrl is! String) {
-        return "Invalid url: $fileUrl";
-      }
-
       try {
+        if (fileUrl is! String) {
+          return "Invalid url: $fileUrl";
+        }
+
         final response = await http.get(Uri.parse(fileUrl));
         if (response.statusCode != 200) {
           return "Failed to download BSON file from $fileUrl";
@@ -228,12 +228,10 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                               await downloadAndResizeImage(previewUrl, modId);
 
                               // Add the newly downloaded mod to state
-                              final jsonFilePath =
-                                  '${targetDirectory.value}/$modId.json';
                               await ref
                                   .read(modsProvider.notifier)
                                   .addSingleMod(
-                                    jsonFilePath,
+                                    '${targetDirectory.value}/$modId.json',
                                     ModTypeEnum.mod,
                                   );
 

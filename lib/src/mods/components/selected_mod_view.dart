@@ -203,6 +203,9 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             runSpacing: 4,
             children: [
               MenuAnchor(
+                style: MenuStyle(
+                  backgroundColor: WidgetStateProperty.all(Colors.white),
+                ),
                 builder: (context, controller, child) {
                   return ElevatedButton.icon(
                     onPressed: () {

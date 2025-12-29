@@ -1,21 +1,14 @@
-import 'dart:convert' show JsonEncoder, json;
-import 'dart:io' show File;
 import 'dart:ui' show ImageFilter;
 
-import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
-import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart'
     show useTextEditingController, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:http/http.dart' as http;
-import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show directoriesProvider, modsProvider;
+    show directoriesProvider, downloadProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class DownloadModByIdDialog extends HookConsumerWidget {
@@ -25,101 +18,8 @@ class DownloadModByIdDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final targetDirectory =
         useState(p.normalize(ref.read(directoriesProvider).workshopDir));
-    final downloading = useState(false);
+    final downloadingMods = ref.watch(downloadProvider).downloadingMods;
     final textController = useTextEditingController();
-
-    Future<void> downloadAndResizeImage(dynamic imageUrl, String modId) async {
-      if (imageUrl is! String) {
-        return;
-      }
-
-      try {
-        // Download the image
-        final response = await http.get(Uri.parse(imageUrl));
-        if (response.statusCode != 200) {
-          debugPrint('Failed to download image');
-          return;
-        }
-
-        // Decode the image
-        final originalImage = img.decodeImage(response.bodyBytes);
-        if (originalImage == null) {
-          debugPrint('Failed to decode image');
-          return;
-        }
-
-        // First save the original at maximum quality
-        final tempPath = '${targetDirectory.value}/${modId}_temp.png';
-        final tempFile = File(tempPath);
-        await tempFile.writeAsBytes(img.encodePng(
-          originalImage,
-          level: 0,
-        ));
-
-        // Read back the uncompressed image
-        final uncompressedBytes = await tempFile.readAsBytes();
-        final uncompressedImage = img.decodeImage(uncompressedBytes);
-        if (uncompressedImage == null) {
-          debugPrint('Failed to decode uncompressed image');
-          return;
-        }
-
-        // Now resize from the uncompressed version
-        final resizedImage = img.copyResizeCropSquare(
-          uncompressedImage,
-          size: 256,
-          interpolation: img.Interpolation.cubic,
-        );
-
-        // Save the final resized image with minimal compression
-        final finalPath = '${targetDirectory.value}/$modId.png';
-        final finalFile = File(finalPath);
-
-        await finalFile.writeAsBytes(img.encodePng(
-          resizedImage,
-          level: 0, // Keep using no compression for best quality
-        ));
-
-        // Clean up temp file
-        await tempFile.delete();
-
-        debugPrint('Image saved to: $finalPath');
-      } catch (e) {
-        debugPrint('Error processing image: $e');
-      }
-    }
-
-    Future<String> downloadAndConvertBson(dynamic fileUrl, String modId) async {
-      try {
-        if (fileUrl is! String) {
-          return "Invalid url: $fileUrl";
-        }
-
-        final response = await http.get(Uri.parse(fileUrl));
-        if (response.statusCode != 200) {
-          return "Failed to download BSON file from $fileUrl";
-        }
-
-        final bsonBinary = BsonBinary.from(response.bodyBytes);
-        final decodedData = BsonCodec.deserialize(bsonBinary);
-        decodedData.removeWhere((key, value) => value is BsonBinary);
-
-        final jsonEncoder = JsonEncoder.withIndent('  ', (object) {
-          if (object is Int64) return object.toString();
-          return object;
-        });
-
-        final jsonString = jsonEncoder.convert(decodedData);
-
-        final filePath = '${targetDirectory.value}/$modId.json';
-        final file = File(filePath);
-
-        await file.writeAsString(jsonString);
-        return 'Mod saved to: $filePath';
-      } catch (e) {
-        return 'Error for mod json file: $e';
-      }
-    }
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -131,7 +31,7 @@ class DownloadModByIdDialog extends HookConsumerWidget {
           spacing: 16,
           children: [
             Text(
-              'Download Workshop Mod by ID',
+              'Download Workshop Mods',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             TextField(
@@ -143,7 +43,8 @@ class DownloadModByIdDialog extends HookConsumerWidget {
               decoration: InputDecoration(
                 fillColor: Colors.white,
                 border: OutlineInputBorder(),
-                hintText: 'Enter ID',
+                hintText: 'Enter mod ID(s) separated by comma',
+                hintStyle: TextStyle(color: Colors.black),
               ),
             ),
             Text('Save to: ${targetDirectory.value}'),
@@ -152,7 +53,7 @@ class DownloadModByIdDialog extends HookConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 ElevatedButton(
-                  onPressed: downloading.value
+                  onPressed: downloadingMods
                       ? null
                       : () async {
                           String? dir;
@@ -182,7 +83,7 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                 ),
                 Spacer(),
                 ElevatedButton(
-                  onPressed: downloading.value
+                  onPressed: downloadingMods
                       ? null
                       : () {
                           Navigator.of(context).pop();
@@ -190,73 +91,35 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton.icon(
-                  onPressed: downloading.value
+                  onPressed: downloadingMods
                       ? null
                       : () async {
-                          try {
-                            final modId = textController.text;
-                            if (textController.text.isEmpty) {
-                              return;
+                          final input = textController.text;
+                          if (input.isEmpty) {
+                            return;
+                          }
+
+                          // Parse mod IDs from input (comma separated)
+                          final modIds = input
+                              .split(',')
+                              .map((id) => id.trim())
+                              .where((id) => id.isNotEmpty)
+                              .toList();
+
+                          if (modIds.isEmpty) return;
+
+                          final resultMessage = await ref
+                              .read(downloadProvider.notifier)
+                              .downloadModsByIds(
+                                modIds: modIds,
+                                targetDirectory: targetDirectory.value,
+                              );
+
+                          if (context.mounted) {
+                            if (resultMessage.isNotEmpty) {
+                              showSnackBar(context, resultMessage);
                             }
-
-                            downloading.value = true;
-
-                            final url = Uri.parse(
-                              'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/',
-                            );
-
-                            final response = await http.post(
-                              url,
-                              body: {
-                                'itemcount': '1',
-                                'publishedfileids[0]': modId.toString(),
-                              },
-                            );
-
-                            final responseData = json.decode(response.body);
-                            final fileDetails = responseData['response']
-                                ['publishedfiledetails'][0];
-
-                            final consumerAppId =
-                                fileDetails['consumer_app_id'];
-                            if (consumerAppId == 286160) {
-                              final fileUrl = fileDetails['file_url'];
-                              final previewUrl = fileDetails['preview_url'];
-
-                              final resultMessage =
-                                  await downloadAndConvertBson(fileUrl, modId);
-                              await downloadAndResizeImage(previewUrl, modId);
-
-                              // Add the newly downloaded mod to state
-                              await ref
-                                  .read(modsProvider.notifier)
-                                  .addSingleMod(
-                                    '${targetDirectory.value}/$modId.json',
-                                    ModTypeEnum.mod,
-                                  );
-
-                              if (context.mounted) {
-                                if (resultMessage.isNotEmpty) {
-                                  showSnackBar(context, resultMessage);
-                                }
-                                Navigator.of(context).pop();
-                              }
-                            } else {
-                              debugPrint('Consumer app ID: $consumerAppId');
-                              if (context.mounted) {
-                                showSnackBar(context,
-                                    'Consumer app ID does not match. Expected: 286160, Got: $consumerAppId');
-                                Navigator.of(context).pop();
-                              }
-                            }
-                          } catch (e) {
-                            debugPrint('Error: $e');
-                            if (context.mounted) {
-                              showSnackBar(context, 'Error: $e');
-                              Navigator.of(context).pop();
-                            }
-                          } finally {
-                            downloading.value = false;
+                            Navigator.of(context).pop();
                           }
                         },
                   icon: Icon(Icons.download),

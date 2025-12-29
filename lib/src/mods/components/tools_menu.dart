@@ -94,7 +94,7 @@ class ToolsMenu extends ConsumerWidget {
             Icons.download,
             color: Colors.black,
           ),
-          child: const Text('Download Workshop Mod by ID',
+          child: const Text('Download Workshop Mods',
               style: TextStyle(
                 color: Colors.black,
               )),

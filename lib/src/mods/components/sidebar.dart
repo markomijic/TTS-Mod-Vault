@@ -178,7 +178,7 @@ class Sidebar extends HookConsumerWidget {
             ),
             _SidebarItem(
               icon: Icons.download,
-              label: 'Download Workshop Mod',
+              label: 'Download Workshop Mods',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
               onPressed: () => showDialog(

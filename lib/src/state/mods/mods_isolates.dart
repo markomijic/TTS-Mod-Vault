@@ -567,11 +567,21 @@ String? _extractSaveNameFromString(String jsonString, ModTypeEnum modType) {
 
 String? _extractDateTimeStampFromString(String jsonString) {
   try {
-    // Look for "Date":"value" pattern
+    // First, check for "EpochTime": value pattern (numeric, already in Unix timestamp format)
+    final epochRegex = RegExp(r'"EpochTime"\s*:\s*(\d+)');
+    final epochMatch = epochRegex.firstMatch(jsonString);
+    if (epochMatch != null) {
+      final epochValue = epochMatch.group(1);
+      if (epochValue != null && epochValue.isNotEmpty) {
+        return epochValue; // Already a Unix timestamp, return as-is
+      }
+    }
+
+    // Fallback: Look for "Date":"value" pattern and convert to Unix timestamp
     final dateRegex = RegExp(r'"Date"\s*:\s*"([^"]*)"');
-    final match = dateRegex.firstMatch(jsonString);
-    if (match != null) {
-      final dateValue = match.group(1);
+    final dateMatch = dateRegex.firstMatch(jsonString);
+    if (dateMatch != null) {
+      final dateValue = dateMatch.group(1);
       if (dateValue != null && dateValue.isNotEmpty) {
         return _dateTimeToUnixTimestampSync(dateValue);
       }

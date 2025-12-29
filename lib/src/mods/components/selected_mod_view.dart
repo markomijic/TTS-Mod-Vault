@@ -323,7 +323,8 @@ class _SelectedModViewComponent extends HookConsumerWidget {
         ),
         SizedBox(
           height: 80,
-          child: downloadState.cancelledDownloads || downloadState.downloading
+          child: downloadState.cancelledDownloads ||
+                  downloadState.downloadingAssets
               ? DownloadProgressBar()
               : backupStatus != BackupStatusEnum.idle
                   ? BackupProgressBar()

@@ -1,14 +1,20 @@
+import 'dart:convert' show JsonEncoder, json;
 import 'dart:io' show File;
 
+import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
 import 'package:dio/dio.dart'
     show CancelToken, Dio, DioException, DioExceptionType, Options;
+import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
+import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
 import 'package:tts_mod_vault/src/state/download/download_state.dart'
     show DownloadState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
@@ -44,7 +50,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   Future<void> cancelAllDownloads() async {
     state = state.copyWith(
-      downloading: false,
+      downloadingAssets: false,
       cancelledDownloads: true,
       progress: null,
       downloadingType: null,
@@ -106,7 +112,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   void resetState() {
     state = DownloadState(
-      downloading: false,
+      downloadingAssets: false,
       cancelledDownloads: false,
       progress: 0.0,
       downloadingType: null,
@@ -155,7 +161,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     try {
       state = state.copyWith(
-        downloading: true,
+        downloadingAssets: true,
         progress: 0.0,
         downloadingType: type,
       );
@@ -316,6 +322,217 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       return httpUrl;
     } else {
       return url; // Could not resolve; return original
+    }
+  }
+
+  Future<String> downloadModsByIds({
+    required List<String> modIds,
+    required String targetDirectory,
+  }) async {
+    if (modIds.isEmpty) {
+      return 'No mod IDs provided';
+    }
+
+    try {
+      state = state.copyWith(downloadingMods: true);
+
+      final results = <String>[];
+      int successCount = 0;
+      int failCount = 0;
+
+      for (int i = 0; i < modIds.length; i++) {
+        final modId = modIds[i].trim();
+        if (modId.isEmpty) continue;
+
+        try {
+          final result = await _downloadSingleMod(
+            modId: modId,
+            targetDirectory: targetDirectory,
+          );
+
+          if (result.startsWith('Mod saved to:')) {
+            successCount++;
+          } else {
+            failCount++;
+            results.add('[$modId] $result');
+          }
+        } catch (e) {
+          failCount++;
+          results.add('[$modId] Error: $e');
+        }
+      }
+
+      state = state.copyWith(downloadingMods: false);
+
+      if (modIds.length == 1) {
+        return results.isEmpty ? 'Mod downloaded successfully' : results.first;
+      } else {
+        final summary =
+            'Downloaded $successCount of ${modIds.length} mods successfully';
+        return failCount > 0
+            ? '$summary\n\nFailed:\n${results.join('\n')}'
+            : summary;
+      }
+    } catch (e) {
+      state = state.copyWith(downloadingMods: false);
+      return 'Error: $e';
+    }
+  }
+
+  Future<String> _downloadSingleMod({
+    required String modId,
+    required String targetDirectory,
+  }) async {
+    final url = Uri.parse(
+      'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/',
+    );
+
+    final response = await http.post(
+      url,
+      body: {
+        'itemcount': '1',
+        'publishedfileids[0]': modId,
+      },
+    );
+
+    final responseData = json.decode(response.body);
+    final fileDetails = responseData['response']['publishedfiledetails'][0];
+
+    final consumerAppId = fileDetails['consumer_app_id'];
+    if (consumerAppId != 286160) {
+      return 'Consumer app ID does not match. Expected: 286160, Got: $consumerAppId';
+    }
+
+    final fileUrl = fileDetails['file_url'];
+    final previewUrl = fileDetails['preview_url'];
+    final timeUpdated = fileDetails['time_updated'] as int;
+
+    final bsonResult = await _downloadAndConvertBson(
+      fileUrl: fileUrl,
+      modId: modId,
+      targetDirectory: targetDirectory,
+      timeUpdated: timeUpdated,
+    );
+
+    if (!bsonResult.startsWith('Mod saved to:')) {
+      return bsonResult;
+    }
+
+    await _downloadAndResizeImage(
+      imageUrl: previewUrl,
+      modId: modId,
+      targetDirectory: targetDirectory,
+    );
+
+    // Add the newly downloaded mod to state
+    final jsonFilePath = '$targetDirectory/$modId.json';
+    await ref.read(modsProvider.notifier).addSingleMod(
+          jsonFilePath,
+          ModTypeEnum.mod,
+        );
+
+    return bsonResult;
+  }
+
+  Future<String> _downloadAndConvertBson({
+    required dynamic fileUrl,
+    required String modId,
+    required String targetDirectory,
+    required int timeUpdated,
+  }) async {
+    try {
+      if (fileUrl is! String) {
+        return "Invalid url: $fileUrl";
+      }
+
+      final response = await http.get(Uri.parse(fileUrl));
+      if (response.statusCode != 200) {
+        return "Failed to download BSON file from $fileUrl";
+      }
+
+      final bsonBinary = BsonBinary.from(response.bodyBytes);
+      final decodedData = BsonCodec.deserialize(bsonBinary);
+      decodedData.removeWhere((key, value) => value is BsonBinary);
+
+      final jsonEncoder = JsonEncoder.withIndent('  ', (object) {
+        if (object is Int64) return object.toString();
+        return object;
+      });
+
+      final jsonString = jsonEncoder.convert(decodedData);
+
+      final filePath = '$targetDirectory/$modId.json';
+      final file = File(filePath);
+
+      await file.writeAsString(jsonString);
+      return 'Mod saved to: $filePath';
+    } catch (e) {
+      return 'Error for mod json file: $e';
+    }
+  }
+
+  Future<void> _downloadAndResizeImage({
+    required dynamic imageUrl,
+    required String modId,
+    required String targetDirectory,
+  }) async {
+    if (imageUrl is! String) {
+      return;
+    }
+
+    try {
+      // Download the image
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode != 200) {
+        debugPrint('Failed to download image');
+        return;
+      }
+
+      // Decode the image
+      final originalImage = img.decodeImage(response.bodyBytes);
+      if (originalImage == null) {
+        debugPrint('Failed to decode image');
+        return;
+      }
+
+      // First save the original at maximum quality
+      final tempPath = '$targetDirectory/${modId}_temp.png';
+      final tempFile = File(tempPath);
+      await tempFile.writeAsBytes(img.encodePng(
+        originalImage,
+        level: 0,
+      ));
+
+      // Read back the uncompressed image
+      final uncompressedBytes = await tempFile.readAsBytes();
+      final uncompressedImage = img.decodeImage(uncompressedBytes);
+      if (uncompressedImage == null) {
+        debugPrint('Failed to decode uncompressed image');
+        return;
+      }
+
+      // Now resize from the uncompressed version
+      final resizedImage = img.copyResizeCropSquare(
+        uncompressedImage,
+        size: 256,
+        interpolation: img.Interpolation.cubic,
+      );
+
+      // Save the final resized image with minimal compression
+      final finalPath = '$targetDirectory/$modId.png';
+      final finalFile = File(finalPath);
+
+      await finalFile.writeAsBytes(img.encodePng(
+        resizedImage,
+        level: 0, // Keep using no compression for best quality
+      ));
+
+      // Clean up temp file
+      await tempFile.delete();
+
+      debugPrint('Image saved to: $finalPath');
+    } catch (e) {
+      debugPrint('Error processing image: $e');
     }
   }
 }

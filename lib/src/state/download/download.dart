@@ -334,7 +334,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
 
     try {
-      state = state.copyWith(downloadingMods: true);
+      state = state.copyWith(downloadingMods: true, progress: 0.01);
 
       final results = <String>[];
       int successCount = 0;
@@ -344,10 +344,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         final modId = modIds[i].trim();
         if (modId.isEmpty) continue;
 
+        // Show partial progress for current mod (starts at 25% of the segment)
+        final baseProgress = i / modIds.length;
+        final segmentSize = 1.0 / modIds.length;
+        state = state.copyWith(progress: baseProgress + (segmentSize * 0.25));
+
         try {
           final result = await _downloadSingleMod(
             modId: modId,
             targetDirectory: targetDirectory,
+            currentIndex: i,
+            totalCount: modIds.length,
           );
 
           if (result.startsWith('Mod saved to:')) {
@@ -360,9 +367,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           failCount++;
           results.add('[$modId] Error: $e');
         }
+
+        // Update progress after completing current mod
+        state = state.copyWith(progress: (i + 1) / modIds.length);
       }
 
-      state = state.copyWith(downloadingMods: false);
+      state = state.copyWith(downloadingMods: false, progress: 0.0);
 
       if (modIds.length == 1) {
         return results.isEmpty ? 'Mod downloaded successfully' : results.first;
@@ -374,7 +384,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             : summary;
       }
     } catch (e) {
-      state = state.copyWith(downloadingMods: false);
+      state = state.copyWith(downloadingMods: false, progress: 0.0);
       return 'Error: $e';
     }
   }
@@ -382,7 +392,15 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<String> _downloadSingleMod({
     required String modId,
     required String targetDirectory,
+    required int currentIndex,
+    required int totalCount,
   }) async {
+    final baseProgress = currentIndex / totalCount;
+    final segmentSize = 1.0 / totalCount;
+
+    // Update progress: 25% - fetching mod info
+    state = state.copyWith(progress: baseProgress + (segmentSize * 0.25));
+
     final url = Uri.parse(
       'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/',
     );
@@ -407,6 +425,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final previewUrl = fileDetails['preview_url'];
     final timeUpdated = fileDetails['time_updated'] as int;
 
+    // Update progress: 50% - downloading BSON
+    state = state.copyWith(progress: baseProgress + (segmentSize * 0.5));
+
     final bsonResult = await _downloadAndConvertBson(
       fileUrl: fileUrl,
       modId: modId,
@@ -417,6 +438,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (!bsonResult.startsWith('Mod saved to:')) {
       return bsonResult;
     }
+
+    // Update progress: 75% - downloading image
+    state = state.copyWith(progress: baseProgress + (segmentSize * 0.75));
 
     await _downloadAndResizeImage(
       imageUrl: previewUrl,

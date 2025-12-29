@@ -18,7 +18,9 @@ class DownloadModByIdDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final targetDirectory =
         useState(p.normalize(ref.read(directoriesProvider).workshopDir));
-    final downloadingMods = ref.watch(downloadProvider).downloadingMods;
+    final downloadState = ref.watch(downloadProvider);
+    final downloadingMods = downloadState.downloadingMods;
+    final progress = downloadState.progress;
     final textController = useTextEditingController();
 
     return BackdropFilter(
@@ -127,6 +129,34 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                 ),
               ],
             ),
+            if (downloadingMods)
+              Column(
+                spacing: 4,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 24,
+                        backgroundColor: Colors.grey.shade300,
+                        color: Colors.green,
+                        borderRadius: BorderRadius.all(Radius.circular(32)),
+                      ),
+                      Center(
+                        child: Text(
+                          '${(progress * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
           ],
         ),
       ),

@@ -9,6 +9,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show actionInProgressProvider, importBackupProvider, loaderProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showConfirmDialog;
 
+// TODO delete?
 class Toolbar extends HookConsumerWidget {
   const Toolbar({super.key});
 

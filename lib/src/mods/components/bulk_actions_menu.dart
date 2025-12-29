@@ -14,6 +14,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         sortAndFilterProvider;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show BulkBackupDialog, showBulkUpdateUrlsDialog;
+import 'package:tts_mod_vault/src/utils.dart'
+    show showConfirmDialogWithCheckbox;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -73,6 +75,7 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
+    final selectedModType = ref.watch(selectedModTypeProvider);
     final enableTtsModdersFeatures =
         ref.watch(settingsProvider).enableTtsModdersFeatures;
 
@@ -152,8 +155,8 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
+        Divider(color: Colors.black, height: 1),
         if (enableTtsModdersFeatures) ...[
-          Divider(color: Colors.grey, thickness: 1),
           MenuItemButton(
             style: MenuItemButton.styleFrom(
               backgroundColor: Colors.white,
@@ -181,6 +184,35 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               );
             },
           ),
+          if (selectedModType == ModTypeEnum.mod)
+            MenuItemButton(
+              style: MenuItemButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
+              leadingIcon: Icon(Icons.update, color: Colors.black),
+              child: Text('Update all mods',
+                  style: TextStyle(color: Colors.black)),
+              onPressed: () {
+                if (actionInProgress) return;
+
+                showConfirmDialogWithCheckbox(
+                  context,
+                  title: 'Update all mods',
+                  message:
+                      'Check for updates and download newer versions from Steam Workshop',
+                  checkboxLabel: 'Force update',
+                  checkboxInfoMessage:
+                      'Re-download all mods even if already up to date',
+                  onConfirm: (forceUpdate) {
+                    ref.read(bulkActionsProvider.notifier).updateModsAll(
+                          ref.read(filteredModsProvider),
+                          forceUpdate,
+                        );
+                  },
+                );
+              },
+            ),
         ],
       ],
       builder: (

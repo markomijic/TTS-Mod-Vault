@@ -18,7 +18,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         settingsProvider,
         storageProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show checkForUpdatesOnGitHub, showDownloadDialog;
+    show checkForUpdatesOnGitHub, showDownloadLatestVersionDialog;
 import 'package:window_manager/window_manager.dart' show windowManager;
 
 class SplashPage extends HookConsumerWidget {
@@ -59,7 +59,8 @@ class SplashPage extends HookConsumerWidget {
             final currentVersion = packageInfo.version;
 
             if (context.mounted) {
-              await showDownloadDialog(context, currentVersion, newTagVersion);
+              await showDownloadLatestVersionDialog(
+                  context, currentVersion, newTagVersion);
             }
           }
         }

@@ -106,15 +106,15 @@ class FilterButton extends HookConsumerWidget {
               iconColor: Colors.black,
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              spacing: 8,
               children: [
+                Icon(Icons.clear),
                 Expanded(
                   child: Text(
                     "Clear all",
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(Icons.clear),
               ],
             ),
             onPressed: () {
@@ -126,6 +126,12 @@ class FilterButton extends HookConsumerWidget {
 
           // Main "Assets" submenu item
           SubmenuButton(
+            leadingIcon: Icon(
+              Icons.check,
+              color: selectedAssetCounts.isNotEmpty
+                  ? Colors.black
+                  : Colors.transparent,
+            ),
             style: MenuItemButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
@@ -181,6 +187,12 @@ class FilterButton extends HookConsumerWidget {
 
           // Main "Folders" submenu item
           SubmenuButton(
+            leadingIcon: Icon(
+              Icons.check,
+              color: selectedFolders.isNotEmpty
+                  ? Colors.black
+                  : Colors.transparent,
+            ),
             style: MenuItemButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
@@ -275,6 +287,12 @@ class FilterButton extends HookConsumerWidget {
           // Main "Backups" submenu item
           if (showBackupState)
             SubmenuButton(
+              leadingIcon: Icon(
+                Icons.check,
+                color: sortAndFilterState.filteredBackupStatuses.isNotEmpty
+                    ? Colors.black
+                    : Colors.transparent,
+              ),
               style: MenuItemButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,

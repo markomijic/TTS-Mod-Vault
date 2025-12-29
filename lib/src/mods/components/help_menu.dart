@@ -6,7 +6,7 @@ import 'package:tts_mod_vault/src/changelog.dart' show showChangelogDialog;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         checkForUpdatesOnGitHub,
-        showDownloadDialog,
+        showDownloadLatestVersionDialog,
         showSnackBar,
         openUrl,
         steamDiscussionUrl;
@@ -38,7 +38,8 @@ class HelpMenu extends ConsumerWidget {
 
               if (!context.mounted) return;
 
-              await showDownloadDialog(context, currentVersion, newTagVersion);
+              await showDownloadLatestVersionDialog(
+                  context, currentVersion, newTagVersion);
             } else {
               if (context.mounted) {
                 showSnackBar(context, 'No new updates found');

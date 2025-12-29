@@ -12,6 +12,8 @@ import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions.dart';
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup.dart';
 import 'package:tts_mod_vault/src/state/cleanup/cleanup_state.dart';
+import 'package:tts_mod_vault/src/state/delete_assets/delete_assets.dart';
+import 'package:tts_mod_vault/src/state/delete_assets/delete_assets_state.dart';
 import 'package:tts_mod_vault/src/state/directories/directories.dart';
 import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/download/download.dart';
@@ -75,6 +77,11 @@ final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanUpState>(
   (ref) => CleanupNotifier(ref),
 );
 
+/* final deleteAssetsProvider =
+    NotifierProvider<DeleteAssetsNotifier, DeleteAssetsState>(
+  () => DeleteAssetsNotifier(),
+); */
+
 final backupProvider = StateNotifierProvider<BackupNotifier, BackupState>(
   (ref) => BackupNotifier(ref),
 );
@@ -100,18 +107,22 @@ final sortAndFilterProvider =
 
 final actionInProgressProvider = Provider<bool>((ref) {
   final modsAsyncValue = ref.watch(modsProvider);
-  final downloading = ref.watch(downloadProvider).downloading;
+  final downloadingAssets = ref.watch(downloadProvider).downloadingAssets;
+  final downloadingMods = ref.watch(downloadProvider).downloadingMods;
   final bulkActionStatus = ref.watch(bulkActionsProvider).status;
   final cleanUpStatus = ref.watch(cleanupProvider).status;
+  final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
   final importBackupStatus = ref.watch(importBackupProvider).status;
   final deletingBackup = ref.watch(existingBackupsProvider).deletingBackup;
 
   return cleanUpStatus != CleanUpStatusEnum.idle ||
+      deleteAssetsStatus != DeleteAssetsStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
       importBackupStatus != ImportBackupStatusEnum.idle ||
       bulkActionStatus != BulkActionsStatusEnum.idle ||
-      downloading ||
+      downloadingAssets ||
+      downloadingMods ||
       modsAsyncValue is AsyncLoading ||
       deletingBackup;
 });

@@ -23,7 +23,7 @@ import 'package:tts_mod_vault/src/utils.dart'
         showConfirmDialog,
         showSnackBar,
         checkForUpdatesOnGitHub,
-        showDownloadDialog,
+        showDownloadLatestVersionDialog,
         openUrl,
         steamDiscussionUrl,
         showConfirmDialogWithCheckbox;
@@ -107,7 +107,7 @@ class Sidebar extends HookConsumerWidget {
               isDisabled: actionInProgress,
               onPressed: () => showConfirmDialogWithCheckbox(
                 context,
-                message: 'Refresh all data?',
+                title: 'Refresh all data?',
                 onConfirm: (checkboxValue) async => await ref
                     .read(loaderProvider)
                     .refreshAppData(checkboxValue),
@@ -201,7 +201,7 @@ class Sidebar extends HookConsumerWidget {
 
                   if (!context.mounted) return;
 
-                  await showDownloadDialog(
+                  await showDownloadLatestVersionDialog(
                       context, currentVersion, newTagVersion);
                 } else {
                   if (context.mounted) {

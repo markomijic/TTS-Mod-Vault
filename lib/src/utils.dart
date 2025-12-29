@@ -21,6 +21,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
+        downloadProvider,
         existingBackupsProvider,
         importBackupProvider;
 import 'package:url_launcher/url_launcher.dart'
@@ -35,6 +36,8 @@ const nexusModsDownloadPageUrl =
     "https://www.nexusmods.com/tabletopsimulator/mods/426";
 const steamDiscussionUrl =
     "https://steamcommunity.com/app/286160/discussions/0/591772542952298985/";
+const getPublishedFileDetailsUrl =
+    "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
 
 const String updateUrlsHelp = '''
 The Update URLs feature works by replacing the beginning of a URL. 
@@ -152,7 +155,10 @@ void showConfirmDialog(
       return BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
         child: AlertDialog(
-          content: Text(contentMessage),
+          content: Text(
+            contentMessage,
+            style: TextStyle(fontSize: 16),
+          ),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop('cancel'),
@@ -182,9 +188,58 @@ void showConfirmDialog(
   }
 }
 
+void showBackupConfirmDialog(
+  BuildContext context,
+  String contentMessage,
+  VoidCallback onConfirm,
+  VoidCallback onSelectFolder,
+) async {
+  final result = await showDialog<String>(
+    context: context,
+    builder: (BuildContext context) {
+      return BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+        child: AlertDialog(
+          content: Text(contentMessage),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop('cancel'),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop('selectFolder'),
+              child: const Text('Select new folder'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop('replace'),
+              child: const Text('Replace'),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  switch (result) {
+    case 'replace':
+      Future.delayed(kThemeChangeDuration, () => onConfirm());
+      break;
+
+    case 'selectFolder':
+      onSelectFolder();
+      break;
+
+    case 'cancel':
+    case null:
+    default:
+      break;
+  }
+}
+
 Future<void> showConfirmDialogWithCheckbox(
   BuildContext context, {
-  required String message,
+  required String title,
+  String message = "",
   required void Function(bool checkboxValue) onConfirm,
   required String checkboxLabel,
   required String checkboxInfoMessage,
@@ -204,10 +259,12 @@ Future<void> showConfirmDialogWithCheckbox(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    message,
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  Text(title, style: TextStyle(fontSize: 18)),
+                  if (message.isNotEmpty)
+                    Text(
+                      message,
+                      style: TextStyle(fontSize: 16),
+                    ),
                   Row(
                     spacing: 4,
                     children: [
@@ -267,7 +324,7 @@ Future<void> showConfirmDialogWithCheckbox(
   }
 }
 
-Future<void> showDownloadDialog(
+Future<void> showDownloadLatestVersionDialog(
   BuildContext context,
   String currentVersion,
   String latestVersion,
@@ -589,18 +646,7 @@ void showModContextMenu(
           children: [Icon(Icons.folder_open), Text('Open in File Explorer')],
         ),
       ),
-      if (mod.backup != null)
-        PopupMenuItem(
-          value: ContextMenuActionEnum.openBackupInExplorer,
-          child: Row(
-            spacing: 8,
-            children: [
-              Icon(Icons.folder_zip_outlined),
-              Text('Open Backup in File Explorer')
-            ],
-          ),
-        ),
-      if (mod.modType == ModTypeEnum.mod)
+      if (mod.modType == ModTypeEnum.mod) ...[
         PopupMenuItem(
           value: ContextMenuActionEnum.openSteamWorkshopPage,
           child: Row(
@@ -611,6 +657,19 @@ void showModContextMenu(
             ],
           ),
         ),
+        PopupMenuItem(
+          value: ContextMenuActionEnum.updateMod,
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.update), Text('Update from Steam Workshop')],
+          ),
+        ),
+      ],
+      const PopupMenuItem(
+        padding: EdgeInsets.zero,
+        height: 1,
+        child: Divider(height: 1),
+      ),
       PopupMenuItem(
         value: ContextMenuActionEnum.copySaveName,
         child: Row(
@@ -625,13 +684,37 @@ void showModContextMenu(
           children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
-      if (mod.backup != null)
+      if (mod.backup != null) ...[
+        const PopupMenuItem(
+          padding: EdgeInsets.zero,
+          height: 1,
+          child: Divider(height: 1),
+        ),
         PopupMenuItem(
-            value: ContextMenuActionEnum.deleteBackup,
-            child: Row(
-              spacing: 8,
-              children: [Icon(Icons.delete), Text('Delete Backup')],
-            ))
+          value: ContextMenuActionEnum.openBackupInExplorer,
+          child: Row(
+            spacing: 8,
+            children: [
+              Icon(Icons.folder_zip_outlined),
+              Text('Open Backup in File Explorer')
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: ContextMenuActionEnum.copyBackupFilename,
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.file_copy), Text('Copy Backup Filename')],
+          ),
+        ),
+        PopupMenuItem(
+          value: ContextMenuActionEnum.deleteBackup,
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.delete), Text('Delete Backup')],
+          ),
+        ),
+      ],
     ],
   ).then((value) async {
     if (value != null) {
@@ -670,6 +753,39 @@ void showModContextMenu(
         case ContextMenuActionEnum.copyFilename:
           if (context.mounted) {
             copyToClipboard(context, mod.jsonFileName);
+          }
+          break;
+
+        case ContextMenuActionEnum.updateMod:
+          if (context.mounted) {
+            showConfirmDialogWithCheckbox(
+              context,
+              title: 'Update mod',
+              message:
+                  'Check for updates and download newer version from Steam Workshop',
+              checkboxLabel: 'Force update',
+              checkboxInfoMessage: 'Re-download mod even if already up to date',
+              onConfirm: (forceUpdate) async {
+                if (context.mounted) {
+                  showSnackBar(context, 'Starting update...');
+                }
+
+                final result = await ref
+                    .read(downloadProvider.notifier)
+                    .downloadModUpdates(mods: [mod], forceUpdate: forceUpdate);
+
+                if (context.mounted) showSnackBar(context, result);
+              },
+            );
+          }
+          break;
+
+        case ContextMenuActionEnum.copyBackupFilename:
+          if (context.mounted && mod.backup != null) {
+            copyToClipboard(
+              context,
+              p.basenameWithoutExtension(mod.backup!.filename),
+            );
           }
           break;
 
@@ -729,40 +845,28 @@ void showBackupContextMenu(
         value: 'import',
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.unarchive),
-            Text('Import Backup'),
-          ],
+          children: [Icon(Icons.unarchive), Text('Import Backup')],
         ),
       ),
       PopupMenuItem(
         value: 'openInExplorer',
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.folder_open),
-            Text('Open in File Explorer'),
-          ],
+          children: [Icon(Icons.folder_open), Text('Open in File Explorer')],
         ),
       ),
       PopupMenuItem(
         value: 'copyFilename',
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.file_copy),
-            Text('Copy Filename'),
-          ],
+          children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
       PopupMenuItem(
         value: 'delete',
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.delete, color: Colors.red),
-            Text('Delete', style: TextStyle(color: Colors.red)),
-          ],
+          children: [Icon(Icons.delete), Text('Delete')],
         ),
       ),
     ],

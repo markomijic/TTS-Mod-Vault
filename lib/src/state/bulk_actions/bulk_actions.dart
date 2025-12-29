@@ -299,6 +299,47 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     ref.read(loaderProvider).refreshAppData();
   }
 
+  Future<void> updateModsAll(
+    List<Mod> mods,
+    bool forceUpdate,
+  ) async {
+    state = state.copyWith(
+      status: BulkActionsStatusEnum.updateModsAll,
+      totalModNumber: mods.length,
+      statusMessage: 'Checking for mod updates...',
+    );
+
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+
+    debugPrint('Updating ${mods.length} mods');
+
+    for (int i = 0; i < mods.length; i++) {
+      final mod = mods[i];
+
+      if (state.cancelledBulkAction) {
+        continue;
+      }
+
+      // Yield to UI thread to keep app responsive
+      await Future.delayed(Duration.zero);
+
+      debugPrint('Updating mod: ${mod.saveName}');
+
+      state = state.copyWith(
+          currentModNumber: i + 1,
+          statusMessage:
+              'Updating "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+
+      final result = await downloadNotifier.downloadModUpdates(
+        mods: [mod],
+        forceUpdate: forceUpdate,
+      );
+      debugPrint('Update result: $result');
+    }
+
+    _resetState();
+  }
+
   // Cancel methods
   Future<void> cancelBulkAction() async {
     switch (state.status) {
@@ -319,6 +360,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       case BulkActionsStatusEnum.downloadAndBackupAll:
         _cancelDownloadAndBackupAll();
+        break;
+
+      case BulkActionsStatusEnum.updateModsAll:
+        _cancelUpdateModsAll();
         break;
     }
   }
@@ -359,5 +404,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       statusMessage:
           "Cancelling download & backup of all ${ref.read(selectedModTypeProvider).label}s",
     );
+  }
+
+  void _cancelUpdateModsAll() async {
+    state = state.copyWith(
+        cancelledBulkAction: true, statusMessage: "Cancelling updating mods");
   }
 }

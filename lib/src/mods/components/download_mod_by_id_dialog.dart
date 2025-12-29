@@ -34,7 +34,7 @@ class DownloadModByIdDialog extends HookConsumerWidget {
           children: [
             Text(
               'Download Workshop Mods',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
             ),
             TextField(
               controller: textController,
@@ -49,7 +49,10 @@ class DownloadModByIdDialog extends HookConsumerWidget {
                 hintStyle: TextStyle(color: Colors.black),
               ),
             ),
-            Text('Save to: ${targetDirectory.value}'),
+            Text(
+              'Save to: ${targetDirectory.value}',
+              style: TextStyle(fontSize: 16),
+            ),
             Row(
               spacing: 8,
               mainAxisAlignment: MainAxisAlignment.end,

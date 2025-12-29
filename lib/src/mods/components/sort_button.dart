@@ -21,7 +21,6 @@ class SortButton extends HookConsumerWidget {
       ),
       builder: (context, controller, child) {
         return ElevatedButton.icon(
-          //alignment: Alignment.center,
           onPressed: () {
             if (actionInProgress) return;
 

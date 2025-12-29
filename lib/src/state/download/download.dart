@@ -24,7 +24,11 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getExtensionByType, getFileNameFromURL, newSteamUserContentUrl;
+    show
+        getExtensionByType,
+        getFileNameFromURL,
+        newSteamUserContentUrl,
+        getPublishedFileDetailsUrl;
 
 import 'package:path/path.dart' as path;
 
@@ -325,6 +329,125 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  Future<String> downloadModUpdates({
+    required List<Mod> mods,
+    bool forceUpdate = false,
+  }) async {
+    if (mods.isEmpty) {
+      return 'No mods selected';
+    }
+
+    try {
+      state = state.copyWith(downloadingMods: true, progress: 0.01);
+
+      // Check which mods need updating
+      final modsToUpdate =
+          <({String modId, String directory, int currentEpoch})>[];
+
+      for (final mod in mods) {
+        // Extract mod ID from filename (remove .json extension)
+        final modId = mod.jsonFileName.replaceAll('.json', '');
+        final directory = path.dirname(mod.jsonFilePath);
+
+        // Get current epoch from mod's dateTimeStamp (which contains EpochTime)
+        final currentEpoch = mod.dateTimeStamp != null
+            ? int.tryParse(mod.dateTimeStamp!) ?? 0
+            : 0;
+
+        if (forceUpdate) {
+          // Force update - add all mods to the update list
+          modsToUpdate.add((
+            modId: modId,
+            directory: directory,
+            currentEpoch: currentEpoch,
+          ));
+        } else {
+          // Fetch latest info from Steam
+          final url = Uri.parse(getPublishedFileDetailsUrl);
+
+          final response = await http.post(
+            url,
+            body: {
+              'itemcount': '1',
+              'publishedfileids[0]': modId,
+            },
+          );
+
+          final responseData = json.decode(response.body);
+          final fileDetails =
+              responseData['response']['publishedfiledetails'][0];
+          final steamEpoch = fileDetails['time_updated'] as int;
+
+          // Only add to update list if Steam version is newer by more than 60 seconds
+          // 60s covers instances of EpochTime and Date being <= 60s apart (it's mostly <= 10s so far)
+          final timeDifference = (steamEpoch - currentEpoch).abs();
+          if (steamEpoch > currentEpoch && timeDifference > 60) {
+            modsToUpdate.add((
+              modId: modId,
+              directory: directory,
+              currentEpoch: currentEpoch,
+            ));
+          }
+        }
+      }
+
+      if (modsToUpdate.isEmpty) {
+        state = state.copyWith(downloadingMods: false, progress: 0.0);
+        return mods.length == 1
+            ? 'Mod is up to date'
+            : 'All mods are up to date';
+      }
+
+      // Download the mods that need updating
+      final results = <String>[];
+      int successCount = 0;
+      int failCount = 0;
+
+      for (int i = 0; i < modsToUpdate.length; i++) {
+        final modInfo = modsToUpdate[i];
+
+        try {
+          final result = await _downloadSingleMod(
+            modId: modInfo.modId,
+            targetDirectory: modInfo.directory,
+            currentIndex: i,
+            totalCount: modsToUpdate.length,
+          );
+
+          if (result.startsWith('Mod saved to:')) {
+            successCount++;
+          } else {
+            failCount++;
+            results.add('[${modInfo.modId}] $result');
+          }
+        } catch (e) {
+          failCount++;
+          results.add('[${modInfo.modId}] Error: $e');
+        }
+
+        state = state.copyWith(progress: (i + 1) / modsToUpdate.length);
+      }
+
+      state = state.copyWith(downloadingMods: false, progress: 0.0);
+
+      final skippedCount = mods.length - modsToUpdate.length;
+
+      if (successCount == 1 && modsToUpdate.length == 1 && mods.length == 1) {
+        return "Updated ${mods[0].saveName}";
+      }
+
+      final summary =
+          'Updated $successCount of ${modsToUpdate.length} mods${skippedCount > 0 ? ' ($skippedCount already up to date)' : ''}';
+
+      return failCount > 0
+          ? '$summary\n\nFailed:\n${results.join('\n')}'
+          : summary;
+    } catch (e) {
+      state = state.copyWith(downloadingMods: false, progress: 0.0);
+      return 'Error: $e';
+    }
+  }
+
   Future<String> downloadModsByIds({
     required List<String> modIds,
     required String targetDirectory,
@@ -401,9 +524,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     // Update progress: 25% - fetching mod info
     state = state.copyWith(progress: baseProgress + (segmentSize * 0.25));
 
-    final url = Uri.parse(
-      'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/',
-    );
+    final url = Uri.parse(getPublishedFileDetailsUrl);
 
     final response = await http.post(
       url,

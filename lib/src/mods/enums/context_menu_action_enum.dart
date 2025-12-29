@@ -8,7 +8,9 @@ enum ContextMenuActionEnum {
   copyUrl,
   copyFilename,
   copySaveName,
+  copyBackupFilename,
   download,
   deleteBackup,
   replaceUrl,
+  updateMod,
 }

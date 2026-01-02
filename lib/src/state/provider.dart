@@ -77,10 +77,10 @@ final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanUpState>(
   (ref) => CleanupNotifier(ref),
 );
 
-/* final deleteAssetsProvider =
+final deleteAssetsProvider =
     NotifierProvider<DeleteAssetsNotifier, DeleteAssetsState>(
   () => DeleteAssetsNotifier(),
-); */
+);
 
 final backupProvider = StateNotifierProvider<BackupNotifier, BackupState>(
   (ref) => BackupNotifier(ref),
@@ -111,13 +111,13 @@ final actionInProgressProvider = Provider<bool>((ref) {
   final downloadingMods = ref.watch(downloadProvider).downloadingMods;
   final bulkActionStatus = ref.watch(bulkActionsProvider).status;
   final cleanUpStatus = ref.watch(cleanupProvider).status;
-  final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
+  // final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
   final importBackupStatus = ref.watch(importBackupProvider).status;
   final deletingBackup = ref.watch(existingBackupsProvider).deletingBackup;
 
+  // deleteAssetsStatus != DeleteAssetsStatusEnum.idle ||
   return cleanUpStatus != CleanUpStatusEnum.idle ||
-      deleteAssetsStatus != DeleteAssetsStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
       importBackupStatus != ImportBackupStatusEnum.idle ||
       bulkActionStatus != BulkActionsStatusEnum.idle ||

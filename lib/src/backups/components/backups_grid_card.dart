@@ -28,8 +28,14 @@ class BackupsGridCard extends HookConsumerWidget {
     }, [backup]);
 
     final matchingModImagePath = useMemoized(() {
-      return backup.matchingModImagePath;
-    }, [backup]);
+      if (backup.matchingModFilepath == null) return null;
+
+      // Replace .json extension with .png
+      final jsonPath = backup.matchingModFilepath!;
+      if (!jsonPath.toLowerCase().endsWith('.json')) return null;
+
+      return '${jsonPath.substring(0, jsonPath.length - 5)}.png';
+    }, [backup.matchingModFilepath]);
 
     final imageExists = useMemoized(() {
       return matchingModImagePath != null
@@ -38,8 +44,8 @@ class BackupsGridCard extends HookConsumerWidget {
     }, [matchingModImagePath]);
 
     final hasMatchingMod = useMemoized(() {
-      return matchingModImagePath != null;
-    }, [matchingModImagePath]);
+      return backup.matchingModFilepath != null;
+    }, [backup.matchingModFilepath]);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,

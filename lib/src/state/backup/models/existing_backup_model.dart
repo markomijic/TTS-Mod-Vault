@@ -3,14 +3,14 @@ class ExistingBackup {
   final String filepath;
   final int lastModifiedTimestamp;
   final int? totalAssetCount;
-  final String? matchingModImagePath;
+  final String? matchingModFilepath;
 
   const ExistingBackup({
     required this.filename,
     required this.filepath,
     required this.lastModifiedTimestamp,
     this.totalAssetCount,
-    this.matchingModImagePath,
+    this.matchingModFilepath,
   });
 
   ExistingBackup copyWith({
@@ -18,7 +18,7 @@ class ExistingBackup {
     String? filepath,
     int? lastModifiedTimestamp,
     int? totalAssetCount,
-    String? matchingModImagePath,
+    String? matchingModFilepath,
   }) {
     return ExistingBackup(
       filename: filename ?? this.filename,
@@ -26,7 +26,7 @@ class ExistingBackup {
       lastModifiedTimestamp:
           lastModifiedTimestamp ?? this.lastModifiedTimestamp,
       totalAssetCount: totalAssetCount ?? this.totalAssetCount,
-      matchingModImagePath: matchingModImagePath ?? this.matchingModImagePath,
+      matchingModFilepath: matchingModFilepath ?? this.matchingModFilepath,
     );
   }
 }

@@ -164,9 +164,9 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
         foundBackup = _getMostRecentBackupByFilename(backupFileName);
       }
 
-      // If backup found, update its state with the matching mod's image path
-      if (foundBackup != null && foundBackup.matchingModImagePath == null) {
-        return _updateBackupWithModImage(foundBackup, mod.imageFilePath);
+      // If backup found, update its state with the matching mod's filepath
+      if (foundBackup != null && foundBackup.matchingModFilepath == null) {
+        return _updateBackupWithModFilepath(foundBackup, mod.jsonFilePath);
       }
 
       return foundBackup;
@@ -175,15 +175,15 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     }
   }
 
-  ExistingBackup _updateBackupWithModImage(
-      ExistingBackup backup, String? imagePath) {
+  ExistingBackup _updateBackupWithModFilepath(
+      ExistingBackup backup, String? modFilepath) {
     final backupIndex = state.backups.indexWhere(
       (b) => b.filename == backup.filename && b.filepath == backup.filepath,
     );
 
     if (backupIndex >= 0) {
       final updatedBackups = [...state.backups];
-      final updatedBackup = backup.copyWith(matchingModImagePath: imagePath);
+      final updatedBackup = backup.copyWith(matchingModFilepath: modFilepath);
       updatedBackups[backupIndex] = updatedBackup;
 
       state = ExistingBackupsState(backups: updatedBackups);

@@ -9,11 +9,11 @@ import 'src/app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
-  await Hive.initFlutter('TTS Mod Vault');
+  await Hive.initFlutter('TTS Mod Vault-beta');
 
   WindowOptions windowOptions = const WindowOptions(
     minimumSize: Size(1280, 720),
-    title: 'TTS Mod Vault 1.3.0',
+    title: 'TTS Mod Vault 1.4.0-beta1',
     center: true,
   );
 

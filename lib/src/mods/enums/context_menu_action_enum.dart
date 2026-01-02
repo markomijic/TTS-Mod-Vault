@@ -13,4 +13,5 @@ enum ContextMenuActionEnum {
   deleteBackup,
   replaceUrl,
   updateMod,
+  backupSubmenu,
 }

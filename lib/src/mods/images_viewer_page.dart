@@ -3,7 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show ImagesViewerGridCard;
+    show ImagesViewerGridCard, CustomTooltip;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -54,6 +54,11 @@ class ImagesViewerPage extends HookConsumerWidget {
                     fontSize: 30,
                   ),
                 ),
+              ),
+              CustomTooltip(
+                message:
+                    '• Double-click to open image file\n• Right-click to see options',
+                child: Icon(Icons.info_outline, size: 30),
               ),
             ],
           ),

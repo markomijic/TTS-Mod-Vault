@@ -79,6 +79,11 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
+          const PopupMenuItem(
+            padding: EdgeInsets.zero,
+            height: 1,
+            child: Divider(height: 1),
+          ),
           PopupMenuItem(
             value: ContextMenuActionEnum.copyUrl,
             child: Row(
@@ -99,17 +104,23 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          if (ref.read(settingsProvider).enableTtsModdersFeatures)
+          if (ref.read(settingsProvider).enableTtsModdersFeatures) ...[
+            const PopupMenuItem(
+              padding: EdgeInsets.zero,
+              height: 1,
+              child: Divider(height: 1),
+            ),
             PopupMenuItem(
               value: ContextMenuActionEnum.replaceUrl,
               child: Row(
                 spacing: 8,
                 children: [
                   Icon(Icons.find_replace),
-                  Text('Replace URL'),
+                  Text('Update URL'),
                 ],
               ),
             ),
+          ]
         ],
       ).then((value) async {
         if (value != null) {
@@ -183,8 +194,11 @@ class ImagesViewerGridCard extends HookConsumerWidget {
           },
         ),
         GestureDetector(
-          onTapDown: (details) => showImagesViewerGridCardContextMenu(
-              context, ref, details.globalPosition, asset),
+          onDoubleTap: () {
+            if (asset.filePath != null && asset.filePath!.isNotEmpty) {
+              openFile(asset.filePath!);
+            }
+          },
           onSecondaryTapDown: (details) => showImagesViewerGridCardContextMenu(
               context, ref, details.globalPosition, asset),
           child: MouseRegion(

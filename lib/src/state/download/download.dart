@@ -1,14 +1,26 @@
 import 'dart:convert' show JsonEncoder, json;
-import 'dart:io' show File;
+import 'dart:io' show Directory, File;
+import 'dart:isolate' show Isolate, ReceivePort;
 
+import 'package:archive/archive_io.dart' show ZipFileEncoder;
 import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
 import 'package:dio/dio.dart'
     show CancelToken, Dio, DioException, DioExceptionType, Options;
+import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:collection/collection.dart' show IterableExtension;
+import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
+    show
+        BackupCompleteMessage,
+        BackupIsolateData,
+        BackupProgressMessage,
+        FilepathsIsolateData;
+import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
+    show ExistingBackup;
 import 'package:tts_mod_vault/src/state/download/download_state.dart'
     show DownloadState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -20,17 +32,19 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         directoriesProvider,
         downloadProvider,
         existingAssetListsProvider,
+        existingBackupsProvider,
         modsProvider,
         selectedModProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
+        getBackupFilenameByMod,
         getExtensionByType,
         getFileNameFromURL,
         newSteamUserContentUrl,
         getPublishedFileDetailsUrl;
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 class DownloadNotifier extends StateNotifier<DownloadState> {
   final Ref ref;
@@ -187,7 +201,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           final fileName = getFileNameFromURL(originalUrl);
           final directory =
               ref.read(directoriesProvider.notifier).getDirectoryByType(type);
-          final tempPath = path.join(directory, '${fileName}_temp');
+          final tempPath = p.join(directory, '${fileName}_temp');
 
           // Set url and cancel token
           final url = await resolveUrlWithScheme(originalUrl);
@@ -240,7 +254,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
                 await tempFile.delete();
               }
             } else {
-              final finalPath = path.join(directory,
+              final finalPath = p.join(directory,
                   fileName + getExtensionByType(type, tempPath, bytes));
               await tempFile.rename(finalPath);
 
@@ -341,13 +355,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       state = state.copyWith(downloadingMods: true, progress: 0.01);
 
       // Check which mods need updating
-      final modsToUpdate =
-          <({String modId, String directory, int currentEpoch})>[];
+      final modsToUpdate = <({
+        String modId,
+        String directory,
+        int currentEpoch,
+        Map<String, dynamic>? fileDetails
+      })>[];
 
       for (final mod in mods) {
         // Extract mod ID from filename (remove .json extension)
         final modId = mod.jsonFileName.replaceAll('.json', '');
-        final directory = path.dirname(mod.jsonFilePath);
+        final directory = p.dirname(mod.jsonFilePath);
 
         // Get current epoch from mod's dateTimeStamp (which contains EpochTime)
         final currentEpoch = mod.dateTimeStamp != null
@@ -355,11 +373,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             : 0;
 
         if (forceUpdate) {
-          // Force update - add all mods to the update list
+          // Force update - add all mods to the update list (without fileDetails)
           modsToUpdate.add((
             modId: modId,
             directory: directory,
             currentEpoch: currentEpoch,
+            fileDetails: null,
           ));
         } else {
           // Fetch latest info from Steam
@@ -386,6 +405,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
               modId: modId,
               directory: directory,
               currentEpoch: currentEpoch,
+              fileDetails: fileDetails,
             ));
           }
         }
@@ -394,8 +414,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       if (modsToUpdate.isEmpty) {
         state = state.copyWith(downloadingMods: false, progress: 0.0);
         return mods.length == 1
-            ? 'Mod is up to date'
-            : 'All mods are up to date';
+            ? 'Mod is already up to date'
+            : 'All mods are already up to date';
       }
 
       // Download the mods that need updating
@@ -412,6 +432,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             targetDirectory: modInfo.directory,
             currentIndex: i,
             totalCount: modsToUpdate.length,
+            fileDetails: modInfo.fileDetails,
           );
 
           if (result.startsWith('Mod saved to:')) {
@@ -512,11 +533,204 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  /// Downloads assets to temp folder, creates backups, then deletes temp folder
+  /// This is useful for creating backups without permanently storing assets
+  Future<String> downloadBackupAndDeleteAssets({
+    required List<Mod> mods,
+    String? backupDirectory,
+  }) async {
+    if (mods.isEmpty) {
+      return 'No mods provided';
+    }
+
+    String? backupDirPath = backupDirectory;
+    Directory? tempDownloadDir;
+
+    try {
+      // 1. Initialization Phase
+      state = state.copyWith(downloadingAssets: true, progress: 0.01);
+
+      // Track results
+      final results = <({String modName, bool success, String? error})>[];
+
+      // Prompt for backup directory if not provided
+      if (backupDirPath == null || backupDirPath.isEmpty) {
+        final backupsDir = ref.read(directoriesProvider).backupsDir;
+        backupDirPath = await FilePicker.platform.getDirectoryPath(
+          lockParentWindow: true,
+          initialDirectory: backupsDir.isEmpty ? null : backupsDir,
+        );
+
+        if (backupDirPath == null) {
+          state = state.copyWith(downloadingAssets: false, progress: 0.0);
+          return 'Backup directory selection cancelled';
+        }
+      }
+
+      // Create temporary download folder structure
+      final tempDownloadPath = p.join(backupDirPath, '_tempDownload');
+      tempDownloadDir = Directory(tempDownloadPath);
+      await tempDownloadDir.create(recursive: true);
+
+      // Create subdirectories for each asset type
+      final tempDirs = <AssetTypeEnum, String>{};
+      for (final type in AssetTypeEnum.values) {
+        final typeDir = p.join(tempDownloadPath, type.name);
+        await Directory(typeDir).create(recursive: true);
+        tempDirs[type] = typeDir;
+      }
+
+      // 2. Main Processing Loop
+      for (int i = 0; i < mods.length; i++) {
+        final mod = mods[i];
+        final baseProgress = i / mods.length;
+        final segmentSize = 1.0 / mods.length;
+
+        // Check for cancellation
+        if (state.cancelledDownloads) {
+          break;
+        }
+
+        debugPrint('Processing mod ${i + 1}/${mods.length}: ${mod.saveName}');
+
+        try {
+          // A. Download Phase (to temp folder)
+          if (mod.assetLists != null) {
+            await _downloadFilesToCustomDirectory(
+              modAssetListUrls:
+                  mod.assetLists!.assetBundles.map((e) => e.url).toList(),
+              type: AssetTypeEnum.assetBundle,
+              targetDirectory: tempDirs[AssetTypeEnum.assetBundle]!,
+            );
+
+            await _downloadFilesToCustomDirectory(
+              modAssetListUrls:
+                  mod.assetLists!.audio.map((e) => e.url).toList(),
+              type: AssetTypeEnum.audio,
+              targetDirectory: tempDirs[AssetTypeEnum.audio]!,
+            );
+
+            await _downloadFilesToCustomDirectory(
+              modAssetListUrls:
+                  mod.assetLists!.images.map((e) => e.url).toList(),
+              type: AssetTypeEnum.image,
+              targetDirectory: tempDirs[AssetTypeEnum.image]!,
+            );
+
+            await _downloadFilesToCustomDirectory(
+              modAssetListUrls:
+                  mod.assetLists!.models.map((e) => e.url).toList(),
+              type: AssetTypeEnum.model,
+              targetDirectory: tempDirs[AssetTypeEnum.model]!,
+            );
+
+            await _downloadFilesToCustomDirectory(
+              modAssetListUrls: mod.assetLists!.pdf.map((e) => e.url).toList(),
+              type: AssetTypeEnum.pdf,
+              targetDirectory: tempDirs[AssetTypeEnum.pdf]!,
+            );
+          }
+
+          state = state.copyWith(progress: baseProgress + (segmentSize * 0.4));
+
+          // Check for cancellation
+          if (state.cancelledDownloads) {
+            break;
+          }
+
+          // B. Create Backup from Temp Files
+          final backupSuccess = await _createBackupFromCustomDirectories(
+            mod: mod,
+            backupDirectory: backupDirPath,
+            assetDirectories: tempDirs,
+          );
+
+          state = state.copyWith(progress: baseProgress + (segmentSize * 0.8));
+
+          // C. Track Results
+          if (backupSuccess) {
+            results.add((
+              modName: mod.saveName,
+              success: true,
+              error: null,
+            ));
+            debugPrint('✓ Successfully processed: ${mod.saveName}');
+          } else {
+            results.add((
+              modName: mod.saveName,
+              success: false,
+              error: 'Backup creation failed',
+            ));
+            debugPrint('✗ Failed to process: ${mod.saveName}');
+          }
+
+          state = state.copyWith(progress: baseProgress + segmentSize);
+
+          // Yield to UI
+          await Future.delayed(Duration.zero);
+        } catch (e) {
+          results.add((
+            modName: mod.saveName,
+            success: false,
+            error: e.toString(),
+          ));
+          debugPrint('✗ Error processing ${mod.saveName}: $e');
+        }
+      }
+
+      // 3. Build Result Summary
+      final successCount = results.where((r) => r.success).length;
+      final failedResults = results.where((r) => !r.success).toList();
+
+      if (state.cancelledDownloads) {
+        return 'Operation cancelled by user. Processed $successCount of ${mods.length} mods successfully.';
+      }
+
+      if (mods.length == 1) {
+        return results.first.success
+            ? 'Backup created successfully for ${mods[0].saveName}'
+            : 'Failed to create backup: ${results.first.error ?? "Unknown error"}';
+      }
+
+      final summary =
+          'Processed $successCount of ${mods.length} mods successfully';
+
+      if (failedResults.isEmpty) {
+        return summary;
+      } else {
+        final failureDetails = failedResults
+            .map((r) => '[${r.modName}] ${r.error ?? "Unknown error"}')
+            .join('\n');
+        return '$summary\n\nFailed:\n$failureDetails';
+      }
+    } catch (e) {
+      debugPrint('downloadBackupAndDeleteAssets error: $e');
+      return 'Error: $e';
+    } finally {
+      // 4. Cleanup Phase - Always attempt to delete temp folder
+      if (tempDownloadDir != null) {
+        try {
+          if (await tempDownloadDir.exists()) {
+            await tempDownloadDir.delete(recursive: true);
+            debugPrint('Cleaned up temporary download folder');
+          }
+        } catch (e) {
+          debugPrint('Failed to delete temp download folder: $e');
+          // Don't fail the operation if cleanup fails
+        }
+      }
+
+      // Reset state
+      resetState();
+    }
+  }
+
   Future<String> _downloadSingleMod({
     required String modId,
     required String targetDirectory,
     required int currentIndex,
     required int totalCount,
+    Map<String, dynamic>? fileDetails,
   }) async {
     final baseProgress = currentIndex / totalCount;
     final segmentSize = 1.0 / totalCount;
@@ -524,27 +738,34 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     // Update progress: 25% - fetching mod info
     state = state.copyWith(progress: baseProgress + (segmentSize * 0.25));
 
-    final url = Uri.parse(getPublishedFileDetailsUrl);
+    // If fileDetails not provided, fetch from API
+    late final Map<String, dynamic> details;
+    if (fileDetails == null) {
+      final url = Uri.parse(getPublishedFileDetailsUrl);
 
-    final response = await http.post(
-      url,
-      body: {
-        'itemcount': '1',
-        'publishedfileids[0]': modId,
-      },
-    );
+      final response = await http.post(
+        url,
+        body: {
+          'itemcount': '1',
+          'publishedfileids[0]': modId,
+        },
+      );
 
-    final responseData = json.decode(response.body);
-    final fileDetails = responseData['response']['publishedfiledetails'][0];
+      final responseData = json.decode(response.body);
+      details = responseData['response']['publishedfiledetails'][0];
+    } else {
+      details = fileDetails;
+    }
 
-    final consumerAppId = fileDetails['consumer_app_id'];
+    final consumerAppId = details['consumer_app_id'];
     if (consumerAppId != 286160) {
       return 'Consumer app ID does not match. Expected: 286160, Got: $consumerAppId';
     }
 
-    final fileUrl = fileDetails['file_url'];
-    final previewUrl = fileDetails['preview_url'];
-    final timeUpdated = fileDetails['time_updated'] as int;
+    final fileUrl = details['file_url'];
+    final previewUrl = details['preview_url'];
+    final timeUpdated = details['time_updated'] as int;
+    final title = details['title'] as String?;
 
     // Update progress: 50% - downloading BSON
     state = state.copyWith(progress: baseProgress + (segmentSize * 0.5));
@@ -554,6 +775,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       modId: modId,
       targetDirectory: targetDirectory,
       timeUpdated: timeUpdated,
+      title: title,
     );
 
     if (!bsonResult.startsWith('Mod saved to:')) {
@@ -584,6 +806,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     required String modId,
     required String targetDirectory,
     required int timeUpdated,
+    String? title,
   }) async {
     try {
       if (fileUrl is! String) {
@@ -598,6 +821,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       final bsonBinary = BsonBinary.from(response.bodyBytes);
       final decodedData = BsonCodec.deserialize(bsonBinary);
       decodedData.removeWhere((key, value) => value is BsonBinary);
+
+      // Overwrite SaveName with title from Steam API if provided
+      if (title != null && title.isNotEmpty) {
+        decodedData['SaveName'] = title;
+      }
 
       final jsonEncoder = JsonEncoder.withIndent('  ', (object) {
         if (object is Int64) return object.toString();
@@ -679,5 +907,293 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     } catch (e) {
       debugPrint('Error processing image: $e');
     }
+  }
+
+  /// Creates a backup using custom asset directories (temp folders) instead of main directories
+  /// Returns true on success, false on failure
+  Future<bool> _createBackupFromCustomDirectories({
+    required Mod mod,
+    required String backupDirectory,
+    required Map<AssetTypeEnum, String> assetDirectories,
+  }) async {
+    try {
+      // 1. Create FilepathsIsolateData with temp directories
+      final filepathsData = FilepathsIsolateData(mod, assetDirectories);
+
+      // 2. Get file paths from temp directories
+      final filePaths = await Isolate.run(
+          () => _getFilePathsIsolateForDownload(filepathsData));
+      final totalAssetCount = filePaths.$2;
+
+      // 3. Prepare backup isolate data
+      final receivePort = ReceivePort();
+      final forceBackupJsonFilename =
+          ref.read(settingsProvider).forceBackupJsonFilename;
+      final backupFileName =
+          getBackupFilenameByMod(mod, forceBackupJsonFilename);
+      final targetBackupFilePath = p.join(backupDirectory, backupFileName);
+
+      final modsDir = Directory(ref.read(directoriesProvider).modsDir);
+      final savesDir = Directory(ref.read(directoriesProvider).savesDir);
+
+      final isolateData = BackupIsolateData(
+        filePaths: filePaths.$1,
+        targetBackupFilePath: targetBackupFilePath,
+        modsParentPath: modsDir.parent.path,
+        savesParentPath: savesDir.parent.path,
+        savesPath: savesDir.path,
+        sendPort: receivePort.sendPort,
+      );
+
+      // 4. Start the backup isolate
+      await Isolate.spawn(_backupIsolateForDownload, isolateData);
+
+      // 5. Listen for messages from isolate
+      await for (final message in receivePort) {
+        if (message is BackupProgressMessage) {
+          // Progress tracking (could update state if needed)
+          debugPrint('Backup progress: ${message.current}/${message.total}');
+        } else if (message is BackupCompleteMessage) {
+          receivePort.close();
+
+          if (message.success) {
+            // Add new backup to state
+            final newBackup = ExistingBackup(
+              filename: backupFileName,
+              filepath: targetBackupFilePath,
+              lastModifiedTimestamp:
+                  DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              totalAssetCount: totalAssetCount,
+            );
+            ref.read(existingBackupsProvider.notifier).addBackup(newBackup);
+            return true;
+          } else {
+            debugPrint('Backup failed: ${message.message}');
+            return false;
+          }
+        }
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint('_createBackupFromCustomDirectories error: $e');
+      return false;
+    }
+  }
+
+  /// Downloads files to a custom directory (for temporary downloads)
+  /// Similar to downloadFiles() but:
+  /// - Uses targetDirectory parameter instead of directoriesProvider
+  /// - Does NOT update existingAssetListsProvider (these are temp files)
+  /// - Downloads ALL assets (no skip logic for existing files)
+  Future<void> _downloadFilesToCustomDirectory({
+    required List<String> modAssetListUrls,
+    required AssetTypeEnum type,
+    required String targetDirectory,
+  }) async {
+    if (modAssetListUrls.isEmpty) {
+      return;
+    }
+
+    if (state.cancelledDownloads) {
+      return;
+    }
+
+    try {
+      state = state.copyWith(
+        downloadingAssets: true,
+        progress: 0.0,
+        downloadingType: type,
+      );
+
+      final int batchSize = ref.read(settingsProvider).concurrentDownloads;
+
+      for (int i = 0; i < modAssetListUrls.length; i += batchSize) {
+        if (state.cancelledDownloads) {
+          continue;
+        }
+
+        final batch = modAssetListUrls.sublist(
+          i,
+          i + batchSize > modAssetListUrls.length
+              ? modAssetListUrls.length
+              : i + batchSize,
+        );
+
+        await Future.wait(batch.map((originalUrl) async {
+          // Set filename and path
+          final fileName = getFileNameFromURL(originalUrl);
+          final tempPath = p.join(targetDirectory, '${fileName}_temp');
+
+          // Set url and cancel token
+          final url = await resolveUrlWithScheme(originalUrl);
+          final cancelToken = CancelToken();
+          _cancelTokens[url] = cancelToken;
+
+          try {
+            if (state.cancelledDownloads) {
+              _cancelTokens.remove(url);
+              return;
+            }
+
+            try {
+              await _downloadUrl(
+                url,
+                tempPath,
+                cancelToken,
+                batch.length,
+              );
+            } on DioException catch (e) {
+              // Check is Steam CDN url missing a trailing '/'
+              if (e.response?.statusCode == 404 &&
+                  url.startsWith(newSteamUserContentUrl) &&
+                  !url.endsWith('/')) {
+                await _downloadUrl(
+                  '$url/',
+                  tempPath,
+                  cancelToken,
+                  batch.length,
+                );
+              } else {
+                rethrow;
+              }
+            }
+
+            final tempFile = File(tempPath);
+            final bytes = await tempFile.readAsBytes();
+            final firstContent = String.fromCharCodes(bytes.take(100).toList());
+            bool isErrorPage = false;
+
+            // Check for HTML error pages
+            if (firstContent.contains('<html>') ||
+                firstContent.contains('<!DOCTYPE')) {
+              debugPrint("File is a HTML error page");
+              isErrorPage = true;
+            }
+
+            if (cancelToken.isCancelled || isErrorPage) {
+              if (await tempFile.exists()) {
+                await tempFile.delete();
+              }
+            } else {
+              final finalPath = p.join(targetDirectory,
+                  fileName + getExtensionByType(type, tempPath, bytes));
+              await tempFile.rename(finalPath);
+            }
+
+            // Remove the token after download
+            _cancelTokens.remove(url);
+          } catch (e) {
+            // Remove the token in case of error
+            _cancelTokens.remove(url);
+
+            try {
+              if (await File(tempPath).exists()) {
+                await File(tempPath).delete();
+              }
+            } catch (e) {
+              debugPrint('Error deleting file after download error $e');
+            }
+
+            // Handle cancellation specifically
+            if (e is DioException && e.type == DioExceptionType.cancel) {
+              debugPrint('Download cancelled for $url');
+              return; // Don't treat cancellation as an error
+            }
+
+            debugPrint('Error occurred while downloading files: $e');
+          }
+        }));
+
+        // Progress per batch
+        if (batch.length > 1) {
+          double progress = (i + batchSize) / modAssetListUrls.length;
+          state = state.copyWith(progress: progress.clamp(0.0, 1.0));
+        }
+      }
+    } catch (e) {
+      debugPrint('_downloadFilesToCustomDirectory error: $e');
+    }
+  }
+}
+
+// Helper functions for backup creation from custom directories
+(List<String>, int) _getFilePathsIsolateForDownload(FilepathsIsolateData data) {
+  final filePaths = <String>[];
+
+  for (final type in AssetTypeEnum.values) {
+    final dirPath = data.directories[type];
+    if (dirPath == null) continue;
+
+    final directory = Directory(dirPath);
+    if (!directory.existsSync()) continue;
+
+    final files = directory.listSync();
+    data.mod.getAssetsByType(type).forEach((asset) {
+      if (asset.filePath == null) return;
+
+      final newUrlBase = p.basenameWithoutExtension(asset.filePath!);
+      final oldUrlBase = newUrlBase.replaceFirst(
+        getFileNameFromURL(newSteamUserContentUrl),
+        getFileNameFromURL('https://cloud-3.steamusercontent.com/'),
+      );
+
+      final match = files.firstWhereOrNull((file) {
+        final base = p.basenameWithoutExtension(file.path);
+        return base.startsWith(newUrlBase) || base.startsWith(oldUrlBase);
+      });
+
+      if (match != null && match.path.isNotEmpty) {
+        filePaths.add(p.normalize(match.path));
+      }
+    });
+  }
+
+  final assetFilesCount = filePaths.length;
+
+  // Add JSON and image filepaths
+  filePaths.add(data.mod.jsonFilePath);
+  if (data.mod.imageFilePath != null && data.mod.imageFilePath!.isNotEmpty) {
+    filePaths.add(data.mod.imageFilePath!);
+  }
+
+  return (filePaths, assetFilesCount);
+}
+
+void _backupIsolateForDownload(BackupIsolateData data) async {
+  try {
+    final encoder = ZipFileEncoder();
+    encoder.create(data.targetBackupFilePath);
+
+    for (int i = 0; i < data.filePaths.length; i++) {
+      final filePath = data.filePaths[i];
+      final file = File(filePath);
+
+      if (!await file.exists()) {
+        continue;
+      }
+
+      String? relativePath;
+
+      if (filePath.startsWith(data.savesPath)) {
+        relativePath = p.relative(filePath, from: data.savesParentPath);
+      } else {
+        relativePath = p.relative(filePath, from: data.modsParentPath);
+      }
+
+      encoder.addFile(file, relativePath);
+
+      // Send progress message
+      data.sendPort.send(BackupProgressMessage(i + 1, data.filePaths.length));
+    }
+
+    encoder.close();
+
+    // Send completion message
+    data.sendPort
+        .send(BackupCompleteMessage(true, 'Backup created successfully'));
+  } catch (e) {
+    // Send error message
+    data.sendPort.send(BackupCompleteMessage(false, 'Backup failed: $e'));
   }
 }

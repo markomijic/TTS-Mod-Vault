@@ -690,25 +690,59 @@ void showModContextMenu(
           height: 1,
           child: Divider(height: 1),
         ),
-        PopupMenuItem(
-          value: ContextMenuActionEnum.openBackupInExplorer,
+        /* PopupMenuItem(
+          value: ContextMenuActionEnum.backupSubmenu,
           child: Row(
             spacing: 8,
             children: [
               Icon(Icons.folder_zip_outlined),
+              Text('Backup'),
+              Spacer(),
+              Icon(Icons.chevron_right, size: 20),
+            ],
+          ),
+        ), */
+/*         PopupMenuItem(
+          value: ContextMenuActionEnum.copyBackupFilename,
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.file_copy), Text('Copy Backup Filename')],
+          ),
+        ), 
+        PopupMenuItem(
+          value: ContextMenuActionEnum.deleteBackup,
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.delete), Text('Delete Backup')],
+          ),
+        ), */
+
+        PopupMenuItem(
+          value: 'importBackup',
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.unarchive), Text('Import Backup')],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'openBackupInExplorer',
+          child: Row(
+            spacing: 8,
+            children: [
+              Icon(Icons.folder_open),
               Text('Open Backup in File Explorer')
             ],
           ),
         ),
         PopupMenuItem(
-          value: ContextMenuActionEnum.copyBackupFilename,
+          value: 'copyBackupFilename',
           child: Row(
             spacing: 8,
             children: [Icon(Icons.file_copy), Text('Copy Backup Filename')],
           ),
         ),
         PopupMenuItem(
-          value: ContextMenuActionEnum.deleteBackup,
+          value: 'deleteBackup',
           child: Row(
             spacing: 8,
             children: [Icon(Icons.delete), Text('Delete Backup')],
@@ -719,6 +753,49 @@ void showModContextMenu(
   ).then((value) async {
     if (value != null) {
       switch (value) {
+        case 'importBackup':
+          await ref
+              .read(importBackupProvider.notifier)
+              .importBackupFromPath(mod.backup!.filepath);
+          break;
+
+        case 'openBackupInExplorer':
+          openInFileExplorer(mod.backup!.filepath);
+          break;
+
+        case 'copyBackupFilename':
+          if (context.mounted) {
+            copyToClipboard(
+              context,
+              p.basenameWithoutExtension(mod.backup!.filename),
+            );
+          }
+          break;
+
+        case 'deleteBackup':
+          if (context.mounted) {
+            showConfirmDialog(
+              context,
+              'Are you sure you want to delete this backup?\n\n${mod.backup!.filename}',
+              () async {
+                try {
+                  await ref
+                      .read(existingBackupsProvider.notifier)
+                      .deleteBackup(mod.backup!);
+
+                  if (context.mounted) {
+                    showSnackBar(context, 'Backup deleted successfully');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    showSnackBar(context, 'Failed to delete backup: $e');
+                  }
+                }
+              },
+            );
+          }
+          break;
+
         case ContextMenuActionEnum.openImagesViewer:
           if (context.mounted) {
             if (ref.read(actionInProgressProvider)) {
@@ -780,8 +857,108 @@ void showModContextMenu(
           }
           break;
 
-        case ContextMenuActionEnum.copyBackupFilename:
+        case ContextMenuActionEnum.backupSubmenu:
           if (context.mounted && mod.backup != null) {
+            _showBackupSubmenu(context, ref, position, mod);
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+  });
+}
+
+void _showBackupSubmenu(
+  BuildContext context,
+  WidgetRef ref,
+  Offset parentPosition,
+  Mod mod,
+) {
+  // Calculate submenu position to the right of parent menu
+  const double estimatedParentMenuWidth = 280.0;
+  const double estimatedSubmenuWidth = 250.0;
+  const double horizontalOffset = 10.0;
+
+  // Get screen size for boundary detection
+  final screenSize = MediaQuery.of(context).size;
+
+  // Calculate desired position (to the right)
+  double submenuX =
+      parentPosition.dx + estimatedParentMenuWidth + horizontalOffset;
+
+  // Check if submenu would go off-screen
+  if (submenuX + estimatedSubmenuWidth > screenSize.width) {
+    // Position to the left of parent menu instead
+    submenuX = parentPosition.dx - estimatedSubmenuWidth - horizontalOffset;
+
+    // Ensure it doesn't go off the left edge either
+    if (submenuX < 0) {
+      submenuX = 10;
+    }
+  }
+
+  final submenuPosition = Offset(submenuX, parentPosition.dy);
+
+  showMenu(
+    context: context,
+    color: Theme.of(context).scaffoldBackgroundColor,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+      side: BorderSide(color: Colors.white, width: 2),
+    ),
+    position: RelativeRect.fromLTRB(
+      submenuPosition.dx,
+      submenuPosition.dy,
+      submenuPosition.dx,
+      submenuPosition.dy,
+    ),
+    items: [
+      PopupMenuItem(
+        value: 'import',
+        child: Row(
+          spacing: 8,
+          children: [Icon(Icons.unarchive), Text('Import Backup')],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'openInExplorer',
+        child: Row(
+          spacing: 8,
+          children: [Icon(Icons.folder_open), Text('Open in File Explorer')],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'copyFilename',
+        child: Row(
+          spacing: 8,
+          children: [Icon(Icons.file_copy), Text('Copy Filename')],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'delete',
+        child: Row(
+          spacing: 8,
+          children: [Icon(Icons.delete), Text('Delete')],
+        ),
+      ),
+    ],
+  ).then((value) async {
+    if (value != null && mod.backup != null) {
+      switch (value) {
+        case 'import':
+          await ref
+              .read(importBackupProvider.notifier)
+              .importBackupFromPath(mod.backup!.filepath);
+          break;
+
+        case 'openInExplorer':
+          openInFileExplorer(mod.backup!.filepath);
+          break;
+
+        case 'copyFilename':
+          if (context.mounted) {
             copyToClipboard(
               context,
               p.basenameWithoutExtension(mod.backup!.filename),
@@ -789,8 +966,8 @@ void showModContextMenu(
           }
           break;
 
-        case ContextMenuActionEnum.deleteBackup:
-          if (context.mounted && mod.backup != null) {
+        case 'delete':
+          if (context.mounted) {
             showConfirmDialog(
               context,
               'Are you sure you want to delete this backup?\n\n${mod.backup!.filename}',

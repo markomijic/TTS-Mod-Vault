@@ -1,6 +1,9 @@
 # TTS Mod Vault
+![Downloads](https://img.shields.io/github/downloads/markomijic/TTS-Mod-Vault/total?color=red&label=Total+downloads&style=for-the-badge)
+![Latest Downloads](https://img.shields.io/github/downloads/markomijic/TTS-Mod-Vault/latest/total?color=blue&label=Latest+release+downloads&style=for-the-badge)
+![Version](https://img.shields.io/github/v/release/markomijic/TTS-Mod-Vault?label=Latest+release&style=for-the-badge)
 
-TTS Mod Vault is a cross-platform mod backup tool for your Tabletop Simulator mods, saves and saved objects on Windows, Linux, and macOS. 
+TTS Mod Vault is a cross-platform mod backup tool for your Tabletop Simulator mods, saves and saved objects on Windows, Linux, and macOS.
 
 Features:
 
@@ -19,7 +22,7 @@ Features:
 - Open Files - You can open Audio, Images and PDF files
 - Download Workshop Mod by ID - Enter the ID of TTS Mod you want to download and the tool will download both the JSON and image files
 
-Created using Flutter 3.29.3
+Created using Flutter 3.38.5
 
 If you want to build the app follow the official Flutter documentation to get started using Flutter: https://docs.flutter.dev/get-started/install
 

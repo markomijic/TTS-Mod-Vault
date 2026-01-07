@@ -28,6 +28,9 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart';
 import 'package:tts_mod_vault/src/state/storage/storage.dart';
 
+// Re-export log provider
+export 'package:tts_mod_vault/src/providers/log_provider.dart' show logProvider;
+
 enum AppPage { mods, backups }
 
 final selectedPageProvider = StateProvider<AppPage>((ref) => AppPage.mods);
@@ -36,7 +39,26 @@ final selectedModProvider = StateProvider<Mod?>((ref) => null);
 
 final multiSelectModsProvider = StateProvider<Set<String>>((ref) => {});
 
-final searchQueryProvider = StateProvider<String>((ref) => '');
+final selectedModsListProvider = Provider<List<Mod>>((ref) {
+  final multiSelectPaths = ref.watch(multiSelectModsProvider);
+  final modsState = ref.watch(modsProvider).valueOrNull;
+
+  if (modsState == null || multiSelectPaths.isEmpty) return [];
+
+  final allMods = [
+    ...modsState.mods,
+    ...modsState.saves,
+    ...modsState.savedObjects,
+  ];
+
+  return allMods
+      .where((mod) => multiSelectPaths.contains(mod.jsonFilePath))
+      .toList();
+});
+
+// Separate search queries for each page
+final modsSearchQueryProvider = StateProvider<String>((ref) => '');
+final backupsSearchQueryProvider = StateProvider<String>((ref) => '');
 
 final selectedModTypeProvider =
     StateProvider<ModTypeEnum>((ref) => ModTypeEnum.mod);
@@ -129,17 +151,29 @@ final actionInProgressProvider = Provider<bool>((ref) {
 
 final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
   final existingBackups = ref.watch(existingBackupsProvider);
+  final searchQuery = ref.watch(backupsSearchQueryProvider);
 
-  final filteredBackups = existingBackups.backups;
+  // Filter backups
+  final filteredBackups = existingBackups.backups
+      .map((bk) {
+        if (searchQuery.isNotEmpty) {
+          if (!bk.filename.toLowerCase().contains(searchQuery.toLowerCase())) {
+            return null; // Exclude if doesn't match search
+          }
+        }
+
+        return bk;
+      })
+      .nonNulls
+      .toList();
 
   filteredBackups.sort(
       (a, b) => a.filename.toLowerCase().compareTo(b.filename.toLowerCase()));
-
   return filteredBackups;
 });
 
 final filteredModsProvider = Provider<List<Mod>>((ref) {
-  final searchQuery = ref.watch(searchQueryProvider);
+  final searchQuery = ref.watch(modsSearchQueryProvider);
   final sortAndFilter = ref.watch(sortAndFilterProvider);
   final selectedBackupStatuses =
       ref.watch(sortAndFilterProvider).filteredBackupStatuses;

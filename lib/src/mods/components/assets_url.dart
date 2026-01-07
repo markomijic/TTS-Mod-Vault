@@ -95,11 +95,6 @@ class AssetsUrl extends HookConsumerWidget {
               ],
             ),
           ),
-          const PopupMenuItem(
-            padding: EdgeInsets.zero,
-            height: 1,
-            child: Divider(height: 1),
-          ),
           PopupMenuItem(
             value: ContextMenuActionEnum.copyUrl,
             child: Row(
@@ -119,11 +114,6 @@ class AssetsUrl extends HookConsumerWidget {
                 Text('Copy Filename'),
               ],
             ),
-          ),
-          const PopupMenuItem(
-            padding: EdgeInsets.zero,
-            height: 1,
-            child: Divider(height: 1),
           ),
           if (!asset.fileExists)
             PopupMenuItem(

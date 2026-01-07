@@ -16,6 +16,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         directoriesProvider,
         downloadProvider,
         loaderProvider,
+        logProvider,
         modsProvider,
         selectedModProvider,
         selectedModTypeProvider,
@@ -49,6 +50,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   // Bulk actions methods
   Future<void> downloadAllMods(List<Mod> mods) async {
+    ref.read(logProvider.notifier).addInfo('Starting bulk download for ${mods.length} mods');
+
     state = state.copyWith(
       status: BulkActionsStatusEnum.downloadAll,
       totalModNumber: mods.length,
@@ -79,6 +82,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       await modsNotifier.updateSelectedMod(mod);
     }
 
+    if (state.cancelledBulkAction) {
+      ref.read(logProvider.notifier).addWarning('Bulk download cancelled (${state.currentModNumber}/${mods.length} completed)');
+    } else {
+      ref.read(logProvider.notifier).addSuccess('Bulk download completed: ${mods.length} mods');
+    }
+
     _resetState();
     downloadNotifier.resetState();
   }
@@ -88,6 +97,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     BulkBackupBehaviorEnum backupBehavior,
     String? folder,
   ) async {
+    ref.read(logProvider.notifier).addInfo('Starting bulk backup for ${mods.length} mods');
+
     state = state.copyWith(
       status: BulkActionsStatusEnum.backupAll,
       totalModNumber: mods.length,
@@ -98,6 +109,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     final selectedBackupFolder =
         folder != null && folder.isNotEmpty ? folder : await _getBackupFolder();
     if (selectedBackupFolder == null) {
+      ref.read(logProvider.notifier).addWarning('Bulk backup cancelled - no folder selected');
       _resetState();
       return;
     }
@@ -149,6 +161,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       modsNotifier.setSelectedMod(mod);
       await backupNotifier.createBackup(mod, modBackupFolder);
       modsNotifier.updateModBackup(mod);
+    }
+
+    if (state.cancelledBulkAction) {
+      ref.read(logProvider.notifier).addWarning('Bulk backup cancelled (${state.currentModNumber}/${mods.length} completed)');
+    } else {
+      ref.read(logProvider.notifier).addSuccess('Bulk backup completed: ${state.currentModNumber} mods backed up');
     }
 
     _resetState();

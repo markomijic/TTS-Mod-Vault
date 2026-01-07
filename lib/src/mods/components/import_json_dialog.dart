@@ -9,6 +9,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:path/path.dart' as path;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart' show directoriesProvider;
+import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 class ImportJsonDialog extends HookConsumerWidget {
   final Function(
@@ -73,11 +74,12 @@ class ImportJsonDialog extends HookConsumerWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
             ),
             Row(
-              spacing: 8,
               children: [
-                const Expanded(
-                  child: Text('JSON file:'),
+                Text(
+                  'File: ${selectedJsonFile.value != null ? selectedJsonFile.value!.files.single.name : ''}',
+                  style: const TextStyle(fontSize: 16),
                 ),
+                Spacer(),
                 ElevatedButton.icon(
                   onPressed: () async {
                     try {
@@ -91,7 +93,7 @@ class ImportJsonDialog extends HookConsumerWidget {
                         selectedJsonFile.value = result;
                       }
                     } catch (e) {
-                      // Handle error silently
+                      if (context.mounted) showSnackBar(context, e.toString());
                     }
                   },
                   icon: const Icon(Icons.file_open),
@@ -99,17 +101,13 @@ class ImportJsonDialog extends HookConsumerWidget {
                 ),
               ],
             ),
-            if (selectedJsonFile.value != null)
-              Text(
-                'Selected: ${selectedJsonFile.value!.files.single.name}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            const Divider(),
+            // const Divider(),
             Row(
               spacing: 8,
               children: [
-                const Expanded(
-                  child: Text('Mod type:'),
+                Text(
+                  'Type:',
+                  style: TextStyle(fontSize: 16),
                 ),
                 DropdownButton<ModTypeEnum>(
                   value: selectedModType.value,
@@ -135,7 +133,7 @@ class ImportJsonDialog extends HookConsumerWidget {
                     return DropdownMenuItem<ModTypeEnum>(
                       value: type,
                       child: Text(
-                        type.label,
+                        type.label.toUpperCase(),
                         style: const TextStyle(color: Colors.black),
                       ),
                     );
@@ -166,7 +164,10 @@ class ImportJsonDialog extends HookConsumerWidget {
               spacing: 8,
               children: [
                 const Expanded(
-                  child: Text('Destination folder:'),
+                  child: Text(
+                    'Destination folder:',
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () async {
@@ -182,13 +183,13 @@ class ImportJsonDialog extends HookConsumerWidget {
                     }
                   },
                   icon: const Icon(Icons.folder_open),
-                  label: const Text('Select'),
+                  label: const Text('Select folder'),
                 ),
               ],
             ),
             Text(
               'Import to: ${selectedDestination.value}',
-              style: const TextStyle(fontSize: 12),
+              style: const TextStyle(fontSize: 16),
             ),
           ],
         ),

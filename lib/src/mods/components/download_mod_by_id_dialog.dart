@@ -34,7 +34,7 @@ class DownloadModByIdDialog extends HookConsumerWidget {
           children: [
             Text(
               'Download Workshop Mods',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
             ),
             TextField(
               controller: textController,

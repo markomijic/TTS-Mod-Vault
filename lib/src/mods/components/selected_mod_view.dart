@@ -9,7 +9,8 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         DownloadProgressBar,
         HelpTooltip,
         CustomTooltip,
-        BackupProgressBar;
+        BackupProgressBar,
+        MultiSelectView;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
@@ -24,6 +25,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         downloadProvider,
         modsProvider,
+        multiSelectModsProvider,
         selectedModProvider,
         selectedModTypeProvider;
 
@@ -67,7 +69,14 @@ class SelectedModView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedMod = ref.watch(selectedModProvider);
     final selectedModType = ref.watch(selectedModTypeProvider);
+    final multiSelectMods = ref.watch(multiSelectModsProvider);
 
+    // Show multi-select view when 2+ mods selected
+    if (multiSelectMods.length >= 2) {
+      return const MultiSelectView();
+    }
+
+    // Show "Select a mod" message when nothing is selected
     if (selectedMod == null) {
       return Column(
         children: [
@@ -103,6 +112,7 @@ class SelectedModView extends HookConsumerWidget {
       );
     }
 
+    // Show single mod view
     return _SelectedModViewComponent(selectedMod: selectedMod);
   }
 }

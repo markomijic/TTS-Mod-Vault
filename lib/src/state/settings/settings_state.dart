@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart' show debugPrint;
+import 'package:tts_mod_vault/src/models/url_replacement_preset.dart'
+    show UrlReplacementPreset;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
     show SortOptionEnum;
 
@@ -12,6 +15,7 @@ class SettingsState {
   final SortOptionEnum defaultSortOption;
   final bool forceBackupJsonFilename;
   final bool ignoreAudioAssets;
+  final List<UrlReplacementPreset> urlReplacementPresets;
 
   const SettingsState({
     this.useModsListView = false,
@@ -24,6 +28,7 @@ class SettingsState {
     this.defaultSortOption = SortOptionEnum.alphabeticalAsc,
     this.forceBackupJsonFilename = false,
     this.ignoreAudioAssets = true,
+    this.urlReplacementPresets = const [],
   });
 
   SettingsState copyWith({
@@ -37,6 +42,7 @@ class SettingsState {
     SortOptionEnum? defaultSortOption,
     bool? forceBackupJsonFilename,
     bool? ignoreAudioAssets,
+    List<UrlReplacementPreset>? urlReplacementPresets,
   }) {
     return SettingsState(
       useModsListView: useModsListView ?? this.useModsListView,
@@ -52,6 +58,8 @@ class SettingsState {
       forceBackupJsonFilename:
           forceBackupJsonFilename ?? this.forceBackupJsonFilename,
       ignoreAudioAssets: ignoreAudioAssets ?? this.ignoreAudioAssets,
+      urlReplacementPresets:
+          urlReplacementPresets ?? this.urlReplacementPresets,
     );
   }
 
@@ -67,6 +75,8 @@ class SettingsState {
       'defaultSortOption': defaultSortOption.label,
       'forceBackupJsonFilename': forceBackupJsonFilename,
       'ignoreAudioAssets': ignoreAudioAssets,
+      'urlReplacementPresets':
+          urlReplacementPresets.map((p) => p.toJson()).toList(),
     };
   }
 
@@ -85,6 +95,7 @@ class SettingsState {
       forceBackupJsonFilename:
           _parseBool(json['forceBackupJsonFilename'], false),
       ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], true),
+      urlReplacementPresets: _parsePresetList(json['urlReplacementPresets']),
     );
   }
 
@@ -113,5 +124,24 @@ class SettingsState {
       return int.tryParse(value) ?? defaultValue;
     }
     return defaultValue;
+  }
+
+  static List<UrlReplacementPreset> _parsePresetList(dynamic value) {
+    if (value == null) return [];
+    if (value is! List) return [];
+
+    return value
+        .map((item) {
+          try {
+            if (item is Map<String, dynamic>) {
+              return UrlReplacementPreset.fromJson(item);
+            }
+          } catch (e) {
+            debugPrint('Failed to parse preset: $e');
+          }
+          return null;
+        })
+        .whereType<UrlReplacementPreset>()
+        .toList();
   }
 }

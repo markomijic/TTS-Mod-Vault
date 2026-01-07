@@ -7,6 +7,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
+import 'package:tts_mod_vault/src/models/url_replacement_preset.dart'
+    show UrlReplacementPreset;
+import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show updateUrlsHelp, updateUrlsInstruction;
 
@@ -37,6 +40,9 @@ class BulkUpdateUrlsDialog extends HookConsumerWidget {
     final newPrefixTextFieldController = useTextEditingController();
 
     final renameFileBox = useState(true);
+
+    final settings = ref.watch(settingsProvider);
+    final presets = settings.urlReplacementPresets;
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -77,6 +83,25 @@ class BulkUpdateUrlsDialog extends HookConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 32),
+                  if (presets.isNotEmpty) ...[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: presets.map((preset) {
+                        return OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.white),
+                          ),
+                          onPressed: () {
+                            oldPrefixTextFieldController.text = preset.oldUrl;
+                            newPrefixTextFieldController.text = preset.newUrl;
+                          },
+                          child: Text(preset.label),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 24),
+                  ],
                   Text(
                     'Old prefix',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

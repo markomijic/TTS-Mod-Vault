@@ -11,7 +11,8 @@ class SharedAssetInfo {
   final int sharedWithMods;
   final int sharedWithSaves;
   final int sharedWithSavedObjects;
-  final Map<String, List<String>> sharedAssetDetails; // assetUrl -> list of mod names
+  final Map<String, List<String>>
+      sharedAssetDetails; // assetUrl -> list of mod names
 
   const SharedAssetInfo({
     this.sharedWithMods = 0,

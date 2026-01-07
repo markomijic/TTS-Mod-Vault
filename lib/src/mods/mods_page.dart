@@ -14,11 +14,12 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         SortButton,
         BulkActionsMenu,
         CustomTooltip;
+import 'package:tts_mod_vault/src/mods/components/log_panel.dart' show LogPanel;
 import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
     show FilterButton;
 
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show loadingMessageProvider, modsProvider;
+    show loadingMessageProvider, modsProvider, modsSearchQueryProvider;
 
 class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
@@ -81,7 +82,7 @@ class ModsColumn extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     ModsSelector(),
-                    Search(),
+                    Search(searchQueryProvider: modsSearchQueryProvider),
                     SortButton(),
                     FilterButton(),
                     BulkActionsMenu(),
@@ -109,6 +110,7 @@ class ModsColumn extends StatelessWidget {
             child: ModsView(),
           ),
         ),
+        LogPanel(),
         BulkActionsProgressBar(),
       ],
     );

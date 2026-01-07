@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart'
     show useEffect, useRef, useTextEditingController;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show HookConsumerWidget, WidgetRef;
+    show HookConsumerWidget, StateProvider, WidgetRef;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show actionInProgressProvider, searchQueryProvider, selectedModTypeProvider;
+    show actionInProgressProvider, selectedModTypeProvider;
 
 class Search extends HookConsumerWidget {
-  const Search({super.key});
+  final StateProvider<String> searchQueryProvider;
+
+  const Search({super.key, required this.searchQueryProvider});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

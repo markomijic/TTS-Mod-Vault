@@ -665,11 +665,6 @@ void showModContextMenu(
           ),
         ),
       ],
-      const PopupMenuItem(
-        padding: EdgeInsets.zero,
-        height: 1,
-        child: Divider(height: 1),
-      ),
       PopupMenuItem(
         value: ContextMenuActionEnum.copySaveName,
         child: Row(

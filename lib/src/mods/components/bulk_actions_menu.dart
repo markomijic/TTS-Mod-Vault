@@ -9,7 +9,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
-        searchQueryProvider,
+        modsSearchQueryProvider,
         selectedModTypeProvider,
         sortAndFilterProvider;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
@@ -33,7 +33,7 @@ class BulkActionsMenu extends HookConsumerWidget {
     final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedModType = ref.watch(selectedModTypeProvider);
     final sortAndFilterState = ref.watch(sortAndFilterProvider);
-    final searchQuery = ref.watch(searchQueryProvider);
+    final searchQuery = ref.watch(modsSearchQueryProvider);
 
     final selectedFolders = useMemoized(() {
       Set<String> selectedFolders = switch (selectedModType) {
@@ -155,7 +155,8 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
-        Divider(color: Colors.black, height: 1),
+        if (enableTtsModdersFeatures || selectedModType == ModTypeEnum.mod)
+          Divider(color: Colors.black, height: 1),
         if (enableTtsModdersFeatures) ...[
           MenuItemButton(
             style: MenuItemButton.styleFrom(
@@ -184,36 +185,36 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               );
             },
           ),
-          if (selectedModType == ModTypeEnum.mod)
-            MenuItemButton(
-              style: MenuItemButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-              ),
-              leadingIcon: Icon(Icons.update, color: Colors.black),
-              child: Text('Update all mods',
-                  style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                if (actionInProgress) return;
-
-                showConfirmDialogWithCheckbox(
-                  context,
-                  title: 'Update all mods',
-                  message:
-                      'Check for updates and download newer versions from Steam Workshop',
-                  checkboxLabel: 'Force update',
-                  checkboxInfoMessage:
-                      'Re-download all mods even if already up to date',
-                  onConfirm: (forceUpdate) {
-                    ref.read(bulkActionsProvider.notifier).updateModsAll(
-                          ref.read(filteredModsProvider),
-                          forceUpdate,
-                        );
-                  },
-                );
-              },
-            ),
         ],
+        if (selectedModType == ModTypeEnum.mod)
+          MenuItemButton(
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            leadingIcon: Icon(Icons.update, color: Colors.black),
+            child:
+                Text('Update all mods', style: TextStyle(color: Colors.black)),
+            onPressed: () {
+              if (actionInProgress) return;
+
+              showConfirmDialogWithCheckbox(
+                context,
+                title: 'Update all mods',
+                message:
+                    'Check for updates and download newer versions from Steam Workshop',
+                checkboxLabel: 'Force update',
+                checkboxInfoMessage:
+                    'Re-download all mods even if already up to date',
+                onConfirm: (forceUpdate) {
+                  ref.read(bulkActionsProvider.notifier).updateModsAll(
+                        ref.read(filteredModsProvider),
+                        forceUpdate,
+                      );
+                },
+              );
+            },
+          ),
       ],
       builder: (
         BuildContext context,

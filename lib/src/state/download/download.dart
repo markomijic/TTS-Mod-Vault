@@ -33,6 +33,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         downloadProvider,
         existingAssetListsProvider,
         existingBackupsProvider,
+        logProvider,
         modsProvider,
         selectedModProvider,
         settingsProvider;
@@ -85,6 +86,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       return;
     }
 
+    ref.read(logProvider.notifier).addInfo('Starting download for: ${mod.saveName}');
+
     await downloadFiles(
       modAssetListUrls: mod.assetLists!.assetBundles
           .where((e) => !e.fileExists)
@@ -124,6 +127,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           .toList(),
       type: AssetTypeEnum.pdf,
     );
+
+    ref.read(logProvider.notifier).addSuccess('Download completed: ${mod.saveName}');
 
     resetState();
   }
@@ -454,17 +459,25 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       final skippedCount = mods.length - modsToUpdate.length;
 
       if (successCount == 1 && modsToUpdate.length == 1 && mods.length == 1) {
+        ref.read(logProvider.notifier).addSuccess('Updated ${mods[0].saveName}');
         return "Updated ${mods[0].saveName}";
       }
 
       final summary =
           'Updated $successCount of ${modsToUpdate.length} mods${skippedCount > 0 ? ' ($skippedCount already up to date)' : ''}';
 
+      if (failCount > 0) {
+        ref.read(logProvider.notifier).addWarning('$summary ($failCount failed)');
+      } else {
+        ref.read(logProvider.notifier).addSuccess(summary);
+      }
+
       return failCount > 0
           ? '$summary\n\nFailed:\n${results.join('\n')}'
           : summary;
     } catch (e) {
       state = state.copyWith(downloadingMods: false, progress: 0.0);
+      ref.read(logProvider.notifier).addError('Download mod updates error: $e');
       return 'Error: $e';
     }
   }
@@ -519,16 +532,28 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       state = state.copyWith(downloadingMods: false, progress: 0.0);
 
       if (modIds.length == 1) {
-        return results.isEmpty ? 'Mod downloaded successfully' : results.first;
+        final message = results.isEmpty ? 'Mod downloaded successfully' : results.first;
+        if (results.isEmpty) {
+          ref.read(logProvider.notifier).addSuccess(message);
+        } else {
+          ref.read(logProvider.notifier).addError(message);
+        }
+        return message;
       } else {
         final summary =
             'Downloaded $successCount of ${modIds.length} mods successfully';
+        if (failCount > 0) {
+          ref.read(logProvider.notifier).addWarning('$summary ($failCount failed)');
+        } else {
+          ref.read(logProvider.notifier).addSuccess(summary);
+        }
         return failCount > 0
             ? '$summary\n\nFailed:\n${results.join('\n')}'
             : summary;
       }
     } catch (e) {
       state = state.copyWith(downloadingMods: false, progress: 0.0);
+      ref.read(logProvider.notifier).addError('Download mods by ID error: $e');
       return 'Error: $e';
     }
   }
@@ -687,24 +712,33 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
 
       if (mods.length == 1) {
-        return results.first.success
+        final message = results.first.success
             ? 'Backup created successfully for ${mods[0].saveName}'
             : 'Failed to create backup: ${results.first.error ?? "Unknown error"}';
+        if (results.first.success) {
+          ref.read(logProvider.notifier).addSuccess(message);
+        } else {
+          ref.read(logProvider.notifier).addError(message);
+        }
+        return message;
       }
 
       final summary =
           'Processed $successCount of ${mods.length} mods successfully';
 
       if (failedResults.isEmpty) {
+        ref.read(logProvider.notifier).addSuccess(summary);
         return summary;
       } else {
         final failureDetails = failedResults
             .map((r) => '[${r.modName}] ${r.error ?? "Unknown error"}')
             .join('\n');
+        ref.read(logProvider.notifier).addWarning('$summary (${failedResults.length} failed)');
         return '$summary\n\nFailed:\n$failureDetails';
       }
     } catch (e) {
       debugPrint('downloadBackupAndDeleteAssets error: $e');
+      ref.read(logProvider.notifier).addError('Download backup error: $e');
       return 'Error: $e';
     } finally {
       // 4. Cleanup Phase - Always attempt to delete temp folder

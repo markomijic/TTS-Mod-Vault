@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show FilteringTextInputFormatter, LengthLimitingTextInputFormatter;
 import 'package:flutter_hooks/flutter_hooks.dart'
-    show useFocusNode, useState, useTextEditingController;
+    show HookWidget, useFocusNode, useState, useTextEditingController;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:path/path.dart' as path;
@@ -21,6 +21,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider,
         selectedModTypeProvider,
         settingsProvider;
+import 'package:tts_mod_vault/src/models/url_replacement_preset.dart'
+    show UrlReplacementPreset;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
     show SettingsState;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
@@ -28,18 +30,24 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.da
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 enum SettingsSection {
-  uiNetwork,
+  interface,
+  network,
   features,
+  urlPresets,
   folders,
 }
 
 extension SettingsSectionX on SettingsSection {
   String get label {
     switch (this) {
-      case SettingsSection.uiNetwork:
-        return 'Interface & Network';
+      case SettingsSection.interface:
+        return 'Interface';
+      case SettingsSection.network:
+        return 'Network';
       case SettingsSection.features:
         return 'Features';
+      case SettingsSection.urlPresets:
+        return 'URL Presets';
       case SettingsSection.folders:
         return 'Folders';
     }
@@ -47,10 +55,14 @@ extension SettingsSectionX on SettingsSection {
 
   IconData get icon {
     switch (this) {
-      case SettingsSection.uiNetwork:
+      case SettingsSection.interface:
         return Icons.display_settings;
+      case SettingsSection.network:
+        return Icons.cloud_outlined;
       case SettingsSection.features:
         return Icons.extension_outlined;
+      case SettingsSection.urlPresets:
+        return Icons.link_outlined;
       case SettingsSection.folders:
         return Icons.folder_outlined;
     }
@@ -66,7 +78,7 @@ class SettingsDialog extends HookConsumerWidget {
     final settings = ref.watch(settingsProvider);
 
     final selectedSection =
-        useState<SettingsSection>(SettingsSection.uiNetwork);
+        useState<SettingsSection>(SettingsSection.interface);
 
     // UI
     final useModsListViewBox = useState(settings.useModsListView);
@@ -87,6 +99,9 @@ class SettingsDialog extends HookConsumerWidget {
     final showSavedObjects = useState(settings.showSavedObjects);
     final showBackupState = useState(settings.showBackupState);
     final ignoreAudioAssets = useState(settings.ignoreAudioAssets);
+    final urlPresets = useState<List<UrlReplacementPreset>>(
+      List.from(settings.urlReplacementPresets),
+    );
 
     // Folders
     final modsDir = useState(ref.read(directoriesProvider).modsDir);
@@ -108,6 +123,12 @@ class SettingsDialog extends HookConsumerWidget {
         defaultSortOption: defaultSortOption.value,
         forceBackupJsonFilename: forceBackupJsonFilename.value,
         ignoreAudioAssets: ignoreAudioAssets.value,
+        urlReplacementPresets: urlPresets.value
+            .where((p) =>
+                p.label.trim().isNotEmpty ||
+                p.oldUrl.trim().isNotEmpty ||
+                p.newUrl.trim().isNotEmpty)
+            .toList(),
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -180,10 +201,12 @@ class SettingsDialog extends HookConsumerWidget {
                           child: IndexedStack(
                             index: selectedSection.value.index,
                             children: [
-                              SettingsUINetworkColumn(
+                              SettingsInterfaceColumn(
                                 useModsListViewBox: useModsListViewBox,
                                 showTitleOnCardsBox: showTitleOnCardsBox,
                                 defaultSortOption: defaultSortOption,
+                              ),
+                              SettingsNetworkColumn(
                                 textFieldController: textFieldController,
                                 textFieldFocusNode: textFieldFocusNode,
                                 numberValue: numberValue,
@@ -198,6 +221,9 @@ class SettingsDialog extends HookConsumerWidget {
                                 forceBackupJsonFilename:
                                     forceBackupJsonFilename,
                                 ignoreAudioAssets: ignoreAudioAssets,
+                              ),
+                              SettingsURLPresetsColumn(
+                                urlPresets: urlPresets,
                               ),
                               SettingsFoldersColumn(
                                 modsDir: modsDir,
@@ -643,30 +669,113 @@ Update URLs - available next to the Download and Backup buttons, and in Bulk Act
   }
 }
 
-class SettingsUINetworkColumn extends StatelessWidget {
-  const SettingsUINetworkColumn({
+// New URL Presets Column
+class SettingsURLPresetsColumn extends StatelessWidget {
+  const SettingsURLPresetsColumn({
+    super.key,
+    required this.urlPresets,
+  });
+
+  final ValueNotifier<List<UrlReplacementPreset>> urlPresets;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...urlPresets.value.asMap().entries.map((entry) {
+            final index = entry.key;
+            final preset = entry.value;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      preset.label.isEmpty ? '(Unnamed preset)' : preset.label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontStyle:
+                            preset.label.isEmpty ? FontStyle.italic : null,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () async {
+                      final result = await showDialog<UrlReplacementPreset>(
+                        context: context,
+                        builder: (context) =>
+                            _PresetEditorDialog(preset: preset),
+                      );
+                      if (result != null) {
+                        final newList =
+                            List<UrlReplacementPreset>.from(urlPresets.value);
+                        newList[index] = result;
+                        urlPresets.value = newList;
+                      }
+                    },
+                    tooltip: 'Edit preset',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    onPressed: () {
+                      final newList =
+                          List<UrlReplacementPreset>.from(urlPresets.value);
+                      newList.removeAt(index);
+                      urlPresets.value = newList;
+                    },
+                    tooltip: 'Delete preset',
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final result = await showDialog<UrlReplacementPreset>(
+                context: context,
+                builder: (context) => const _PresetEditorDialog(),
+              );
+              if (result != null) {
+                urlPresets.value = [...urlPresets.value, result];
+              }
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Add Preset'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingsInterfaceColumn extends StatelessWidget {
+  const SettingsInterfaceColumn({
     super.key,
     required this.useModsListViewBox,
     required this.showTitleOnCardsBox,
     required this.defaultSortOption,
-    required this.textFieldController,
-    required this.textFieldFocusNode,
-    required this.numberValue,
   });
 
   final ValueNotifier<bool> useModsListViewBox;
   final ValueNotifier<bool> showTitleOnCardsBox;
   final ValueNotifier<SortOptionEnum> defaultSortOption;
-  final TextEditingController textFieldController;
-  final FocusNode textFieldFocusNode;
-  final ValueNotifier<int> numberValue;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: "Interface"),
         CheckboxListTile(
           title: const Text('Display mods as a list instead of grid'),
           value: useModsListViewBox.value,
@@ -732,8 +841,28 @@ class SettingsUINetworkColumn extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 24),
-        SectionHeader(title: "Network"),
+      ],
+    );
+  }
+}
+
+class SettingsNetworkColumn extends StatelessWidget {
+  const SettingsNetworkColumn({
+    super.key,
+    required this.textFieldController,
+    required this.textFieldFocusNode,
+    required this.numberValue,
+  });
+
+  final TextEditingController textFieldController;
+  final FocusNode textFieldFocusNode;
+  final ValueNotifier<int> numberValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Row(
           children: [
             const Expanded(
@@ -785,6 +914,112 @@ class SettingsUINetworkColumn extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PresetEditorDialog extends HookWidget {
+  final UrlReplacementPreset? preset;
+
+  const _PresetEditorDialog({this.preset});
+
+  @override
+  Widget build(BuildContext context) {
+    final labelController = useTextEditingController(text: preset?.label ?? '');
+    final oldUrlController =
+        useTextEditingController(text: preset?.oldUrl ?? '');
+    final newUrlController =
+        useTextEditingController(text: preset?.newUrl ?? '');
+
+    return AlertDialog(
+      title: Text(preset == null ? 'Add Preset' : 'Edit Preset'),
+      content: SizedBox(
+        width: 500,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Preset Label',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            TextField(
+              controller: labelController,
+              autofocus: true,
+              style: const TextStyle(fontSize: 14, color: Colors.black),
+              decoration: const InputDecoration(
+                fillColor: Colors.white,
+                border: OutlineInputBorder(),
+                hintText: 'e.g., Imgur to MyHost',
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Old URL Prefix',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            TextField(
+              controller: oldUrlController,
+              style: const TextStyle(fontSize: 14, color: Colors.black),
+              decoration: const InputDecoration(
+                fillColor: Colors.white,
+                border: OutlineInputBorder(),
+                hintText: 'e.g., https://i.imgur.com',
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'New URL Prefix',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            TextField(
+              controller: newUrlController,
+              style: const TextStyle(fontSize: 14, color: Colors.black),
+              decoration: const InputDecoration(
+                fillColor: Colors.white,
+                border: OutlineInputBorder(),
+                hintText: 'e.g., https://myhost.com/images',
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final label = labelController.text.trim();
+            final oldUrl = oldUrlController.text.trim();
+            final newUrl = newUrlController.text.trim();
+
+            if (label.isEmpty || oldUrl.isEmpty || newUrl.isEmpty) {
+              return;
+            }
+
+            Navigator.pop(
+              context,
+              UrlReplacementPreset(
+                label: label,
+                oldUrl: oldUrl,
+                newUrl: newUrl,
+              ),
+            );
+          },
+          child: const Text('Save'),
         ),
       ],
     );

@@ -29,13 +29,14 @@ class ImportJsonDialog extends HookConsumerWidget {
     final savesDir = ref.watch(directoriesProvider).savesDir;
     final savedObjectsDir = ref.watch(directoriesProvider).savedObjectsDir;
 
-    final selectedJsonFile = useState<FilePickerResult?>(null);
-    final selectedDestination = useState(workshopDir);
-    final selectedModType = useState(ModTypeEnum.mod);
+    final jsonFile = useState<FilePickerResult?>(null);
+    final folderPath = useState(workshopDir);
+    final modType = useState(ModTypeEnum.mod);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
       child: AlertDialog(
+        contentPadding: EdgeInsets.all(16),
         actions: [
           Row(
             spacing: 8,
@@ -46,16 +47,14 @@ class ImportJsonDialog extends HookConsumerWidget {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: selectedJsonFile.value == null ||
-                        selectedDestination.value.isEmpty
+                onPressed: jsonFile.value == null || folderPath.value.isEmpty
                     ? null
                     : () {
-                        final filePath =
-                            selectedJsonFile.value!.files.single.path!;
+                        final filePath = jsonFile.value!.files.single.path!;
                         onConfirm.call(
                           filePath,
-                          selectedDestination.value,
-                          selectedModType.value,
+                          folderPath.value,
+                          modType.value,
                         );
                         Navigator.pop(context);
                       },
@@ -64,134 +63,127 @@ class ImportJsonDialog extends HookConsumerWidget {
             ],
           ),
         ],
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 16,
-          children: [
-            const Text(
-              'Import JSON',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-            ),
-            Row(
-              children: [
-                Text(
-                  'File: ${selectedJsonFile.value != null ? selectedJsonFile.value!.files.single.name : ''}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                Spacer(),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    try {
-                      final result = await FilePicker.platform.pickFiles(
-                        type: FileType.custom,
-                        lockParentWindow: true,
-                        allowedExtensions: ['json'],
-                        allowMultiple: false,
-                      );
-                      if (result != null && result.files.isNotEmpty) {
-                        selectedJsonFile.value = result;
-                      }
-                    } catch (e) {
-                      if (context.mounted) showSnackBar(context, e.toString());
-                    }
-                  },
-                  icon: const Icon(Icons.file_open),
-                  label: const Text('Select JSON'),
-                ),
-              ],
-            ),
-            // const Divider(),
-            Row(
-              spacing: 8,
-              children: [
-                Text(
-                  'Type:',
-                  style: TextStyle(fontSize: 16),
-                ),
-                DropdownButton<ModTypeEnum>(
-                  value: selectedModType.value,
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(color: Colors.white),
-                  underline: Container(
-                    height: 2,
-                    color: Colors.white,
+        content: SizedBox(
+          width: 700,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 8,
+            children: [
+              const Text(
+                'Import JSON',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+              ),
+              Row(
+                children: [
+                  Text(
+                    'File: ${jsonFile.value != null ? jsonFile.value!.files.single.name : ''}',
+                    style: const TextStyle(fontSize: 16),
                   ),
-                  focusColor: Colors.transparent,
-                  selectedItemBuilder: (BuildContext context) {
-                    return ModTypeEnum.values.map<Widget>((item) {
-                      return Container(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          item.label.toUpperCase(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      );
-                    }).toList();
-                  },
-                  items: ModTypeEnum.values.map((type) {
-                    return DropdownMenuItem<ModTypeEnum>(
-                      value: type,
-                      child: Text(
-                        type.label.toUpperCase(),
-                        style: const TextStyle(color: Colors.black),
-                      ),
+                  Spacer(),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      lockParentWindow: true,
+                      allowedExtensions: ['json'],
+                      allowMultiple: false,
                     );
-                  }).toList(),
-                  onChanged: (ModTypeEnum? newValue) {
-                    if (newValue != null) {
-                      selectedModType.value = newValue;
-                      // Update destination based on type
-                      switch (newValue) {
-                        case ModTypeEnum.mod:
-                          selectedDestination.value =
-                              path.normalize(workshopDir);
-                          break;
-                        case ModTypeEnum.save:
-                          selectedDestination.value = path.normalize(savesDir);
-                          break;
-                        case ModTypeEnum.savedObject:
-                          selectedDestination.value =
-                              path.normalize(savedObjectsDir);
-                          break;
-                      }
+                    if (result != null && result.files.isNotEmpty) {
+                      jsonFile.value = result;
                     }
-                  },
-                ),
-              ],
-            ),
-            Row(
-              spacing: 8,
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Destination folder:',
+                  } catch (e) {
+                    if (context.mounted) showSnackBar(context, e.toString());
+                  }
+                },
+                icon: const Icon(Icons.file_open),
+                label: const Text('Select JSON'),
+              ),
+              // const Divider(),
+              Row(
+                spacing: 8,
+                children: [
+                  Text(
+                    'Type:',
                     style: TextStyle(fontSize: 16),
                   ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    String? folder = await FilePicker.platform.getDirectoryPath(
+                  DropdownButton<ModTypeEnum>(
+                    value: modType.value,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.white),
+                    underline: Container(
+                      height: 2,
+                      color: Colors.white,
+                    ),
+                    focusColor: Colors.transparent,
+                    selectedItemBuilder: (BuildContext context) {
+                      return ModTypeEnum.values.map<Widget>((item) {
+                        return Container(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            item.label.toUpperCase(),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      }).toList();
+                    },
+                    items: ModTypeEnum.values.map((type) {
+                      return DropdownMenuItem<ModTypeEnum>(
+                        value: type,
+                        child: Text(
+                          type.label.toUpperCase(),
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (ModTypeEnum? newValue) {
+                      if (newValue != null) {
+                        modType.value = newValue;
+
+                        switch (newValue) {
+                          case ModTypeEnum.mod:
+                            folderPath.value = workshopDir;
+                            break;
+                          case ModTypeEnum.save:
+                            folderPath.value = savesDir;
+                            break;
+                          case ModTypeEnum.savedObject:
+                            folderPath.value = savedObjectsDir;
+                            break;
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+              Text(
+                'Import to: ${folderPath.value}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final initialFolder = folderPath.value;
+                    final normalizedPath = path.normalize(initialFolder);
+                    final folder = await FilePicker.platform.getDirectoryPath(
                       lockParentWindow: true,
-                      dialogTitle: 'Select destination folder',
-                      initialDirectory: selectedDestination.value.isEmpty
-                          ? null
-                          : selectedDestination.value,
+                      initialDirectory: normalizedPath,
                     );
                     if (folder != null) {
-                      selectedDestination.value = folder;
+                      folderPath.value = folder;
                     }
-                  },
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('Select folder'),
-                ),
-              ],
-            ),
-            Text(
-              'Import to: ${selectedDestination.value}',
-              style: const TextStyle(fontSize: 16),
-            ),
-          ],
+                  } catch (e) {
+                    if (context.mounted) showSnackBar(context, e.toString());
+                  }
+                },
+                icon: const Icon(Icons.folder_open),
+                label: const Text('Select folder'),
+              ),
+            ],
+          ),
         ),
       ),
     );

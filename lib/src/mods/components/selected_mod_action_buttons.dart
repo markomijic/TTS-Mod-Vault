@@ -280,11 +280,7 @@ class SelectedModActionButtons extends HookConsumerWidget {
                         controller.open();
                       }
                     },
-              icon: Icon(
-                Icons.more_vert,
-                size: 16,
-              ),
-              tooltip: 'More actions',
+              icon: Icon(Icons.more_vert, size: 16),
             );
           },
         ),

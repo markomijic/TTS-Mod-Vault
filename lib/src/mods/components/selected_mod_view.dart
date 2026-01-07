@@ -81,6 +81,8 @@ class SelectedModView extends HookConsumerWidget {
       return Column(
         children: [
           Container(
+            alignment: Alignment.topLeft,
+            padding: EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -120,9 +122,7 @@ class SelectedModView extends HookConsumerWidget {
 class _SelectedModViewComponent extends HookConsumerWidget {
   final Mod selectedMod;
 
-  const _SelectedModViewComponent({
-    required this.selectedMod,
-  });
+  const _SelectedModViewComponent({required this.selectedMod});
 
   List<_ListItem> _buildListItems() {
     final List<_ListItem> items = [];

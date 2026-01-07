@@ -1,6 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show AsyncValueX, HookConsumerWidget, WidgetRef;
+    show AsyncValueX, ConsumerWidget, HookConsumerWidget, WidgetRef;
 
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
@@ -19,7 +21,11 @@ import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
     show FilterButton;
 
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show loadingMessageProvider, modsProvider, modsSearchQueryProvider;
+    show
+        loadingMessageProvider,
+        modsProvider,
+        modsSearchQueryProvider,
+        selectedModTypeProvider;
 
 class ModsPage extends HookConsumerWidget {
   const ModsPage({super.key});
@@ -60,11 +66,13 @@ class ModsPage extends HookConsumerWidget {
   }
 }
 
-class ModsColumn extends StatelessWidget {
+class ModsColumn extends ConsumerWidget {
   const ModsColumn({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final type = ref.watch(selectedModTypeProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -73,28 +81,22 @@ class ModsColumn extends StatelessWidget {
             top: 8,
             right: 4,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ModsSelector(),
-                    Search(searchQueryProvider: modsSearchQueryProvider),
-                    SortButton(),
-                    FilterButton(),
-                    BulkActionsMenu(),
-                  ],
-                ),
-              ),
+              ModsSelector(),
+              Search(searchQueryProvider: modsSearchQueryProvider),
+              SortButton(),
+              FilterButton(),
+              BulkActionsMenu(),
               CustomTooltip(
-                message:
-                    '• Right-click a mod to see options\n• Bulk actions are affected by sort, filters and search',
+                message: """• Right-click a ${type.label} to see options
+• Left-click while holding ${Platform.isMacOS ? 'command' : 'control button'} to select multiple ${type.label}s
+• Bulk actions are affected by sort, filters and search""",
                 child: Icon(
                   Icons.info_outline,
-                  size: 26,
+                  size: 32,
                 ),
               )
             ],

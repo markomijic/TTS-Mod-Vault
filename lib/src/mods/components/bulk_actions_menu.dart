@@ -19,11 +19,7 @@ import 'package:tts_mod_vault/src/utils.dart'
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        actionInProgressProvider,
-        bulkActionsProvider,
-        filteredModsProvider,
-        settingsProvider;
+    show actionInProgressProvider, bulkActionsProvider, filteredModsProvider;
 
 class BulkActionsMenu extends HookConsumerWidget {
   const BulkActionsMenu({super.key});
@@ -76,8 +72,6 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedModType = ref.watch(selectedModTypeProvider);
-    final enableTtsModdersFeatures =
-        ref.watch(settingsProvider).enableTtsModdersFeatures;
 
     return MenuAnchor(
       style: MenuStyle(
@@ -155,37 +149,31 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
-        if (enableTtsModdersFeatures || selectedModType == ModTypeEnum.mod)
-          Divider(color: Colors.black, height: 1),
-        if (enableTtsModdersFeatures) ...[
-          MenuItemButton(
-            style: MenuItemButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            ),
-            leadingIcon: Icon(Icons.edit, color: Colors.black),
-            child:
-                Text('Update all URLs', style: TextStyle(color: Colors.black)),
-            onPressed: () {
-              if (actionInProgress) return;
-
-              showBulkUpdateUrlsDialog(
-                context,
-                ref,
-                (oldUrlPrefix, newUrlPrefix, renameFile) {
-                  ref
-                      .read(bulkActionsProvider.notifier)
-                      .updateUrlPrefixesAllMods(
-                        ref.read(filteredModsProvider),
-                        oldUrlPrefix.split('|'),
-                        newUrlPrefix,
-                        renameFile,
-                      );
-                },
-              );
-            },
+        Divider(color: Colors.black, height: 1),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
           ),
-        ],
+          leadingIcon: Icon(Icons.edit, color: Colors.black),
+          child: Text('Update all URLs', style: TextStyle(color: Colors.black)),
+          onPressed: () {
+            if (actionInProgress) return;
+
+            showBulkUpdateUrlsDialog(
+              context,
+              ref,
+              (oldUrlPrefix, newUrlPrefix, renameFile) {
+                ref.read(bulkActionsProvider.notifier).updateUrlPrefixesAllMods(
+                      ref.read(filteredModsProvider),
+                      oldUrlPrefix.split('|'),
+                      newUrlPrefix,
+                      renameFile,
+                    );
+              },
+            );
+          },
+        ),
         if (selectedModType == ModTypeEnum.mod)
           MenuItemButton(
             style: MenuItemButton.styleFrom(

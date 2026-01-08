@@ -19,7 +19,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         selectedModProvider,
         settingsProvider,
-        multiSelectModsProvider;
+        multiModsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showModContextMenu, formatTimestamp;
 
@@ -32,7 +32,7 @@ class ModsListItem extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showBackupState = ref.watch(settingsProvider).showBackupState;
     final selectedMod = ref.watch(selectedModProvider);
-    final multiSelectMods = ref.watch(multiSelectModsProvider);
+    final multiSelectMods = ref.watch(multiModsProvider);
 
     final imageExists = useMemoized(() {
       return mod.imageFilePath != null
@@ -45,8 +45,7 @@ class ModsListItem extends HookConsumerWidget {
     }, [mod]);
 
     final isSelected = useMemoized(() {
-      return selectedMod?.jsonFilePath == mod.jsonFilePath ||
-          multiSelectMods.contains(mod.jsonFilePath);
+      return multiSelectMods.contains(mod);
     }, [selectedMod, multiSelectMods, mod]);
 
     final filesMessage = useMemoized(() {
@@ -78,23 +77,22 @@ class ModsListItem extends HookConsumerWidget {
 
           if (event.buttons == kSecondaryButton) {
             // Right-click
-
             ref.read(modsProvider.notifier).setSelectedMod(mod);
             showModContextMenu(context, ref, event.position, mod);
           } else if (event.buttons == kPrimaryButton) {
             // Left-click
             if (isCtrlPressed) {
               // Ctrl+Click: Toggle multi-selection
-              final currentSelected = ref.read(multiSelectModsProvider);
-              final newSelected = Set<String>.from(currentSelected);
+              final currentSelected = ref.read(multiModsProvider);
+              final newSelected = Set<Mod>.from(currentSelected);
 
-              if (newSelected.contains(mod.jsonFilePath)) {
-                newSelected.remove(mod.jsonFilePath);
+              if (newSelected.contains(mod)) {
+                newSelected.remove(mod);
               } else {
-                newSelected.add(mod.jsonFilePath);
+                newSelected.add(mod);
               }
 
-              ref.read(multiSelectModsProvider.notifier).state = newSelected;
+              ref.read(multiModsProvider.notifier).state = newSelected;
             } else {
               // Normal left-click: Single selection
               ref.read(modsProvider.notifier).setSelectedMod(mod);

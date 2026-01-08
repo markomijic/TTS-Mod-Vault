@@ -25,7 +25,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         downloadProvider,
         modsProvider,
-        multiSelectModsProvider,
+        multiModsProvider,
         selectedModProvider,
         selectedModTypeProvider,
         settingsProvider,
@@ -71,7 +71,7 @@ class SelectedModView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedMod = ref.watch(selectedModProvider);
     final selectedModType = ref.watch(selectedModTypeProvider);
-    final multiSelectMods = ref.watch(multiSelectModsProvider);
+    final multiSelectMods = ref.watch(multiModsProvider);
 
     // Show multi-select view when 2+ mods selected
     if (multiSelectMods.length >= 2) {
@@ -336,17 +336,13 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             },
           ),
         ),
-        SizedBox(
-          height: 80,
-          child: downloadState.cancelledDownloads ||
-                  downloadState.downloadingAssets
-              ? DownloadProgressBar()
-              : backupStatus != BackupStatusEnum.idle
-                  ? BackupProgressBar()
-                  : listItems.isNotEmpty
-                      ? SelectedModActionButtons(selectedMod: selectedMod)
-                      : null,
-        ),
+        downloadState.cancelledDownloads || downloadState.downloadingAssets
+            ? DownloadProgressBar()
+            : backupStatus != BackupStatusEnum.idle
+                ? BackupProgressBar()
+                : listItems.isNotEmpty
+                    ? SelectedModActionButtons(selectedMod: selectedMod)
+                    : const SizedBox.shrink()
       ],
     );
   }
@@ -404,6 +400,7 @@ class _AudioAssetsButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ignoreAudioAssets = ref.watch(settingsProvider).ignoreAudioAssets;
+    final actionInProgress = ref.watch(actionInProgressProvider);
 
     return CustomTooltip(
       message: switch (selectedMod.audioVisibility) {
@@ -427,13 +424,15 @@ class _AudioAssetsButton extends ConsumerWidget {
           };
 
           return IconButton(
-            onPressed: () {
-              if (controller.isOpen) {
-                controller.close();
-              } else {
-                controller.open();
-              }
-            },
+            onPressed: actionInProgress
+                ? null
+                : () {
+                    if (controller.isOpen) {
+                      controller.close();
+                    } else {
+                      controller.open();
+                    }
+                  },
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(
                 hasOverride ? Colors.blue : Colors.white,

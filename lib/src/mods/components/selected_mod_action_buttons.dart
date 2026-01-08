@@ -47,83 +47,100 @@ class SelectedModActionButtons extends HookConsumerWidget {
     final backupNotifier = ref.watch(backupProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
-    final enableTtsModdersFeatures =
-        ref.watch(settingsProvider).enableTtsModdersFeatures;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      spacing: 8,
-      children: [
-        ElevatedButton(
-          onPressed: hasMissingFiles
-              ? () async {
-                  if (actionInProgress) {
-                    return;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ElevatedButton.icon(
+            icon: Icon(Icons.download),
+            onPressed: hasMissingFiles
+                ? () async {
+                    if (actionInProgress) {
+                      return;
+                    }
+
+                    await downloadNotifier.downloadAllFiles(selectedMod);
+                    await modsNotifier.updateSelectedMod(selectedMod);
                   }
+                : null,
+            label: const Text('Download'),
+          ),
+          ElevatedButton.icon(
+            icon: Icon(Icons.archive),
+            onPressed: () async {
+              if (actionInProgress) {
+                return;
+              }
 
-                  await downloadNotifier.downloadAllFiles(selectedMod);
+              final showWarningMessage =
+                  ref.read(settingsProvider).showBackupState &&
+                      ref.read(directoriesProvider).backupsDir.isEmpty;
+
+              final setBackupFolderMessage =
+                  "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable backup state feature in Settings to hide this warning";
+
+              if (selectedMod.backupStatus ==
+                  ExistingBackupStatusEnum.noBackup) {
+                if (showWarningMessage) {
+                  showConfirmDialog(
+                    context,
+                    "$setBackupFolderMessage\n\nContinue with creating a backup?",
+                    () async {
+                      await backupNotifier.createBackup(selectedMod);
+                      await modsNotifier.updateSelectedMod(selectedMod);
+                    },
+                    () {},
+                  );
+                } else {
+                  await backupNotifier.createBackup(selectedMod);
                   await modsNotifier.updateSelectedMod(selectedMod);
                 }
-              : null,
-          child: const Text('Download'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            if (actionInProgress) {
-              return;
-            }
-
-            final showWarningMessage =
-                ref.read(settingsProvider).showBackupState &&
-                    ref.read(directoriesProvider).backupsDir.isEmpty;
-
-            final setBackupFolderMessage =
-                "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable backup state feature in Settings to hide this warning";
-
-            if (selectedMod.backupStatus == ExistingBackupStatusEnum.noBackup) {
-              if (showWarningMessage) {
-                showConfirmDialog(
-                  context,
-                  "$setBackupFolderMessage\n\nContinue with creating a backup?",
-                  () async {
-                    await backupNotifier.createBackup(selectedMod);
-                    await modsNotifier.updateSelectedMod(selectedMod);
-                  },
-                  () {},
-                );
-              } else {
-                await backupNotifier.createBackup(selectedMod);
-                await modsNotifier.updateSelectedMod(selectedMod);
+                return;
               }
-              return;
-            }
 
-            String backupMessage =
-                'Backup already exists at:\n${selectedMod.backup!.filepath}';
-            String message = showWarningMessage
-                ? '$setBackupFolderMessage\n\n$backupMessage'
-                : backupMessage;
+              String backupMessage =
+                  'Backup already exists at:\n${selectedMod.backup!.filepath}';
+              String message = showWarningMessage
+                  ? '$setBackupFolderMessage\n\n$backupMessage'
+                  : backupMessage;
 
-            showBackupConfirmDialog(
-              context,
-              message,
-              () async {
-                final backupFolder = p.dirname(selectedMod.backup!.filepath);
+              showBackupConfirmDialog(
+                context,
+                message,
+                () async {
+                  final backupFolder = p.dirname(selectedMod.backup!.filepath);
 
-                await backupNotifier.createBackup(selectedMod, backupFolder);
-                await modsNotifier.updateSelectedMod(selectedMod);
-              },
-              () async {
-                await backupNotifier.createBackup(selectedMod);
-                await modsNotifier.updateSelectedMod(selectedMod);
-              },
-            );
-          },
-          child: const Text('Backup'),
-        ),
-        if (enableTtsModdersFeatures)
-          ElevatedButton(
+                  await backupNotifier.createBackup(selectedMod, backupFolder);
+                  await modsNotifier.updateSelectedMod(selectedMod);
+                },
+                () async {
+                  await backupNotifier.createBackup(selectedMod);
+                  await modsNotifier.updateSelectedMod(selectedMod);
+                },
+              );
+            },
+            label: const Text('Backup'),
+          ),
+          /* ElevatedButton.icon(
+            icon: Row(
+              children: [
+                const Icon(Icons.download),
+                const Icon(Icons.archive),
+              ], 
+            ),
+            label: const Text('Download & Backup'),
+            onPressed: actionInProgress
+                ? null
+                : () => ref
+                    .read(bulkActionsProvider.notifier)
+                    .downloadAndBackupAllMods(
+                        [selectedMod], BulkBackupBehaviorEnum.replace, null),
+          ), */
+          ElevatedButton.icon(
+            icon: Icon(Icons.edit),
             onPressed: () async {
               if (actionInProgress) {
                 return;
@@ -131,160 +148,162 @@ class SelectedModActionButtons extends HookConsumerWidget {
 
               showUpdateUrlsDialog(context, ref, selectedMod);
             },
-            child: const Text('Update URLs'),
+            label: const Text('Update URLs'),
           ),
-        MenuAnchor(
-          style: MenuStyle(
-            backgroundColor: WidgetStateProperty.all(Colors.white),
+          MenuAnchor(
+            style: MenuStyle(
+              backgroundColor: WidgetStateProperty.all(Colors.white),
+            ),
+            menuChildren: <Widget>[
+              MenuItemButton(
+                style: MenuItemButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                ),
+                leadingIcon: Icon(Icons.copy, color: Colors.black),
+                child: Text('Copy missing URLs',
+                    style: TextStyle(color: Colors.black)),
+                onPressed: () async {
+                  if (actionInProgress) return;
+
+                  final missingAssets = selectedMod
+                      .getAllAssets()
+                      .where((asset) => !asset.fileExists)
+                      .toList();
+
+                  if (missingAssets.isEmpty && context.mounted) {
+                    showSnackBar(context, 'No missing assets found');
+
+                    return;
+                  }
+
+                  final urls =
+                      missingAssets.map((asset) => asset.url).join('\n');
+                  await Clipboard.setData(ClipboardData(text: urls));
+
+                  if (context.mounted) {
+                    showSnackBar(context,
+                        'Copied ${missingAssets.length} missing ${missingAssets.length > 1 ? 'URLs' : 'URL'} to clipboard');
+                  }
+                },
+              ),
+              MenuItemButton(
+                style: MenuItemButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                ),
+                leadingIcon: Icon(Icons.delete_sweep, color: Colors.black),
+                child: Text('Delete assets',
+                    style: TextStyle(color: Colors.black)),
+                onPressed: () async {
+                  if (actionInProgress) return;
+
+                  final deleteAssetsNotifier =
+                      ref.read(deleteAssetsProvider.notifier);
+
+                  // Start scanning for deletable assets
+                  await deleteAssetsNotifier.scanModAssets(selectedMod);
+
+                  final deleteAssetsState = ref.read(deleteAssetsProvider);
+
+                  switch (deleteAssetsState.status) {
+                    case DeleteAssetsStatusEnum.idle:
+                    case DeleteAssetsStatusEnum.scanning:
+                    case DeleteAssetsStatusEnum.deleting:
+                      break;
+                    case DeleteAssetsStatusEnum.awaitingConfirmation:
+                      if (context.mounted) {
+                        final multipleAssets =
+                            deleteAssetsState.filesToDelete.length > 1;
+                        final sharedInfo = deleteAssetsState.sharedAssetInfo;
+
+                        // Build message about shared assets
+                        final sharedParts = <String>[];
+                        if (sharedInfo != null) {
+                          if (sharedInfo.sharedWithMods > 0) {
+                            sharedParts.add(
+                                '${sharedInfo.sharedWithMods} ${sharedInfo.sharedWithMods > 1 ? "mods" : "mod"}');
+                          }
+                          if (sharedInfo.sharedWithSaves > 0) {
+                            sharedParts.add(
+                                '${sharedInfo.sharedWithSaves} ${sharedInfo.sharedWithSaves > 1 ? "saves" : "save"}');
+                          }
+                          if (sharedInfo.sharedWithSavedObjects > 0) {
+                            sharedParts.add(
+                                '${sharedInfo.sharedWithSavedObjects} saved ${sharedInfo.sharedWithSavedObjects > 1 ? "objects" : "object"}');
+                          }
+                        }
+
+                        final sharedMessage = sharedParts.isNotEmpty
+                            ? '\n\nAssets shared with other ${sharedParts.join(", ")} will NOT be deleted.'
+                            : '';
+
+                        _showDeleteConfirmDialog(
+                          context,
+                          deleteAssetsState,
+                          multipleAssets,
+                          sharedMessage,
+                          sharedInfo,
+                          deleteAssetsNotifier,
+                          modsNotifier,
+                          selectedMod,
+                          ref,
+                        );
+                      }
+                      break;
+
+                    case DeleteAssetsStatusEnum.completed:
+                      if (context.mounted) {
+                        showSnackBar(
+                            context,
+                            deleteAssetsState.statusMessage ??
+                                'Operation completed');
+
+                        deleteAssetsNotifier.resetState();
+                      }
+                      break;
+
+                    case DeleteAssetsStatusEnum.error:
+                      if (context.mounted) {
+                        showSnackBar(
+                            context,
+                            deleteAssetsState.statusMessage ??
+                                'An error occurred');
+
+                        deleteAssetsNotifier.resetState();
+                      }
+                      break;
+                  }
+                },
+              ),
+            ],
+            builder: (
+              BuildContext context,
+              MenuController controller,
+              Widget? child,
+            ) {
+              return IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  minimumSize: Size(32, 32),
+                  maximumSize: Size(32, 32),
+                ),
+                onPressed: actionInProgress
+                    ? null
+                    : () {
+                        if (controller.isOpen) {
+                          controller.close();
+                        } else {
+                          controller.open();
+                        }
+                      },
+                icon: Icon(Icons.more_vert, size: 16),
+              );
+            },
           ),
-          menuChildren: <Widget>[
-            MenuItemButton(
-              style: MenuItemButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-              ),
-              leadingIcon: Icon(Icons.copy, color: Colors.black),
-              child: Text('Copy missing URLs',
-                  style: TextStyle(color: Colors.black)),
-              onPressed: () async {
-                if (actionInProgress) return;
-
-                final missingAssets = selectedMod
-                    .getAllAssets()
-                    .where((asset) => !asset.fileExists)
-                    .toList();
-
-                if (missingAssets.isEmpty && context.mounted) {
-                  showSnackBar(context, 'No missing assets found');
-
-                  return;
-                }
-
-                final urls = missingAssets.map((asset) => asset.url).join('\n');
-                await Clipboard.setData(ClipboardData(text: urls));
-
-                if (context.mounted) {
-                  showSnackBar(context,
-                      'Copied ${missingAssets.length} missing ${missingAssets.length > 1 ? 'URLs' : 'URL'} to clipboard');
-                }
-              },
-            ),
-            MenuItemButton(
-              style: MenuItemButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-              ),
-              leadingIcon: Icon(Icons.delete_outline, color: Colors.black),
-              child:
-                  Text('Delete assets', style: TextStyle(color: Colors.black)),
-              onPressed: () async {
-                if (actionInProgress) return;
-
-                final deleteAssetsNotifier =
-                    ref.read(deleteAssetsProvider.notifier);
-
-                // Start scanning for deletable assets
-                await deleteAssetsNotifier.scanModAssets(selectedMod);
-
-                final deleteAssetsState = ref.read(deleteAssetsProvider);
-
-                switch (deleteAssetsState.status) {
-                  case DeleteAssetsStatusEnum.idle:
-                  case DeleteAssetsStatusEnum.scanning:
-                  case DeleteAssetsStatusEnum.deleting:
-                    break;
-                  case DeleteAssetsStatusEnum.awaitingConfirmation:
-                    if (context.mounted) {
-                      final multipleAssets =
-                          deleteAssetsState.filesToDelete.length > 1;
-                      final sharedInfo = deleteAssetsState.sharedAssetInfo;
-
-                      // Build message about shared assets
-                      final sharedParts = <String>[];
-                      if (sharedInfo != null) {
-                        if (sharedInfo.sharedWithMods > 0) {
-                          sharedParts.add(
-                              '${sharedInfo.sharedWithMods} ${sharedInfo.sharedWithMods > 1 ? "mods" : "mod"}');
-                        }
-                        if (sharedInfo.sharedWithSaves > 0) {
-                          sharedParts.add(
-                              '${sharedInfo.sharedWithSaves} ${sharedInfo.sharedWithSaves > 1 ? "saves" : "save"}');
-                        }
-                        if (sharedInfo.sharedWithSavedObjects > 0) {
-                          sharedParts.add(
-                              '${sharedInfo.sharedWithSavedObjects} saved ${sharedInfo.sharedWithSavedObjects > 1 ? "objects" : "object"}');
-                        }
-                      }
-
-                      final sharedMessage = sharedParts.isNotEmpty
-                          ? '\n\nAssets shared with other ${sharedParts.join(", ")} will NOT be deleted.'
-                          : '';
-
-                      _showDeleteConfirmDialog(
-                        context,
-                        deleteAssetsState,
-                        multipleAssets,
-                        sharedMessage,
-                        sharedInfo,
-                        deleteAssetsNotifier,
-                        modsNotifier,
-                        selectedMod,
-                        ref,
-                      );
-                    }
-                    break;
-
-                  case DeleteAssetsStatusEnum.completed:
-                    if (context.mounted) {
-                      showSnackBar(
-                          context,
-                          deleteAssetsState.statusMessage ??
-                              'Operation completed');
-
-                      deleteAssetsNotifier.resetState();
-                    }
-                    break;
-
-                  case DeleteAssetsStatusEnum.error:
-                    if (context.mounted) {
-                      showSnackBar(
-                          context,
-                          deleteAssetsState.statusMessage ??
-                              'An error occurred');
-
-                      deleteAssetsNotifier.resetState();
-                    }
-                    break;
-                }
-              },
-            ),
-          ],
-          builder: (
-            BuildContext context,
-            MenuController controller,
-            Widget? child,
-          ) {
-            return IconButton(
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                minimumSize: Size(32, 32),
-                maximumSize: Size(32, 32),
-              ),
-              onPressed: actionInProgress
-                  ? null
-                  : () {
-                      if (controller.isOpen) {
-                        controller.close();
-                      } else {
-                        controller.open();
-                      }
-                    },
-              icon: Icon(Icons.more_vert, size: 16),
-            );
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

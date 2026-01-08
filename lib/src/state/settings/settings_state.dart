@@ -9,7 +9,6 @@ class SettingsState {
   final bool showTitleOnCards;
   final bool checkForUpdatesOnStart;
   final int concurrentDownloads;
-  final bool enableTtsModdersFeatures;
   final bool showSavedObjects;
   final bool showBackupState;
   final SortOptionEnum defaultSortOption;
@@ -22,7 +21,6 @@ class SettingsState {
     this.showTitleOnCards = false,
     this.checkForUpdatesOnStart = true,
     this.concurrentDownloads = 5,
-    this.enableTtsModdersFeatures = false,
     this.showSavedObjects = false,
     this.showBackupState = true,
     this.defaultSortOption = SortOptionEnum.alphabeticalAsc,
@@ -50,8 +48,6 @@ class SettingsState {
       checkForUpdatesOnStart:
           checkForUpdatesOnStart ?? this.checkForUpdatesOnStart,
       concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
-      enableTtsModdersFeatures:
-          enableTtsModdersFeatures ?? this.enableTtsModdersFeatures,
       showSavedObjects: showSavedObjects ?? this.showSavedObjects,
       showBackupState: showBackupState ?? this.showBackupState,
       defaultSortOption: defaultSortOption ?? this.defaultSortOption,
@@ -69,7 +65,6 @@ class SettingsState {
       'showTitleOnCards': showTitleOnCards,
       'checkForUpdatesOnStart': checkForUpdatesOnStart,
       'concurrentDownloads': concurrentDownloads,
-      'enableTtsModdersFeatures': enableTtsModdersFeatures,
       'showSavedObjects': showSavedObjects,
       'showBackupState': showBackupState,
       'defaultSortOption': defaultSortOption.label,
@@ -86,8 +81,6 @@ class SettingsState {
       showTitleOnCards: _parseBool(json['showTitleOnCards'], false),
       checkForUpdatesOnStart: _parseBool(json['checkForUpdatesOnStart'], true),
       concurrentDownloads: _parseInt(json['concurrentDownloads'], 5),
-      enableTtsModdersFeatures:
-          _parseBool(json['enableTtsModdersFeatures'], false),
       showSavedObjects: _parseBool(json['showSavedObjects'], false),
       showBackupState: _parseBool(json['showBackupState'], true),
       defaultSortOption: _parseSortOptionEnum(

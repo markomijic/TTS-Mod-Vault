@@ -18,8 +18,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         modsProvider,
-        selectedModProvider,
-        multiSelectModsProvider,
+        multiModsProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showModContextMenu, formatTimestamp;
@@ -33,8 +32,7 @@ class ModsGridCard extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
     final showBackupState = ref.watch(settingsProvider).showBackupState;
-    final selectedMod = ref.watch(selectedModProvider);
-    final multiSelectMods = ref.watch(multiSelectModsProvider);
+    final multiSelectMods = ref.watch(multiModsProvider);
 
     final isHovered = useState(false);
 
@@ -49,9 +47,8 @@ class ModsGridCard extends HookConsumerWidget {
     }, [mod]);
 
     final isSelected = useMemoized(() {
-      return selectedMod?.jsonFilePath == mod.jsonFilePath ||
-          multiSelectMods.contains(mod.jsonFilePath);
-    }, [selectedMod, multiSelectMods, mod]);
+      return multiSelectMods.contains(mod);
+    }, [multiSelectMods, mod]);
 
     final filesMessage = useMemoized(() {
       final missingCount = mod.missingAssetCount ?? 0;
@@ -86,23 +83,22 @@ class ModsGridCard extends HookConsumerWidget {
 
           if (event.buttons == kSecondaryButton) {
             // Right-click
-
             ref.read(modsProvider.notifier).setSelectedMod(mod);
             showModContextMenu(context, ref, event.position, mod);
           } else if (event.buttons == kPrimaryButton) {
             // Left-click
             if (isCtrlPressed) {
               // Ctrl+Click: Toggle multi-selection
-              final currentSelected = ref.read(multiSelectModsProvider);
-              final newSelected = Set<String>.from(currentSelected);
+              final currentSelected = ref.read(multiModsProvider);
+              final newSelected = Set<Mod>.from(currentSelected);
 
-              if (newSelected.contains(mod.jsonFilePath)) {
-                newSelected.remove(mod.jsonFilePath);
+              if (newSelected.contains(mod)) {
+                newSelected.remove(mod);
               } else {
-                newSelected.add(mod.jsonFilePath);
+                newSelected.add(mod);
               }
 
-              ref.read(multiSelectModsProvider.notifier).state = newSelected;
+              ref.read(multiModsProvider.notifier).state = newSelected;
             } else {
               // Normal left-click: Single selection
               ref.read(modsProvider.notifier).setSelectedMod(mod);
@@ -116,7 +112,7 @@ class ModsGridCard extends HookConsumerWidget {
               width: 4,
               color: isSelected
                   ? multiSelectMods.length > 1
-                      ? Colors.cyan
+                      ? Colors.red
                       : Colors.white
                   : isHovered.value
                       ? Colors.white70

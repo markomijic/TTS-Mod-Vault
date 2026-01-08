@@ -18,7 +18,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
         modsProvider,
-        selectedModProvider,
+        multiModsProvider,
         selectedModTypeProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/models/url_replacement_preset.dart'
@@ -30,11 +30,11 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.da
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
 enum SettingsSection {
-  interface,
-  network,
   features,
-  urlPresets,
+  interface,
   folders,
+  network,
+  updateUrlsPresets,
 }
 
 extension SettingsSectionX on SettingsSection {
@@ -46,8 +46,8 @@ extension SettingsSectionX on SettingsSection {
         return 'Network';
       case SettingsSection.features:
         return 'Features';
-      case SettingsSection.urlPresets:
-        return 'URL Presets';
+      case SettingsSection.updateUrlsPresets:
+        return 'Update URLs Presets';
       case SettingsSection.folders:
         return 'Folders';
     }
@@ -61,8 +61,8 @@ extension SettingsSectionX on SettingsSection {
         return Icons.cloud_outlined;
       case SettingsSection.features:
         return Icons.extension_outlined;
-      case SettingsSection.urlPresets:
-        return Icons.link_outlined;
+      case SettingsSection.updateUrlsPresets:
+        return Icons.edit;
       case SettingsSection.folders:
         return Icons.folder_outlined;
     }
@@ -77,8 +77,7 @@ class SettingsDialog extends HookConsumerWidget {
     final directoriesNotifier = ref.watch(directoriesProvider.notifier);
     final settings = ref.watch(settingsProvider);
 
-    final selectedSection =
-        useState<SettingsSection>(SettingsSection.interface);
+    final selectedSection = useState<SettingsSection>(SettingsSection.features);
 
     // UI
     final useModsListViewBox = useState(settings.useModsListView);
@@ -93,8 +92,6 @@ class SettingsDialog extends HookConsumerWidget {
 
     // Features
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
-    final enableTtsModdersFeatures =
-        useState(settings.enableTtsModdersFeatures);
     final forceBackupJsonFilename = useState(settings.forceBackupJsonFilename);
     final showSavedObjects = useState(settings.showSavedObjects);
     final showBackupState = useState(settings.showBackupState);
@@ -117,7 +114,6 @@ class SettingsDialog extends HookConsumerWidget {
         showTitleOnCards: showTitleOnCardsBox.value,
         checkForUpdatesOnStart: checkForUpdatesOnStartBox.value,
         concurrentDownloads: concurrentDownloads,
-        enableTtsModdersFeatures: enableTtsModdersFeatures.value,
         showSavedObjects: showSavedObjects.value,
         showBackupState: showBackupState.value,
         defaultSortOption: defaultSortOption.value,
@@ -134,7 +130,7 @@ class SettingsDialog extends HookConsumerWidget {
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
           !showSavedObjects.value) {
         ref.read(selectedModTypeProvider.notifier).state = ModTypeEnum.mod;
-        ref.read(selectedModProvider.notifier).state = null;
+        ref.read(multiModsProvider.notifier).state = {};
       }
 
       final oldIgnoreAudioAssets = ref.read(settingsProvider).ignoreAudioAssets;
@@ -200,38 +196,47 @@ class SettingsDialog extends HookConsumerWidget {
                           padding: const EdgeInsets.only(left: 24),
                           child: IndexedStack(
                             index: selectedSection.value.index,
-                            children: [
-                              SettingsInterfaceColumn(
-                                useModsListViewBox: useModsListViewBox,
-                                showTitleOnCardsBox: showTitleOnCardsBox,
-                                defaultSortOption: defaultSortOption,
-                              ),
-                              SettingsNetworkColumn(
-                                textFieldController: textFieldController,
-                                textFieldFocusNode: textFieldFocusNode,
-                                numberValue: numberValue,
-                              ),
-                              SettingsFeaturesColumn(
-                                checkForUpdatesOnStartBox:
-                                    checkForUpdatesOnStartBox,
-                                showSavedObjects: showSavedObjects,
-                                showBackupState: showBackupState,
-                                enableTtsModdersFeatures:
-                                    enableTtsModdersFeatures,
-                                forceBackupJsonFilename:
-                                    forceBackupJsonFilename,
-                                ignoreAudioAssets: ignoreAudioAssets,
-                              ),
-                              SettingsURLPresetsColumn(
-                                urlPresets: urlPresets,
-                              ),
-                              SettingsFoldersColumn(
-                                modsDir: modsDir,
-                                directoriesNotifier: directoriesNotifier,
-                                savesDir: savesDir,
-                                backupsDir: backupsDir,
-                              ),
-                            ],
+                            children: SettingsSection.values.map((e) {
+                              switch (e) {
+                                case SettingsSection.features:
+                                  return SettingsFeaturesColumn(
+                                    checkForUpdatesOnStartBox:
+                                        checkForUpdatesOnStartBox,
+                                    showSavedObjects: showSavedObjects,
+                                    showBackupState: showBackupState,
+                                    forceBackupJsonFilename:
+                                        forceBackupJsonFilename,
+                                    ignoreAudioAssets: ignoreAudioAssets,
+                                  );
+
+                                case SettingsSection.interface:
+                                  return SettingsInterfaceColumn(
+                                    useModsListViewBox: useModsListViewBox,
+                                    showTitleOnCardsBox: showTitleOnCardsBox,
+                                    defaultSortOption: defaultSortOption,
+                                  );
+
+                                case SettingsSection.folders:
+                                  return SettingsFoldersColumn(
+                                    modsDir: modsDir,
+                                    directoriesNotifier: directoriesNotifier,
+                                    savesDir: savesDir,
+                                    backupsDir: backupsDir,
+                                  );
+
+                                case SettingsSection.network:
+                                  return SettingsNetworkColumn(
+                                    textFieldController: textFieldController,
+                                    textFieldFocusNode: textFieldFocusNode,
+                                    numberValue: numberValue,
+                                  );
+
+                                case SettingsSection.updateUrlsPresets:
+                                  return SettingsUpdateUrlsPresetsColumn(
+                                    urlPresets: urlPresets,
+                                  );
+                              }
+                            }).toList(),
                           ),
                         ),
                       ),
@@ -518,7 +523,6 @@ class SettingsFeaturesColumn extends StatelessWidget {
     required this.checkForUpdatesOnStartBox,
     required this.showSavedObjects,
     required this.showBackupState,
-    required this.enableTtsModdersFeatures,
     required this.forceBackupJsonFilename,
     required this.ignoreAudioAssets,
   });
@@ -526,7 +530,6 @@ class SettingsFeaturesColumn extends StatelessWidget {
   final ValueNotifier<bool> checkForUpdatesOnStartBox;
   final ValueNotifier<bool> showSavedObjects;
   final ValueNotifier<bool> showBackupState;
-  final ValueNotifier<bool> enableTtsModdersFeatures;
   final ValueNotifier<bool> forceBackupJsonFilename;
   final ValueNotifier<bool> ignoreAudioAssets;
 
@@ -626,32 +629,10 @@ the JSON filename (ExampleGame.ttsmod).""",
           title: Row(
             spacing: 4,
             children: [
-              const Text('Enable URL replacement features'),
-              CustomTooltip(
-                message: """Enables:
-Replace URL - available from the context menu of asset URLs and images in the Image Viewer
-Update URLs - available next to the Download and Backup buttons, and in Bulk Actions""",
-                child: Icon(Icons.info_outline),
-              ),
-            ],
-          ),
-          value: enableTtsModdersFeatures.value,
-          checkColor: Colors.black,
-          activeColor: Colors.white,
-          contentPadding: EdgeInsets.all(0),
-          onChanged: (value) {
-            enableTtsModdersFeatures.value =
-                value ?? enableTtsModdersFeatures.value;
-          },
-        ),
-        CheckboxListTile(
-          title: Row(
-            spacing: 4,
-            children: [
               const Text('Exclude audio assets'),
               CustomTooltip(
                 message:
-                    "When enabled, audio assets will not be available for download and backup\nData will be refreshed after changing this setting",
+                    "When enabled, audio assets will not be available for download and backup unless modified on per-mod basis\nData will be refreshed after changing this setting",
                 child: Icon(Icons.info_outline),
               ),
             ],
@@ -669,9 +650,8 @@ Update URLs - available next to the Download and Backup buttons, and in Bulk Act
   }
 }
 
-// New URL Presets Column
-class SettingsURLPresetsColumn extends StatelessWidget {
-  const SettingsURLPresetsColumn({
+class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
+  const SettingsUpdateUrlsPresetsColumn({
     super.key,
     required this.urlPresets,
   });
@@ -683,29 +663,39 @@ class SettingsURLPresetsColumn extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
         children: [
           ...urlPresets.value.asMap().entries.map((entry) {
             final index = entry.key;
             final preset = entry.value;
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                color: Colors.grey[850],
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      preset.label.isEmpty ? '(Unnamed preset)' : preset.label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontStyle:
-                            preset.label.isEmpty ? FontStyle.italic : null,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          preset.label,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          'Old prefix: ${preset.oldUrl}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'New prefix: ${preset.newUrl}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
                   IconButton(
@@ -1019,7 +1009,7 @@ class _PresetEditorDialog extends HookWidget {
               ),
             );
           },
-          child: const Text('Add'),
+          child: Text(preset == null ? 'Add' : 'Edit'),
         ),
       ],
     );

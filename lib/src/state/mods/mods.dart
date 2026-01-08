@@ -19,7 +19,7 @@ import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
-    show Mod, ModTypeEnum;
+    show AudioAssetVisibility, Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
     show
         InitialModsIsolateData,
@@ -139,15 +139,21 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final allCachedDateTimeStamps =
           ref.read(storageProvider).getAllModDateTimeStamps();
       final allCachedUrls = ref.read(storageProvider).getAllModUrls();
+      final allAudioPreferences =
+          ref.read(storageProvider).getAllModAudioPreferences();
 
       // Filter to only the mods we need
       final Map<String, String?> cachedDateTimeStamps = {};
       final Map<String, Map<String, String>?> cachedUrls = {};
+      final Map<String, AudioAssetVisibility> audioPreferences = {};
 
       for (final mod in initialMods) {
         cachedDateTimeStamps[mod.jsonFileName] =
             allCachedDateTimeStamps[mod.jsonFileName];
         cachedUrls[mod.jsonFileName] = allCachedUrls[mod.jsonFileName];
+        audioPreferences[mod.jsonFileName] =
+            allAudioPreferences[mod.jsonFileName] ??
+                AudioAssetVisibility.useGlobalSetting;
       }
 
       // Create adaptive batches based on file sizes
@@ -193,6 +199,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
                     cachedUrls[mod.jsonFileName],
                   ))),
           ignoreAudioAssets: ignoreAudio,
+          modAudioPreferences:
+              Map.fromEntries(allModsForIsolate.map((mod) => MapEntry(
+                    mod.jsonFileName,
+                    audioPreferences[mod.jsonFileName] ??
+                        AudioAssetVisibility.useGlobalSetting,
+                  ))),
           // Pass asset maps for O(1) existence checks in isolate
           existingAssetBundles: existingAssets.assetBundles,
           existingAudio: existingAssets.audio,
@@ -255,16 +267,21 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final savedObjects = <Mod>[];
 
       for (final mod in allProcessedMods) {
-        switch (mod.modType) {
+        // Apply audio preference to mod
+        final modWithPreference = mod.copyWith(
+          audioVisibility: audioPreferences[mod.jsonFileName],
+        );
+
+        switch (modWithPreference.modType) {
           case ModTypeEnum.mod:
-            mods.add(_getInitialModWithBackup(mod));
+            mods.add(_getInitialModWithBackup(modWithPreference));
             break;
           case ModTypeEnum.save:
-            saves.add(_getInitialModWithBackup(mod));
+            saves.add(_getInitialModWithBackup(modWithPreference));
             break;
           case ModTypeEnum.savedObject:
             if (showSavedObjects) {
-              savedObjects.add(_getInitialModWithBackup(mod));
+              savedObjects.add(_getInitialModWithBackup(modWithPreference));
             }
             break;
         }
@@ -636,7 +653,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
             ? ExistingBackupStatusEnum.upToDate
             : ExistingBackupStatusEnum.outOfDate;
 
-    final assetLists = _getAssetListsFromUrls(jsonURLs);
+    final assetLists = _getAssetListsFromUrls(jsonURLs, mod);
 
     return mod.copyWith(
       backup: backup,
@@ -645,6 +662,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       assetCount: assetLists.$2,
       existingAssetCount: assetLists.$3,
       missingAssetCount: assetLists.$2 - assetLists.$3,
+      hasAudioAssets: assetLists.$4,
     );
   }
 
@@ -693,6 +711,39 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
+  /// Re-processes a single mod's assets with updated audio preference
+  Future<void> reprocessModAssets(Mod mod) async {
+    try {
+      if (!state.hasValue) return;
+
+      // Get URLs from storage or extract fresh
+      final urls = ref.read(storageProvider).getModUrls(mod.jsonFileName) ??
+          await extractUrlsFromJson(mod.jsonFilePath);
+
+      // Rebuild asset lists with current preference
+      final assetLists = _getAssetListsFromUrls(urls, mod);
+
+      final updatedMod = mod.copyWith(
+        assetLists: assetLists.$1,
+        assetCount: assetLists.$2,
+        existingAssetCount: assetLists.$3,
+        missingAssetCount: assetLists.$2 - assetLists.$3,
+        hasAudioAssets: assetLists.$4,
+      );
+
+      // Update the mod in state
+      updateMod(updatedMod);
+
+      // Update selected mod if it's the one being reprocessed
+      if (ref.read(selectedModProvider)?.jsonFilePath == mod.jsonFilePath) {
+        setSelectedMod(updatedMod);
+      }
+    } catch (e, stack) {
+      debugPrint('reprocessModAssets error: $e');
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
   Map<String, String> _getAssetMapByType(AssetTypeEnum type) {
     final existingAssets = ref.read(existingAssetListsProvider);
     return switch (type) {
@@ -721,20 +772,35 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   // TODO remove/replace with isolate method?
-  (AssetLists, int, int) _getAssetListsFromUrls(Map<String, String> data) {
-    final ignoreAudio = ref.read(settingsProvider).ignoreAudioAssets;
+  (AssetLists, int, int, bool) _getAssetListsFromUrls(
+    Map<String, String> data,
+    Mod mod,
+  ) {
+    final ignoreAudioGlobal = ref.read(settingsProvider).ignoreAudioAssets;
+    final ignoreAudio = switch (mod.audioVisibility) {
+      AudioAssetVisibility.alwaysShow => false,
+      AudioAssetVisibility.alwaysHide => true,
+      AudioAssetVisibility.useGlobalSetting => ignoreAudioGlobal,
+    };
 
     Map<AssetTypeEnum, List<String>> urlsByType = {
       for (final type in AssetTypeEnum.values) type: [],
     };
 
+    bool hasAudioInJson = false;
+
     for (final element in data.entries) {
       for (final assetType in AssetTypeEnum.values) {
-        if (ignoreAudio && assetType == AssetTypeEnum.audio) {
-          continue;
-        }
-
         if (assetType.subtypes.contains(element.value)) {
+          // Determine if audio should be ignored for this specific mod
+          if (assetType == AssetTypeEnum.audio) {
+            hasAudioInJson = true;
+
+            if (ignoreAudio) {
+              break; // Skip adding to urlsByType
+            }
+          }
+
           urlsByType[assetType]!.add(element.key);
           break;
         }
@@ -761,6 +827,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       ),
       totalCount,
       existingFilesCount,
+      hasAudioInJson,
     );
   }
 

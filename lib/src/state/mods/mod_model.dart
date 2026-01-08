@@ -13,6 +13,12 @@ enum ModTypeEnum {
   const ModTypeEnum(this.label);
 }
 
+enum AudioAssetVisibility {
+  useGlobalSetting,
+  alwaysShow,
+  alwaysHide,
+}
+
 class Mod {
   final ModTypeEnum modType;
   final String jsonFilePath;
@@ -28,8 +34,10 @@ class Mod {
   final int? assetCount;
   final int? existingAssetCount;
   final int? missingAssetCount;
+  final AudioAssetVisibility audioVisibility;
+  final bool hasAudioAssets;
 
-  Mod({
+  const Mod({
     required this.modType,
     required this.jsonFilePath,
     required this.jsonFileName,
@@ -44,6 +52,8 @@ class Mod {
     this.assetCount,
     this.existingAssetCount,
     this.missingAssetCount,
+    this.audioVisibility = AudioAssetVisibility.useGlobalSetting,
+    this.hasAudioAssets = false,
   });
 
   Mod copyWith({
@@ -60,6 +70,8 @@ class Mod {
     int? assetCount,
     int? existingAssetCount,
     int? missingAssetCount,
+    AudioAssetVisibility? audioVisibility,
+    bool? hasAudioAssets,
   }) {
     return Mod(
       modType: modType,
@@ -76,6 +88,8 @@ class Mod {
       assetCount: assetCount ?? this.assetCount,
       existingAssetCount: existingAssetCount ?? this.existingAssetCount,
       missingAssetCount: missingAssetCount ?? this.missingAssetCount,
+      audioVisibility: audioVisibility ?? this.audioVisibility,
+      hasAudioAssets: hasAudioAssets ?? this.hasAudioAssets,
     );
   }
 

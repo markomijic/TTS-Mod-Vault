@@ -13,7 +13,7 @@ import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
-    show Mod, ModTypeEnum;
+    show AudioAssetVisibility, Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/utils.dart'
     show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
@@ -29,6 +29,7 @@ class IsolateWorkData {
   final Map<String, String?> cachedDateTimeStamps;
   final Map<String, Map<String, String>?> cachedAssetLists;
   final bool ignoreAudioAssets;
+  final Map<String, AudioAssetVisibility> modAudioPreferences;
   // Asset existence maps for O(1) lookups
   final Map<String, String> existingAssetBundles;
   final Map<String, String> existingAudio;
@@ -41,6 +42,7 @@ class IsolateWorkData {
     required this.cachedDateTimeStamps,
     required this.cachedAssetLists,
     required this.ignoreAudioAssets,
+    required this.modAudioPreferences,
     required this.existingAssetBundles,
     required this.existingAudio,
     required this.existingImages,
@@ -142,6 +144,8 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
             workData.existingModels,
             workData.existingPdf,
             workData.ignoreAudioAssets,
+            mod.jsonFileName,
+            workData.modAudioPreferences,
           );
 
           final completeMod = mod.copyWith(
@@ -149,6 +153,7 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
             assetCount: assetLists.$2,
             existingAssetCount: assetLists.$3,
             missingAssetCount: assetLists.$2 - assetLists.$3,
+            hasAudioAssets: assetLists.$4,
           );
 
           allProcessedMods.add(completeMod);
@@ -249,27 +254,48 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
 
 /// Builds AssetLists from URLs with O(1) existence checks
 /// This function runs in isolate and doesn't have access to Riverpod
-(AssetLists, int, int) _buildAssetListsFromUrls(
+/// Returns: (AssetLists, totalCount, existingCount, hasAudio)
+(AssetLists, int, int, bool) _buildAssetListsFromUrls(
   Map<String, String> urlsData,
   Map<String, String> assetBundles,
   Map<String, String> audio,
   Map<String, String> images,
   Map<String, String> models,
   Map<String, String> pdf,
-  bool ignoreAudio,
+  bool ignoreAudioGlobal,
+  String modJsonFileName,
+  Map<String, AudioAssetVisibility> modAudioPreferences,
 ) {
   // Group URLs by type
   Map<AssetTypeEnum, List<String>> urlsByType = {
     for (final type in AssetTypeEnum.values) type: [],
   };
 
+  // Track if mod has audio assets (regardless of filtering)
+  bool hasAudioInJson = false;
+
   for (final entry in urlsData.entries) {
     for (final assetType in AssetTypeEnum.values) {
-      if (ignoreAudio && assetType == AssetTypeEnum.audio) {
-        continue;
-      }
-
       if (assetType.subtypes.contains(entry.value)) {
+        // Check if this is an audio asset
+        if (assetType == AssetTypeEnum.audio) {
+          hasAudioInJson = true;
+
+          // Use switch expression for type-safe handling
+          final modVisibility = modAudioPreferences[modJsonFileName] ??
+              AudioAssetVisibility.useGlobalSetting;
+
+          final ignoreAudio = switch (modVisibility) {
+            AudioAssetVisibility.alwaysShow => false,
+            AudioAssetVisibility.alwaysHide => true,
+            AudioAssetVisibility.useGlobalSetting => ignoreAudioGlobal,
+          };
+
+          if (ignoreAudio) {
+            break; // Skip adding to urlsByType
+          }
+        }
+
         urlsByType[assetType]!.add(entry.key);
         break;
       }
@@ -318,6 +344,7 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
     ),
     totalCount,
     existingFilesCount,
+    hasAudioInJson,
   );
 }
 

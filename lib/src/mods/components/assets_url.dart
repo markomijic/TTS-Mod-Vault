@@ -40,10 +40,11 @@ class AssetsUrl extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedUrl = ref.watch(selectedUrlProvider);
+    final mod = ref.watch(selectedModProvider);
+    final url = ref.watch(selectedUrlProvider);
     final isSelected = useMemoized(
-      () => asset.url == selectedUrl,
-      [selectedUrl],
+      () => asset.url == url,
+      [url, mod],
     );
 
     void showURLContextMenu(BuildContext context, Offset position) {
@@ -232,7 +233,7 @@ class AssetsUrl extends HookConsumerWidget {
         child: Text(
           asset.url,
           style: TextStyle(
-            fontSize: 11.7,
+            fontSize: 12,
             color: isSelected
                 ? Colors.lightBlue
                 : asset.fileExists

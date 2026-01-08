@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show HookConsumerWidget, WidgetRef;
+    show ConsumerWidget, HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         SelectedModActionButtons,
@@ -18,7 +18,7 @@ import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
-    show Mod, ModTypeEnum;
+    show AudioAssetVisibility, Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -27,12 +27,14 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         modsProvider,
         multiSelectModsProvider,
         selectedModProvider,
-        selectedModTypeProvider;
+        selectedModTypeProvider,
+        settingsProvider,
+        storageProvider;
 
 enum ExistingAssetsFilter {
   all('All'),
-  missingOnly('Missing only'),
-  downloadedOnly('Downloaded only');
+  missingOnly('Missing'),
+  downloadedOnly('Downloaded');
 
   final String label;
   const ExistingAssetsFilter(this.label);
@@ -260,6 +262,9 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                   }),
                 ],
               ),
+              if (selectedMod.hasAudioAssets) ...[
+                _AudioAssetsButton(selectedMod: selectedMod),
+              ],
               ...availableAssetTypes.map((type) {
                 return FilterChip(
                   showCheckmark: false,
@@ -386,6 +391,173 @@ class _SelectedModViewComponent extends HookConsumerWidget {
               _OpenImagesViewerButton(selectedMod: selectedMod)
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AudioAssetsButton extends ConsumerWidget {
+  final Mod selectedMod;
+
+  const _AudioAssetsButton({required this.selectedMod});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ignoreAudioAssets = ref.watch(settingsProvider).ignoreAudioAssets;
+
+    return CustomTooltip(
+      message: switch (selectedMod.audioVisibility) {
+        AudioAssetVisibility.useGlobalSetting =>
+          'Using global setting (${ignoreAudioAssets ? "hidden" : "shown"})',
+        AudioAssetVisibility.alwaysShow => 'Override: Show audio assets',
+        AudioAssetVisibility.alwaysHide => 'Override: Hide audio assets',
+      },
+      child: MenuAnchor(
+        style: MenuStyle(
+          backgroundColor: WidgetStateProperty.all(Colors.white),
+        ),
+        builder: (context, controller, child) {
+          final hasOverride = selectedMod.audioVisibility !=
+              AudioAssetVisibility.useGlobalSetting;
+
+          final showingAudio = switch (selectedMod.audioVisibility) {
+            AudioAssetVisibility.alwaysShow => true,
+            AudioAssetVisibility.alwaysHide => false,
+            AudioAssetVisibility.useGlobalSetting => !ignoreAudioAssets,
+          };
+
+          return IconButton(
+            onPressed: () {
+              if (controller.isOpen) {
+                controller.close();
+              } else {
+                controller.open();
+              }
+            },
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(
+                hasOverride ? Colors.blue : Colors.white,
+              ),
+              foregroundColor: WidgetStateProperty.all(
+                hasOverride ? Colors.white : Colors.black,
+              ),
+            ),
+            padding: EdgeInsets.zero, // removes default padding
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+            ),
+            icon: Icon(
+              showingAudio ? Icons.volume_up : Icons.volume_off,
+            ),
+          );
+        },
+        menuChildren: [
+          MenuItemButton(
+            closeOnActivate: true,
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(
+                  selectedMod.audioVisibility ==
+                          AudioAssetVisibility.useGlobalSetting
+                      ? Icons.check
+                      : null,
+                  color: Colors.black,
+                ),
+                Icon(Icons.settings, color: Colors.black),
+                Text('Use global setting'),
+              ],
+            ),
+            onPressed: () async {
+              if (selectedMod.audioVisibility !=
+                  AudioAssetVisibility.useGlobalSetting) {
+                final updatedMod = selectedMod.copyWith(
+                  audioVisibility: AudioAssetVisibility.useGlobalSetting,
+                );
+                await ref.read(storageProvider).setModAudioPreference(
+                      selectedMod.jsonFileName,
+                      AudioAssetVisibility.useGlobalSetting,
+                    );
+                await ref
+                    .read(modsProvider.notifier)
+                    .reprocessModAssets(updatedMod);
+              }
+            },
+          ),
+          MenuItemButton(
+            closeOnActivate: true,
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(
+                  selectedMod.audioVisibility == AudioAssetVisibility.alwaysShow
+                      ? Icons.check
+                      : null,
+                  color: Colors.black,
+                ),
+                Icon(Icons.volume_up, color: Colors.black),
+                Text('Show audio'),
+              ],
+            ),
+            onPressed: () async {
+              if (selectedMod.audioVisibility !=
+                  AudioAssetVisibility.alwaysShow) {
+                final updatedMod = selectedMod.copyWith(
+                    audioVisibility: AudioAssetVisibility.alwaysShow);
+                await ref.read(storageProvider).setModAudioPreference(
+                      selectedMod.jsonFileName,
+                      AudioAssetVisibility.alwaysShow,
+                    );
+                await ref
+                    .read(modsProvider.notifier)
+                    .reprocessModAssets(updatedMod);
+              }
+            },
+          ),
+          MenuItemButton(
+            closeOnActivate: true,
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(
+                  selectedMod.audioVisibility == AudioAssetVisibility.alwaysHide
+                      ? Icons.check
+                      : null,
+                  color: Colors.black,
+                ),
+                Icon(Icons.volume_off, color: Colors.black),
+                Text('Hide audio'),
+              ],
+            ),
+            onPressed: () async {
+              if (selectedMod.audioVisibility !=
+                  AudioAssetVisibility.alwaysHide) {
+                final updatedMod = selectedMod.copyWith(
+                    audioVisibility: AudioAssetVisibility.alwaysHide);
+                await ref.read(storageProvider).setModAudioPreference(
+                      selectedMod.jsonFileName,
+                      AudioAssetVisibility.alwaysHide,
+                    );
+                await ref
+                    .read(modsProvider.notifier)
+                    .reprocessModAssets(updatedMod);
+              }
+            },
+          ),
+        ],
       ),
     );
   }

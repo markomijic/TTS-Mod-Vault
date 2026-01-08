@@ -13,7 +13,7 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
-    show Mod, ModTypeEnum;
+    show AudioAssetVisibility, Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -199,6 +199,23 @@ class ModsGridCard extends HookConsumerWidget {
                                   ),
                                 ),
                               ),
+                              if (mod.audioVisibility !=
+                                  AudioAssetVisibility.useGlobalSetting)
+                                CustomTooltip(
+                                  waitDuration: Duration(milliseconds: 300),
+                                  message: mod.audioVisibility ==
+                                          AudioAssetVisibility.alwaysShow
+                                      ? 'Override: Show audio assets'
+                                      : 'Override: hide audio assets',
+                                  child: Icon(
+                                    mod.audioVisibility ==
+                                            AudioAssetVisibility.alwaysShow
+                                        ? Icons.volume_up
+                                        : Icons.volume_off,
+                                    size: 20,
+                                    color: Colors.blue,
+                                  ),
+                                ),
                               if (mod.backup != null && showBackupState)
                                 CustomTooltip(
                                   waitDuration: Duration(milliseconds: 300),

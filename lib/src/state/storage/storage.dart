@@ -2,6 +2,8 @@ import 'dart:convert' show json, jsonDecode;
 
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hive_ce_flutter/hive_flutter.dart' show Box, Hive;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
+    show AudioAssetVisibility;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
     show SettingsState;
 
@@ -18,6 +20,7 @@ class Storage {
 
   // Keys
   static const String dateTimeStampSuffix = 'DateTimeStamp';
+  static const String showAudioAssetsSuffix = '_ShowAudioAssets';
   static const String modsDirKey = 'ModsDir';
   static const String savesDirKey = 'SavesDir';
   static const String backupsDirKey = 'BackupsDir';
@@ -110,6 +113,36 @@ class Storage {
     return Map<String, String>.from(urls);
   }
 
+  // Per-mod audio asset preference
+  AudioAssetVisibility getModAudioPreference(String modName) {
+    final value = _metadataBox.get('$modName$showAudioAssetsSuffix');
+    if (value == null) return AudioAssetVisibility.useGlobalSetting;
+
+    return switch (value) {
+      'alwaysShow' => AudioAssetVisibility.alwaysShow,
+      'alwaysHide' => AudioAssetVisibility.alwaysHide,
+      _ => AudioAssetVisibility.useGlobalSetting,
+    };
+  }
+
+  Future<void> setModAudioPreference(
+    String modName,
+    AudioAssetVisibility visibility,
+  ) async {
+    if (visibility == AudioAssetVisibility.useGlobalSetting) {
+      // Clear the override - use global setting
+      await _metadataBox.delete('$modName$showAudioAssetsSuffix');
+    } else {
+      // Store the override
+      final value = switch (visibility) {
+        AudioAssetVisibility.alwaysShow => 'alwaysShow',
+        AudioAssetVisibility.alwaysHide => 'alwaysHide',
+        AudioAssetVisibility.useGlobalSetting => throw StateError('Should have been deleted'),
+      };
+      await _metadataBox.put('$modName$showAudioAssetsSuffix', value);
+    }
+  }
+
   /* Future<void> deleteMod(String modName) async {
     await Future.wait([
       _metadataBox.delete('$modName$dateTimeStampSuffix'),
@@ -175,6 +208,29 @@ class Storage {
     }
 
     return timestamps;
+  }
+
+  /// Get all mod audio preferences at once (more efficient than individual getModAudioPreference calls)
+  Map<String, AudioAssetVisibility> getAllModAudioPreferences() {
+    final allData = _metadataBox.toMap();
+    final Map<String, AudioAssetVisibility> preferences = {};
+
+    for (final entry in allData.entries) {
+      if (entry.key.endsWith(showAudioAssetsSuffix)) {
+        final modName = entry.key.substring(
+          0,
+          entry.key.length - showAudioAssetsSuffix.length,
+        );
+
+        preferences[modName] = switch (entry.value) {
+          'alwaysShow' => AudioAssetVisibility.alwaysShow,
+          'alwaysHide' => AudioAssetVisibility.alwaysHide,
+          _ => AudioAssetVisibility.useGlobalSetting,
+        };
+      }
+    }
+
+    return preferences;
   }
 
   Future<void> clearAllModData() async {

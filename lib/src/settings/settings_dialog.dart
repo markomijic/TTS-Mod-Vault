@@ -996,7 +996,7 @@ class _PresetEditorDialog extends HookWidget {
         ),
       ),
       actions: [
-        TextButton(
+        ElevatedButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
@@ -1019,7 +1019,7 @@ class _PresetEditorDialog extends HookWidget {
               ),
             );
           },
-          child: const Text('Save'),
+          child: const Text('Add'),
         ),
       ],
     );

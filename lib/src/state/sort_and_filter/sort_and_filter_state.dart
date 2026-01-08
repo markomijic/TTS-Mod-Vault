@@ -1,11 +1,12 @@
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 
-enum FilterAssetCountEnum {
+enum FilterAssetsEnum {
   missing('Missing'),
-  complete('Complete');
+  complete('Complete'),
+  audio("Audio");
 
-  const FilterAssetCountEnum(this.label);
+  const FilterAssetsEnum(this.label);
 
   final String label;
 }
@@ -19,8 +20,9 @@ class SortAndFilterState {
   final Set<String> filteredModsFolders;
   final Set<String> filteredSavesFolders;
   final Set<String> filteredSavedObjectsFolders;
-  final Set<FilterAssetCountEnum> filteredAssetCounts;
+  final Set<FilterAssetsEnum> filteredAssets;
   final Set<ExistingBackupStatusEnum> filteredBackupStatuses;
+  final bool filterHasAudio;
 
   // Sort
   final SortOptionEnum sortOption;
@@ -32,8 +34,9 @@ class SortAndFilterState {
     required this.filteredModsFolders,
     required this.filteredSavesFolders,
     required this.filteredSavedObjectsFolders,
-    required this.filteredAssetCounts,
+    required this.filteredAssets,
     required this.filteredBackupStatuses,
+    this.filterHasAudio = false,
     required this.sortOption,
   });
 
@@ -45,8 +48,9 @@ class SortAndFilterState {
       filteredModsFolders: {},
       filteredSavesFolders: {},
       filteredSavedObjectsFolders: {},
-      filteredAssetCounts: {},
+      filteredAssets: {},
       filteredBackupStatuses: {},
+      filterHasAudio: false,
       sortOption: sortOption,
     );
   }
@@ -58,8 +62,9 @@ class SortAndFilterState {
     Set<String>? filteredModsFolders,
     Set<String>? filteredSavesFolders,
     Set<String>? filteredSavedObjectsFolders,
-    Set<FilterAssetCountEnum>? filteredAssetCounts,
+    Set<FilterAssetsEnum>? filteredAssets,
     Set<ExistingBackupStatusEnum>? filteredBackupStatuses,
+    bool? filterHasAudio,
     SortOptionEnum? sortOption,
   }) {
     return SortAndFilterState(
@@ -70,9 +75,10 @@ class SortAndFilterState {
       filteredSavesFolders: filteredSavesFolders ?? this.filteredSavesFolders,
       filteredSavedObjectsFolders:
           filteredSavedObjectsFolders ?? this.filteredSavedObjectsFolders,
-      filteredAssetCounts: filteredAssetCounts ?? this.filteredAssetCounts,
+      filteredAssets: filteredAssets ?? this.filteredAssets,
       filteredBackupStatuses:
           filteredBackupStatuses ?? this.filteredBackupStatuses,
+      filterHasAudio: filterHasAudio ?? this.filterHasAudio,
       sortOption: sortOption ?? this.sortOption,
     );
   }

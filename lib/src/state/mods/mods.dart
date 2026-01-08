@@ -637,14 +637,14 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
-    if (backup != null && backup.totalAssetCount == null) {
+/*     if (backup != null && backup.totalAssetCount == null) {
       final backupTotalAssetCount = await ref
           .read(existingBackupsProvider.notifier)
           .listZipContents(backup.filepath);
 
       backup = backup.copyWith(totalAssetCount: backupTotalAssetCount);
       ref.read(existingBackupsProvider.notifier).addBackup(backup);
-    }
+    } */
 
     final backupStatus = backup == null
         ? ExistingBackupStatusEnum.noBackup
@@ -669,7 +669,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   Future<void> updateModBackup(Mod mod) async {
     ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
-
+/* 
     if (backup != null && backup.totalAssetCount == null) {
       final backupTotalAssetCount = await ref
           .read(existingBackupsProvider.notifier)
@@ -677,7 +677,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       backup = backup.copyWith(totalAssetCount: backupTotalAssetCount);
       ref.read(existingBackupsProvider.notifier).addBackup(backup);
-    }
+    } */
 
     final backupStatus = backup == null
         ? ExistingBackupStatusEnum.noBackup

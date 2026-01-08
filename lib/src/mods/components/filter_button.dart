@@ -57,7 +57,7 @@ class FilterButton extends HookConsumerWidget {
     }, [selectedModType, sortAndFilterState]);
 
     final selectedAssetCounts = useMemoized(() {
-      return sortAndFilterState.filteredAssetCounts;
+      return sortAndFilterState.filteredAssets;
     }, [sortAndFilterState]);
 
     final totalFilters = useMemoized(() {
@@ -120,7 +120,7 @@ class FilterButton extends HookConsumerWidget {
             onPressed: () {
               sortAndFilterNotifier.clearFilteredBackupStatuses();
               sortAndFilterNotifier.clearFilteredFolders(selectedModType);
-              sortAndFilterNotifier.clearFilteredAssetCounts();
+              sortAndFilterNotifier.clearFilteredAssets();
             },
           ),
 
@@ -138,7 +138,7 @@ class FilterButton extends HookConsumerWidget {
               iconColor: Colors.black,
             ),
             menuChildren: [
-              ...FilterAssetCountEnum.values.map((assetCount) {
+              ...FilterAssetsEnum.values.map((assetCount) {
                 final isSelected = selectedAssetCounts.contains(assetCount);
 
                 return MenuItemButton(
@@ -166,10 +166,9 @@ class FilterButton extends HookConsumerWidget {
                   ),
                   onPressed: () {
                     if (isSelected) {
-                      sortAndFilterNotifier
-                          .removeFilteredAssetCount(assetCount);
+                      sortAndFilterNotifier.removeFilteredAssets(assetCount);
                     } else {
-                      sortAndFilterNotifier.addFilteredAssetCount(assetCount);
+                      sortAndFilterNotifier.addFilteredAssets(assetCount);
                     }
                   },
                 );

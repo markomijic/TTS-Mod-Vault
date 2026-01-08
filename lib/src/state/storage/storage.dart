@@ -45,13 +45,12 @@ class Storage {
     await _appDataBox.put(settingsKey, settingsJson);
   }
 
-  Map<String, String>? getSettings() {
+  Map<String, dynamic>? getSettings() {
     final jsonStr = _appDataBox.get(settingsKey);
 
     if (jsonStr == null) return null;
 
-    final Map<String, dynamic> decoded = jsonDecode(jsonStr);
-    return decoded.map((key, value) => MapEntry(key, value.toString()));
+    return jsonDecode(jsonStr);
   }
 
   Future<void> deleteSettings() async {

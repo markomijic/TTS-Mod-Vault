@@ -12,8 +12,7 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show selectedModProvider, settingsProvider;
+import 'package:tts_mod_vault/src/state/provider.dart' show selectedModProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
@@ -104,23 +103,21 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          if (ref.read(settingsProvider).enableTtsModdersFeatures) ...[
-            const PopupMenuItem(
-              padding: EdgeInsets.zero,
-              height: 1,
-              child: Divider(height: 1),
+          const PopupMenuItem(
+            padding: EdgeInsets.zero,
+            height: 1,
+            child: Divider(height: 1),
+          ),
+          PopupMenuItem(
+            value: ContextMenuActionEnum.replaceUrl,
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.find_replace),
+                Text('Update URL'),
+              ],
             ),
-            PopupMenuItem(
-              value: ContextMenuActionEnum.replaceUrl,
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(Icons.find_replace),
-                  Text('Update URL'),
-                ],
-              ),
-            ),
-          ]
+          ),
         ],
       ).then((value) async {
         if (value != null) {

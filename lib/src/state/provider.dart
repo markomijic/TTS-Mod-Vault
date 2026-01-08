@@ -35,11 +35,14 @@ enum AppPage { mods, backups }
 
 final selectedPageProvider = StateProvider<AppPage>((ref) => AppPage.mods);
 
-final selectedModProvider = StateProvider<Mod?>((ref) => null);
+final multiModsProvider = StateProvider<Set<Mod>>((ref) => {});
 
-final multiSelectModsProvider = StateProvider<Set<String>>((ref) => {});
+final selectedModProvider = Provider<Mod?>((ref) {
+  final mods = ref.watch(multiModsProvider);
+  return mods.isNotEmpty ? mods.first : null;
+});
 
-final selectedModsListProvider = Provider<List<Mod>>((ref) {
+/* final selectedModsListProvider = Provider<List<Mod>>((ref) {
   final multiSelectPaths = ref.watch(multiSelectModsProvider);
   final modsState = ref.watch(modsProvider).valueOrNull;
 
@@ -55,7 +58,7 @@ final selectedModsListProvider = Provider<List<Mod>>((ref) {
       .where((mod) => multiSelectPaths.contains(mod.jsonFilePath))
       .toList();
 });
-
+ */
 // Separate search queries for each page
 final modsSearchQueryProvider = StateProvider<String>((ref) => '');
 final backupsSearchQueryProvider = StateProvider<String>((ref) => '');

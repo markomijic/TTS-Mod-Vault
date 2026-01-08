@@ -11,25 +11,24 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         bulkActionsProvider,
-        multiSelectModsProvider,
-        selectedModProvider,
-        selectedModsListProvider,
-        settingsProvider;
+        multiModsProvider,
+        selectedModTypeProvider;
 
 class MultiSelectView extends HookConsumerWidget {
   const MultiSelectView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMods = ref.watch(selectedModsListProvider);
+    final selectedMods = ref.watch(multiModsProvider);
+    final modType = ref.watch(selectedModTypeProvider);
     final actionInProgress = ref.watch(actionInProgressProvider);
-    final settings = ref.watch(settingsProvider);
 
     // Check if all selected mods are of type 'mod' for Update Mods button
     final allModsAreMod =
         selectedMods.every((mod) => mod.modType == ModTypeEnum.mod);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header with count and clear button
         Container(
@@ -41,25 +40,35 @@ class MultiSelectView extends HookConsumerWidget {
               ),
             ),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+          alignment: Alignment.topLeft,
+          padding: EdgeInsets.only(top: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '${selectedMods.length} Mods Selected',
+                '${selectedMods.length} ${modType.label}s selected',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              Spacer(),
               IconButton(
-                icon: const Icon(Icons.clear, size: 28),
-                tooltip: 'Clear Selection',
+                icon: const Icon(Icons.clear),
+                padding: EdgeInsets.zero,
+                style: ButtonStyle(
+                  backgroundColor:
+                      WidgetStateProperty.all(Colors.white), // Background
+                  foregroundColor:
+                      WidgetStateProperty.all(Colors.black), // Icon
+                ),
+                constraints: BoxConstraints(maxHeight: 26, maxWidth: 26),
+                tooltip: 'Clear selection',
                 onPressed: actionInProgress
                     ? null
                     : () {
-                        ref.read(multiSelectModsProvider.notifier).state = {};
-                        ref.read(selectedModProvider.notifier).state = null;
+                        ref.read(multiModsProvider.notifier).state = {};
+                        //ref.read(selectedModProvider.notifier).state = null;
                       },
               ),
             ],
@@ -71,80 +80,68 @@ class MultiSelectView extends HookConsumerWidget {
           child: ListView.builder(
             itemCount: selectedMods.length,
             itemBuilder: (context, index) {
-              final mod = selectedMods[index];
-              return ListTile(
-                leading: Icon(
-                  Icons.check_circle,
-                  color: Colors.green,
-                  size: 20,
-                ),
-                title: Text(
+              final mod = selectedMods.elementAt(index);
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
                   mod.saveName,
-                  style: const TextStyle(fontSize: 14),
+                  style: const TextStyle(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                dense: true,
               );
             },
           ),
         ),
 
-        // Action buttons section (fixed height: 80px)
-        Container(
-          height: 80,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: Colors.white.withOpacity(0.2),
-                width: 1.0,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                icon: const Icon(Icons.download, size: 18),
+                label: const Text('Download'),
+                onPressed: actionInProgress
+                    ? null
+                    : () => _downloadAll(ref, selectedMods.toList()),
               ),
-            ),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
+              ElevatedButton.icon(
+                icon: const Icon(Icons.archive, size: 18),
+                label: const Text('Backup'),
+                onPressed: actionInProgress
+                    ? null
+                    : () => _backupAll(ref, selectedMods.toList()),
+              ),
+              ElevatedButton.icon(
+                icon: Row(
+                  children: [
+                    const Icon(Icons.download),
+                    const Icon(Icons.archive),
+                  ],
+                ),
+                label: const Text('Download & Backup'),
+                onPressed: actionInProgress
+                    ? null
+                    : () => _downloadAndBackup(ref, selectedMods.toList()),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.edit),
+                label: const Text('Update URLs'),
+                onPressed: actionInProgress
+                    ? null
+                    : () => _updateUrls(context, ref, selectedMods.toList()),
+              ),
+              if (allModsAreMod)
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.download, size: 18),
-                  label: const Text('Download All'),
+                  icon: const Icon(Icons.update),
+                  label: const Text('Update mods'),
                   onPressed: actionInProgress
                       ? null
-                      : () => _downloadAll(ref, selectedMods),
+                      : () => _updateMods(ref, selectedMods.toList()),
                 ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.folder_zip, size: 18),
-                  label: const Text('Backup All'),
-                  onPressed: actionInProgress
-                      ? null
-                      : () => _backupAll(ref, selectedMods),
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.backup, size: 18),
-                  label: const Text('Download & Backup'),
-                  onPressed: actionInProgress
-                      ? null
-                      : () => _downloadAndBackup(ref, selectedMods),
-                ),
-                if (settings.enableTtsModdersFeatures)
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.update, size: 18),
-                    label: const Text('Update URLs'),
-                    onPressed: actionInProgress
-                        ? null
-                        : () => _updateUrls(context, ref, selectedMods),
-                  ),
-                if (allModsAreMod)
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Update Mods'),
-                    onPressed: actionInProgress
-                        ? null
-                        : () => _updateMods(ref, selectedMods),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ],
@@ -165,13 +162,12 @@ class MultiSelectView extends HookConsumerWidget {
 
   void _downloadAndBackup(WidgetRef ref, List<Mod> selectedMods) {
     // downloadAndBackupAllMods requires backupBehavior and folder parameters
-    ref
-        .read(bulkActionsProvider.notifier)
-        .downloadAndBackupAllMods(
-            selectedMods, BulkBackupBehaviorEnum.replace, null);
+    ref.read(bulkActionsProvider.notifier).downloadAndBackupAllMods(
+        selectedMods, BulkBackupBehaviorEnum.replace, null);
   }
 
-  void _updateUrls(BuildContext context, WidgetRef ref, List<Mod> selectedMods) {
+  void _updateUrls(
+      BuildContext context, WidgetRef ref, List<Mod> selectedMods) {
     showDialog(
       context: context,
       builder: (context) => BulkUpdateUrlsDialog(
@@ -190,8 +186,6 @@ class MultiSelectView extends HookConsumerWidget {
 
   void _updateMods(WidgetRef ref, List<Mod> selectedMods) {
     // updateModsAll requires forceUpdate parameter
-    ref
-        .read(bulkActionsProvider.notifier)
-        .updateModsAll(selectedMods, false);
+    ref.read(bulkActionsProvider.notifier).updateModsAll(selectedMods, false);
   }
 }

@@ -7,8 +7,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
-import 'package:tts_mod_vault/src/models/url_replacement_preset.dart'
-    show UrlReplacementPreset;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show modsProvider, settingsProvider;
@@ -24,9 +22,7 @@ void showUpdateUrlsDialog(
     showDialog(
       context: context,
       builder: (context) {
-        return UpdateUrlsDialog(
-          mod: mod,
-        );
+        return UpdateUrlsDialog(mod: mod);
       },
     );
   }
@@ -42,19 +38,14 @@ class UpdateUrlsDialog extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final presets = ref.watch(settingsProvider).urlReplacementPresets;
+
     final oldPrefixTextFieldController = useTextEditingController();
     final newPrefixTextFieldController = useTextEditingController();
 
+    final showInstructions = useState(false);
     final renameFileBox = useState(true);
     final replacingUrl = useState(false);
-
-    final settings = ref.watch(settingsProvider);
-    final presets = settings.urlReplacementPresets;
-
-    debugPrint('UpdateUrlsDialog - Presets count: ${presets.length}');
-    for (var preset in presets) {
-      debugPrint('Preset: ${preset.label} - ${preset.oldUrl} -> ${preset.newUrl}');
-    }
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -62,9 +53,29 @@ class UpdateUrlsDialog extends HookConsumerWidget {
         children: [
           AlertDialog(
             title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              spacing: 8,
               children: [
                 Text('Update URLs'),
+                Spacer(),
+                IconButton(
+                  icon: Icon(
+                    showInstructions.value
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  style: ButtonStyle(
+                    backgroundColor:
+                        WidgetStateProperty.all(Colors.white), // Background
+                    foregroundColor:
+                        WidgetStateProperty.all(Colors.black), // Icon
+                  ),
+                  tooltip: showInstructions.value
+                      ? 'Hide example'
+                      : 'Show pastebin prefixes example',
+                  onPressed: () {
+                    showInstructions.value = !showInstructions.value;
+                  },
+                ),
                 CustomTooltip(
                   message: updateUrlsHelp,
                   child: Icon(
@@ -80,22 +91,23 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: SelectableText(
-                      updateUrlsInstruction,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
+                  if (showInstructions.value)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: SelectableText(
+                        updateUrlsInstruction,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 32),
                   if (presets.isNotEmpty) ...[
+                    SizedBox(height: 16),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -112,7 +124,7 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                         );
                       }).toList(),
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 16),
                   ],
                   Text(
                     'Old prefix',

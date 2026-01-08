@@ -41,7 +41,8 @@ const getPublishedFileDetailsUrl =
 
 const String updateUrlsHelp = '''
 The Update URLs feature works by replacing the beginning of a URL. 
-You can also replace an entire URL by entering it in the "Old prefix" field.
+Or you can replace an entire URL by entering it in the "Old prefix" field.
+Additionally, you can create Update URLs presets in Settings.
 
 Example (single old prefix):
 • Old prefix: http://pastebin.com/raw.php?i=
@@ -56,8 +57,11 @@ Example (multiple old prefixes):
 
 If your mod contains: http://pastebin.com/raw.php?i=abcd, http://pastebin.com/raw/5678, http://pastebin.com/example2
 They will be updated to: https://pastebin.com/raw/abcd, https://pastebin.com/raw/5678, https://pastebin.com/raw/example2''';
-const String updateUrlsInstruction =
-    'You can enter multiple old prefixes by separating them with the | symbol\nFor example: http://pastebin.com/raw.php?i=|http://pastebin.com/raw/|http://pastebin.com/\n\nThere must be exactly one new prefix, for example: https://pastebin.com/raw/';
+const String updateUrlsInstruction = '''
+You can enter multiple old prefixes by separating them with the | symbol
+
+For example: http://pastebin.com/raw.php?i=|http://pastebin.com/raw/|http://pastebin.com/
+There must be exactly one new prefix, for example: https://pastebin.com/raw/''';
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
@@ -774,12 +778,14 @@ void showModContextMenu(
               'Are you sure you want to delete this backup?\n\n${mod.backup!.filename}',
               () async {
                 try {
+                  final backupName = mod.backup!.filename;
+
                   await ref
                       .read(existingBackupsProvider.notifier)
                       .deleteBackup(mod.backup!);
 
                   if (context.mounted) {
-                    showSnackBar(context, 'Backup deleted successfully');
+                    showSnackBar(context, '$backupName deleted successfully');
                   }
                 } catch (e) {
                   if (context.mounted) {
@@ -968,12 +974,14 @@ void _showBackupSubmenu(
               'Are you sure you want to delete this backup?\n\n${mod.backup!.filename}',
               () async {
                 try {
+                  final backupName = mod.backup!.filename;
+
                   await ref
                       .read(existingBackupsProvider.notifier)
                       .deleteBackup(mod.backup!);
 
                   if (context.mounted) {
-                    showSnackBar(context, 'Backup deleted successfully');
+                    showSnackBar(context, '$backupName deleted successfully');
                   }
                 } catch (e) {
                   if (context.mounted) {
@@ -1071,12 +1079,14 @@ void showBackupContextMenu(
               'Are you sure you want to delete this backup?\n\n${backup.filename}',
               () async {
                 try {
+                  final backupName = backup.filename;
+
                   await ref
                       .read(existingBackupsProvider.notifier)
                       .deleteBackup(backup);
 
                   if (context.mounted) {
-                    showSnackBar(context, 'Backup deleted successfully');
+                    showSnackBar(context, '$backupName deleted successfully');
                   }
                 } catch (e) {
                   if (context.mounted) {

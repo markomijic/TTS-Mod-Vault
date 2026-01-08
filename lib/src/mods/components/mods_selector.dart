@@ -10,7 +10,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         modsProvider,
         modsSearchQueryProvider,
-        selectedModProvider,
+        multiModsProvider,
         selectedModTypeProvider,
         settingsProvider;
 
@@ -90,7 +90,8 @@ class ModsSelector extends HookConsumerWidget {
 
             final selectedType = segments[index];
             ref.read(selectedModTypeProvider.notifier).state = selectedType;
-            ref.read(selectedModProvider.notifier).state = null;
+            //ref.read(selectedModProvider.notifier).state = null;
+            ref.read(multiModsProvider.notifier).state = {};
             ref.read(modsSearchQueryProvider.notifier).state = '';
           },
           borderRadius: BorderRadius.circular(16),

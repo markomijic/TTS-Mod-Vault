@@ -216,15 +216,17 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
       }
     }
 
-    if (sortAndFilter.filteredAssetCounts.isNotEmpty) {
-      if (sortAndFilter.filteredAssetCounts
-          .contains(FilterAssetCountEnum.complete)) {
+    if (sortAndFilter.filteredAssets.isNotEmpty) {
+      if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.complete)) {
         return mod.assetCount == mod.existingAssetCount;
       }
 
-      if (sortAndFilter.filteredAssetCounts
-          .contains(FilterAssetCountEnum.missing)) {
+      if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.missing)) {
         return (mod.missingAssetCount ?? 0) > 0;
+      }
+
+      if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.audio)) {
+        return mod.hasAudioAssets;
       }
     }
 

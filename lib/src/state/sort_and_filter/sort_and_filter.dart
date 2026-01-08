@@ -6,7 +6,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show settingsProvider, sortAndFilterProvider;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
-    show SortAndFilterState, SortOptionEnum, FilterAssetCountEnum;
+    show SortAndFilterState, SortOptionEnum, FilterAssetsEnum;
 
 class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   Ref ref;
@@ -103,9 +103,9 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
     );
   }
 
-  void addFilteredAssetCount(FilterAssetCountEnum assetCount) {
+  void addFilteredAssets(FilterAssetsEnum assetFilter) {
     state = state.copyWith(
-      filteredAssetCounts: {assetCount},
+      filteredAssets: {assetFilter},
     );
   }
 
@@ -139,11 +139,10 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
     state = state.copyWith(filteredSavedObjectsFolders: updatedSet);
   }
 
-  void removeFilteredAssetCount(FilterAssetCountEnum assetCount) {
-    final updatedSet =
-        Set<FilterAssetCountEnum>.from(state.filteredAssetCounts);
+  void removeFilteredAssets(FilterAssetsEnum assetCount) {
+    final updatedSet = Set<FilterAssetsEnum>.from(state.filteredAssets);
     updatedSet.remove(assetCount);
-    state = state.copyWith(filteredAssetCounts: updatedSet);
+    state = state.copyWith(filteredAssets: updatedSet);
   }
 
   void removeFilteredBackupStatus(ExistingBackupStatusEnum status) {
@@ -177,8 +176,8 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
     state = state.copyWith(filteredSavedObjectsFolders: {});
   }
 
-  void clearFilteredAssetCounts() {
-    state = state.copyWith(filteredAssetCounts: {});
+  void clearFilteredAssets() {
+    state = state.copyWith(filteredAssets: {});
   }
 
   void clearFilteredBackupStatuses() {

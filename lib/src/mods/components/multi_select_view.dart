@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show showUpdateUrlsDialog;
-import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
+    show showUpdateUrlsDialog, BulkBackupDialog, CustomTooltip;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
-    show Mod, ModTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         bulkActionsProvider,
         multiModsProvider,
         selectedModTypeProvider;
+import 'package:tts_mod_vault/src/utils.dart'
+    show showConfirmDialogWithCheckbox;
 
 class MultiSelectView extends HookConsumerWidget {
   const MultiSelectView({super.key});
@@ -54,24 +54,26 @@ class MultiSelectView extends HookConsumerWidget {
                 ),
               ),
               Spacer(),
-              CustomTooltip(
-                message: 'Clear all',
-                child: IconButton(
-                  icon: const Icon(Icons.clear),
-                  padding: EdgeInsets.zero,
-                  style: ButtonStyle(
-                    backgroundColor:
-                        WidgetStateProperty.all(Colors.white), // Background
-                    foregroundColor:
-                        WidgetStateProperty.all(Colors.black), // Icon
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: CustomTooltip(
+                  message: 'Clear all',
+                  child: IconButton(
+                    icon: const Icon(Icons.clear),
+                    padding: EdgeInsets.zero,
+                    style: ButtonStyle(
+                      backgroundColor:
+                          WidgetStateProperty.all(Colors.white), // Background
+                      foregroundColor:
+                          WidgetStateProperty.all(Colors.black), // Icon
+                    ),
+                    constraints: BoxConstraints(maxHeight: 26, maxWidth: 26),
+                    onPressed: actionInProgress
+                        ? null
+                        : () {
+                            ref.read(multiModsProvider.notifier).state = {};
+                          },
                   ),
-                  constraints: BoxConstraints(maxHeight: 26, maxWidth: 26),
-                  onPressed: actionInProgress
-                      ? null
-                      : () {
-                          ref.read(multiModsProvider.notifier).state = {};
-                          //ref.read(selectedModProvider.notifier).state = null;
-                        },
                 ),
               ),
             ],
@@ -106,16 +108,36 @@ class MultiSelectView extends HookConsumerWidget {
               ElevatedButton.icon(
                 icon: const Icon(Icons.download, size: 18),
                 label: const Text('Download'),
-                onPressed: actionInProgress
-                    ? null
-                    : () => _downloadAll(ref, selectedMods.toList()),
+                onPressed: () {
+                  if (actionInProgress) return;
+
+                  ref
+                      .read(bulkActionsProvider.notifier)
+                      .downloadAllMods(selectedMods.toList());
+                },
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.archive, size: 18),
                 label: const Text('Backup'),
-                onPressed: actionInProgress
-                    ? null
-                    : () => _backupAll(ref, selectedMods.toList()),
+                onPressed: () {
+                  if (actionInProgress) return;
+
+                  showDialog(
+                    context: context,
+                    builder: (context) => BulkBackupDialog(
+                      title: 'Backup all',
+                      initialBehavior:
+                          BulkBackupBehaviorEnum.replaceIfOutOfDate,
+                      onConfirm: (behavior, folder) {
+                        ref.read(bulkActionsProvider.notifier).backupAllMods(
+                              selectedMods.toList(),
+                              behavior,
+                              folder,
+                            );
+                      },
+                    ),
+                  );
+                },
               ),
               ElevatedButton.icon(
                 icon: Row(
@@ -125,68 +147,79 @@ class MultiSelectView extends HookConsumerWidget {
                   ],
                 ),
                 label: const Text('Download & Backup'),
-                onPressed: actionInProgress
-                    ? null
-                    : () => _downloadAndBackup(ref, selectedMods.toList()),
+                onPressed: () {
+                  if (actionInProgress) return;
+
+                  showDialog(
+                    context: context,
+                    builder: (context) => BulkBackupDialog(
+                      title: 'Download & backup all',
+                      initialBehavior:
+                          BulkBackupBehaviorEnum.replaceIfOutOfDate,
+                      onConfirm: (behavior, folder) {
+                        ref
+                            .read(bulkActionsProvider.notifier)
+                            .downloadAndBackupAllMods(
+                              selectedMods.toList(),
+                              behavior,
+                              folder,
+                            );
+                      },
+                    ),
+                  );
+                },
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.edit),
                 label: const Text('Update URLs'),
-                onPressed: actionInProgress
-                    ? null
-                    : () => _updateUrls(context, ref, selectedMods.toList()),
+                onPressed: () {
+                  if (actionInProgress) return;
+
+                  showUpdateUrlsDialog(
+                    context,
+                    ref,
+                    onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) {
+                      ref
+                          .read(bulkActionsProvider.notifier)
+                          .updateUrlPrefixesAllMods(
+                            selectedMods.toList(),
+                            oldUrlPrefix.split('|'),
+                            newUrlPrefix,
+                            renameFile,
+                          );
+                    },
+                  );
+                },
               ),
               if (allModsAreMod)
                 ElevatedButton.icon(
                   icon: const Icon(Icons.update),
                   label: const Text('Update mods'),
-                  onPressed: actionInProgress
-                      ? null
-                      : () => _updateMods(ref, selectedMods.toList()),
+                  onPressed: () {
+                    if (actionInProgress) return;
+
+                    showConfirmDialogWithCheckbox(
+                      context,
+                      title: 'Update all mods',
+                      message:
+                          'Check for updates and download newer versions from Steam Workshop',
+                      checkboxLabel: 'Force update',
+                      checkboxInfoMessage:
+                          'Re-download all mods even if already up to date',
+                      onConfirm: (forceUpdate) {
+                        ref.read(bulkActionsProvider.notifier).updateModsAll(
+                              selectedMods.toList(),
+                              forceUpdate,
+                              context,
+                            );
+                      },
+                    );
+                  },
                 ),
             ],
           ),
         ),
       ],
     );
-  }
-
-  void _downloadAll(WidgetRef ref, List<Mod> selectedMods) {
-    ref.read(bulkActionsProvider.notifier).downloadAllMods(selectedMods);
-  }
-
-  void _backupAll(WidgetRef ref, List<Mod> selectedMods) {
-    // backupAllMods requires backupBehavior and folder parameters
-    // Use replace behavior and let it prompt for folder
-    ref
-        .read(bulkActionsProvider.notifier)
-        .backupAllMods(selectedMods, BulkBackupBehaviorEnum.replace, null);
-  }
-
-  void _downloadAndBackup(WidgetRef ref, List<Mod> selectedMods) {
-    // downloadAndBackupAllMods requires backupBehavior and folder parameters
-    ref.read(bulkActionsProvider.notifier).downloadAndBackupAllMods(
-        selectedMods, BulkBackupBehaviorEnum.replace, null);
-  }
-
-  void _updateUrls(
-      BuildContext context, WidgetRef ref, List<Mod> selectedMods) {
-    showUpdateUrlsDialog(
-      context,
-      ref,
-      onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) {
-        ref.read(bulkActionsProvider.notifier).updateUrlPrefixesAllMods(
-              selectedMods,
-              oldUrlPrefix.split('|'),
-              newUrlPrefix,
-              renameFile,
-            );
-      },
-    );
-  }
-
-  void _updateMods(WidgetRef ref, List<Mod> selectedMods) {
-    // updateModsAll requires forceUpdate parameter
-    ref.read(bulkActionsProvider.notifier).updateModsAll(selectedMods, false);
   }
 }

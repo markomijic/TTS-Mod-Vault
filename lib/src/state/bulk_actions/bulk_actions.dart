@@ -1,13 +1,18 @@
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/foundation.dart' show compute, debugPrint;
+import 'package:flutter/material.dart' show BuildContext, showDialog;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show BulkUpdateResultsDialog;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkActionsState, BulkActionsStatusEnum, BulkBackupBehaviorEnum;
+import 'package:tts_mod_vault/src/state/bulk_actions/mod_update_result.dart'
+    show ModUpdateResult, ModUpdateStatus;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart';
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -50,7 +55,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   // Bulk actions methods
   Future<void> downloadAllMods(List<Mod> mods) async {
-    ref.read(logProvider.notifier).addInfo('Starting bulk download for ${mods.length} mods');
+    ref
+        .read(logProvider.notifier)
+        .addInfo('Starting bulk download for ${mods.length} mods');
 
     state = state.copyWith(
       status: BulkActionsStatusEnum.downloadAll,
@@ -83,9 +90,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
 
     if (state.cancelledBulkAction) {
-      ref.read(logProvider.notifier).addWarning('Bulk download cancelled (${state.currentModNumber}/${mods.length} completed)');
+      ref.read(logProvider.notifier).addWarning(
+          'Bulk download cancelled (${state.currentModNumber}/${mods.length} completed)');
     } else {
-      ref.read(logProvider.notifier).addSuccess('Bulk download completed: ${mods.length} mods');
+      ref
+          .read(logProvider.notifier)
+          .addSuccess('Bulk download completed: ${mods.length} mods');
     }
 
     _resetState();
@@ -97,7 +107,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     BulkBackupBehaviorEnum backupBehavior,
     String? folder,
   ) async {
-    ref.read(logProvider.notifier).addInfo('Starting bulk backup for ${mods.length} mods');
+    ref
+        .read(logProvider.notifier)
+        .addInfo('Starting bulk backup for ${mods.length} mods');
 
     state = state.copyWith(
       status: BulkActionsStatusEnum.backupAll,
@@ -109,7 +121,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     final selectedBackupFolder =
         folder != null && folder.isNotEmpty ? folder : await _getBackupFolder();
     if (selectedBackupFolder == null) {
-      ref.read(logProvider.notifier).addWarning('Bulk backup cancelled - no folder selected');
+      ref
+          .read(logProvider.notifier)
+          .addWarning('Bulk backup cancelled - no folder selected');
       _resetState();
       return;
     }
@@ -164,9 +178,11 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
 
     if (state.cancelledBulkAction) {
-      ref.read(logProvider.notifier).addWarning('Bulk backup cancelled (${state.currentModNumber}/${mods.length} completed)');
+      ref.read(logProvider.notifier).addWarning(
+          'Bulk backup cancelled (${state.currentModNumber}/${mods.length} completed)');
     } else {
-      ref.read(logProvider.notifier).addSuccess('Bulk backup completed: ${state.currentModNumber} mods backed up');
+      ref.read(logProvider.notifier).addSuccess(
+          'Bulk backup completed: ${state.currentModNumber} mods backed up');
     }
 
     _resetState();
@@ -320,6 +336,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   Future<void> updateModsAll(
     List<Mod> mods,
     bool forceUpdate,
+    BuildContext context,
   ) async {
     state = state.copyWith(
       status: BulkActionsStatusEnum.updateModsAll,
@@ -328,6 +345,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     );
 
     final downloadNotifier = ref.read(downloadProvider.notifier);
+    final allResults = <ModUpdateResult>[];
 
     debugPrint('Updating ${mods.length} mods');
 
@@ -335,7 +353,17 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
-        continue;
+        // Add cancelled status for remaining mods
+        for (int j = i; j < mods.length; j++) {
+          final remainingMod = mods[j];
+          allResults.add(ModUpdateResult(
+            modId: remainingMod.jsonFileName.replaceAll('.json', ''),
+            modName: remainingMod.saveName,
+            status: ModUpdateStatus.failed,
+            errorMessage: 'Cancelled by user',
+          ));
+        }
+        break;
       }
 
       // Yield to UI thread to keep app responsive
@@ -352,10 +380,26 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
         mods: [mod],
         forceUpdate: forceUpdate,
       );
-      debugPrint('Update result: $result');
+
+      // Accumulate results
+      allResults.addAll(result.results);
+
+      debugPrint('Update result: ${result.summaryMessage}');
     }
 
+    final cancelled = state.cancelledBulkAction;
     _resetState();
+
+    // Show results dialog
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => BulkUpdateResultsDialog(
+          results: allResults,
+          wasCancelled: cancelled,
+        ),
+      );
+    }
   }
 
   // Cancel methods

@@ -198,6 +198,7 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
                   ref.read(bulkActionsProvider.notifier).updateModsAll(
                         ref.read(filteredModsProvider),
                         forceUpdate,
+                        context,
                       );
                 },
               );

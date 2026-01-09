@@ -21,6 +21,8 @@ import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
         FilepathsIsolateData;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
+import 'package:tts_mod_vault/src/state/bulk_actions/mod_update_result.dart'
+    show DownloadModUpdatesResult, ModUpdateResult, ModUpdateStatus;
 import 'package:tts_mod_vault/src/state/download/download_state.dart'
     show DownloadState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -352,12 +354,18 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
-  Future<String> downloadModUpdates({
+  Future<DownloadModUpdatesResult> downloadModUpdates({
     required List<Mod> mods,
     bool forceUpdate = false,
   }) async {
     if (mods.isEmpty) {
-      return 'No mods selected';
+      return const DownloadModUpdatesResult(
+        results: [],
+        successCount: 0,
+        failCount: 0,
+        skippedCount: 0,
+        summaryMessage: 'No mods selected',
+      );
     }
 
     try {
@@ -422,18 +430,39 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
       if (modsToUpdate.isEmpty) {
         state = state.copyWith(downloadingMods: false, progress: 0.0);
-        return mods.length == 1
+
+        // All mods are already up to date
+        final upToDateResults = mods
+            .map((mod) => ModUpdateResult(
+                  modId: mod.jsonFileName.replaceAll('.json', ''),
+                  modName: mod.saveName,
+                  status: ModUpdateStatus.upToDate,
+                ))
+            .toList();
+
+        final summaryMsg = mods.length == 1
             ? 'Mod is already up to date'
             : 'All mods are already up to date';
+
+        return DownloadModUpdatesResult(
+          results: upToDateResults,
+          successCount: 0,
+          failCount: 0,
+          skippedCount: mods.length,
+          summaryMessage: summaryMsg,
+        );
       }
 
       // Download the mods that need updating
-      final results = <String>[];
+      final results = <ModUpdateResult>[];
+      final errorMessages = <String>[];
       int successCount = 0;
       int failCount = 0;
 
       for (int i = 0; i < modsToUpdate.length; i++) {
         final modInfo = modsToUpdate[i];
+        final mod = mods.firstWhere(
+            (m) => m.jsonFileName.replaceAll('.json', '') == modInfo.modId);
 
         try {
           final result = await _downloadSingleMod(
@@ -446,13 +475,31 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
           if (result.startsWith('Mod saved to:')) {
             successCount++;
+            results.add(ModUpdateResult(
+              modId: modInfo.modId,
+              modName: mod.saveName,
+              status: ModUpdateStatus.updated,
+            ));
           } else {
             failCount++;
-            results.add('[${modInfo.modId}] $result');
+            results.add(ModUpdateResult(
+              modId: modInfo.modId,
+              modName: mod.saveName,
+              status: ModUpdateStatus.failed,
+              errorMessage: result,
+            ));
+            errorMessages.add('[${modInfo.modId}] $result');
           }
         } catch (e) {
           failCount++;
-          results.add('[${modInfo.modId}] Error: $e');
+
+          results.add(ModUpdateResult(
+            modId: modInfo.modId,
+            modName: mod.saveName,
+            status: ModUpdateStatus.failed,
+            errorMessage: e.toString(),
+          ));
+          errorMessages.add('[${modInfo.modId}] Error: $e');
         }
 
         state = state.copyWith(progress: (i + 1) / modsToUpdate.length);
@@ -462,17 +509,30 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
       final skippedCount = mods.length - modsToUpdate.length;
 
-      if (successCount == 1 && modsToUpdate.length == 1 && mods.length == 1) {
-        ref
-            .read(logProvider.notifier)
-            .addSuccess('Updated ${mods[0].saveName}');
-        return "Updated ${mods[0].saveName}";
+      // Add skipped mods (already up to date) to results
+      for (final mod in mods) {
+        final modId = mod.jsonFileName.replaceAll('.json', '');
+        if (!results.any((r) => r.modId == modId)) {
+          results.add(ModUpdateResult(
+            modId: modId,
+            modName: mod.saveName,
+            status: ModUpdateStatus.upToDate,
+          ));
+        }
       }
 
       final summary =
           'Updated $successCount of ${modsToUpdate.length} mods${skippedCount > 0 ? ' ($skippedCount already up to date)' : ''}';
 
-      if (failCount > 0) {
+      final summaryMessage = failCount > 0
+          ? '$summary\n\nFailed:\n${errorMessages.join('\n')}'
+          : summary;
+
+      if (successCount == 1 && modsToUpdate.length == 1 && mods.length == 1) {
+        ref
+            .read(logProvider.notifier)
+            .addSuccess('Updated ${mods[0].saveName}');
+      } else if (failCount > 0) {
         ref
             .read(logProvider.notifier)
             .addWarning('$summary ($failCount failed)');
@@ -480,13 +540,44 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         ref.read(logProvider.notifier).addSuccess(summary);
       }
 
-      return failCount > 0
-          ? '$summary\n\nFailed:\n${results.join('\n')}'
-          : summary;
+      return DownloadModUpdatesResult(
+        results: results,
+        successCount: successCount,
+        failCount: failCount,
+        skippedCount: skippedCount,
+        summaryMessage: summaryMessage,
+      );
     } catch (e) {
       state = state.copyWith(downloadingMods: false, progress: 0.0);
       ref.read(logProvider.notifier).addError('Download mod updates error: $e');
-      return 'Error: $e';
+
+      // Return error results for all mods
+      final eString = e.toString();
+      String errorMessage = eString;
+      if (eString.contains("NoSuchMethod")) {
+        errorMessage = "Mod is not available on the Workshop";
+      }
+      if (eString.contains(
+          "type 'Null' is not a subtype of type 'int' in type cast")) {
+        errorMessage = "Unlisted Workshop mod";
+      }
+
+      final errorResults = mods
+          .map((mod) => ModUpdateResult(
+                modId: mod.jsonFileName.replaceAll('.json', ''),
+                modName: mod.saveName,
+                status: ModUpdateStatus.failed,
+                errorMessage: errorMessage,
+              ))
+          .toList();
+
+      return DownloadModUpdatesResult(
+        results: errorResults,
+        successCount: 0,
+        failCount: mods.length,
+        skippedCount: 0,
+        summaryMessage: 'Error: $e',
+      );
     }
   }
 

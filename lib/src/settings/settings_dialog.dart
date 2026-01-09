@@ -713,7 +713,6 @@ class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
                         urlPresets.value = newList;
                       }
                     },
-                    tooltip: 'Edit preset',
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18),
@@ -723,7 +722,6 @@ class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
                       newList.removeAt(index);
                       urlPresets.value = newList;
                     },
-                    tooltip: 'Delete preset',
                   ),
                 ],
               ),

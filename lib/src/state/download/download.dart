@@ -86,7 +86,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       return;
     }
 
-    ref.read(logProvider.notifier).addInfo('Starting download for: ${mod.saveName}');
+    ref
+        .read(logProvider.notifier)
+        .addInfo('Starting download for: ${mod.saveName}');
 
     await downloadFiles(
       modAssetListUrls: mod.assetLists!.assetBundles
@@ -128,7 +130,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       type: AssetTypeEnum.pdf,
     );
 
-    ref.read(logProvider.notifier).addSuccess('Download completed: ${mod.saveName}');
+    ref
+        .read(logProvider.notifier)
+        .addSuccess('Download completed: ${mod.saveName}');
 
     resetState();
   }
@@ -459,7 +463,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       final skippedCount = mods.length - modsToUpdate.length;
 
       if (successCount == 1 && modsToUpdate.length == 1 && mods.length == 1) {
-        ref.read(logProvider.notifier).addSuccess('Updated ${mods[0].saveName}');
+        ref
+            .read(logProvider.notifier)
+            .addSuccess('Updated ${mods[0].saveName}');
         return "Updated ${mods[0].saveName}";
       }
 
@@ -467,7 +473,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           'Updated $successCount of ${modsToUpdate.length} mods${skippedCount > 0 ? ' ($skippedCount already up to date)' : ''}';
 
       if (failCount > 0) {
-        ref.read(logProvider.notifier).addWarning('$summary ($failCount failed)');
+        ref
+            .read(logProvider.notifier)
+            .addWarning('$summary ($failCount failed)');
       } else {
         ref.read(logProvider.notifier).addSuccess(summary);
       }
@@ -532,7 +540,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       state = state.copyWith(downloadingMods: false, progress: 0.0);
 
       if (modIds.length == 1) {
-        final message = results.isEmpty ? 'Mod downloaded successfully' : results.first;
+        final message =
+            results.isEmpty ? 'Mod downloaded successfully' : results.first;
         if (results.isEmpty) {
           ref.read(logProvider.notifier).addSuccess(message);
         } else {
@@ -543,7 +552,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         final summary =
             'Downloaded $successCount of ${modIds.length} mods successfully';
         if (failCount > 0) {
-          ref.read(logProvider.notifier).addWarning('$summary ($failCount failed)');
+          ref
+              .read(logProvider.notifier)
+              .addWarning('$summary ($failCount failed)');
         } else {
           ref.read(logProvider.notifier).addSuccess(summary);
         }
@@ -733,7 +744,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         final failureDetails = failedResults
             .map((r) => '[${r.modName}] ${r.error ?? "Unknown error"}')
             .join('\n');
-        ref.read(logProvider.notifier).addWarning('$summary (${failedResults.length} failed)');
+        ref
+            .read(logProvider.notifier)
+            .addWarning('$summary (${failedResults.length} failed)');
         return '$summary\n\nFailed:\n$failureDetails';
       }
     } catch (e) {

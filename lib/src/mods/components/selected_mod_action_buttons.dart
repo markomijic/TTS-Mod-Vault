@@ -146,7 +146,18 @@ class SelectedModActionButtons extends HookConsumerWidget {
                 return;
               }
 
-              showUpdateUrlsDialog(context, ref, selectedMod);
+              showUpdateUrlsDialog(
+                context,
+                ref,
+                onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) async {
+                  await ref.read(modsProvider.notifier).updateUrlPrefixes(
+                        selectedMod,
+                        oldUrlPrefix.split('|'),
+                        newUrlPrefix,
+                        renameFile,
+                      );
+                },
+              );
             },
             label: const Text('Update URLs'),
           ),

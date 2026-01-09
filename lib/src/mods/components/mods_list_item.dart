@@ -17,7 +17,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         modsProvider,
-        selectedModProvider,
         settingsProvider,
         multiModsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -31,7 +30,6 @@ class ModsListItem extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showBackupState = ref.watch(settingsProvider).showBackupState;
-    final selectedMod = ref.watch(selectedModProvider);
     final multiSelectMods = ref.watch(multiModsProvider);
 
     final imageExists = useMemoized(() {
@@ -46,7 +44,7 @@ class ModsListItem extends HookConsumerWidget {
 
     final isSelected = useMemoized(() {
       return multiSelectMods.contains(mod);
-    }, [selectedMod, multiSelectMods, mod]);
+    }, [multiSelectMods, mod]);
 
     final filesMessage = useMemoized(() {
       final missingCount = mod.missingAssetCount ?? 0;
@@ -105,11 +103,7 @@ class ModsListItem extends HookConsumerWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(4),
             side: BorderSide(
-              color: isSelected
-                  ? multiSelectMods.length > 1
-                      ? Colors.cyan
-                      : Colors.white
-                  : Colors.transparent,
+              color: isSelected ? Colors.white : Colors.transparent,
               width: 2,
             ),
           ),

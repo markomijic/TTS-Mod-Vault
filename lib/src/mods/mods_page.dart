@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, ConsumerWidget, HookConsumerWidget, WidgetRef;
-
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         ErrorMessage,
@@ -16,10 +15,8 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         SortButton,
         BulkActionsMenu,
         CustomTooltip;
-import 'package:tts_mod_vault/src/mods/components/log_panel.dart' show LogPanel;
 import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
     show FilterButton;
-
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         loadingMessageProvider,
@@ -91,7 +88,9 @@ class ModsColumn extends ConsumerWidget {
               FilterButton(),
               BulkActionsMenu(),
               CustomTooltip(
-                message: """• Right-click a ${type.label} to see options
+                message:
+                    """• Left-click a ${type.label} to see assets and actions
+• Right-click a ${type.label} to see additional actions
 • Left-click while holding ${Platform.isMacOS ? 'command' : 'control button'} to select multiple ${type.label}s
 • Bulk actions are affected by sort, filters and search""",
                 child: Icon(
@@ -112,7 +111,7 @@ class ModsColumn extends ConsumerWidget {
             child: ModsView(),
           ),
         ),
-        LogPanel(),
+        //  LogPanel(),
         BulkActionsProgressBar(),
       ],
     );

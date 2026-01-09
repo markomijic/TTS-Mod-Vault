@@ -111,13 +111,20 @@ class ModsGridCard extends HookConsumerWidget {
             border: Border.all(
               width: 4,
               color: isSelected
-                  ? multiSelectMods.length > 1
-                      ? Colors.red
-                      : Colors.white
+                  ? Colors.white
                   : isHovered.value
                       ? Colors.white70
                       : Colors.transparent,
             ),
+            /* boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ] 
+                : null, */
           ),
           child: Stack(
             children: [

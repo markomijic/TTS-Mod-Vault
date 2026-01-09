@@ -13,7 +13,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModTypeProvider,
         sortAndFilterProvider;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show BulkBackupDialog, showBulkUpdateUrlsDialog;
+    show BulkBackupDialog, showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialogWithCheckbox;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
@@ -160,10 +160,10 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
           onPressed: () {
             if (actionInProgress) return;
 
-            showBulkUpdateUrlsDialog(
+            showUpdateUrlsDialog(
               context,
               ref,
-              (oldUrlPrefix, newUrlPrefix, renameFile) {
+              onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) {
                 ref.read(bulkActionsProvider.notifier).updateUrlPrefixesAllMods(
                       ref.read(filteredModsProvider),
                       oldUrlPrefix.split('|'),

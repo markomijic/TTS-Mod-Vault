@@ -7,33 +7,33 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
-import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show modsProvider, settingsProvider;
+import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show updateUrlsHelp, updateUrlsInstruction;
 
 void showUpdateUrlsDialog(
   BuildContext context,
-  WidgetRef ref,
-  Mod mod,
-) {
+  WidgetRef ref, {
+  required Function(String oldUrlPrefix, String newUrlPrefix, bool renameFile)
+      onConfirm,
+}) {
   if (context.mounted) {
     showDialog(
       context: context,
       builder: (context) {
-        return UpdateUrlsDialog(mod: mod);
+        return UpdateUrlsDialog(onConfirm: onConfirm);
       },
     );
   }
 }
 
 class UpdateUrlsDialog extends HookConsumerWidget {
-  final Mod mod;
+  final Function(String oldUrlPrefix, String newUrlPrefix, bool renameFile)
+      onConfirm;
 
   const UpdateUrlsDialog({
     super.key,
-    required this.mod,
+    required this.onConfirm,
   });
 
   @override
@@ -45,7 +45,6 @@ class UpdateUrlsDialog extends HookConsumerWidget {
 
     final showInstructions = useState(false);
     final renameFileBox = useState(true);
-    final replacingUrl = useState(false);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -57,24 +56,26 @@ class UpdateUrlsDialog extends HookConsumerWidget {
               children: [
                 Text('Update URLs'),
                 Spacer(),
-                IconButton(
-                  icon: Icon(
-                    showInstructions.value
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                  ),
-                  style: ButtonStyle(
-                    backgroundColor:
-                        WidgetStateProperty.all(Colors.white), // Background
-                    foregroundColor:
-                        WidgetStateProperty.all(Colors.black), // Icon
-                  ),
-                  tooltip: showInstructions.value
+                CustomTooltip(
+                  message: showInstructions.value
                       ? 'Hide example'
                       : 'Show pastebin prefixes example',
-                  onPressed: () {
-                    showInstructions.value = !showInstructions.value;
-                  },
+                  child: IconButton(
+                    icon: Icon(
+                      showInstructions.value
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    style: ButtonStyle(
+                      backgroundColor:
+                          WidgetStateProperty.all(Colors.white), // Background
+                      foregroundColor:
+                          WidgetStateProperty.all(Colors.black), // Icon
+                    ),
+                    onPressed: () {
+                      showInstructions.value = !showInstructions.value;
+                    },
+                  ),
                 ),
                 CustomTooltip(
                   message: updateUrlsHelp,
@@ -191,44 +192,19 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                 child: Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () async {
+                onPressed: () {
                   final oldUrlPrefix = oldPrefixTextFieldController.text.trim();
                   final newUrlPrefix = newPrefixTextFieldController.text.trim();
 
                   if (newUrlPrefix.isEmpty || oldUrlPrefix.isEmpty) return;
 
-                  try {
-                    replacingUrl.value = true;
-
-                    await ref.read(modsProvider.notifier).updateUrlPrefixes(
-                          mod,
-                          oldUrlPrefix.split('|'),
-                          newUrlPrefix,
-                          renameFileBox.value,
-                        );
-
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                    }
-                  } catch (e) {
-                    debugPrint('Replacing URL error: $e');
-                  } finally {
-                    replacingUrl.value = false;
-                  }
+                  onConfirm(oldUrlPrefix, newUrlPrefix, renameFileBox.value);
+                  Navigator.pop(context);
                 },
                 child: Text('Apply'),
               ),
             ],
           ),
-          if (replacingUrl.value)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black54,
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-              ),
-            ),
         ],
       ),
     );

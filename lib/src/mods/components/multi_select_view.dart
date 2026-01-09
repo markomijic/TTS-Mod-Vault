@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show BulkUpdateUrlsDialog;
+    show showUpdateUrlsDialog;
+import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
@@ -53,23 +54,25 @@ class MultiSelectView extends HookConsumerWidget {
                 ),
               ),
               Spacer(),
-              IconButton(
-                icon: const Icon(Icons.clear),
-                padding: EdgeInsets.zero,
-                style: ButtonStyle(
-                  backgroundColor:
-                      WidgetStateProperty.all(Colors.white), // Background
-                  foregroundColor:
-                      WidgetStateProperty.all(Colors.black), // Icon
+              CustomTooltip(
+                message: 'Clear all',
+                child: IconButton(
+                  icon: const Icon(Icons.clear),
+                  padding: EdgeInsets.zero,
+                  style: ButtonStyle(
+                    backgroundColor:
+                        WidgetStateProperty.all(Colors.white), // Background
+                    foregroundColor:
+                        WidgetStateProperty.all(Colors.black), // Icon
+                  ),
+                  constraints: BoxConstraints(maxHeight: 26, maxWidth: 26),
+                  onPressed: actionInProgress
+                      ? null
+                      : () {
+                          ref.read(multiModsProvider.notifier).state = {};
+                          //ref.read(selectedModProvider.notifier).state = null;
+                        },
                 ),
-                constraints: BoxConstraints(maxHeight: 26, maxWidth: 26),
-                tooltip: 'Clear selection',
-                onPressed: actionInProgress
-                    ? null
-                    : () {
-                        ref.read(multiModsProvider.notifier).state = {};
-                        //ref.read(selectedModProvider.notifier).state = null;
-                      },
               ),
             ],
           ),
@@ -168,19 +171,17 @@ class MultiSelectView extends HookConsumerWidget {
 
   void _updateUrls(
       BuildContext context, WidgetRef ref, List<Mod> selectedMods) {
-    showDialog(
-      context: context,
-      builder: (context) => BulkUpdateUrlsDialog(
-        onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) {
-          // updateUrlPrefixesAllMods expects List<String> for oldPrefixes
-          ref.read(bulkActionsProvider.notifier).updateUrlPrefixesAllMods(
-                selectedMods,
-                [oldUrlPrefix], // Wrap in list
-                newUrlPrefix,
-                renameFile,
-              );
-        },
-      ),
+    showUpdateUrlsDialog(
+      context,
+      ref,
+      onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) {
+        ref.read(bulkActionsProvider.notifier).updateUrlPrefixesAllMods(
+              selectedMods,
+              oldUrlPrefix.split('|'),
+              newUrlPrefix,
+              renameFile,
+            );
+      },
     );
   }
 

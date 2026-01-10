@@ -92,6 +92,7 @@ class ModsColumn extends ConsumerWidget {
                     """• Left-click a ${type.label} to see assets and actions
 • Right-click a ${type.label} to see additional actions
 • Left-click while holding ${Platform.isMacOS ? 'command' : 'control button'} to select multiple ${type.label}s
+• Hovering over the backup icon on ${type.label}s shows dates and file count mismatches
 • Bulk actions are affected by sort, filters and search""",
                 child: Icon(
                   Icons.info_outline,

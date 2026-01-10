@@ -40,25 +40,26 @@ const getPublishedFileDetailsUrl =
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
 
 const String updateUrlsHelp = '''
-The Update URLs feature works by replacing the beginning of a URL. 
-Or you can replace an entire URL by entering it in the "Old prefix" field.
-Additionally, you can create Update URLs presets in Settings.
+The Update URLs feature works by replacing the beginning of URLs, or even entire URLs, of "Old prefix" with "New prefix"
 
-Example (single old prefix):
+You can enter multiple old prefixes by separating them with the | pipe symbol
+In Settings you can create Update URLs presets which will then be available here
+
+Using single old prefix:
 • Old prefix: http://pastebin.com/raw.php?i=
 • New prefix: https://pastebin.com/raw/
 
 If your mod contains: http://pastebin.com/raw.php?i=1234, http://pastebin.com/raw.php?i=example
 They will be updated to: https://pastebin.com/raw/1234, https://pastebin.com/raw/example
 
-Example (multiple old prefixes):
+Using multiple old prefixes:
 • Old prefixes: http://pastebin.com/raw.php?i=|http://pastebin.com/raw/|http://pastebin.com/
 • New prefix: https://pastebin.com/raw/
 
 If your mod contains: http://pastebin.com/raw.php?i=abcd, http://pastebin.com/raw/5678, http://pastebin.com/example2
 They will be updated to: https://pastebin.com/raw/abcd, https://pastebin.com/raw/5678, https://pastebin.com/raw/example2''';
 const String updateUrlsInstruction = '''
-You can enter multiple old prefixes by separating them with the | symbol
+You can enter multiple old prefixes by separating them with the | pipe symbol
 
 For example: http://pastebin.com/raw.php?i=|http://pastebin.com/raw/|http://pastebin.com/
 There must be exactly one new prefix, for example: https://pastebin.com/raw/''';
@@ -210,13 +211,15 @@ void showBackupConfirmDialog(
               onPressed: () => Navigator.of(context).pop('cancel'),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () => Navigator.of(context).pop('selectFolder'),
-              child: const Text('Select new folder'),
+              icon: Icon(Icons.folder),
+              label: const Text('Select new folder'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () => Navigator.of(context).pop('replace'),
-              child: const Text('Replace'),
+              icon: Icon(Icons.archive),
+              label: const Text('Replace'),
             ),
           ],
         ),
@@ -852,7 +855,8 @@ void showModContextMenu(
                     .read(downloadProvider.notifier)
                     .downloadModUpdates(mods: [mod], forceUpdate: forceUpdate);
 
-                if (context.mounted) showSnackBar(context, result.summaryMessage);
+                if (context.mounted)
+                  showSnackBar(context, result.summaryMessage);
               },
             );
           }

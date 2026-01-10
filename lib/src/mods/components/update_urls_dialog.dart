@@ -7,15 +7,19 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
-import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show selectedModTypeProvider, settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show updateUrlsHelp, updateUrlsInstruction;
+    show copyToClipboard, updateUrlsHelp, updateUrlsInstruction;
 
 void showUpdateUrlsDialog(
   BuildContext context,
   WidgetRef ref, {
-  required Function(String oldUrlPrefix, String newUrlPrefix, bool renameFile)
-      onConfirm,
+  required Function(
+    String oldUrlPrefix,
+    String newUrlPrefix,
+    bool renameFile,
+  ) onConfirm,
 }) {
   if (context.mounted) {
     showDialog(
@@ -28,8 +32,11 @@ void showUpdateUrlsDialog(
 }
 
 class UpdateUrlsDialog extends HookConsumerWidget {
-  final Function(String oldUrlPrefix, String newUrlPrefix, bool renameFile)
-      onConfirm;
+  final Function(
+    String oldUrlPrefix,
+    String newUrlPrefix,
+    bool renameFile,
+  ) onConfirm;
 
   const UpdateUrlsDialog({
     super.key,
@@ -43,7 +50,7 @@ class UpdateUrlsDialog extends HookConsumerWidget {
     final oldPrefixTextFieldController = useTextEditingController();
     final newPrefixTextFieldController = useTextEditingController();
 
-    final showInstructions = useState(false);
+    final showExample = useState(false);
     final renameFileBox = useState(true);
 
     return BackdropFilter(
@@ -51,30 +58,33 @@ class UpdateUrlsDialog extends HookConsumerWidget {
       child: Stack(
         children: [
           AlertDialog(
+            contentPadding: EdgeInsets.symmetric(horizontal: 24),
             title: Row(
-              spacing: 8,
               children: [
                 Text('Update URLs'),
                 Spacer(),
                 CustomTooltip(
-                  message: showInstructions.value
-                      ? 'Hide example'
-                      : 'Show pastebin prefixes example',
+                  message: showExample.value ? 'Hide example' : 'Show example',
                   child: IconButton(
                     icon: Icon(
-                      showInstructions.value
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                      showExample.value ? Icons.help : Icons.help_outline,
                     ),
-                    style: ButtonStyle(
-                      backgroundColor:
-                          WidgetStateProperty.all(Colors.white), // Background
-                      foregroundColor:
-                          WidgetStateProperty.all(Colors.black), // Icon
-                    ),
+                    padding: EdgeInsets.zero,
                     onPressed: () {
-                      showInstructions.value = !showInstructions.value;
+                      showExample.value = !showExample.value;
                     },
+                  ),
+                ),
+                CustomTooltip(
+                  message: 'Copy | pipe symbol to clipboard',
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => copyToClipboard(
+                      context,
+                      '|',
+                      showSnackBarAfterCopying: false,
+                    ),
+                    icon: Icon(Icons.copy),
                   ),
                 ),
                 CustomTooltip(
@@ -86,112 +96,117 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                 ),
               ],
             ),
-            content: SizedBox(
-              width: 950,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (showInstructions.value)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: SelectableText(
-                        updateUrlsInstruction,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black,
-                        ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showExample.value)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: SelectableText(
+                      updateUrlsInstruction,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
                       ),
                     ),
-                  if (presets.isNotEmpty) ...[
-                    SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: presets.map((preset) {
-                        return OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.white),
-                          ),
-                          onPressed: () {
-                            oldPrefixTextFieldController.text = preset.oldUrl;
-                            newPrefixTextFieldController.text = preset.newUrl;
-                          },
-                          child: Text(preset.label),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 16),
-                  ],
-                  Text(
-                    'Old prefix',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  SizedBox(height: 8),
-                  TextField(
-                    autofocus: true,
-                    controller: oldPrefixTextFieldController,
-                    cursorColor: Colors.black,
-                    style: TextStyle(fontSize: 16, color: Colors.black),
-                    scrollPadding: EdgeInsets.all(0),
-                    decoration: InputDecoration(
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(),
-                      hintText: 'Enter new URL',
-                    ),
+                if (presets.isNotEmpty) ...[
+                  SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: presets.map((preset) {
+                      return OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.white),
+                        ),
+                        onPressed: () {
+                          oldPrefixTextFieldController.text = preset.oldUrl;
+                          newPrefixTextFieldController.text = preset.newUrl;
+                        },
+                        child: Text(preset.label),
+                      );
+                    }).toList(),
                   ),
                   SizedBox(height: 16),
-                  Text(
-                    'New prefix',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  TextField(
-                    autofocus: true,
-                    controller: newPrefixTextFieldController,
-                    cursorColor: Colors.black,
-                    style: TextStyle(fontSize: 16, color: Colors.black),
-                    scrollPadding: EdgeInsets.all(0),
-                    decoration: InputDecoration(
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(),
-                      hintText: 'Enter new URL',
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Checkbox(
-                        value: renameFileBox.value,
-                        checkColor: Colors.black,
-                        activeColor: Colors.white,
-                        onChanged: (value) {
-                          renameFileBox.value = value ?? false;
-                        },
-                      ),
-                      Text(
-                        'Rename existing files',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
                 ],
-              ),
+                Text(
+                  'Old prefix',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  autofocus: true,
+                  controller: oldPrefixTextFieldController,
+                  cursorColor: Colors.black,
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                  scrollPadding: EdgeInsets.all(0),
+                  decoration: InputDecoration(
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter new URL',
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'New prefix',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  autofocus: true,
+                  controller: newPrefixTextFieldController,
+                  cursorColor: Colors.black,
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                  scrollPadding: EdgeInsets.all(0),
+                  decoration: InputDecoration(
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter new URL',
+                  ),
+                ),
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Checkbox(
+                      value: renameFileBox.value,
+                      checkColor: Colors.black,
+                      activeColor: Colors.white,
+                      onChanged: (value) {
+                        renameFileBox.value = value ?? false;
+                      },
+                    ),
+                    Text(
+                      'Rename existing asset files',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+              ],
             ),
+            actionsAlignment: MainAxisAlignment.start,
             actions: [
+              Icon(Icons.warning_amber_rounded, size: 32),
+              Text(
+                'This action will edit your ${ref.read(selectedModTypeProvider).label} JSON files',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(width: 300),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel'),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   final oldUrlPrefix = oldPrefixTextFieldController.text.trim();
                   final newUrlPrefix = newPrefixTextFieldController.text.trim();
@@ -201,7 +216,8 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                   onConfirm(oldUrlPrefix, newUrlPrefix, renameFileBox.value);
                   Navigator.pop(context);
                 },
-                child: Text('Apply'),
+                icon: Icon(Icons.edit),
+                label: Text('Apply'),
               ),
             ],
           ),

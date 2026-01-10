@@ -24,6 +24,7 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
     String sourcePath,
     String destinationFolder,
     ModTypeEnum modType,
+    String? pngSourcePath,
   ) async {
     try {
       state = state.copyWith(
@@ -39,6 +40,18 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
       // Copy the JSON file to the selected directory
       final targetPath = p.join(destinationFolder, fileName);
       await File(sourcePath).copy(targetPath);
+
+      // Copy PNG if provided
+      if (pngSourcePath != null && pngSourcePath.isNotEmpty) {
+        try {
+          final jsonBaseName = p.basenameWithoutExtension(targetPath);
+          final pngTargetPath = p.join(destinationFolder, '$jsonBaseName.png');
+          await File(pngSourcePath).copy(pngTargetPath);
+        } catch (e) {
+          debugPrint('PNG copy failed: $e');
+          // PNG failure doesn't prevent JSON import from succeeding
+        }
+      }
 
       // Add the mod to the app state
       await ref.read(modsProvider.notifier).addSingleMod(targetPath, modType);

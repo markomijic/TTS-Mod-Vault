@@ -57,7 +57,7 @@ class DownloadModByIdDialog extends HookConsumerWidget {
               spacing: 8,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: downloadingMods
                       ? null
                       : () async {
@@ -84,7 +84,8 @@ class DownloadModByIdDialog extends HookConsumerWidget {
 
                           targetDirectory.value = p.normalize(dir);
                         },
-                  child: Text('Select folder'),
+                  icon: Icon(Icons.folder),
+                  label: Text('Select folder'),
                 ),
                 Spacer(),
                 ElevatedButton(

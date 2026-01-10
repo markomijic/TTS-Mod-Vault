@@ -16,6 +16,7 @@ class ImportJsonDialog extends HookConsumerWidget {
     String jsonFilePath,
     String destinationFolder,
     ModTypeEnum modType,
+    String? pngFilePath,
   ) onConfirm;
 
   const ImportJsonDialog({
@@ -30,35 +31,59 @@ class ImportJsonDialog extends HookConsumerWidget {
     final savedObjectsDir = ref.watch(directoriesProvider).savedObjectsDir;
 
     final jsonFile = useState<FilePickerResult?>(null);
+    final pngFile = useState<FilePickerResult?>(null);
     final folderPath = useState(workshopDir);
     final modType = useState(ModTypeEnum.mod);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
       child: AlertDialog(
-        contentPadding: EdgeInsets.all(16),
+        contentPadding: EdgeInsets.all(24),
         actions: [
           Row(
             spacing: 8,
             children: [
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final initialFolder = folderPath.value;
+                    final normalizedPath = path.normalize(initialFolder);
+                    final folder = await FilePicker.platform.getDirectoryPath(
+                      lockParentWindow: true,
+                      initialDirectory: normalizedPath,
+                    );
+                    if (folder != null) {
+                      folderPath.value = folder;
+                    }
+                  } catch (e) {
+                    if (context.mounted) showSnackBar(context, e.toString());
+                  }
+                },
+                icon: const Icon(Icons.folder),
+                label: const Text('Select folder'),
+              ),
               const Spacer(),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancel'),
               ),
-              ElevatedButton(
-                onPressed: jsonFile.value == null || folderPath.value.isEmpty
-                    ? null
-                    : () {
-                        final filePath = jsonFile.value!.files.single.path!;
-                        onConfirm.call(
-                          filePath,
-                          folderPath.value,
-                          modType.value,
-                        );
-                        Navigator.pop(context);
-                      },
-                child: const Text('Import'),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (jsonFile.value == null || folderPath.value.isEmpty) {
+                    return;
+                  }
+
+                  final filePath = jsonFile.value!.files.single.path!;
+                  onConfirm.call(
+                    filePath,
+                    folderPath.value,
+                    modType.value,
+                    pngFile.value?.files.single.path,
+                  );
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Import'),
               ),
             ],
           ),
@@ -102,6 +127,45 @@ class ImportJsonDialog extends HookConsumerWidget {
                 icon: const Icon(Icons.file_open),
                 label: const Text('Select JSON'),
               ),
+              Row(
+                children: [
+                  Text(
+                    'Image: ${pngFile.value != null ? pngFile.value!.files.single.name : ''}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  if (pngFile.value != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => pngFile.value = null,
+                      tooltip: 'Clear selection',
+                    ),
+                  Spacer(),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      lockParentWindow: true,
+                      allowedExtensions: ['png'],
+                      allowMultiple: false,
+                    );
+                    if (result != null && result.files.isNotEmpty) {
+                      pngFile.value = result;
+                    }
+                  } catch (e) {
+                    if (context.mounted) showSnackBar(context, e.toString());
+                  }
+                },
+                icon: const Icon(Icons.image),
+                label: const Text('Select Image (Optional)'),
+              ),
+              if (jsonFile.value != null && pngFile.value != null)
+                Text(
+                  'Will be saved as: ${path.basenameWithoutExtension(jsonFile.value!.files.single.name)}.png',
+                  style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+                ),
               // const Divider(),
               Row(
                 spacing: 8,
@@ -162,25 +226,6 @@ class ImportJsonDialog extends HookConsumerWidget {
               Text(
                 'Import to: ${folderPath.value}',
                 style: const TextStyle(fontSize: 16),
-              ),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    final initialFolder = folderPath.value;
-                    final normalizedPath = path.normalize(initialFolder);
-                    final folder = await FilePicker.platform.getDirectoryPath(
-                      lockParentWindow: true,
-                      initialDirectory: normalizedPath,
-                    );
-                    if (folder != null) {
-                      folderPath.value = folder;
-                    }
-                  } catch (e) {
-                    if (context.mounted) showSnackBar(context, e.toString());
-                  }
-                },
-                icon: const Icon(Icons.folder_open),
-                label: const Text('Select folder'),
               ),
             ],
           ),

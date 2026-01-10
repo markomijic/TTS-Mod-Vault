@@ -17,14 +17,14 @@ class HelpTooltip extends StatelessWidget {
         children: [
           // Status indicators
           TextSpan(
-            text: 'Asset Status:\n',
+            text: 'Asset file status:\n',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           TextSpan(
             text: '• Red',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
           ),
-          TextSpan(text: ' - Not downloaded\n'),
+          TextSpan(text: ' - Missing\n'),
           TextSpan(
             text: '• Green',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
@@ -36,20 +36,20 @@ class HelpTooltip extends StatelessWidget {
                 TextStyle(fontWeight: FontWeight.bold, color: Colors.lightBlue),
           ),
           TextSpan(text: ' - Last selected URL\n\n'),
-
           // Actions
           TextSpan(
             text: 'Actions:\n',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          TextSpan(text: '• Click a URL to see options\n'),
           TextSpan(
-              text:
-                  '• Download button: Attempts to download all missing asset files\n'),
-          TextSpan(
-              text:
-                  '• Backup button: Creates a backup (even with missing asset files)\n'),
-          TextSpan(text: '• Cancel button: Cancels downloads'),
+            text: '''
+• Left/right-click a URL to see options 
+• Download button: Attempt to download all missing asset files
+• Backup button: Create a backup out of downloaded asset files
+• Update URLs: Replaces old prefixes of URLs with new one
+• Menu button: additional options - deleting asset files, copying missing URLs''',
+            style: TextStyle(height: 2),
+          ),
         ],
       ),
       child: Icon(

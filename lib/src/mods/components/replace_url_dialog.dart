@@ -10,7 +10,8 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart' show modsProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show modsProvider, selectedModTypeProvider;
 
 void showReplaceUrlDialog(
   BuildContext context,
@@ -57,84 +58,88 @@ class ReplaceUrlDialog extends HookConsumerWidget {
         children: [
           AlertDialog(
             title: Text('Replace URL'),
-            content: SizedBox(
-              width: 950,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Current URL:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Current URL:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
                   ),
-                  SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white),
-                      borderRadius: BorderRadius.circular(4),
-                      color: Colors.white,
-                    ),
-                    child: SelectableText(
-                      asset.url,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'New URL:',
+                  child: SelectableText(
+                    asset.url,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                      letterSpacing: 0.5,
                     ),
                   ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'New URL:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  autofocus: true,
+                  controller: textFieldController,
+                  cursorColor: Colors.black,
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                  scrollPadding: EdgeInsets.all(0),
+                  decoration: InputDecoration(
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter new URL',
+                  ),
+                ),
+                if (asset.fileExists) ...[
                   SizedBox(height: 8),
-                  TextField(
-                    autofocus: true,
-                    controller: textFieldController,
-                    cursorColor: Colors.black,
-                    style: TextStyle(fontSize: 16, color: Colors.black),
-                    scrollPadding: EdgeInsets.all(0),
-                    decoration: InputDecoration(
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(),
-                      hintText: 'Enter new URL',
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Checkbox(
+                        value: renameFileBox.value,
+                        checkColor: Colors.black,
+                        activeColor: Colors.white,
+                        onChanged: (value) {
+                          renameFileBox.value = value ?? false;
+                        },
+                      ),
+                      Text(
+                        'Rename existing file',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
                   ),
-                  if (asset.fileExists) ...[
-                    SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Checkbox(
-                          value: renameFileBox.value,
-                          checkColor: Colors.black,
-                          activeColor: Colors.white,
-                          onChanged: (value) {
-                            renameFileBox.value = value ?? false;
-                          },
-                        ),
-                        Text(
-                          'Rename existing file',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
+            actionsAlignment: MainAxisAlignment.start,
             actions: [
+              Icon(Icons.warning_amber_rounded, size: 32),
+              Text(
+                'This action will edit your ${ref.read(selectedModTypeProvider).label} JSON file',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(width: 300),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel'),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () async {
                   final newUrl = textFieldController.text.trim();
                   if (newUrl.isEmpty) return;
@@ -159,7 +164,8 @@ class ReplaceUrlDialog extends HookConsumerWidget {
                     replacingUrl.value = false;
                   }
                 },
-                child: Text('Apply'),
+                icon: Icon(Icons.edit),
+                label: Text('Apply'),
               ),
             ],
           ),

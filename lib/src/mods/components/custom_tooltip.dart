@@ -14,6 +14,7 @@ import 'package:flutter/material.dart'
 
 class CustomTooltip extends StatelessWidget {
   final String? message;
+  final TextStyle? messageTextStyle;
   final InlineSpan? richMessage;
   final Widget? child;
   final Duration? waitDuration;
@@ -21,6 +22,7 @@ class CustomTooltip extends StatelessWidget {
   const CustomTooltip({
     super.key,
     this.message,
+    this.messageTextStyle,
     this.richMessage,
     this.child,
     this.waitDuration,
@@ -36,10 +38,7 @@ class CustomTooltip extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       textStyle: richMessage == null
-          ? TextStyle(
-              fontSize: 16,
-              color: Colors.white,
-            )
+          ? (messageTextStyle ?? TextStyle(fontSize: 16))
           : null,
       message: message,
       richMessage: richMessage,

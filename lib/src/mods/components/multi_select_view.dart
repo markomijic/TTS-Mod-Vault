@@ -31,7 +31,7 @@ class MultiSelectView extends HookConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with count and clear button
+        // Header with count
         Container(
           decoration: BoxDecoration(
             border: Border(
@@ -43,40 +43,12 @@ class MultiSelectView extends HookConsumerWidget {
           ),
           alignment: Alignment.topLeft,
           padding: EdgeInsets.only(top: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                '${selectedMods.length} ${modType.label}s selected',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: CustomTooltip(
-                  message: 'Clear all',
-                  child: IconButton(
-                    icon: const Icon(Icons.clear),
-                    padding: EdgeInsets.zero,
-                    style: ButtonStyle(
-                      backgroundColor:
-                          WidgetStateProperty.all(Colors.white), // Background
-                      foregroundColor:
-                          WidgetStateProperty.all(Colors.black), // Icon
-                    ),
-                    constraints: BoxConstraints(maxHeight: 26, maxWidth: 26),
-                    onPressed: actionInProgress
-                        ? null
-                        : () {
-                            ref.read(multiModsProvider.notifier).state = {};
-                          },
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            '${selectedMods.length} ${modType.label}s selected',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
 

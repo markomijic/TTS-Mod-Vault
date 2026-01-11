@@ -94,6 +94,7 @@ class SelectedModView extends HookConsumerWidget {
               ),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 8,
               children: [
                 Expanded(
@@ -106,7 +107,7 @@ class SelectedModView extends HookConsumerWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(4.0),
+                  padding: const EdgeInsets.only(right: 4),
                   child: HelpTooltip(),
                 ),
               ],
@@ -186,7 +187,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
           alignment: Alignment.topLeft,
           padding: EdgeInsets.only(top: 8),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 8,
             children: [
               Expanded(
@@ -201,7 +202,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.only(right: 4),
                 child: HelpTooltip(),
               ),
             ],

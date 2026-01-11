@@ -7,6 +7,7 @@ export 'mods_grid.dart';
 export 'mods_list.dart';
 export 'toolbar.dart';
 export 'selected_mod_action_buttons.dart';
+export 'selected_mod_actions_menu.dart';
 export 'selected_mod_view.dart';
 export 'multi_select_view.dart';
 export 'mods_selector.dart';

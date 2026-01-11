@@ -58,74 +58,77 @@ class ReplaceUrlDialog extends HookConsumerWidget {
         children: [
           AlertDialog(
             title: Text('Replace URL'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Current URL:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white),
-                    borderRadius: BorderRadius.circular(4),
-                    color: Colors.white,
+            content: SizedBox(
+              width: 950,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current URL:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  child: SelectableText(
-                    asset.url,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                      letterSpacing: 0.5,
+                  SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white),
+                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.white,
+                    ),
+                    child: SelectableText(
+                      asset.url,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'New URL:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                  SizedBox(height: 16),
+                  Text(
+                    'New URL:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                  autofocus: true,
-                  controller: textFieldController,
-                  cursorColor: Colors.black,
-                  style: TextStyle(fontSize: 16, color: Colors.black),
-                  scrollPadding: EdgeInsets.all(0),
-                  decoration: InputDecoration(
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(),
-                    hintText: 'Enter new URL',
-                  ),
-                ),
-                if (asset.fileExists) ...[
                   SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Checkbox(
-                        value: renameFileBox.value,
-                        checkColor: Colors.black,
-                        activeColor: Colors.white,
-                        onChanged: (value) {
-                          renameFileBox.value = value ?? false;
-                        },
-                      ),
-                      Text(
-                        'Rename existing file',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
+                  TextField(
+                    autofocus: true,
+                    controller: textFieldController,
+                    cursorColor: Colors.black,
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                    scrollPadding: EdgeInsets.all(0),
+                    decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(),
+                      hintText: 'Enter new URL',
+                    ),
                   ),
+                  if (asset.fileExists) ...[
+                    SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Checkbox(
+                          value: renameFileBox.value,
+                          checkColor: Colors.black,
+                          activeColor: Colors.white,
+                          onChanged: (value) {
+                            renameFileBox.value = value ?? false;
+                          },
+                        ),
+                        Text(
+                          'Rename existing file',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             actionsAlignment: MainAxisAlignment.start,
             actions: [
@@ -134,7 +137,7 @@ class ReplaceUrlDialog extends HookConsumerWidget {
                 'This action will edit your ${ref.read(selectedModTypeProvider).label} JSON file',
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(width: 300),
+              SizedBox(width: 406),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel'),

@@ -12,14 +12,16 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/provider.dart' show selectedModProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show selectedModProvider, downloadProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
         getFileNameFromPath,
         openFile,
         openInFileExplorer,
-        openUrl;
+        openUrl,
+        showSnackBar;
 
 class ImagesViewerGridCard extends HookConsumerWidget {
   final Asset asset;
@@ -78,17 +80,22 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          const PopupMenuItem(
-            padding: EdgeInsets.zero,
-            height: 1,
-            child: Divider(height: 1),
+          PopupMenuItem(
+            value: ContextMenuActionEnum.checkUrl,
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.link),
+                Text('Check if URL is invalid'),
+              ],
+            ),
           ),
           PopupMenuItem(
             value: ContextMenuActionEnum.copyUrl,
             child: Row(
               spacing: 8,
               children: [
-                Icon(Icons.link),
+                Icon(Icons.copy),
                 Text('Copy URL'),
               ],
             ),
@@ -102,11 +109,6 @@ class ImagesViewerGridCard extends HookConsumerWidget {
                 Text('Copy Filename'),
               ],
             ),
-          ),
-          const PopupMenuItem(
-            padding: EdgeInsets.zero,
-            height: 1,
-            child: Divider(height: 1),
           ),
           PopupMenuItem(
             value: ContextMenuActionEnum.replaceUrl,
@@ -159,6 +161,18 @@ class ImagesViewerGridCard extends HookConsumerWidget {
                 showReplaceUrlDialog(
                     context, ref, asset, AssetTypeEnum.image, mod);
               }
+              break;
+
+            case ContextMenuActionEnum.checkUrl:
+              if (!context.mounted) break;
+
+              final isLive = await ref
+                  .read(downloadProvider.notifier)
+                  .isUrlLive(asset.url);
+
+              if (!context.mounted) break;
+              showSnackBar(
+                  context, isLive ? 'URL is valid' : 'URL is not valid');
               break;
 
             default:

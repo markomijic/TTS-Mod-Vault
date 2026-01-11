@@ -330,28 +330,102 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final httpsUrl = 'https://$url';
     final httpUrl = 'http://$url';
 
-    Future<bool> isReachable(String fullUrl) async {
-      try {
-        final response = await dio.request(
-          fullUrl,
-          options: Options(
-            method: 'HEAD',
-            validateStatus: (status) => status != null && status < 500,
-          ),
-        );
-        return response.statusCode != null && response.statusCode! < 400;
-      } catch (_) {
-        return false;
-      }
-    }
-
-    if (await isReachable(httpsUrl)) {
+    if (await _checkUrl(httpsUrl)) {
       return httpsUrl;
-    } else if (await isReachable(httpUrl)) {
+    } else if (await _checkUrl(httpUrl)) {
       return httpUrl;
     } else {
       return url; // Could not resolve; return original
     }
+  }
+
+  /// Core URL checking logic (no scheme resolution to avoid circular dependency)
+  /// Returns true if the URL returns a valid response (200-399 status code)
+  /// First tries HEAD request, then falls back to GET if HEAD fails (some servers don't support HEAD)
+  Future<bool> _checkUrl(String url) async {
+    try {
+      // Try HEAD request first (faster, doesn't download content)
+      try {
+        final headResponse = await dio.request(
+          url,
+          options: Options(
+            method: 'HEAD',
+            validateStatus: (status) => status != null && status < 500,
+            followRedirects: true,
+            maxRedirects: 5,
+          ),
+        );
+
+        // Consider 2xx and 3xx as live
+        if (headResponse.statusCode != null && headResponse.statusCode! < 400) {
+          return true;
+        }
+      } catch (headError) {
+        debugPrint('HEAD request failed for $url, trying GET: $headError');
+      }
+
+      // Fallback to GET request with range header (only download first byte to check if URL works)
+      final getResponse = await dio.request(
+        url,
+        options: Options(
+          method: 'GET',
+          headers: {
+            'Range': 'bytes=0-0', // Only request first byte
+          },
+          validateStatus: (status) => status != null && status < 500,
+          followRedirects: true,
+          maxRedirects: 5,
+        ),
+      );
+
+      // Consider 2xx (200-299) and partial content (206) as live
+      // Also accept 3xx redirects
+      return getResponse.statusCode != null &&
+          (getResponse.statusCode! < 400 || getResponse.statusCode == 206);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Checks if a URL is live (not invalid/404)
+  /// Returns true if the URL returns a valid response (200-399 status code)
+  /// First tries HEAD request, then falls back to GET if HEAD fails (some servers don't support HEAD)
+  Future<bool> isUrlLive(String url) async {
+    try {
+      // Resolve URL with scheme if needed
+      final resolvedUrl = await resolveUrlWithScheme(url);
+      return await _checkUrl(resolvedUrl);
+    } catch (e) {
+      debugPrint('Error checking URL $url: $e');
+      return false;
+    }
+  }
+
+  /// Checks all URLs in a mod to see if they're still live
+  /// Returns a list of URLs that are invalid
+  Future<List<String>> checkModUrlsLive(Mod mod) async {
+    final invalidUrls = <String>[];
+
+    if (mod.assetLists == null) {
+      return [];
+    }
+
+    final allAssets = mod.getAllAssets();
+    final int batchSize = ref.read(settingsProvider).concurrentDownloads;
+
+    for (int i = 0; i < allAssets.length; i += batchSize) {
+      final batch = allAssets.sublist(
+        i,
+        i + batchSize > allAssets.length ? allAssets.length : i + batchSize,
+      );
+
+      await Future.wait(batch.map((asset) async {
+        final isLive = await isUrlLive(asset.url);
+        if (!isLive) invalidUrls.add(asset.url);
+      }));
+    }
+
+    return invalidUrls;
   }
 
   Future<DownloadModUpdatesResult> downloadModUpdates({

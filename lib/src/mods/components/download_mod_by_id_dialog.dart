@@ -11,8 +11,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, downloadProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 
-class DownloadModByIdDialog extends HookConsumerWidget {
-  const DownloadModByIdDialog({super.key});
+class DownloadModsDialog extends HookConsumerWidget {
+  const DownloadModsDialog({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

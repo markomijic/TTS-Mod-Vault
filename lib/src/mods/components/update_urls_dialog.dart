@@ -96,103 +96,106 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                 ),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (showExample.value)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: SelectableText(
-                      updateUrlsInstruction,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
+            content: SizedBox(
+              width: 950,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (showExample.value)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: SelectableText(
+                        updateUrlsInstruction,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                  ),
-                if (presets.isNotEmpty) ...[
-                  SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: presets.map((preset) {
-                      return OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.white),
-                        ),
-                        onPressed: () {
-                          oldPrefixTextFieldController.text = preset.oldUrl;
-                          newPrefixTextFieldController.text = preset.newUrl;
-                        },
-                        child: Text(preset.label),
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(height: 16),
-                ],
-                Text(
-                  'Old prefix',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                  autofocus: true,
-                  controller: oldPrefixTextFieldController,
-                  cursorColor: Colors.black,
-                  style: TextStyle(fontSize: 16, color: Colors.black),
-                  scrollPadding: EdgeInsets.all(0),
-                  decoration: InputDecoration(
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(),
-                    hintText: 'Enter new URL',
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'New prefix',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 8),
-                TextField(
-                  autofocus: true,
-                  controller: newPrefixTextFieldController,
-                  cursorColor: Colors.black,
-                  style: TextStyle(fontSize: 16, color: Colors.black),
-                  scrollPadding: EdgeInsets.all(0),
-                  decoration: InputDecoration(
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(),
-                    hintText: 'Enter new URL',
-                  ),
-                ),
-                SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Checkbox(
-                      value: renameFileBox.value,
-                      checkColor: Colors.black,
-                      activeColor: Colors.white,
-                      onChanged: (value) {
-                        renameFileBox.value = value ?? false;
-                      },
+                  if (presets.isNotEmpty) ...[
+                    SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: presets.map((preset) {
+                        return OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.white),
+                          ),
+                          onPressed: () {
+                            oldPrefixTextFieldController.text = preset.oldUrl;
+                            newPrefixTextFieldController.text = preset.newUrl;
+                          },
+                          child: Text(preset.label),
+                        );
+                      }).toList(),
                     ),
-                    Text(
-                      'Rename existing asset files',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    SizedBox(height: 16),
                   ],
-                ),
-                SizedBox(height: 8),
-              ],
+                  Text(
+                    'Old prefix',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    autofocus: true,
+                    controller: oldPrefixTextFieldController,
+                    cursorColor: Colors.black,
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                    scrollPadding: EdgeInsets.all(0),
+                    decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(),
+                      hintText: 'Enter new URL',
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'New prefix',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  TextField(
+                    autofocus: true,
+                    controller: newPrefixTextFieldController,
+                    cursorColor: Colors.black,
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                    scrollPadding: EdgeInsets.all(0),
+                    decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(),
+                      hintText: 'Enter new URL',
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Checkbox(
+                        value: renameFileBox.value,
+                        checkColor: Colors.black,
+                        activeColor: Colors.white,
+                        onChanged: (value) {
+                          renameFileBox.value = value ?? false;
+                        },
+                      ),
+                      Text(
+                        'Rename existing asset files',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                ],
+              ),
             ),
             actionsAlignment: MainAxisAlignment.start,
             actions: [
@@ -201,7 +204,7 @@ class UpdateUrlsDialog extends HookConsumerWidget {
                 'This action will edit your ${ref.read(selectedModTypeProvider).label} JSON files',
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(width: 300),
+              SizedBox(width: 406),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel'),

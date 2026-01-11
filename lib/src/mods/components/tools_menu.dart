@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show DownloadModByIdDialog;
+    show DownloadModsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -88,7 +88,7 @@ class ToolsMenu extends ConsumerWidget {
           ),
           onPressed: () => showDialog(
             context: context,
-            builder: (context) => DownloadModByIdDialog(),
+            builder: (context) => DownloadModsDialog(),
           ),
           leadingIcon: const Icon(
             Icons.download,

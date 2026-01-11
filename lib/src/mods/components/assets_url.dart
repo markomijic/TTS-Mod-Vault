@@ -96,11 +96,21 @@ class AssetsUrl extends HookConsumerWidget {
             ),
           ),
           PopupMenuItem(
-            value: ContextMenuActionEnum.copyUrl,
+            value: ContextMenuActionEnum.checkUrl,
             child: Row(
               spacing: 8,
               children: [
                 Icon(Icons.link),
+                Text('Check if URL is invalid'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: ContextMenuActionEnum.copyUrl,
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.copy),
                 Text('Copy URL'),
               ],
             ),
@@ -195,6 +205,18 @@ class AssetsUrl extends HookConsumerWidget {
               await ref
                   .read(modsProvider.notifier)
                   .updateSelectedMod(selectedMod);
+              break;
+
+            case ContextMenuActionEnum.checkUrl:
+              if (!context.mounted) break;
+
+              final isLive = await ref
+                  .read(downloadProvider.notifier)
+                  .isUrlLive(asset.url);
+
+              if (!context.mounted) break;
+              showSnackBar(
+                  context, isLive ? 'URL is valid' : 'URL is not valid');
               break;
 
             default:

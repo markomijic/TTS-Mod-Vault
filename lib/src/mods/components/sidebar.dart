@@ -5,7 +5,7 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useRef, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show DownloadModByIdDialog, ImportJsonDialog;
+    show DownloadModsDialog, ImportJsonDialog;
 import 'package:tts_mod_vault/src/settings/settings_dialog.dart'
     show SettingsDialog;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -185,19 +185,9 @@ class Sidebar extends HookConsumerWidget {
               isDisabled: actionInProgress,
               onPressed: () => showDialog(
                 context: context,
-                builder: (context) => DownloadModByIdDialog(),
+                builder: (context) => DownloadModsDialog(),
               ),
             ),
-            /* _SidebarItem(
-              icon: Icons.insert_drive_file,
-              label: 'Shared Assets Viewer',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => SharedAssetsViewerDialog(),
-              ),
-            ), */
             _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
               icon: Icons.update,

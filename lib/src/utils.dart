@@ -855,8 +855,9 @@ void showModContextMenu(
                     .read(downloadProvider.notifier)
                     .downloadModUpdates(mods: [mod], forceUpdate: forceUpdate);
 
-                if (context.mounted)
+                if (context.mounted) {
                   showSnackBar(context, result.summaryMessage);
+                }
               },
             );
           }

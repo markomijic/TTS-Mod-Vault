@@ -166,11 +166,13 @@ class Sidebar extends HookConsumerWidget {
               onPressed: () => showDialog(
                 context: context,
                 builder: (context) => ImportJsonDialog(
-                  onConfirm: (jsonFilePath, destinationFolder, modType) {
+                  onConfirm:
+                      (jsonFilePath, destinationFolder, modType, pngFilePath) {
                     ref.read(importBackupProvider.notifier).importJson(
                           jsonFilePath,
                           destinationFolder,
                           modType,
+                          pngFilePath,
                         );
                   },
                 ),
@@ -186,6 +188,16 @@ class Sidebar extends HookConsumerWidget {
                 builder: (context) => DownloadModByIdDialog(),
               ),
             ),
+            /* _SidebarItem(
+              icon: Icons.insert_drive_file,
+              label: 'Shared Assets Viewer',
+              isExpanded: isHovered.value,
+              isDisabled: actionInProgress,
+              onPressed: () => showDialog(
+                context: context,
+                builder: (context) => SharedAssetsViewerDialog(),
+              ),
+            ), */
             _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
               icon: Icons.update,

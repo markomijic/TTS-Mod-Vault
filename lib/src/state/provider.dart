@@ -19,6 +19,8 @@ import 'package:tts_mod_vault/src/state/directories/directories_state.dart';
 import 'package:tts_mod_vault/src/state/download/download.dart';
 import 'package:tts_mod_vault/src/state/download/download_state.dart';
 import 'package:tts_mod_vault/src/state/loader/loader.dart';
+import 'package:tts_mod_vault/src/state/shared_assets/shared_assets.dart';
+import 'package:tts_mod_vault/src/state/shared_assets/shared_assets_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mods.dart';
@@ -128,6 +130,11 @@ final bulkActionsProvider =
 final sortAndFilterProvider =
     StateNotifierProvider<SortAndFilterNotifier, SortAndFilterState>(
   (ref) => SortAndFilterNotifier(ref),
+);
+
+final sharedAssetsProvider =
+    NotifierProvider<SharedAssetsNotifier, SharedAssetsState>(
+  () => SharedAssetsNotifier(),
 );
 
 final actionInProgressProvider = Provider<bool>((ref) {

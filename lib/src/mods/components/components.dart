@@ -29,3 +29,4 @@ export 'update_urls_dialog.dart';
 export 'bulk_actions_menu.dart';
 export 'sidebar.dart';
 export 'import_json_dialog.dart';
+export 'shared_assets_viewer_dialog.dart';

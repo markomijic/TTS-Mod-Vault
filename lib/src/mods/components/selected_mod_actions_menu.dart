@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'dart:ui' show ImageFilter;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show showUpdateUrlsDialog;
+import 'package:tts_mod_vault/src/mods/components/url_check_results_dialog.dart'
+    show buildUrlCheckResultsDialog;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
@@ -40,32 +41,8 @@ class SelectedModActionsMenu extends HookConsumerWidget {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           ),
-          leadingIcon: Icon(Icons.edit, color: Colors.black),
-          child: Text('Update URLs', style: TextStyle(color: Colors.black)),
-          onPressed: () async {
-            if (actionInProgress) return;
-
-            showUpdateUrlsDialog(
-              context,
-              ref,
-              onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) async {
-                await ref.read(modsProvider.notifier).updateUrlPrefixes(
-                      selectedMod,
-                      oldUrlPrefix.split('|'),
-                      newUrlPrefix,
-                      renameFile,
-                    );
-              },
-            );
-          },
-        ),
-        MenuItemButton(
-          style: MenuItemButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-          ),
           leadingIcon: Icon(Icons.link, color: Colors.black),
-          child: Text('Check all assets for invalid URLs',
+          child: Text('Check for invalid URLs',
               style: TextStyle(color: Colors.black)),
           onPressed: () async {
             if (actionInProgress) return;
@@ -77,21 +54,21 @@ class SelectedModActionsMenu extends HookConsumerWidget {
               return;
             }
 
-            final downloadNotifier = ref.read(downloadProvider.notifier);
+            // Get the navigator context before the menu closes
+            final navigator = Navigator.of(context);
 
-            if (context.mounted) {
-              showSnackBar(context, 'Checking URLs...');
-            }
-
-            final results =
-                await downloadNotifier.checkModUrlsLive(selectedMod);
-
-            if (!context.mounted) return;
-
-            _showUrlCheckResultsDialog(
-              context,
-              results,
+            await ref.read(downloadProvider.notifier).checkModUrlsLive(
               selectedMod,
+              onComplete: (invalidUrls) {
+                showDialog(
+                  context: navigator.context,
+                  builder: (builderContext) => buildUrlCheckResultsDialog(
+                    builderContext,
+                    invalidUrls,
+                    selectedMod,
+                  ),
+                );
+              },
             );
           },
         ),
@@ -132,7 +109,8 @@ class SelectedModActionsMenu extends HookConsumerWidget {
             foregroundColor: Colors.black,
           ),
           leadingIcon: Icon(Icons.delete_sweep, color: Colors.black),
-          child: Text('Delete assets', style: TextStyle(color: Colors.black)),
+          child:
+              Text('Delete asset files', style: TextStyle(color: Colors.black)),
           onPressed: () async {
             if (actionInProgress) return;
 
@@ -210,6 +188,30 @@ class SelectedModActionsMenu extends HookConsumerWidget {
             }
           },
         ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          leadingIcon: Icon(Icons.edit, color: Colors.black),
+          child: Text('Update URLs', style: TextStyle(color: Colors.black)),
+          onPressed: () async {
+            if (actionInProgress) return;
+
+            showUpdateUrlsDialog(
+              context,
+              ref,
+              onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) async {
+                await ref.read(modsProvider.notifier).updateUrlPrefixes(
+                      selectedMod,
+                      oldUrlPrefix.split('|'),
+                      newUrlPrefix,
+                      renameFile,
+                    );
+              },
+            );
+          },
+        ),
       ],
       builder: (
         BuildContext context,
@@ -223,15 +225,15 @@ class SelectedModActionsMenu extends HookConsumerWidget {
             minimumSize: Size(32, 32),
             maximumSize: Size(32, 32),
           ),
-          onPressed: actionInProgress
-              ? null
-              : () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
+          onPressed: () {
+            if (actionInProgress) return;
+
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
           icon: Icon(Icons.more_vert, size: 16),
         );
       },
@@ -389,116 +391,6 @@ Future<void> _showSharedAssetsDetailsDialog(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Close'),
             ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-class _InvalidUrlRow extends HookConsumerWidget {
-  final String url;
-  final int index;
-
-  const _InvalidUrlRow({required this.url, required this.index});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isHovered = useState(false);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: MouseRegion(
-        onEnter: (_) => isHovered.value = true,
-        onExit: (_) => isHovered.value = false,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: Text(
-                '${index + 1}. $url',
-                style: TextStyle(
-                    fontSize: 16,
-                    backgroundColor: isHovered.value
-                        ? Colors.grey[850]
-                        : Colors.transparent),
-              ),
-            ),
-            IconButton(
-              iconSize: 16,
-              padding: EdgeInsets.zero,
-              onPressed: () => copyToClipboard(
-                context,
-                url,
-                showSnackBarAfterCopying: false,
-              ),
-              icon: Icon(Icons.copy,
-                  size: 16,
-                  color: !isHovered.value ? Colors.transparent : Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-Future<void> _showUrlCheckResultsDialog(
-  BuildContext context,
-  List<String> invalidUrls,
-  Mod mod,
-) async {
-  await showDialog(
-    context: context,
-    builder: (BuildContext builderContext) {
-      return BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-        child: AlertDialog(
-          title: SizedBox(
-              width: 950,
-              child: Text(mod.saveName, style: TextStyle(fontSize: 18))),
-          content: SizedBox(
-            width: 950,
-            child: Column(
-              spacing: 16,
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Invalid URLs: ${invalidUrls.length}',
-                  style: TextStyle(color: Colors.red, fontSize: 16),
-                ),
-                if (invalidUrls.isNotEmpty)
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: 100, //invalidUrls.length,
-                      itemBuilder: (context, index) {
-                        final url = invalidUrls[0];
-                        return _InvalidUrlRow(url: url, index: index);
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-            if (invalidUrls.isNotEmpty)
-              ElevatedButton.icon(
-                onPressed: () {
-                  final invalidUrlsText = invalidUrls.join('\n');
-                  if (context.mounted) {
-                    copyToClipboard(context, invalidUrlsText,
-                        showSnackBarAfterCopying: false);
-                  }
-                },
-                icon: Icon(Icons.copy_all),
-                label: const Text('Copy all invalid URLs'),
-              ),
           ],
         ),
       );

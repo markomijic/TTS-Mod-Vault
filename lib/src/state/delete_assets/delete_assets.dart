@@ -27,12 +27,14 @@ class DeleteAssetsNotifier extends Notifier<DeleteAssetsState> {
     );
 
     try {
-      // Get all assets from the selected mod
-      final selectedModAssets = selectedMod.getAllAssets();
-      if (selectedModAssets.isEmpty) {
+      // Get all existing assets from the selected mod
+      final existingModAssets =
+          selectedMod.getAllAssets().where((a) => a.fileExists);
+
+      if (existingModAssets.isEmpty) {
         state = state.copyWith(
           status: DeleteAssetsStatusEnum.completed,
-          statusMessage: 'No assets found in this mod',
+          statusMessage: 'No asset files found for ${selectedMod.saveName}',
         );
         return;
       }
@@ -51,7 +53,7 @@ class DeleteAssetsNotifier extends Notifier<DeleteAssetsState> {
       // Run the scanning in an isolate to avoid blocking the UI
       final result = await Isolate.run(() => _scanForDeletableAssets(
             selectedMod.jsonFileName,
-            selectedModAssets.map((a) => a.url).toList(),
+            existingModAssets.map((a) => a.url).toList(),
             allModUrls,
             modTypeMap,
           ));

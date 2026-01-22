@@ -136,13 +136,14 @@ String getFileNameFromPath(String path) {
   return p.basenameWithoutExtension(path);
 }
 
-void showSnackBar(BuildContext context, String message) {
+void showSnackBar(BuildContext context, String message, {Duration? duration}) {
   final snackBar = SnackBar(
     content: Text(
       message,
       style: TextStyle(fontSize: 20),
     ),
     showCloseIcon: false,
+    duration: duration ?? const Duration(milliseconds: 4000),
   );
 
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -848,7 +849,11 @@ void showModContextMenu(
               checkboxInfoMessage: 'Re-download mod even if already up to date',
               onConfirm: (forceUpdate) async {
                 if (context.mounted) {
-                  showSnackBar(context, 'Starting update...');
+                  showSnackBar(
+                    context,
+                    'Starting update...',
+                    duration: Duration(milliseconds: 750),
+                  );
                 }
 
                 final result = await ref
@@ -856,7 +861,16 @@ void showModContextMenu(
                     .downloadModUpdates(mods: [mod], forceUpdate: forceUpdate);
 
                 if (context.mounted) {
-                  showSnackBar(context, result.summaryMessage);
+                  String message = result.summaryMessage;
+
+                  if (message.contains("NoSuchMethod")) {
+                    message = "Mod is not available on the Workshop";
+                  }
+                  if (message.contains(
+                      "type 'Null' is not a subtype of type 'int' in type cast")) {
+                    message = "Mod is unlisted on the Workshop - cannot update";
+                  }
+                  showSnackBar(context, message);
                 }
               },
             );

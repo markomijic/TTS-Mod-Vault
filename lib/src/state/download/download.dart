@@ -23,6 +23,8 @@ import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart
     show ExistingBackup;
 import 'package:tts_mod_vault/src/state/bulk_actions/mod_update_result.dart'
     show DownloadModUpdatesResult, ModUpdateResult, ModUpdateStatus;
+import 'package:tts_mod_vault/src/state/download/download_by_id_result.dart'
+    show DownloadByIdResult, DownloadByIdSummary;
 import 'package:tts_mod_vault/src/state/download/download_state.dart'
     show DownloadState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -71,10 +73,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   Future<void> cancelAllDownloads() async {
     state = state.copyWith(
-      downloadingAssets: false,
+      isDownloading: false,
       cancelledDownloads: true,
-      progress: null,
-      downloadingType: null,
+      progress: 0.0,
+      statusMessage: null,
     );
 
     for (final token in _cancelTokens.values) {
@@ -140,12 +142,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   void resetState() {
-    state = DownloadState(
-      downloadingAssets: false,
-      cancelledDownloads: false,
-      progress: 0.0,
-      downloadingType: null,
-    );
+    state = const DownloadState();
   }
 
   Future<void> _downloadUrl(
@@ -190,16 +187,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     try {
       state = state.copyWith(
-        downloadingAssets: true,
-        progress: 0.0,
-        downloadingType: type,
+        isDownloading: true,
+        progress: 0.01,
+        statusMessage: 'Downloading ${type.label}',
       );
 
       final int batchSize = ref.read(settingsProvider).concurrentDownloads;
 
       for (int i = 0; i < urls.length; i += batchSize) {
         if (state.cancelledDownloads) {
-          continue;
+          break;
         }
 
         final batch = urls.sublist(
@@ -299,8 +296,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
         // Progress per batch
         if (batch.length > 1) {
-          double progress = (i + batchSize) / urls.length;
-          state = state.copyWith(progress: progress.clamp(0.0, 1.0));
+          final completed = (i + batch.length).clamp(0, urls.length);
+          state = state.copyWith(
+            statusMessage:
+                'Downloading ${type.label} $completed/${urls.length}',
+            progress: (completed / urls.length).clamp(0.0, 1.0),
+          );
         }
       }
     } catch (e) {
@@ -403,29 +404,62 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   /// Checks all URLs in a mod to see if they're still live
   /// Returns a list of URLs that are invalid
-  Future<List<String>> checkModUrlsLive(Mod mod) async {
+  /// The onComplete callback is called after the state is reset, allowing dialogs to be shown
+  Future<void> checkModUrlsLive(
+    Mod mod, {
+    void Function(List<String> invalidUrls)? onComplete,
+  }) async {
     final invalidUrls = <String>[];
 
     if (mod.assetLists == null) {
-      return [];
+      onComplete?.call([]);
+      return;
     }
 
     final allAssets = mod.getAllAssets();
     final int batchSize = ref.read(settingsProvider).concurrentDownloads;
 
-    for (int i = 0; i < allAssets.length; i += batchSize) {
-      final batch = allAssets.sublist(
-        i,
-        i + batchSize > allAssets.length ? allAssets.length : i + batchSize,
+    try {
+      state = state.copyWith(
+        isDownloading: true,
+        progress: 0.0,
+        statusMessage: 'Checked 0/${allAssets.length} URLs',
       );
 
-      await Future.wait(batch.map((asset) async {
-        final isLive = await isUrlLive(asset.url);
-        if (!isLive) invalidUrls.add(asset.url);
-      }));
-    }
+      for (int i = 0; i < allAssets.length; i += batchSize) {
+        if (state.cancelledDownloads) {
+          break;
+        }
 
-    return invalidUrls;
+        final batch = allAssets.sublist(
+          i,
+          i + batchSize > allAssets.length ? allAssets.length : i + batchSize,
+        );
+
+        await Future.wait(batch.map((asset) async {
+          final isLive = await isUrlLive(asset.url);
+          if (!isLive) invalidUrls.add(asset.url);
+        }));
+
+        // Update progress after each batch
+        final checked = (i + batch.length).clamp(0, allAssets.length);
+        state = state.copyWith(
+          statusMessage: 'Checked $checked/${allAssets.length} URLs',
+          progress: (checked / allAssets.length).clamp(0.0, 1.0),
+        );
+      }
+    } finally {
+      state = state.copyWith(
+        isDownloading: false,
+        progress: 0.0,
+        statusMessage: null,
+        cancelledDownloads: false,
+      );
+
+      // Call the callback after state is reset, so the UI has returned to normal
+      // and the dialog context will be valid
+      onComplete?.call(invalidUrls);
+    }
   }
 
   Future<DownloadModUpdatesResult> downloadModUpdates({
@@ -443,7 +477,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
 
     try {
-      state = state.copyWith(downloadingMods: true, progress: 0.01);
+      state = state.copyWith(
+        isDownloading: true,
+        progress: 0.01,
+        statusMessage: 'Updating mods',
+      );
 
       // Check which mods need updating
       final modsToUpdate = <({
@@ -503,7 +541,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
 
       if (modsToUpdate.isEmpty) {
-        state = state.copyWith(downloadingMods: false, progress: 0.0);
+        state = state.copyWith(
+          isDownloading: false,
+          progress: 0.0,
+          statusMessage: null,
+        );
 
         // All mods are already up to date
         final upToDateResults = mods
@@ -576,10 +618,19 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           errorMessages.add('[${modInfo.modId}] Error: $e');
         }
 
-        state = state.copyWith(progress: (i + 1) / modsToUpdate.length);
+        state = state.copyWith(
+          statusMessage: modsToUpdate.length == 1
+              ? 'Updating ${mods[0].saveName}'
+              : 'Updating mods ${i + 1}/${modsToUpdate.length}',
+          progress: ((i + 1) / modsToUpdate.length).clamp(0.0, 1.0),
+        );
       }
 
-      state = state.copyWith(downloadingMods: false, progress: 0.0);
+      state = state.copyWith(
+        isDownloading: false,
+        progress: 0.0,
+        statusMessage: null,
+      );
 
       final skippedCount = mods.length - modsToUpdate.length;
 
@@ -595,17 +646,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         }
       }
 
-      final summary =
+      String summary =
           'Updated $successCount of ${modsToUpdate.length} mods${skippedCount > 0 ? ' ($skippedCount already up to date)' : ''}';
 
-      final summaryMessage = failCount > 0
-          ? '$summary\n\nFailed:\n${errorMessages.join('\n')}'
-          : summary;
-
       if (successCount == 1 && modsToUpdate.length == 1 && mods.length == 1) {
-        ref
-            .read(logProvider.notifier)
-            .addSuccess('Updated ${mods[0].saveName}');
+        summary = 'Updated ${mods[0].saveName}';
+        ref.read(logProvider.notifier).addSuccess(summary);
       } else if (failCount > 0) {
         ref
             .read(logProvider.notifier)
@@ -613,6 +659,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       } else {
         ref.read(logProvider.notifier).addSuccess(summary);
       }
+
+      final summaryMessage = failCount > 0
+          ? '$summary\n\nFailed:\n${errorMessages.join('\n')}'
+          : summary;
 
       return DownloadModUpdatesResult(
         results: results,
@@ -622,7 +672,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         summaryMessage: summaryMessage,
       );
     } catch (e) {
-      state = state.copyWith(downloadingMods: false, progress: 0.0);
+      state = state.copyWith(
+        isDownloading: false,
+        progress: 0.0,
+        statusMessage: null,
+      );
       ref.read(logProvider.notifier).addError('Download mod updates error: $e');
 
       // Return error results for all mods
@@ -633,7 +687,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
       if (eString.contains(
           "type 'Null' is not a subtype of type 'int' in type cast")) {
-        errorMessage = "Unlisted Workshop mod";
+        errorMessage = "Mod is unlisted on the Workshop - cannot update";
       }
 
       final errorResults = mods
@@ -664,11 +718,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
 
     try {
-      state = state.copyWith(downloadingMods: true, progress: 0.01);
+      state = state.copyWith(
+        // isDownloading: true, // Commented out to not show download progress bar in selected mod view
+        progress: 0.01,
+        statusMessage: 'Downloading mods',
+      );
 
-      final results = <String>[];
-      int successCount = 0;
-      int failCount = 0;
+      final downloadResults = <DownloadByIdResult>[];
 
       for (int i = 0; i < modIds.length; i++) {
         final modId = modIds[i].trim();
@@ -679,6 +735,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         final segmentSize = 1.0 / modIds.length;
         state = state.copyWith(progress: baseProgress + (segmentSize * 0.25));
 
+        String? modName;
+        bool success = false;
+        String? errorMessage;
+
         try {
           final result = await _downloadSingleMod(
             modId: modId,
@@ -688,47 +748,76 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           );
 
           if (result.startsWith('Mod saved to:')) {
-            successCount++;
+            success = true;
+            // Try to get the mod name from the newly added mod
+            final jsonFilePath = '$targetDirectory/$modId.json';
+            final mods = ref.read(modsProvider.notifier).getAllMods();
+            final addedMod = mods.firstWhereOrNull(
+                (m) => m.jsonFilePath == jsonFilePath);
+            modName = addedMod?.saveName;
           } else {
-            failCount++;
-            results.add('[$modId] $result');
+            errorMessage = result;
           }
         } catch (e) {
-          failCount++;
-          results.add('[$modId] Error: $e');
+          final eString = e.toString();
+          if (eString.contains("NoSuchMethod")) {
+            errorMessage = "Mod is not available on the Workshop";
+          } else if (eString.contains(
+              "type 'Null' is not a subtype of type 'int' in type cast")) {
+            errorMessage = "Mod is unlisted - cannot download";
+          } else {
+            errorMessage = 'Error: $e';
+          }
         }
 
+        downloadResults.add(DownloadByIdResult(
+          modId: modId,
+          modName: modName,
+          success: success,
+          errorMessage: errorMessage,
+        ));
+
         // Update progress after completing current mod
-        state = state.copyWith(progress: (i + 1) / modIds.length);
+        state = state.copyWith(
+          statusMessage: 'Downloading mods ${i + 1}/${modIds.length}',
+          progress: ((i + 1) / modIds.length).clamp(0.0, 1.0),
+        );
       }
 
-      state = state.copyWith(downloadingMods: false, progress: 0.0);
+      state = state.copyWith(
+        isDownloading: false,
+        progress: 0.0,
+        statusMessage: null,
+      );
+
+      final summary = DownloadByIdSummary(downloadResults);
+      final message = summary.toDisplayString();
 
       if (modIds.length == 1) {
-        final message =
-            results.isEmpty ? 'Mod downloaded successfully' : results.first;
-        if (results.isEmpty) {
+        if (summary.successCount > 0) {
           ref.read(logProvider.notifier).addSuccess(message);
         } else {
           ref.read(logProvider.notifier).addError(message);
         }
-        return message;
       } else {
-        final summary =
-            'Downloaded $successCount of ${modIds.length} mods successfully';
-        if (failCount > 0) {
+        if (summary.failCount > 0) {
           ref
               .read(logProvider.notifier)
-              .addWarning('$summary ($failCount failed)');
+              .addWarning(
+                  'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully (${summary.failCount} failed)');
         } else {
-          ref.read(logProvider.notifier).addSuccess(summary);
+          ref.read(logProvider.notifier).addSuccess(
+              'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully');
         }
-        return failCount > 0
-            ? '$summary\n\nFailed:\n${results.join('\n')}'
-            : summary;
       }
+
+      return message;
     } catch (e) {
-      state = state.copyWith(downloadingMods: false, progress: 0.0);
+      state = state.copyWith(
+        isDownloading: false,
+        progress: 0.0,
+        statusMessage: null,
+      );
       ref.read(logProvider.notifier).addError('Download mods by ID error: $e');
       return 'Error: $e';
     }
@@ -749,7 +838,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     try {
       // 1. Initialization Phase
-      state = state.copyWith(downloadingAssets: true, progress: 0.01);
+      state = state.copyWith(
+        isDownloading: true,
+        progress: 0.01,
+        statusMessage: 'Downloading assets for backup',
+      );
 
       // Track results
       final results = <({String modName, bool success, String? error})>[];
@@ -763,7 +856,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         );
 
         if (backupDirPath == null) {
-          state = state.copyWith(downloadingAssets: false, progress: 0.0);
+          state = state.copyWith(
+            isDownloading: false,
+            progress: 0.0,
+            statusMessage: null,
+          );
           return 'Backup directory selection cancelled';
         }
       }
@@ -1213,16 +1310,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     try {
       state = state.copyWith(
-        downloadingAssets: true,
-        progress: 0.0,
-        downloadingType: type,
+        isDownloading: true,
+        progress: 0.01,
+        statusMessage: 'Downloading ${type.label}',
       );
 
       final int batchSize = ref.read(settingsProvider).concurrentDownloads;
 
       for (int i = 0; i < modAssetListUrls.length; i += batchSize) {
         if (state.cancelledDownloads) {
-          continue;
+          break;
         }
 
         final batch = modAssetListUrls.sublist(
@@ -1319,8 +1416,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
         // Progress per batch
         if (batch.length > 1) {
-          double progress = (i + batchSize) / modAssetListUrls.length;
-          state = state.copyWith(progress: progress.clamp(0.0, 1.0));
+          final completed =
+              (i + batch.length).clamp(0, modAssetListUrls.length);
+          state = state.copyWith(
+            statusMessage:
+                'Downloading ${type.label} $completed/${modAssetListUrls.length}',
+            progress: (completed / modAssetListUrls.length).clamp(0.0, 1.0),
+          );
         }
       }
     } catch (e) {

@@ -84,18 +84,13 @@ class SelectedModView extends HookConsumerWidget {
         children: [
           Container(
             alignment: Alignment.topLeft,
-            padding: EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(
-                  color: Colors.white,
-                  width: 2.0,
-                ),
+                bottom: BorderSide(color: Colors.white, width: 2),
               ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 8,
               children: [
                 Expanded(
                   child: Text(
@@ -107,7 +102,7 @@ class SelectedModView extends HookConsumerWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 4),
+                  padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
                   child: HelpTooltip(),
                 ),
               ],
@@ -178,17 +173,12 @@ class _SelectedModViewComponent extends HookConsumerWidget {
         Container(
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(
-                color: Colors.white,
-                width: 2.0,
-              ),
+              bottom: BorderSide(color: Colors.white, width: 2),
             ),
           ),
           alignment: Alignment.topLeft,
-          padding: EdgeInsets.only(top: 8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 8,
             children: [
               Expanded(
                 child: Text(
@@ -202,7 +192,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
                 child: HelpTooltip(),
               ),
             ],
@@ -337,7 +327,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             },
           ),
         ),
-        downloadState.cancelledDownloads || downloadState.downloadingAssets
+        downloadState.isDownloading || downloadState.cancelledDownloads
             ? DownloadProgressBar()
             : backupStatus != BackupStatusEnum.idle
                 ? BackupProgressBar()

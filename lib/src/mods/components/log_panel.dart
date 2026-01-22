@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/src/mods/components/log_line_item.dart';
-import 'package:tts_mod_vault/src/providers/log_provider.dart';
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show filteredLogProvider, logProvider;
 
 class LogPanel extends HookConsumerWidget {
   final double height;

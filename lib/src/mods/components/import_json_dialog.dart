@@ -102,7 +102,7 @@ class ImportJsonDialog extends HookConsumerWidget {
               Row(
                 children: [
                   Text(
-                    'File: ${jsonFile.value != null ? jsonFile.value!.files.single.name : ''}',
+                    'JSON filepath: ${jsonFile.value != null ? jsonFile.value!.files.single.name : ''}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   Spacer(),
@@ -130,7 +130,7 @@ class ImportJsonDialog extends HookConsumerWidget {
               Row(
                 children: [
                   Text(
-                    'Image: ${pngFile.value != null ? pngFile.value!.files.single.name : ''}',
+                    'Image filepath: ${pngFile.value != null ? pngFile.value!.files.single.name : ''}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   if (pngFile.value != null)

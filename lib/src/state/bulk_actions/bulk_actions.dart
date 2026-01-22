@@ -71,7 +71,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
-        continue;
+        break;
       }
 
       // Yield to UI thread on every iteration to keep app responsive
@@ -135,7 +135,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
-        continue;
+        break;
       }
 
       // Yield to UI thread on every iteration to keep app responsive
@@ -215,7 +215,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
-        continue;
+        break;
       }
 
       // Yield to UI thread on every iteration to keep app responsive
@@ -236,7 +236,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       await modsNotifier.updateSelectedMod(completeMod);
 
       if (state.cancelledBulkAction) {
-        continue;
+        break;
       }
 
       String modBackupFolder = selectedBackupFolder;
@@ -291,7 +291,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       final mod = mods[i];
 
       if (state.cancelledBulkAction) {
-        continue;
+        break;
       }
 
       // Yield to UI thread on every iteration to keep app responsive
@@ -440,7 +440,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     );
   }
 
-  void _cancelAllBackups() async {
+  Future<void> _cancelAllBackups() async {
     state = state.copyWith(
       cancelledBulkAction: true,
       statusMessage:
@@ -448,7 +448,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     );
   }
 
-  void _cancelUpdateUrls() async {
+  Future<void> _cancelUpdateUrls() async {
     state = state.copyWith(
       cancelledBulkAction: true,
       statusMessage:
@@ -456,7 +456,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     );
   }
 
-  void _cancelDownloadAndBackupAll() async {
+  Future<void> _cancelDownloadAndBackupAll() async {
     if (ref.read(backupProvider).status == BackupStatusEnum.idle) {
       ref.read(downloadProvider.notifier).cancelAllDownloads();
     }
@@ -468,7 +468,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     );
   }
 
-  void _cancelUpdateModsAll() async {
+  Future<void> _cancelUpdateModsAll() async {
     state = state.copyWith(
         cancelledBulkAction: true, statusMessage: "Cancelling updating mods");
   }

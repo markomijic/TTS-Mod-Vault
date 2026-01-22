@@ -1,4 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:tts_mod_vault/src/models/log_entry.dart';
+import 'package:tts_mod_vault/src/providers/log_provider.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
@@ -28,10 +30,26 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart';
 import 'package:tts_mod_vault/src/state/storage/storage.dart';
 
-// Re-export log provider
-export 'package:tts_mod_vault/src/providers/log_provider.dart' show logProvider;
-
 enum AppPage { mods, backups }
+
+final logProvider = StateNotifierProvider<LogNotifier, List<LogEntry>>((ref) {
+  return LogNotifier();
+});
+
+final filteredLogProvider =
+    Provider.family<List<LogEntry>, String>((ref, searchQuery) {
+  final logs = ref.watch(logProvider);
+
+  if (searchQuery.isEmpty) {
+    return logs;
+  }
+
+  final lowerQuery = searchQuery.toLowerCase();
+  return logs.where((entry) {
+    return entry.message.toLowerCase().contains(lowerQuery) ||
+        entry.formattedTimestamp.contains(lowerQuery);
+  }).toList();
+});
 
 final selectedPageProvider = StateProvider<AppPage>((ref) => AppPage.mods);
 
@@ -42,23 +60,6 @@ final selectedModProvider = Provider<Mod?>((ref) {
   return mods.isNotEmpty ? mods.first : null;
 });
 
-/* final selectedModsListProvider = Provider<List<Mod>>((ref) {
-  final multiSelectPaths = ref.watch(multiSelectModsProvider);
-  final modsState = ref.watch(modsProvider).valueOrNull;
-
-  if (modsState == null || multiSelectPaths.isEmpty) return [];
-
-  final allMods = [
-    ...modsState.mods,
-    ...modsState.saves,
-    ...modsState.savedObjects,
-  ];
-
-  return allMods
-      .where((mod) => multiSelectPaths.contains(mod.jsonFilePath))
-      .toList();
-});
- */
 // Separate search queries for each page
 final modsSearchQueryProvider = StateProvider<String>((ref) => '');
 final backupsSearchQueryProvider = StateProvider<String>((ref) => '');
@@ -132,22 +133,20 @@ final sortAndFilterProvider =
 
 final actionInProgressProvider = Provider<bool>((ref) {
   final modsAsyncValue = ref.watch(modsProvider);
-  final downloadingAssets = ref.watch(downloadProvider).downloadingAssets;
-  final downloadingMods = ref.watch(downloadProvider).downloadingMods;
+  final isDownloading = ref.watch(downloadProvider).isDownloading;
   final bulkActionStatus = ref.watch(bulkActionsProvider).status;
   final cleanUpStatus = ref.watch(cleanupProvider).status;
-  // final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
+  final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
   final importBackupStatus = ref.watch(importBackupProvider).status;
   final deletingBackup = ref.watch(existingBackupsProvider).deletingBackup;
 
-  // deleteAssetsStatus != DeleteAssetsStatusEnum.idle ||
-  return cleanUpStatus != CleanUpStatusEnum.idle ||
+  return deleteAssetsStatus != DeleteAssetsStatusEnum.idle ||
+      cleanUpStatus != CleanUpStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
       importBackupStatus != ImportBackupStatusEnum.idle ||
       bulkActionStatus != BulkActionsStatusEnum.idle ||
-      downloadingAssets ||
-      downloadingMods ||
+      isDownloading ||
       modsAsyncValue is AsyncLoading ||
       deletingBackup;
 });

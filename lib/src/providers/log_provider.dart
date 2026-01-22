@@ -1,8 +1,9 @@
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/src/models/log_entry.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart' show StateNotifier;
+import 'package:tts_mod_vault/src/models/log_entry.dart'
+    show LogEntry, LogLevel;
 
 class LogNotifier extends StateNotifier<List<LogEntry>> {
-  static const int maxEntries = 1000;
+  static const int maxEntries = 10000;
 
   LogNotifier() : super([]);
 
@@ -43,23 +44,3 @@ class LogNotifier extends StateNotifier<List<LogEntry>> {
     state = [];
   }
 }
-
-/// Provider for the log entries
-final logProvider = StateNotifierProvider<LogNotifier, List<LogEntry>>((ref) {
-  return LogNotifier();
-});
-
-/// Provider for filtered log entries based on search query
-final filteredLogProvider = Provider.family<List<LogEntry>, String>((ref, searchQuery) {
-  final logs = ref.watch(logProvider);
-
-  if (searchQuery.isEmpty) {
-    return logs;
-  }
-
-  final lowerQuery = searchQuery.toLowerCase();
-  return logs.where((entry) {
-    return entry.message.toLowerCase().contains(lowerQuery) ||
-           entry.formattedTimestamp.contains(lowerQuery);
-  }).toList();
-});

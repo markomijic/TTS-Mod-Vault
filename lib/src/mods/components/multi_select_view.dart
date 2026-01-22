@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart'
+    show useScrollController, useEffect;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show showUpdateUrlsDialog, BulkBackupDialog, CustomTooltip;
+    show showUpdateUrlsDialog, BulkBackupDialog;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
@@ -24,7 +26,23 @@ class MultiSelectView extends HookConsumerWidget {
     final modType = ref.watch(selectedModTypeProvider);
     final actionInProgress = ref.watch(actionInProgressProvider);
 
-    // Check if all selected mods are of type 'mod' for Update Mods button
+    final scrollController = useScrollController();
+
+    useEffect(() {
+      if (scrollController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (scrollController.hasClients) {
+            scrollController.animateTo(
+              scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+      return null;
+    }, [selectedMods.length]);
+
     final allModsAreMod =
         selectedMods.every((mod) => mod.modType == ModTypeEnum.mod);
 
@@ -55,6 +73,7 @@ class MultiSelectView extends HookConsumerWidget {
         // Scrollable list of selected mod names
         Expanded(
           child: ListView.builder(
+            controller: scrollController,
             itemCount: selectedMods.length,
             itemBuilder: (context, index) {
               final mod = selectedMods.elementAt(index);

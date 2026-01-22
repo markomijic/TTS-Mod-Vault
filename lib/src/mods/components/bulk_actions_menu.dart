@@ -194,6 +194,9 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
                 checkboxLabel: 'Force update',
                 checkboxInfoMessage:
                     'Re-download all mods even if already up to date',
+                showWarning: true,
+                warningText:
+                    "This feature has been tested with various mods, however it's recommended to let Tabletop Simulator handle updates directly to avoid unexpected issues.",
                 onConfirm: (forceUpdate) {
                   ref.read(bulkActionsProvider.notifier).updateModsAll(
                         ref.read(filteredModsProvider),

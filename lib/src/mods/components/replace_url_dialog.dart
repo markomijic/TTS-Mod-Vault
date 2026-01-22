@@ -116,6 +116,7 @@ class ReplaceUrlDialog extends HookConsumerWidget {
                           value: renameFileBox.value,
                           checkColor: Colors.black,
                           activeColor: Colors.white,
+                          visualDensity: VisualDensity.compact,
                           onChanged: (value) {
                             renameFileBox.value = value ?? false;
                           },

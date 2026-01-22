@@ -11,6 +11,7 @@ enum ContextMenuActionEnum {
   copyBackupFilename,
   download,
   deleteBackup,
+  deleteAsset,
   replaceUrl,
   updateMod,
   backupSubmenu,

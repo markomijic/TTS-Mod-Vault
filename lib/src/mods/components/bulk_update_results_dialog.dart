@@ -32,7 +32,7 @@ class BulkUpdateResultsDialog extends HookConsumerWidget {
         title: Row(
           children: [
             Icon(
-              wasCancelled ? Icons.warning : Icons.check_circle,
+              wasCancelled ? Icons.warning_amber_rounded : Icons.check_circle,
               color: wasCancelled ? Colors.orange : Colors.green,
             ),
             const SizedBox(width: 8),

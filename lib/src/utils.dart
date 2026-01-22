@@ -251,6 +251,8 @@ Future<void> showConfirmDialogWithCheckbox(
   required void Function(bool checkboxValue) onConfirm,
   required String checkboxLabel,
   required String checkboxInfoMessage,
+  bool showWarning = false,
+  String warningText = "",
 }) async {
   bool checkboxValue = false;
 
@@ -267,7 +269,16 @@ Future<void> showConfirmDialogWithCheckbox(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 18)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(title, style: TextStyle(fontSize: 18)),
+                      if (showWarning)
+                        CustomTooltip(
+                            message: warningText,
+                            child: Icon(Icons.warning_amber_rounded, size: 32)),
+                    ],
+                  ),
                   if (message.isNotEmpty)
                     Text(
                       message,
@@ -280,6 +291,7 @@ Future<void> showConfirmDialogWithCheckbox(
                         value: checkboxValue,
                         checkColor: Colors.black,
                         activeColor: Colors.white,
+                        visualDensity: VisualDensity.compact,
                         onChanged: (value) {
                           setState(() {
                             checkboxValue = value ?? false;
@@ -847,6 +859,9 @@ void showModContextMenu(
                   'Check for updates and download newer version from Steam Workshop',
               checkboxLabel: 'Force update',
               checkboxInfoMessage: 'Re-download mod even if already up to date',
+              showWarning: true,
+              warningText:
+                  "This feature has been tested with various mods, however it's recommended to let Tabletop Simulator handle updates directly to avoid unexpected issues.",
               onConfirm: (forceUpdate) async {
                 if (context.mounted) {
                   showSnackBar(

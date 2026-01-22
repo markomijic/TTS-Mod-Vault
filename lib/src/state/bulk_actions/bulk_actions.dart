@@ -228,12 +228,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Downloading & backing up "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
-      final modUrls = await modsNotifier.getUrlsByMod(mod);
-      final completeMod = await modsNotifier.getCompleteMod(mod, modUrls);
-      modsNotifier.setSelectedMod(completeMod);
-
-      await downloadNotifier.downloadAllFiles(completeMod);
-      await modsNotifier.updateSelectedMod(completeMod);
+      modsNotifier.setSelectedMod(mod);
+      await downloadNotifier.downloadAllFiles(mod);
+      await modsNotifier.updateSelectedMod(mod);
 
       if (state.cancelledBulkAction) {
         break;

@@ -66,6 +66,7 @@ class SelectDirectoriesWidget extends HookConsumerWidget {
               value: separateSavesDir.value,
               checkColor: Colors.black,
               activeColor: Colors.white,
+              visualDensity: VisualDensity.compact,
               onChanged: (value) {
                 separateSavesDir.value = value ?? false;
               },

@@ -124,7 +124,7 @@ class BulkBackupDialog extends HookConsumerWidget {
               Row(
                 spacing: 8,
                 children: [
-                  Icon(Icons.warning),
+                  Icon(Icons.warning_amber_rounded),
                   Text(
                       "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable Backup State feature in Settings to hide this warning"),
                 ],

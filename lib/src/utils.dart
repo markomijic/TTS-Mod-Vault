@@ -21,6 +21,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
+        bulkActionsProvider,
         downloadProvider,
         existingBackupsProvider,
         importBackupProvider;
@@ -771,8 +772,8 @@ void showModContextMenu(
       switch (value) {
         case 'importBackup':
           await ref
-              .read(importBackupProvider.notifier)
-              .importBackupFromPath(mod.backup!.filepath);
+              .read(bulkActionsProvider.notifier)
+              .importBackups(filePath: mod.backup!.filepath);
           break;
 
         case 'openBackupInExplorer':
@@ -985,8 +986,8 @@ void _showBackupSubmenu(
       switch (value) {
         case 'import':
           await ref
-              .read(importBackupProvider.notifier)
-              .importBackupFromPath(mod.backup!.filepath);
+              .read(bulkActionsProvider.notifier)
+              .importBackups(filePath: mod.backup!.filepath);
           break;
 
         case 'openInExplorer':
@@ -1090,8 +1091,8 @@ void showBackupContextMenu(
       switch (value) {
         case 'import':
           await ref
-              .read(importBackupProvider.notifier)
-              .importBackupFromPath(backup.filepath);
+              .read(bulkActionsProvider.notifier)
+              .importBackups(filePath: backup.filepath);
           break;
 
         case 'openInExplorer':

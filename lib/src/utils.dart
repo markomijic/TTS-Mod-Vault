@@ -862,7 +862,7 @@ void showModContextMenu(
               checkboxInfoMessage: 'Re-download mod even if already up to date',
               showWarning: true,
               warningText:
-                  "This feature has been tested with various mods, however it's recommended to let\nTabletop Simulator handle updates for subscribed mods directly to avoid unexpected issues.",
+                  "This feature has been tested with various mods, however it's recommended to let\nTabletop Simulator handle updates for subscribed mods to avoid unexpected issues.",
               onConfirm: (forceUpdate) async {
                 if (context.mounted) {
                   showSnackBar(

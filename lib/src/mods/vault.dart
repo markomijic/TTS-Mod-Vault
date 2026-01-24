@@ -4,8 +4,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/backups/backups_page.dart' show BackupsPage;
 import 'package:tts_mod_vault/src/mods/components/components.dart' show Sidebar;
-import 'package:tts_mod_vault/src/mods/components/import_backup_overlay.dart'
-    show ImportBackupOverlay;
 import 'package:tts_mod_vault/src/mods/mods_page.dart' show ModsPage;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show selectedPageProvider, AppPage;
@@ -36,7 +34,6 @@ class Vault extends HookConsumerWidget {
               ],
             ),
             Sidebar(width: sidebarWidth.value),
-            ImportBackupOverlay(),
           ],
         ),
       ),

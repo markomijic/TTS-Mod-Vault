@@ -1,14 +1,12 @@
 import 'dart:io';
 
 import 'package:archive/archive.dart' show ZipDecoder;
-import 'package:file_picker/file_picker.dart'
-    show FilePicker, FilePickerResult, FileType;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p
     show basename, basenameWithoutExtension, extension, join, normalize, split;
 import 'package:tts_mod_vault/src/state/backup/import_backup_state.dart'
-    show ImportBackupState, ImportBackupStatusEnum;
+    show ImportBackupState;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
@@ -28,8 +26,6 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
   ) async {
     try {
       state = state.copyWith(
-        status: ImportBackupStatusEnum.importingBackup,
-        importFileName: p.basenameWithoutExtension(sourcePath),
         currentCount: 0,
         totalCount: 0,
       );
@@ -58,74 +54,11 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
     } catch (e) {
       debugPrint('importJson error: $e');
     }
-
-    state = state.copyWith(
-      status: ImportBackupStatusEnum.idle,
-      importFileName: "",
-    );
   }
 
   Future<void> importBackupFromPath(String filePath) async {
-    await _performImport(filePath);
-  }
-
-  Future<void> importBackup() async {
-    try {
-      state = state.copyWith(
-        status: ImportBackupStatusEnum.awaitingBackupFile,
-        currentCount: 0,
-        totalCount: 0,
-      );
-
-      final backupsDir = ref.read(directoriesProvider).backupsDir;
-
-      FilePickerResult? result;
-      try {
-        result = await FilePicker.platform.pickFiles(
-          type: FileType.custom,
-          lockParentWindow: true,
-          initialDirectory: backupsDir.isEmpty ? null : backupsDir,
-          allowedExtensions: ['ttsmod'],
-          allowMultiple: false,
-        );
-      } catch (e) {
-        debugPrint("importBackup - file picker error: $e");
-        return;
-      }
-
-      if (result == null || result.files.isEmpty) {
-        state = state.copyWith(
-          status: ImportBackupStatusEnum.idle,
-        );
-        return;
-      }
-
-      final filePath = result.files.single.path ?? '';
-      if (filePath.isEmpty) {
-        state = state.copyWith(
-          status: ImportBackupStatusEnum.idle,
-        );
-        return;
-      }
-
-      await _performImport(filePath);
-    } catch (e) {
-      debugPrint('importBackup error: $e');
-      state = state.copyWith(
-        status: ImportBackupStatusEnum.idle,
-        importFileName: "",
-      );
-    }
-  }
-
-  Future<void> _performImport(String filePath) async {
     ModTypeEnum? modType;
     try {
-      state = state.copyWith(
-        status: ImportBackupStatusEnum.importingBackup,
-        importFileName: p.basenameWithoutExtension(filePath),
-      );
-
       final bytes = await File(filePath).readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
       final modsDir = Directory(ref.read(directoriesProvider).modsDir);
@@ -208,11 +141,6 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
     } catch (e) {
       debugPrint('importBackup error: $e');
     }
-
-    state = state.copyWith(
-      status: ImportBackupStatusEnum.idle,
-      importFileName: "",
-    );
   }
 
   bool _isJsonFile(String inputPath) {

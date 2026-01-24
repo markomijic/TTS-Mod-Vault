@@ -409,30 +409,47 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   }
 
   // MARK: Import
-  Future<void> importBackups() async {
+  Future<void> importBackups({String? filePath}) async {
     state = state.copyWith(
         status: BulkActionsStatusEnum.importingBackups,
         statusMessage: 'Select TTSMOD files to import');
 
-    final backupsDir = ref.read(directoriesProvider).backupsDir;
+    final List<String> filePaths;
 
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      lockParentWindow: true,
-      initialDirectory: backupsDir.isEmpty ? null : backupsDir,
-      allowedExtensions: ['ttsmod'],
-      allowMultiple: true,
-    );
+    if (filePath != null && filePath.isNotEmpty) {
+      // Use the provided filepath directly
+      filePaths = [filePath];
+    } else {
+      // Show file picker
+      final backupsDir = ref.read(directoriesProvider).backupsDir;
 
-    if (result == null || result.files.isEmpty) {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        lockParentWindow: true,
+        initialDirectory: backupsDir.isEmpty ? null : backupsDir,
+        allowedExtensions: ['ttsmod'],
+        allowMultiple: true,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        _resetState();
+        return;
+      }
+
+      filePaths = result.files
+          .map((f) => f.path)
+          .where((p) => p != null && p.isNotEmpty)
+          .cast<String>()
+          .toList();
+    }
+
+    if (filePaths.isEmpty) {
       _resetState();
       return;
     }
 
-    for (int i = 0; i < result.files.length; i++) {
-      final filePath = result.files[i].path;
-
-      if (filePath == null || filePath.isEmpty) continue;
+    for (int i = 0; i < filePaths.length; i++) {
+      final path = filePaths[i];
 
       if (state.cancelledBulkAction) {
         break;
@@ -441,18 +458,16 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       // Yield to UI thread on every iteration to keep app responsive
       await Future.delayed(Duration.zero);
 
-      final fileName = p.basenameWithoutExtension(filePath);
+      final fileName = p.basenameWithoutExtension(path);
       debugPrint('Importing: $fileName');
 
       state = state.copyWith(
           currentModNumber: i + 1,
-          totalModNumber: result.files.length,
+          totalModNumber: filePaths.length,
           statusMessage:
-              'Importing "$fileName" (${i + 1}/${result.files.length})');
+              'Importing "$fileName" (${i + 1}/${filePaths.length})');
 
-      await ref
-          .read(importBackupProvider.notifier)
-          .importBackupFromPath(filePath);
+      await ref.read(importBackupProvider.notifier).importBackupFromPath(path);
     }
 
     _resetState();

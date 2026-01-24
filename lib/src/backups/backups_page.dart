@@ -37,6 +37,7 @@ class BackupsPage extends ConsumerWidget {
             child: BackupsGrid(),
           ),
         ),
+        BulkActionsProgressBar(),
       ],
     );
   }

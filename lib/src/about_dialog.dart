@@ -35,11 +35,15 @@ Future<void> showAboutAppDialog(BuildContext context) async {
               spacing: 8,
               children: [
                 _AboutListTile(
-                  icon: Icons.article_outlined,
-                  title: 'Changelog',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    showChangelogDialog(context);
+                  icon: Icons.forum_outlined,
+                  title: 'Help & feedback',
+                  onTap: () async {
+                    final result = await openUrl(steamDiscussionUrl);
+                    if (!result && context.mounted) {
+                      showSnackBar(
+                          context, "Failed to open: $steamDiscussionUrl");
+                      Navigator.of(context).pop();
+                    }
                   },
                 ),
                 _AboutListTile(
@@ -65,15 +69,10 @@ Future<void> showAboutAppDialog(BuildContext context) async {
                   },
                 ),
                 _AboutListTile(
-                  icon: Icons.forum_outlined,
-                  title: 'Help & feedback',
-                  onTap: () async {
-                    final result = await openUrl(steamDiscussionUrl);
-                    if (!result && context.mounted) {
-                      showSnackBar(
-                          context, "Failed to open: $steamDiscussionUrl");
-                      Navigator.of(context).pop();
-                    }
+                  icon: Icons.article_outlined,
+                  title: 'Changelog',
+                  onTap: () {
+                    showChangelogDialog(context);
                   },
                 ),
                 _AboutListTile(
@@ -89,7 +88,7 @@ Future<void> showAboutAppDialog(BuildContext context) async {
                   },
                 ),
                 _AboutListTile(
-                  icon: Icons.favorite_outline,
+                  icon: Icons.favorite,
                   title: 'Support on Ko-fi',
                   onTap: () async {
                     final result = await openUrl(kofiUrl);

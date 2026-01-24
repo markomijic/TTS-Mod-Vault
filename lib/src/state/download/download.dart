@@ -8,6 +8,7 @@ import 'package:dio/dio.dart'
     show CancelToken, Dio, DioException, DioExceptionType, Options;
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:fixnum/fixnum.dart' show Int64;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:http/http.dart' as http;
@@ -752,8 +753,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             // Try to get the mod name from the newly added mod
             final jsonFilePath = '$targetDirectory/$modId.json';
             final mods = ref.read(modsProvider.notifier).getAllMods();
-            final addedMod = mods.firstWhereOrNull(
-                (m) => m.jsonFilePath == jsonFilePath);
+            final addedMod =
+                mods.firstWhereOrNull((m) => m.jsonFilePath == jsonFilePath);
             modName = addedMod?.saveName;
           } else {
             errorMessage = result;
@@ -801,10 +802,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         }
       } else {
         if (summary.failCount > 0) {
-          ref
-              .read(logProvider.notifier)
-              .addWarning(
-                  'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully (${summary.failCount} failed)');
+          ref.read(logProvider.notifier).addWarning(
+              'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully (${summary.failCount} failed)');
         } else {
           ref.read(logProvider.notifier).addSuccess(
               'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully');
@@ -1136,8 +1135,14 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         decodedData['SaveName'] = title;
       }
 
+      // Log any problematic values before encoding
+      if (kDebugMode) _findProblematicValues(decodedData, '');
+
       final jsonEncoder = JsonEncoder.withIndent('  ', (object) {
         if (object is Int64) return object.toString();
+        if (object is double && object.isInfinite) {
+          return "Infinity";
+        }
         return object;
       });
 
@@ -1150,6 +1155,28 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       return 'Mod saved to: $filePath';
     } catch (e) {
       return 'Error for mod json file: $e';
+    }
+  }
+
+  /// Recursively finds and logs problematic values (Infinity, NaN) in decoded BSON data
+  void _findProblematicValues(dynamic data, String path) {
+    if (data is Map) {
+      for (final entry in data.entries) {
+        final newPath =
+            path.isEmpty ? entry.key.toString() : '$path.${entry.key}';
+        _findProblematicValues(entry.value, newPath);
+      }
+    } else if (data is List) {
+      for (int i = 0; i < data.length; i++) {
+        _findProblematicValues(data[i], '$path[$i]');
+      }
+    } else if (data is double) {
+      if (data.isInfinite) {
+        debugPrint(
+            '_findProblematicValues - Found Infinity at path: $path (value: $data)');
+      } else if (data.isNaN) {
+        debugPrint('_findProblematicValues - Found NaN at path: $path');
+      }
     }
   }
 

@@ -46,8 +46,7 @@ class HelpTooltip extends StatelessWidget {
 • Left/right-click a URL to see options 
 • Download button: Attempt to download all missing asset files
 • Backup button: Create a backup out of downloaded asset files
-• Update URLs: Replaces old prefixes of URLs with new one
-• Menu button: additional options - deleting asset files, copying missing URLs''',
+• Menu button: additional options''',
             style: TextStyle(height: 2),
           ),
         ],

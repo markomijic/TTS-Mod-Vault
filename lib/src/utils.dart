@@ -36,6 +36,7 @@ const nexusModsDownloadPageUrl =
     "https://www.nexusmods.com/tabletopsimulator/mods/426";
 const steamDiscussionUrl =
     "https://steamcommunity.com/app/286160/discussions/0/591772542952298985/";
+const kofiUrl = "https://ko-fi.com/ttsmodvault";
 const getPublishedFileDetailsUrl =
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
 
@@ -861,7 +862,7 @@ void showModContextMenu(
               checkboxInfoMessage: 'Re-download mod even if already up to date',
               showWarning: true,
               warningText:
-                  "This feature has been tested with various mods, however it's recommended to let Tabletop Simulator handle updates directly to avoid unexpected issues.",
+                  "This feature has been tested with various mods, however it's recommended to let\nTabletop Simulator handle updates for subscribed mods directly to avoid unexpected issues.",
               onConfirm: (forceUpdate) async {
                 if (context.mounted) {
                   showSnackBar(

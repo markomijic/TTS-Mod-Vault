@@ -1135,6 +1135,28 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         decodedData['SaveName'] = title;
       }
 
+      // Add EpochTime if missing, and ensure it's the 2nd value in JSON
+      if (!decodedData.containsKey('EpochTime')) {
+        final reorderedData = <String, dynamic>{};
+        final entries = decodedData.entries.toList();
+
+        // Add first entry (usually SaveName)
+        if (entries.isNotEmpty) {
+          reorderedData[entries.first.key] = entries.first.value;
+        }
+
+        // Add EpochTime as 2nd entry
+        reorderedData['EpochTime'] = timeUpdated;
+
+        // Add remaining entries
+        for (int i = 1; i < entries.length; i++) {
+          reorderedData[entries[i].key] = entries[i].value;
+        }
+
+        decodedData.clear();
+        decodedData.addAll(reorderedData);
+      }
+
       // Log any problematic values before encoding
       if (kDebugMode) _findProblematicValues(decodedData, '');
 

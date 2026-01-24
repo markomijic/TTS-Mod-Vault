@@ -988,7 +988,7 @@ class _PresetEditorDialog extends HookWidget {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: () {
             final label = labelController.text.trim();
             final oldUrl = oldUrlController.text.trim();
@@ -1007,7 +1007,8 @@ class _PresetEditorDialog extends HookWidget {
               ),
             );
           },
-          child: Text(preset == null ? 'Add' : 'Edit'),
+          icon: Icon(preset == null ? Icons.add : Icons.edit),
+          label: Text(preset == null ? 'Add' : 'Edit'),
         ),
       ],
     );

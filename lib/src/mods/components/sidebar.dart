@@ -19,16 +19,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedPageProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show
-        showConfirmDialog,
-        showSnackBar,
-        checkForUpdatesOnGitHub,
-        showDownloadLatestVersionDialog,
-        openUrl,
-        steamDiscussionUrl,
-        showConfirmDialogWithCheckbox;
-import 'package:tts_mod_vault/src/changelog.dart' show showChangelogDialog;
-import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
+    show showConfirmDialog, showSnackBar, showConfirmDialogWithCheckbox;
+import 'package:tts_mod_vault/src/about_dialog.dart' show showAboutAppDialog;
 
 class Sidebar extends HookConsumerWidget {
   final double width;
@@ -190,47 +182,11 @@ class Sidebar extends HookConsumerWidget {
             ),
             _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
-              icon: Icons.update,
-              label: 'Check for updates',
+              icon: Icons.info_outline_rounded,
+              label: 'About',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
-              onPressed: () async {
-                final newTagVersion = await checkForUpdatesOnGitHub();
-
-                if (newTagVersion.isNotEmpty) {
-                  final packageInfo = await PackageInfo.fromPlatform();
-                  final currentVersion = packageInfo.version;
-
-                  if (!context.mounted) return;
-
-                  await showDownloadLatestVersionDialog(
-                      context, currentVersion, newTagVersion);
-                } else {
-                  if (context.mounted) {
-                    showSnackBar(context, 'No new updates found');
-                  }
-                }
-              },
-            ),
-            _SidebarItem(
-              icon: Icons.article,
-              label: 'Changelog',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showChangelogDialog(context),
-            ),
-            _GradientDivider(isExpanded: isHovered.value),
-            _SidebarItem(
-              icon: Icons.help_outline,
-              label: 'Help & Feedback',
-              isExpanded: isHovered.value,
-              isDisabled: false,
-              onPressed: () async {
-                final result = await openUrl(steamDiscussionUrl);
-                if (!result && context.mounted) {
-                  showSnackBar(context, "Failed to open: $steamDiscussionUrl");
-                }
-              },
+              onPressed: () => showAboutAppDialog(context),
             ),
             _SidebarItem(
               icon: Icons.settings,

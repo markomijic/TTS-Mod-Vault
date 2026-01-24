@@ -1,4 +1,4 @@
-import 'package:file_picker/file_picker.dart' show FilePicker;
+import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
 import 'package:flutter/foundation.dart' show compute, debugPrint;
 import 'package:flutter/material.dart' show BuildContext, showDialog;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
@@ -14,12 +14,17 @@ import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
 import 'package:tts_mod_vault/src/state/bulk_actions/mod_update_result.dart'
     show ModUpdateResult, ModUpdateStatus;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart';
+import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
+    show
+        updateUrlPrefixesFilesIsolate,
+        UpdateUrlPrefixesParams,
+        extractUrlsFromJsonString;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         backupProvider,
         directoriesProvider,
         downloadProvider,
+        importBackupProvider,
         loaderProvider,
         logProvider,
         modsProvider,
@@ -53,7 +58,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     return backupFolder;
   }
 
-  // Bulk actions methods
+  // MARK: Download
   Future<void> downloadAllMods(List<Mod> mods) async {
     ref
         .read(logProvider.notifier)
@@ -102,6 +107,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     downloadNotifier.resetState();
   }
 
+// MARK: Backup
   Future<void> backupAllMods(
     List<Mod> mods,
     BulkBackupBehaviorEnum backupBehavior,
@@ -188,6 +194,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     _resetState();
   }
 
+// MARK: DL & Backup
   Future<void> downloadAndBackupAllMods(
     List<Mod> mods,
     BulkBackupBehaviorEnum backupBehavior,
@@ -271,6 +278,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     downloadNotifier.resetState();
   }
 
+// MARK: Update URLs
   Future<void> updateUrlPrefixesAllMods(
     List<Mod> mods,
     List<String> oldPrefixes,
@@ -330,6 +338,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     ref.read(loaderProvider).refreshAppData();
   }
 
+// MARK: Update mods
   Future<void> updateModsAll(
     List<Mod> mods,
     bool forceUpdate,
@@ -399,7 +408,57 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
   }
 
-  // Cancel methods
+  // MARK: Import
+  Future<void> importBackups() async {
+    state = state.copyWith(
+        status: BulkActionsStatusEnum.importingBackups,
+        statusMessage: 'Select TTSMOD files to import');
+
+    final backupsDir = ref.read(directoriesProvider).backupsDir;
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      lockParentWindow: true,
+      initialDirectory: backupsDir.isEmpty ? null : backupsDir,
+      allowedExtensions: ['ttsmod'],
+      allowMultiple: true,
+    );
+
+    if (result == null || result.files.isEmpty) {
+      _resetState();
+      return;
+    }
+
+    for (int i = 0; i < result.files.length; i++) {
+      final filePath = result.files[i].path;
+
+      if (filePath == null || filePath.isEmpty) continue;
+
+      if (state.cancelledBulkAction) {
+        break;
+      }
+
+      // Yield to UI thread on every iteration to keep app responsive
+      await Future.delayed(Duration.zero);
+
+      final fileName = p.basenameWithoutExtension(filePath);
+      debugPrint('Importing: $fileName');
+
+      state = state.copyWith(
+          currentModNumber: i + 1,
+          totalModNumber: result.files.length,
+          statusMessage:
+              'Importing "$fileName" (${i + 1}/${result.files.length})');
+
+      await ref
+          .read(importBackupProvider.notifier)
+          .importBackupFromPath(filePath);
+    }
+
+    _resetState();
+  }
+
+  // MARK: Cancel
   Future<void> cancelBulkAction() async {
     switch (state.status) {
       case BulkActionsStatusEnum.idle:
@@ -424,6 +483,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       case BulkActionsStatusEnum.updateModsAll:
         _cancelUpdateModsAll();
         break;
+
+      case BulkActionsStatusEnum.importingBackups:
+        _cancelImportingBackups();
+        break;
     }
   }
 
@@ -434,6 +497,13 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       cancelledBulkAction: true,
       statusMessage:
           "Cancelling download of all ${ref.read(selectedModTypeProvider).label}s",
+    );
+  }
+
+  void _cancelImportingBackups() {
+    state = state.copyWith(
+      cancelledBulkAction: true,
+      statusMessage: "Cancelling importing backups",
     );
   }
 

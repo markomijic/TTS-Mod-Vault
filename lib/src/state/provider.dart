@@ -138,13 +138,11 @@ final actionInProgressProvider = Provider<bool>((ref) {
   final cleanUpStatus = ref.watch(cleanupProvider).status;
   final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
-  final importBackupStatus = ref.watch(importBackupProvider).status;
   final deletingBackup = ref.watch(existingBackupsProvider).deletingBackup;
 
   return deleteAssetsStatus != DeleteAssetsStatusEnum.idle ||
       cleanUpStatus != CleanUpStatusEnum.idle ||
       backupStatus != BackupStatusEnum.idle ||
-      importBackupStatus != ImportBackupStatusEnum.idle ||
       bulkActionStatus != BulkActionsStatusEnum.idle ||
       isDownloading ||
       modsAsyncValue is AsyncLoading ||

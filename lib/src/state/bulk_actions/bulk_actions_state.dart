@@ -4,7 +4,8 @@ enum BulkActionsStatusEnum {
   backupAll,
   updateUrls,
   downloadAndBackupAll,
-  updateModsAll;
+  updateModsAll,
+  importingBackups;
 }
 
 enum BulkBackupBehaviorEnum {

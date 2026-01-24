@@ -12,6 +12,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         AppPage,
         actionInProgressProvider,
+        bulkActionsProvider,
         cleanupProvider,
         directoriesProvider,
         importBackupProvider,
@@ -143,11 +144,11 @@ class Sidebar extends HookConsumerWidget {
             _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
               icon: Icons.unarchive,
-              label: 'Import backup',
+              label: 'Import backups',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
               onPressed: () async {
-                await ref.read(importBackupProvider.notifier).importBackup();
+                await ref.read(bulkActionsProvider.notifier).importBackups();
               },
             ),
             _SidebarItem(

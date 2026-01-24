@@ -105,7 +105,7 @@ class Sidebar extends HookConsumerWidget {
                     .read(loaderProvider)
                     .refreshAppData(checkboxValue),
                 checkboxInfoMessage:
-                    'This option reloads everything from your files instead of using saved information from cache\n\nIt will take longer depending on number of items to load\n\nYour asset files will NOT be affected',
+                    "This option reloads everything from your files instead of using saved information from cache\n\nIt will take longer depending on number of items to load\n\nYour asset files won't be affected",
                 checkboxLabel: "Clear Vault cache",
               ),
             ),

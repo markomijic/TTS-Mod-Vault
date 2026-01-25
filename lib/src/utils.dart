@@ -23,8 +23,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         bulkActionsProvider,
         downloadProvider,
-        existingBackupsProvider,
-        importBackupProvider;
+        existingBackupsProvider;
 import 'package:url_launcher/url_launcher.dart'
     show LaunchMode, canLaunchUrl, launchUrl;
 import 'package:http/http.dart' as http;
@@ -865,14 +864,6 @@ void showModContextMenu(
               warningText:
                   "This feature has been tested with various mods, however it's recommended to let\nTabletop Simulator handle updates for subscribed mods to avoid unexpected issues.",
               onConfirm: (forceUpdate) async {
-                if (context.mounted) {
-                  showSnackBar(
-                    context,
-                    'Starting update...',
-                    duration: Duration(milliseconds: 750),
-                  );
-                }
-
                 final result = await ref
                     .read(downloadProvider.notifier)
                     .downloadModUpdates(mods: [mod], forceUpdate: forceUpdate);

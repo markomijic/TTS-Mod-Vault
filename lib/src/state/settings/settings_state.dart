@@ -15,6 +15,7 @@ class SettingsState {
   final bool forceBackupJsonFilename;
   final bool ignoreAudioAssets;
   final List<UrlReplacementPreset> urlReplacementPresets;
+  final double assetUrlFontSize;
 
   const SettingsState({
     this.useModsListView = false,
@@ -27,6 +28,7 @@ class SettingsState {
     this.forceBackupJsonFilename = false,
     this.ignoreAudioAssets = true,
     this.urlReplacementPresets = const [],
+    this.assetUrlFontSize = 12.0,
   });
 
   SettingsState copyWith({
@@ -41,6 +43,7 @@ class SettingsState {
     bool? forceBackupJsonFilename,
     bool? ignoreAudioAssets,
     List<UrlReplacementPreset>? urlReplacementPresets,
+    double? assetUrlFontSize,
   }) {
     return SettingsState(
       useModsListView: useModsListView ?? this.useModsListView,
@@ -56,6 +59,7 @@ class SettingsState {
       ignoreAudioAssets: ignoreAudioAssets ?? this.ignoreAudioAssets,
       urlReplacementPresets:
           urlReplacementPresets ?? this.urlReplacementPresets,
+      assetUrlFontSize: assetUrlFontSize ?? this.assetUrlFontSize,
     );
   }
 
@@ -72,6 +76,7 @@ class SettingsState {
       'ignoreAudioAssets': ignoreAudioAssets,
       'urlReplacementPresets':
           urlReplacementPresets.map((p) => p.toJson()).toList(),
+      'assetUrlFontSize': assetUrlFontSize,
     };
   }
 
@@ -89,6 +94,7 @@ class SettingsState {
           _parseBool(json['forceBackupJsonFilename'], false),
       ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], true),
       urlReplacementPresets: _parsePresetList(json['urlReplacementPresets']),
+      assetUrlFontSize: _parseDouble(json['assetUrlFontSize'], 12.0),
     );
   }
 
@@ -115,6 +121,16 @@ class SettingsState {
     if (value is int) return value;
     if (value is String) {
       return int.tryParse(value) ?? defaultValue;
+    }
+    return defaultValue;
+  }
+
+  static double _parseDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? defaultValue;
     }
     return defaultValue;
   }

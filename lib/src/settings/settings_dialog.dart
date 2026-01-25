@@ -83,11 +83,15 @@ class SettingsDialog extends HookConsumerWidget {
     final useModsListViewBox = useState(settings.useModsListView);
     final showTitleOnCardsBox = useState(settings.showTitleOnCards);
     final defaultSortOption = useState(settings.defaultSortOption);
+    final assetUrlFontSize = useState(settings.assetUrlFontSize);
+    final assetUrlFontSizeController =
+        useTextEditingController(text: settings.assetUrlFontSize.toString());
+    final assetUrlFontSizeFocusNode = useFocusNode();
 
     // Network
-    final numberValue = useState(settings.concurrentDownloads);
-    final textFieldController =
-        useTextEditingController(text: numberValue.value.toString());
+    final concurrentDownloadsValue = useState(settings.concurrentDownloads);
+    final textFieldController = useTextEditingController(
+        text: concurrentDownloadsValue.value.toString());
     final textFieldFocusNode = useFocusNode();
 
     // Features
@@ -125,6 +129,7 @@ class SettingsDialog extends HookConsumerWidget {
                 p.oldUrl.trim().isNotEmpty ||
                 p.newUrl.trim().isNotEmpty)
             .toList(),
+        assetUrlFontSize: assetUrlFontSize.value,
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -214,6 +219,11 @@ class SettingsDialog extends HookConsumerWidget {
                                     useModsListViewBox: useModsListViewBox,
                                     showTitleOnCardsBox: showTitleOnCardsBox,
                                     defaultSortOption: defaultSortOption,
+                                    assetUrlFontSize: assetUrlFontSize,
+                                    assetUrlFontSizeController:
+                                        assetUrlFontSizeController,
+                                    assetUrlFontSizeFocusNode:
+                                        assetUrlFontSizeFocusNode,
                                   );
 
                                 case SettingsSection.folders:
@@ -228,7 +238,7 @@ class SettingsDialog extends HookConsumerWidget {
                                   return SettingsNetworkColumn(
                                     textFieldController: textFieldController,
                                     textFieldFocusNode: textFieldFocusNode,
-                                    numberValue: numberValue,
+                                    numberValue: concurrentDownloadsValue,
                                   );
 
                                 case SettingsSection.updateUrlsPresets:
@@ -753,11 +763,17 @@ class SettingsInterfaceColumn extends StatelessWidget {
     required this.useModsListViewBox,
     required this.showTitleOnCardsBox,
     required this.defaultSortOption,
+    required this.assetUrlFontSize,
+    required this.assetUrlFontSizeController,
+    required this.assetUrlFontSizeFocusNode,
   });
 
   final ValueNotifier<bool> useModsListViewBox;
   final ValueNotifier<bool> showTitleOnCardsBox;
   final ValueNotifier<SortOptionEnum> defaultSortOption;
+  final ValueNotifier<double> assetUrlFontSize;
+  final TextEditingController assetUrlFontSizeController;
+  final FocusNode assetUrlFontSizeFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -826,6 +842,47 @@ class SettingsInterfaceColumn extends StatelessWidget {
                   defaultSortOption.value = newValue;
                 }
               },
+            ),
+          ],
+        ),
+        Row(
+          spacing: 4,
+          children: [
+            Text(
+              'Asset URL font size',
+              style: TextStyle(fontSize: 16),
+            ),
+            CustomTooltip(
+              message:
+                  "Range: 1-99 (up to 1 decimal place)\nDefault value: 12.0",
+              child: Icon(Icons.info_outline),
+            ),
+            Spacer(),
+            SizedBox(
+              width: 70,
+              child: TextField(
+                textAlign: TextAlign.center,
+                controller: assetUrlFontSizeController,
+                cursorColor: Colors.black,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d{0,2}\.?\d?$')),
+                ],
+                style:
+                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(),
+                ),
+                focusNode: assetUrlFontSizeFocusNode,
+                onChanged: (value) {
+                  final num = double.tryParse(value);
+                  if (num != null && num >= 1 && num <= 99) {
+                    assetUrlFontSize.value = num;
+                  }
+                },
+              ),
             ),
           ],
         ),
@@ -941,7 +998,6 @@ class _PresetEditorDialog extends HookWidget {
               decoration: const InputDecoration(
                 fillColor: Colors.white,
                 border: OutlineInputBorder(),
-                hintText: 'e.g., Imgur to MyHost',
                 contentPadding:
                     EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
@@ -958,7 +1014,6 @@ class _PresetEditorDialog extends HookWidget {
               decoration: const InputDecoration(
                 fillColor: Colors.white,
                 border: OutlineInputBorder(),
-                hintText: 'e.g., https://i.imgur.com',
                 contentPadding:
                     EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
@@ -975,7 +1030,6 @@ class _PresetEditorDialog extends HookWidget {
               decoration: const InputDecoration(
                 fillColor: Colors.white,
                 border: OutlineInputBorder(),
-                hintText: 'e.g., https://myhost.com/images',
                 contentPadding:
                     EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),

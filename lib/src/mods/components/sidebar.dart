@@ -21,7 +21,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialog, showSnackBar, showConfirmDialogWithCheckbox;
-import 'package:tts_mod_vault/src/about_dialog.dart' show showAboutAppDialog;
+import 'package:tts_mod_vault/src/help_dialog.dart' show showHelpDialog;
 
 class Sidebar extends HookConsumerWidget {
   final double width;
@@ -183,11 +183,11 @@ class Sidebar extends HookConsumerWidget {
             ),
             _GradientDivider(isExpanded: isHovered.value),
             _SidebarItem(
-              icon: Icons.info_outline_rounded,
-              label: 'About',
+              icon: Icons.help_outline_rounded,
+              label: 'Help',
               isExpanded: isHovered.value,
               isDisabled: actionInProgress,
-              onPressed: () => showAboutAppDialog(context),
+              onPressed: () => showHelpDialog(context),
             ),
             _SidebarItem(
               icon: Icons.settings,

@@ -36,7 +36,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   Future<void> resetToDefaultSettings() async {
-    SettingsState newState = const SettingsState();
+    final newState = SettingsState(
+      urlReplacementPresets: state.urlReplacementPresets,
+    );
     await saveSettings(newState);
   }
 }

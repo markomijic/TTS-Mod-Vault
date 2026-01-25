@@ -13,7 +13,7 @@ import 'package:tts_mod_vault/src/utils.dart'
         showSnackBar,
         steamDiscussionUrl;
 
-Future<void> showAboutAppDialog(BuildContext context) async {
+Future<void> showHelpDialog(BuildContext context) async {
   final packageInfo = await PackageInfo.fromPlatform();
 
   if (!context.mounted) return;
@@ -34,9 +34,9 @@ Future<void> showAboutAppDialog(BuildContext context) async {
               mainAxisSize: MainAxisSize.min,
               spacing: 8,
               children: [
-                _AboutListTile(
+                _HelpListTile(
                   icon: Icons.forum_outlined,
-                  title: 'Help & feedback',
+                  title: 'Help & Feedback',
                   onTap: () async {
                     final result = await openUrl(steamDiscussionUrl);
                     if (!result && context.mounted) {
@@ -46,7 +46,7 @@ Future<void> showAboutAppDialog(BuildContext context) async {
                     }
                   },
                 ),
-                _AboutListTile(
+                _HelpListTile(
                   icon: Icons.update,
                   title: 'Check for updates',
                   onTap: () async {
@@ -68,14 +68,14 @@ Future<void> showAboutAppDialog(BuildContext context) async {
                     }
                   },
                 ),
-                _AboutListTile(
+                _HelpListTile(
                   icon: Icons.article_outlined,
                   title: 'Changelog',
                   onTap: () {
                     showChangelogDialog(context);
                   },
                 ),
-                _AboutListTile(
+                _HelpListTile(
                   icon: Icons.thumb_up_outlined,
                   title: 'Endorse on NexusMods',
                   onTap: () async {
@@ -87,7 +87,8 @@ Future<void> showAboutAppDialog(BuildContext context) async {
                     }
                   },
                 ),
-                _AboutListTile(
+                // TODO enable
+                /* _HelpListTile(
                   icon: Icons.favorite,
                   title: 'Support on Ko-fi',
                   onTap: () async {
@@ -97,7 +98,7 @@ Future<void> showAboutAppDialog(BuildContext context) async {
                       Navigator.of(context).pop();
                     }
                   },
-                ),
+                ), */
               ],
             ),
           ),
@@ -113,12 +114,12 @@ Future<void> showAboutAppDialog(BuildContext context) async {
   );
 }
 
-class _AboutListTile extends StatelessWidget {
+class _HelpListTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
 
-  const _AboutListTile({
+  const _HelpListTile({
     required this.icon,
     required this.title,
     required this.onTap,

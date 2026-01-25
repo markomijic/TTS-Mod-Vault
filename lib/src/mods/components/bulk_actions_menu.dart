@@ -51,11 +51,12 @@ class BulkActionsMenu extends HookConsumerWidget {
 
     return CustomTooltip(
       message: bulkActionLimited
-          ? 'Bulk actions will apply only to the current selection because of the applied search/filters'
+          ? 'Bulk actions will apply only to the current selection because of search and/or filters'
           : '',
       waitDuration: Duration(milliseconds: 750),
       child: Badge(
-        backgroundColor: Colors.grey,
+        label: Text('!'),
+        backgroundColor: Colors.grey[600],
         textColor: Colors.white,
         smallSize: 12,
         isLabelVisible: bulkActionLimited && !actionInProgress,

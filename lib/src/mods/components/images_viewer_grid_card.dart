@@ -205,12 +205,14 @@ class ImagesViewerGridCard extends HookConsumerWidget {
           },
         ),
         GestureDetector(
+          onTapUp: (details) => showImagesViewerGridCardContextMenu(
+              context, ref, details.globalPosition, asset),
           onDoubleTap: () {
             if (asset.filePath != null && asset.filePath!.isNotEmpty) {
               openFile(asset.filePath!);
             }
           },
-          onSecondaryTapDown: (details) => showImagesViewerGridCardContextMenu(
+          onSecondaryTapUp: (details) => showImagesViewerGridCardContextMenu(
               context, ref, details.globalPosition, asset),
           child: MouseRegion(
             onEnter: (event) => isHovered.value = true,

@@ -93,7 +93,7 @@ class ModsColumn extends ConsumerWidget {
 • Right-click a ${type.label} to see additional actions
 • Left-click while holding ${Platform.isMacOS ? 'command' : 'control button'} to select multiple ${type.label}s
 • Hovering over the backup icon on ${type.label}s shows times and file count mismatches
-• Bulk actions are affected by sort, filters and search""",
+• Bulk actions are affected by search and filters""",
                 messageTextStyle: TextStyle(fontSize: 16, height: 2),
                 child: Icon(
                   Icons.info_outline,

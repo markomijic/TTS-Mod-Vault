@@ -57,7 +57,7 @@ class ImagesViewerPage extends HookConsumerWidget {
               ),
               CustomTooltip(
                 message:
-                    '• Double-click to open image file\n• Right-click to see options',
+                    '• Double-click to open image file\n• Left/Right-click to see options',
                 child: Icon(Icons.info_outline, size: 30),
               ),
             ],

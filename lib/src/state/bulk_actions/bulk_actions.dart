@@ -382,6 +382,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Updating "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
+      ref.read(modsProvider.notifier).setSelectedMod(mod);
+
       final result = await downloadNotifier.downloadModUpdates(
         mods: [mod],
         forceUpdate: forceUpdate,

@@ -16,4 +16,5 @@ enum ContextMenuActionEnum {
   updateMod,
   backupSubmenu,
   checkUrl,
+  checkShared,
 }

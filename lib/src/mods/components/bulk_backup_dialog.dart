@@ -36,7 +36,7 @@ class BulkBackupDialog extends HookConsumerWidget {
           Row(
             spacing: 8,
             children: [
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () async {
                   String? folder = await FilePicker.platform.getDirectoryPath(
                     lockParentWindow: true,
@@ -46,7 +46,8 @@ class BulkBackupDialog extends HookConsumerWidget {
                     selectedFolder.value = folder;
                   }
                 },
-                child: const Text('Select'),
+                icon: Icon(Icons.folder),
+                label: const Text('Select folder'),
               ),
               const Spacer(),
               ElevatedButton(

@@ -9,7 +9,6 @@ import 'package:dio/dio.dart'
 import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
@@ -63,6 +62,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       : dio = Dio(),
         super(const DownloadState());
 
+  // MARK: Cancel DL button
   Future<void> handleCancelDownloadsButton() async {
     await ref.read(downloadProvider.notifier).cancelAllDownloads();
     if (ref.read(selectedModProvider) != null) {
@@ -72,6 +72,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: Cancel all DLs
   Future<void> cancelAllDownloads() async {
     state = state.copyWith(
       isDownloading: false,
@@ -86,6 +87,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     _cancelTokens.clear();
   }
 
+  // MARK: DL all files
   Future<void> downloadAllFiles(Mod mod) async {
     if (mod.assetLists == null) {
       return;
@@ -142,10 +144,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     resetState();
   }
 
+  // MARK: Reset state
   void resetState() {
     state = const DownloadState();
   }
 
+  // MARK: DL URL
   Future<void> _downloadUrl(
     String url,
     String tempPath,
@@ -163,6 +167,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     );
   }
 
+  // MARK: DL FILES
   Future<void> downloadFiles({
     required List<String> modAssetListUrls,
     required AssetTypeEnum type,
@@ -323,6 +328,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: Resolve URL
   Future<String> resolveUrlWithScheme(String url) async {
     // If URL already starts with http/https, return it directly
     if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -341,6 +347,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: Check URL
   /// Core URL checking logic (no scheme resolution to avoid circular dependency)
   /// Returns true if the URL returns a valid response (200-399 status code)
   /// First tries HEAD request, then falls back to GET if HEAD fails (some servers don't support HEAD)
@@ -389,6 +396,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: Is URL Live
   /// Checks if a URL is live (not invalid/404)
   /// Returns true if the URL returns a valid response (200-399 status code)
   /// First tries HEAD request, then falls back to GET if HEAD fails (some servers don't support HEAD)
@@ -403,6 +411,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: Check all URLs
   /// Checks all URLs in a mod to see if they're still live
   /// Returns a list of URLs that are invalid
   /// The onComplete callback is called after the state is reset, allowing dialogs to be shown
@@ -463,6 +472,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: DL MOD Updates
   Future<DownloadModUpdatesResult> downloadModUpdates({
     required List<Mod> mods,
     bool forceUpdate = false,
@@ -481,7 +491,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       state = state.copyWith(
         isDownloading: true,
         progress: 0.01,
-        statusMessage: 'Updating mods',
+        statusMessage:
+            mods.length == 1 ? 'Updating ${mods[0].saveName}' : 'Updating mods',
       );
 
       // Check which mods need updating
@@ -710,6 +721,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: DL MODS by IDs
   Future<String> downloadModsByIds({
     required List<String> modIds,
     required String targetDirectory,
@@ -822,6 +834,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: DL BACKUP THEN DELETE
   /// Downloads assets to temp folder, creates backups, then deletes temp folder
   /// This is useful for creating backups without permanently storing assets
   Future<String> downloadBackupAndDeleteAssets({
@@ -1033,6 +1046,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: DL MOD
   Future<String> _downloadSingleMod({
     required String modId,
     required String targetDirectory,
@@ -1109,6 +1123,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     return bsonResult;
   }
 
+  // MARK: DL BSON
   Future<String> _downloadAndConvertBson({
     required dynamic fileUrl,
     required String modId,
@@ -1135,8 +1150,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         decodedData['SaveName'] = title;
       }
 
-      // Add EpochTime if missing, and ensure it's the 2nd value in JSON
-      if (!decodedData.containsKey('EpochTime')) {
+      // Add or update EpochTime, ensuring it's the 2nd value in JSON if adding
+      if (decodedData.containsKey('EpochTime')) {
+        // Just update the value
+        decodedData['EpochTime'] = timeUpdated;
+      } else {
+        // Add as 2nd entry by reordering
         final reorderedData = <String, dynamic>{};
         final entries = decodedData.entries.toList();
 
@@ -1180,6 +1199,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: JSON issues
   /// Recursively finds and logs problematic values (Infinity, NaN) in decoded BSON data
   void _findProblematicValues(dynamic data, String path) {
     if (data is Map) {
@@ -1202,6 +1222,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  // MARK: DL Image
   Future<void> _downloadAndResizeImage({
     required dynamic imageUrl,
     required String modId,
@@ -1267,6 +1288,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+// MARK: Custom Backup
   /// Creates a backup using custom asset directories (temp folders) instead of main directories
   /// Returns true on success, false on failure
   Future<bool> _createBackupFromCustomDirectories({
@@ -1339,6 +1361,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+// MARK: Custom DL
   /// Downloads files to a custom directory (for temporary downloads)
   /// Similar to downloadFiles() but:
   /// - Uses targetDirectory parameter instead of directoriesProvider
@@ -1480,6 +1503,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 }
 
+// MARK: _getFilePaths
 // Helper functions for backup creation from custom directories
 (List<String>, int) _getFilePathsIsolateForDownload(FilepathsIsolateData data) {
   final filePaths = <String>[];
@@ -1523,6 +1547,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   return (filePaths, assetFilesCount);
 }
 
+// MARK: Backup isolate
 void _backupIsolateForDownload(BackupIsolateData data) async {
   try {
     final encoder = ZipFileEncoder();

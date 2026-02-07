@@ -13,10 +13,12 @@ import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
+        deleteAssetsProvider,
         downloadProvider,
         modsProvider,
         selectedModProvider,
-        selectedUrlProvider;
+        selectedUrlProvider,
+        settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         copyToClipboard,
@@ -39,6 +41,7 @@ class AssetsUrl extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final assetUrlFontSize = ref.watch(settingsProvider).assetUrlFontSize;
     final mod = ref.watch(selectedModProvider);
     final url = ref.watch(selectedUrlProvider);
     final isSelected = useMemoized(
@@ -101,7 +104,17 @@ class AssetsUrl extends HookConsumerWidget {
               spacing: 8,
               children: [
                 Icon(Icons.link),
-                Text('Check if URL is invalid'),
+                Text('Check if invalid'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: ContextMenuActionEnum.checkShared,
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.share),
+                Text('Check if shared'),
               ],
             ),
           ),
@@ -133,6 +146,17 @@ class AssetsUrl extends HookConsumerWidget {
                 children: [
                   Icon(Icons.download),
                   Text('Download'),
+                ],
+              ),
+            ),
+          if (asset.fileExists)
+            PopupMenuItem(
+              value: ContextMenuActionEnum.deleteAsset,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.delete),
+                  Text('Delete asset file'),
                 ],
               ),
             ),
@@ -219,6 +243,73 @@ class AssetsUrl extends HookConsumerWidget {
                   context, isLive ? 'URL is valid' : 'URL is not valid');
               break;
 
+            case ContextMenuActionEnum.checkShared:
+              final selectedMod = ref.read(selectedModProvider);
+              if (selectedMod == null || !context.mounted) break;
+
+              final sharingMods = ref
+                  .read(deleteAssetsProvider.notifier)
+                  .getModsSharingAsset(asset.url, selectedMod.jsonFileName);
+
+              if (!context.mounted) break;
+              if (sharingMods.isEmpty) {
+                showSnackBar(context, 'Asset is not shared with other mods');
+              } else {
+                showSnackBar(
+                  context,
+                  'Shared with ${sharingMods.length} mod(s): ${sharingMods.join(", ")}',
+                );
+              }
+              break;
+
+            case ContextMenuActionEnum.deleteAsset:
+              final selectedMod = ref.read(selectedModProvider);
+              if (selectedMod == null || !context.mounted) break;
+
+              final sharingMods = ref
+                  .read(deleteAssetsProvider.notifier)
+                  .getModsSharingAsset(asset.url, selectedMod.jsonFileName);
+
+              final isShared = sharingMods.isNotEmpty;
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title:
+                      Text(isShared ? 'Delete Shared Asset' : 'Delete Asset'),
+                  content: Text(
+                    isShared
+                        ? 'This asset is shared with ${sharingMods.length} other mod(s):\n${sharingMods.join(", ")}\n\nDelete anyway?'
+                        : 'Are you sure you want to delete this file?\n\n${getFileNameFromURL(asset.url)}',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true || !context.mounted) break;
+
+              final deleted = await ref
+                  .read(deleteAssetsProvider.notifier)
+                  .deleteSingleAsset(asset.filePath, type);
+
+              if (!context.mounted) break;
+              if (deleted) {
+                await ref
+                    .read(modsProvider.notifier)
+                    .updateSelectedMod(selectedMod);
+                if (context.mounted) showSnackBar(context, 'File deleted');
+              } else {
+                showSnackBar(context, 'Failed to delete file');
+              }
+              break;
+
             default:
               break;
           }
@@ -253,7 +344,7 @@ class AssetsUrl extends HookConsumerWidget {
         child: Text(
           asset.url,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: assetUrlFontSize,
             color: isSelected
                 ? Colors.lightBlue
                 : asset.fileExists

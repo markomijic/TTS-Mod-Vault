@@ -19,7 +19,7 @@ import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
-    show AudioAssetVisibility, Mod, ModTypeEnum;
+    show AudioAssetVisibility, InitialMod, Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
     show
         InitialModsIsolateData,
@@ -158,7 +158,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // Create adaptive batches based on file sizes
       debugPrint('loadModsData - creating adaptive batches, ${DateTime.now()}');
-      final List<List<Mod>> adaptiveBatches =
+      final List<List<InitialMod>> adaptiveBatches =
           await Isolate.run(() => createAdaptiveBatchesInIsolate(initialMods));
       debugPrint(
           'loadModsData - created ${adaptiveBatches.length} adaptive batches');
@@ -268,8 +268,24 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       for (final mod in allProcessedMods) {
         // Apply audio preference to mod
-        final modWithPreference = mod.copyWith(
-          audioVisibility: audioPreferences[mod.jsonFileName],
+        final modWithPreference = Mod(
+          modType: mod.modType,
+          jsonFilePath: mod.jsonFilePath,
+          jsonFileName: mod.jsonFileName,
+          parentFolderName: mod.parentFolderName,
+          saveName: mod.saveName,
+          createdAtTimestamp: mod.createdAtTimestamp,
+          dateTimeStamp: mod.dateTimeStamp,
+          imageFilePath: mod.imageFilePath,
+          backupStatus: mod.backupStatus,
+          backup: mod.backup,
+          assetLists: mod.assetLists,
+          assetCount: mod.assetCount,
+          existingAssetCount: mod.existingAssetCount,
+          missingAssetCount: mod.missingAssetCount,
+          hasAudioAssets: mod.hasAudioAssets,
+          audioVisibility:
+              audioPreferences[mod.jsonFileName] ?? mod.audioVisibility,
         );
 
         switch (modWithPreference.modType) {
@@ -333,10 +349,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<List<Mod>> getInitialMods(
+  Future<List<InitialMod>> getInitialMods(
     List<(ModTypeEnum type, List<String>)> allPaths,
   ) async {
-    List<Mod> allMods = [];
+    List<InitialMod> allMods = [];
     int allPathsLength = 0;
 
     for (final paths in allPaths) {
@@ -355,7 +371,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         'getInitialMods - Processing $allPathsLength files in $totalChunks chunks using $numberOfIsolates isolates');
 
     // Process files in chunks across multiple isolates
-    List<Future<List<Mod>>> futures = [];
+    List<Future<List<InitialMod>>> futures = [];
 
     for (final paths in allPaths) {
       for (int i = 0; i < paths.$2.length; i += chunkSize) {
@@ -393,13 +409,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   /// Distributes batches evenly across the specified number of isolates
-  List<List<List<Mod>>> _distributeBatchesAcrossIsolates(
-      List<List<Mod>> batches, int numberOfIsolates) {
-    final List<List<List<Mod>>> batchesPerIsolate = [];
+  List<List<List<InitialMod>>> _distributeBatchesAcrossIsolates(
+      List<List<InitialMod>> batches, int numberOfIsolates) {
+    final List<List<List<InitialMod>>> batchesPerIsolate = [];
 
     // Initialize empty lists for each isolate
     for (int i = 0; i < numberOfIsolates; i++) {
-      batchesPerIsolate.add(<List<Mod>>[]);
+      batchesPerIsolate.add(<List<InitialMod>>[]);
     }
 
     final baseBatchesPerIsolate = batches.length ~/ numberOfIsolates;
@@ -538,7 +554,17 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // Get URLs and complete mod data
       final urls = await extractUrlsFromJson(newMod.jsonFilePath);
-      final completeMod = await getCompleteMod(newMod, urls);
+      final tempMod = Mod.fromInitial(
+        newMod,
+        assetLists: AssetLists(
+            assetBundles: [], audio: [], images: [], models: [], pdf: []),
+        assetCount: 0,
+        existingAssetCount: 0,
+        missingAssetCount: 0,
+        audioVisibility: AudioAssetVisibility.useGlobalSetting,
+        hasAudioAssets: false,
+      );
+      final completeMod = await getCompleteMod(tempMod, urls);
 
       // Save to storage
       final Map<String, String> metadata = {
@@ -627,7 +653,24 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
               ? ExistingBackupStatusEnum.upToDate
               : ExistingBackupStatusEnum.outOfDate;
 
-      return mod.copyWith(backup: backup, backupStatus: backupStatus);
+      return Mod(
+        modType: mod.modType,
+        jsonFilePath: mod.jsonFilePath,
+        jsonFileName: mod.jsonFileName,
+        parentFolderName: mod.parentFolderName,
+        saveName: mod.saveName,
+        createdAtTimestamp: mod.createdAtTimestamp,
+        dateTimeStamp: mod.dateTimeStamp,
+        imageFilePath: mod.imageFilePath,
+        assetLists: mod.assetLists,
+        assetCount: mod.assetCount,
+        existingAssetCount: mod.existingAssetCount,
+        missingAssetCount: mod.missingAssetCount,
+        audioVisibility: mod.audioVisibility,
+        hasAudioAssets: mod.hasAudioAssets,
+        backupStatus: backupStatus,
+        backup: backup,
+      );
     } catch (e) {
       return mod;
     }
@@ -655,7 +698,16 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
     final assetLists = _getAssetListsFromUrls(jsonURLs, mod);
 
-    return mod.copyWith(
+    // Creating new Mod object because copyWith returns previous backup value if new one is null
+    return Mod(
+      modType: mod.modType,
+      jsonFilePath: mod.jsonFilePath,
+      jsonFileName: mod.jsonFileName,
+      parentFolderName: mod.parentFolderName,
+      saveName: mod.saveName,
+      createdAtTimestamp: mod.createdAtTimestamp,
+      dateTimeStamp: mod.dateTimeStamp,
+      imageFilePath: mod.imageFilePath,
       backup: backup,
       backupStatus: backupStatus,
       assetLists: assetLists.$1,
@@ -663,6 +715,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       existingAssetCount: assetLists.$3,
       missingAssetCount: assetLists.$2 - assetLists.$3,
       hasAudioAssets: assetLists.$4,
+      audioVisibility: mod.audioVisibility,
     );
   }
 
@@ -702,6 +755,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       assetCount: mod.assetCount,
       existingAssetCount: mod.existingAssetCount,
       missingAssetCount: mod.missingAssetCount,
+      hasAudioAssets: mod.hasAudioAssets,
+      audioVisibility: mod.audioVisibility,
     );
 
     updateMod(updatedMod);
@@ -723,7 +778,19 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       // Rebuild asset lists with current preference
       final assetLists = _getAssetListsFromUrls(urls, mod);
 
-      final updatedMod = mod.copyWith(
+      final updatedMod = Mod(
+        modType: mod.modType,
+        jsonFilePath: mod.jsonFilePath,
+        jsonFileName: mod.jsonFileName,
+        parentFolderName: mod.parentFolderName,
+        saveName: mod.saveName,
+        createdAtTimestamp: mod.createdAtTimestamp,
+        dateTimeStamp: mod.dateTimeStamp,
+        imageFilePath: mod.imageFilePath,
+        backup: mod.backup,
+        backupStatus: mod.backupStatus,
+        audioVisibility: mod.audioVisibility,
+        // -----------------------------------------
         assetLists: assetLists.$1,
         assetCount: assetLists.$2,
         existingAssetCount: assetLists.$3,

@@ -38,26 +38,20 @@ class ModsListItem extends HookConsumerWidget {
           : false;
     }, [mod.imageFilePath]);
 
-    final showAssetCount = useMemoized(() {
-      return mod.existingAssetCount != null && mod.assetCount != null;
-    }, [mod]);
-
     final isSelected = useMemoized(() {
       return multiSelectMods.contains(mod);
     }, [multiSelectMods, mod]);
 
     final filesMessage = useMemoized(() {
-      final missingCount = mod.missingAssetCount ?? 0;
+      final missingCount = mod.missingAssetCount;
       if (missingCount <= 0) return '';
       final fileLabel = missingCount == 1 ? 'file' : 'files';
       return '$missingCount missing $fileLabel';
     }, [mod.existingAssetCount]);
 
     final backupHasSameAssetCount = useMemoized(() {
-      if (mod.backup != null &&
-          mod.backup?.totalAssetCount != null &&
-          mod.existingAssetCount != null) {
-        return mod.backup!.totalAssetCount == mod.existingAssetCount!;
+      if (mod.backup != null && mod.backup?.totalAssetCount != null) {
+        return mod.backup!.totalAssetCount == mod.existingAssetCount;
       }
       return true;
     }, [mod.backup, mod.existingAssetCount]);
@@ -135,9 +129,9 @@ class ModsListItem extends HookConsumerWidget {
                   children: [
                     Text(
                       mod.modType != ModTypeEnum.save
-                          ? imageExists
+                          ? (mod.saveName.isNotEmpty
                               ? mod.saveName
-                              : '${mod.saveName} - ${mod.jsonFileName}'
+                              : mod.jsonFileName)
                           : "${mod.saveName} - ${mod.jsonFileName}",
                       style: TextStyle(
                         fontSize: 24,
@@ -153,9 +147,7 @@ class ModsListItem extends HookConsumerWidget {
                           waitDuration: Duration(milliseconds: 300),
                           message: filesMessage,
                           child: Text(
-                            showAssetCount
-                                ? "${mod.existingAssetCount}/${mod.assetCount}"
-                                : " ",
+                            "${mod.existingAssetCount}/${mod.assetCount}",
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w500,
@@ -182,15 +174,13 @@ class ModsListItem extends HookConsumerWidget {
                               color: Colors.blue,
                             ),
                           ),
-                        if (mod.backup != null &&
-                            showAssetCount &&
-                            showBackupState)
+                        if (mod.backup != null && showBackupState)
                           CustomTooltip(
                             waitDuration: Duration(milliseconds: 300),
                             message:
                                 'Update: ${formatTimestamp(mod.dateTimeStamp) ?? 'N/A'}\n'
                                 'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}'
-                                '${backupHasSameAssetCount || mod.backup!.totalAssetCount == null ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.existingAssetCount}'}',
+                                '${backupHasSameAssetCount ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.existingAssetCount}'}',
                             child: Icon(
                               Icons.folder_zip_outlined,
                               size: 28,

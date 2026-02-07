@@ -466,9 +466,26 @@ class _AudioAssetsButton extends ConsumerWidget {
             onPressed: () async {
               if (selectedMod.audioVisibility !=
                   AudioAssetVisibility.useGlobalSetting) {
-                final updatedMod = selectedMod.copyWith(
+                final updatedMod = Mod(
+                  modType: selectedMod.modType,
+                  jsonFilePath: selectedMod.jsonFilePath,
+                  jsonFileName: selectedMod.jsonFileName,
+                  parentFolderName: selectedMod.parentFolderName,
+                  saveName: selectedMod.saveName,
+                  createdAtTimestamp: selectedMod.createdAtTimestamp,
+                  dateTimeStamp: selectedMod.dateTimeStamp,
+                  imageFilePath: selectedMod.imageFilePath,
+                  backup: selectedMod.backup,
+                  backupStatus: selectedMod.backupStatus,
+                  assetLists: selectedMod.assetLists,
+                  assetCount: selectedMod.assetCount,
+                  existingAssetCount: selectedMod.existingAssetCount,
+                  missingAssetCount: selectedMod.missingAssetCount,
+                  hasAudioAssets: selectedMod.hasAudioAssets,
+                  // -----------------------------------------
                   audioVisibility: AudioAssetVisibility.useGlobalSetting,
                 );
+
                 await ref.read(storageProvider).setModAudioPreference(
                       selectedMod.jsonFileName,
                       AudioAssetVisibility.useGlobalSetting,
@@ -501,8 +518,25 @@ class _AudioAssetsButton extends ConsumerWidget {
             onPressed: () async {
               if (selectedMod.audioVisibility !=
                   AudioAssetVisibility.alwaysShow) {
-                final updatedMod = selectedMod.copyWith(
-                    audioVisibility: AudioAssetVisibility.alwaysShow);
+                final updatedMod = Mod(
+                  modType: selectedMod.modType,
+                  jsonFilePath: selectedMod.jsonFilePath,
+                  jsonFileName: selectedMod.jsonFileName,
+                  parentFolderName: selectedMod.parentFolderName,
+                  saveName: selectedMod.saveName,
+                  createdAtTimestamp: selectedMod.createdAtTimestamp,
+                  dateTimeStamp: selectedMod.dateTimeStamp,
+                  imageFilePath: selectedMod.imageFilePath,
+                  backup: selectedMod.backup,
+                  backupStatus: selectedMod.backupStatus,
+                  assetLists: selectedMod.assetLists,
+                  assetCount: selectedMod.assetCount,
+                  existingAssetCount: selectedMod.existingAssetCount,
+                  missingAssetCount: selectedMod.missingAssetCount,
+                  hasAudioAssets: selectedMod.hasAudioAssets,
+                  // -----------------------------------------
+                  audioVisibility: AudioAssetVisibility.alwaysShow,
+                );
                 await ref.read(storageProvider).setModAudioPreference(
                       selectedMod.jsonFileName,
                       AudioAssetVisibility.alwaysShow,
@@ -535,8 +569,26 @@ class _AudioAssetsButton extends ConsumerWidget {
             onPressed: () async {
               if (selectedMod.audioVisibility !=
                   AudioAssetVisibility.alwaysHide) {
-                final updatedMod = selectedMod.copyWith(
-                    audioVisibility: AudioAssetVisibility.alwaysHide);
+                final updatedMod = Mod(
+                  modType: selectedMod.modType,
+                  jsonFilePath: selectedMod.jsonFilePath,
+                  jsonFileName: selectedMod.jsonFileName,
+                  parentFolderName: selectedMod.parentFolderName,
+                  saveName: selectedMod.saveName,
+                  createdAtTimestamp: selectedMod.createdAtTimestamp,
+                  dateTimeStamp: selectedMod.dateTimeStamp,
+                  imageFilePath: selectedMod.imageFilePath,
+                  backup: selectedMod.backup,
+                  backupStatus: selectedMod.backupStatus,
+                  assetLists: selectedMod.assetLists,
+                  assetCount: selectedMod.assetCount,
+                  existingAssetCount: selectedMod.existingAssetCount,
+                  missingAssetCount: selectedMod.missingAssetCount,
+                  hasAudioAssets: selectedMod.hasAudioAssets,
+                  // -----------------------------------------
+                  audioVisibility: AudioAssetVisibility.alwaysHide,
+                );
+
                 await ref.read(storageProvider).setModAudioPreference(
                       selectedMod.jsonFileName,
                       AudioAssetVisibility.alwaysHide,

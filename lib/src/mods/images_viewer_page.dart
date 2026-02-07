@@ -30,7 +30,7 @@ class ImagesViewerPage extends HookConsumerWidget {
         [mod]);
 
     final totalImagesCount =
-        useMemoized(() => mod?.assetLists?.images.length ?? 0, [mod]);
+        useMemoized(() => mod?.assetLists.images.length ?? 0, [mod]);
 
     return SafeArea(
       child: Scaffold(

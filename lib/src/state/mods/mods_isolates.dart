@@ -13,7 +13,7 @@ import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
-    show AudioAssetVisibility, Mod, ModTypeEnum;
+    show AudioAssetVisibility, Mod, ModTypeEnum, InitialMod;
 import 'package:tts_mod_vault/src/utils.dart'
     show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
@@ -25,7 +25,7 @@ final nicknameRegex = RegExp(r'"Nickname"\s*:\s*"([^"]*)"');
 final saveNameRegex = RegExp(r'"SaveName"\s*:\s*"([^"]*)"');
 
 class IsolateWorkData {
-  final List<List<Mod>> batches;
+  final List<List<InitialMod>> batches;
   final Map<String, String?> cachedDateTimeStamps;
   final Map<String, Map<String, String>?> cachedAssetLists;
   final bool ignoreAudioAssets;
@@ -100,7 +100,8 @@ class UpdateUrlPrefixesResult {
 }
 
 Future<IsolateWorkResult> processMultipleBatchesInIsolate(
-    IsolateWorkData workData) async {
+  IsolateWorkData workData,
+) async {
   final List<Mod> allProcessedMods = [];
   final List<ModStorageUpdate> allStorageUpdates = [];
 
@@ -148,12 +149,15 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
             workData.modAudioPreferences,
           );
 
-          final completeMod = mod.copyWith(
+          final completeMod = Mod.fromInitial(
+            mod,
             assetLists: assetLists.$1,
             assetCount: assetLists.$2,
             existingAssetCount: assetLists.$3,
             missingAssetCount: assetLists.$2 - assetLists.$3,
             hasAudioAssets: assetLists.$4,
+            audioVisibility: workData.modAudioPreferences[mod.jsonFileName] ??
+                AudioAssetVisibility.useGlobalSetting,
           );
 
           allProcessedMods.add(completeMod);
@@ -465,12 +469,12 @@ class InitialModsIsolateData {
   });
 }
 
-Future<List<Mod>> processInitialModsInIsolate(
+Future<List<InitialMod>> processInitialModsInIsolate(
   InitialModsIsolateData data,
 ) async {
   // Process files in parallel chunks within the isolate
   final chunkSize = 10;
-  List<Mod> jsonListMods = [];
+  List<InitialMod> jsonListMods = [];
 
   for (int i = 0; i < data.jsonsPaths.length; i += chunkSize) {
     final chunk = data.jsonsPaths.skip(i).take(chunkSize).toList();
@@ -481,13 +485,13 @@ Future<List<Mod>> processInitialModsInIsolate(
         .toList();
 
     final results = await Future.wait(futures);
-    jsonListMods.addAll(results.whereType<Mod>());
+    jsonListMods.addAll(results.whereType<InitialMod>());
   }
 
   return jsonListMods;
 }
 
-Future<Mod?> _processSingleFileOptimized(
+Future<InitialMod?> _processSingleFileOptimized(
   String jsonPath,
   ModTypeEnum modType,
 ) async {
@@ -506,7 +510,7 @@ Future<Mod?> _processSingleFileOptimized(
         await _getImageFilePathIsolate(jsonPath, jsonFileName);
     final jsonFileStat = await File(jsonPath).stat();
 
-    return Mod(
+    return InitialMod(
       modType: modType,
       jsonFilePath: jsonPath,
       parentFolderName: parentFolder,
@@ -684,14 +688,15 @@ Future<List<String>> getJsonFilesInDirectory({
 }
 
 /// Creates adaptive batches based on file sizes and complexity
-Future<List<List<Mod>>> createAdaptiveBatchesInIsolate(List<Mod> mods) async {
+Future<List<List<InitialMod>>> createAdaptiveBatchesInIsolate(
+    List<InitialMod> mods) async {
   const int targetBatchSizeBytes = 50 * 1024 * 1024; // 50MB per batch
   const int maxModsPerBatch = 100;
   const int minModsPerBatch = 5;
   const int parallelStatChunkSize = 100; // Process 100 file stats at a time
 
   // Get all file sizes in parallel chunks
-  final List<(Mod, int)> modsWithSizes = [];
+  final List<(InitialMod, int)> modsWithSizes = [];
 
   for (int i = 0; i < mods.length; i += parallelStatChunkSize) {
     final chunk = mods.skip(i).take(parallelStatChunkSize).toList();
@@ -714,8 +719,8 @@ Future<List<List<Mod>>> createAdaptiveBatchesInIsolate(List<Mod> mods) async {
   }
 
   // Now create batches using the sizes we collected
-  List<List<Mod>> batches = [];
-  List<Mod> currentBatch = [];
+  List<List<InitialMod>> batches = [];
+  List<InitialMod> currentBatch = [];
   int currentBatchSize = 0;
 
   for (final (mod, fileSizeInBytes) in modsWithSizes) {

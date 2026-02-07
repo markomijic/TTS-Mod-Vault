@@ -2,14 +2,14 @@ class ExistingBackup {
   final String filename;
   final String filepath;
   final int lastModifiedTimestamp;
-  final int? totalAssetCount;
+  final int totalAssetCount;
   final String? matchingModFilepath;
 
   const ExistingBackup({
     required this.filename,
     required this.filepath,
     required this.lastModifiedTimestamp,
-    this.totalAssetCount,
+    required this.totalAssetCount,
     this.matchingModFilepath,
   });
 

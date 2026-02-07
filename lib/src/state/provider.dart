@@ -222,7 +222,7 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
       }
 
       if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.missing)) {
-        return (mod.missingAssetCount ?? 0) > 0;
+        return (mod.missingAssetCount) > 0;
       }
 
       if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.audio)) {
@@ -244,8 +244,8 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
           .sort((a, b) => b.createdAtTimestamp.compareTo(a.createdAtTimestamp));
       break;
     case SortOptionEnum.missingAssets:
-      filteredMods.sort((a, b) =>
-          (b.missingAssetCount ?? 0).compareTo(a.missingAssetCount ?? 0));
+      filteredMods
+          .sort((a, b) => (b.missingAssetCount).compareTo(a.missingAssetCount));
   }
 
   return filteredMods;

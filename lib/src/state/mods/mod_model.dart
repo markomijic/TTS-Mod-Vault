@@ -25,17 +25,17 @@ class Mod {
   final String jsonFileName;
   final String parentFolderName;
   final String saveName;
-  final ExistingBackupStatusEnum backupStatus;
   final int createdAtTimestamp;
-  final ExistingBackup? backup;
-  final String? dateTimeStamp;
-  final String? imageFilePath;
-  final AssetLists? assetLists;
-  final int? assetCount;
-  final int? existingAssetCount;
-  final int? missingAssetCount;
+  final AssetLists assetLists;
+  final int assetCount;
+  final int existingAssetCount;
+  final int missingAssetCount;
   final AudioAssetVisibility audioVisibility;
   final bool hasAudioAssets;
+  final String? dateTimeStamp;
+  final String? imageFilePath;
+  final ExistingBackupStatusEnum backupStatus;
+  final ExistingBackup? backup;
 
   const Mod({
     required this.modType,
@@ -45,80 +45,93 @@ class Mod {
     required this.saveName,
     required this.backupStatus,
     required this.createdAtTimestamp,
-    this.backup,
-    this.dateTimeStamp,
-    this.imageFilePath,
-    this.assetLists,
-    this.assetCount,
-    this.existingAssetCount,
-    this.missingAssetCount,
-    this.audioVisibility = AudioAssetVisibility.useGlobalSetting,
-    this.hasAudioAssets = false,
+    required this.backup,
+    required this.dateTimeStamp,
+    required this.imageFilePath,
+    required this.assetLists,
+    required this.assetCount,
+    required this.existingAssetCount,
+    required this.missingAssetCount,
+    required this.audioVisibility,
+    required this.hasAudioAssets,
   });
 
-  Mod copyWith({
-    String? jsonFilePath,
-    String? parentFolderName,
-    String? saveName,
-    ExistingBackupStatusEnum? backupStatus,
+  factory Mod.fromInitial(
+    InitialMod initial, {
+    required AssetLists assetLists,
+    required int assetCount,
+    required int existingAssetCount,
+    required int missingAssetCount,
+    required AudioAssetVisibility audioVisibility,
+    required bool hasAudioAssets,
     ExistingBackup? backup,
-    int? createdAtTimestamp,
-    String? dateTimeStamp,
-    String? jsonFileName,
-    String? imageFilePath,
-    AssetLists? assetLists,
-    int? assetCount,
-    int? existingAssetCount,
-    int? missingAssetCount,
-    AudioAssetVisibility? audioVisibility,
-    bool? hasAudioAssets,
   }) {
     return Mod(
-      modType: modType,
-      jsonFilePath: jsonFilePath ?? this.jsonFilePath,
-      jsonFileName: jsonFileName ?? this.jsonFileName,
-      parentFolderName: parentFolderName ?? this.parentFolderName,
-      saveName: saveName ?? this.saveName,
-      backupStatus: backupStatus ?? this.backupStatus,
-      backup: backup ?? this.backup,
-      createdAtTimestamp: createdAtTimestamp ?? this.createdAtTimestamp,
-      dateTimeStamp: dateTimeStamp ?? this.dateTimeStamp,
-      imageFilePath: imageFilePath ?? this.imageFilePath,
-      assetLists: assetLists ?? this.assetLists,
-      assetCount: assetCount ?? this.assetCount,
-      existingAssetCount: existingAssetCount ?? this.existingAssetCount,
-      missingAssetCount: missingAssetCount ?? this.missingAssetCount,
-      audioVisibility: audioVisibility ?? this.audioVisibility,
-      hasAudioAssets: hasAudioAssets ?? this.hasAudioAssets,
+      modType: initial.modType,
+      jsonFilePath: initial.jsonFilePath,
+      jsonFileName: initial.jsonFileName,
+      parentFolderName: initial.parentFolderName,
+      saveName: initial.saveName,
+      createdAtTimestamp: initial.createdAtTimestamp,
+      dateTimeStamp: initial.dateTimeStamp,
+      imageFilePath: initial.imageFilePath,
+      backupStatus: initial.backupStatus,
+      backup: backup,
+      assetLists: assetLists,
+      assetCount: assetCount,
+      existingAssetCount: existingAssetCount,
+      missingAssetCount: missingAssetCount,
+      audioVisibility: audioVisibility,
+      hasAudioAssets: hasAudioAssets,
     );
   }
 
   List<Asset> getAllAssets() {
-    if (assetLists == null) return [];
-
     return [
-      ...assetLists!.assetBundles,
-      ...assetLists!.audio,
-      ...assetLists!.images,
-      ...assetLists!.models,
-      ...assetLists!.pdf,
+      ...assetLists.assetBundles,
+      ...assetLists.audio,
+      ...assetLists.images,
+      ...assetLists.models,
+      ...assetLists.pdf,
     ];
   }
 
   List<Asset> getAssetsByType(AssetTypeEnum type) {
-    if (assetLists == null) return [];
-
     switch (type) {
       case AssetTypeEnum.assetBundle:
-        return assetLists?.assetBundles ?? [];
+        return assetLists.assetBundles;
       case AssetTypeEnum.audio:
-        return assetLists?.audio ?? [];
+        return assetLists.audio;
       case AssetTypeEnum.image:
-        return assetLists?.images ?? [];
+        return assetLists.images;
       case AssetTypeEnum.model:
-        return assetLists?.models ?? [];
+        return assetLists.models;
       case AssetTypeEnum.pdf:
-        return assetLists?.pdf ?? [];
+        return assetLists.pdf;
     }
   }
+}
+
+class InitialMod {
+  final ModTypeEnum modType;
+  final String jsonFilePath;
+  final String jsonFileName;
+  final String parentFolderName;
+  final String saveName;
+  final int createdAtTimestamp;
+  final String? dateTimeStamp;
+  final String? imageFilePath;
+  final ExistingBackupStatusEnum backupStatus;
+
+  const InitialMod({
+    required this.modType,
+    required this.jsonFilePath,
+    required this.jsonFileName,
+    required this.parentFolderName,
+    required this.saveName,
+    required this.createdAtTimestamp,
+    required this.dateTimeStamp,
+    required this.imageFilePath,
+    required this.backupStatus,
+  });
 }

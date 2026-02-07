@@ -3,6 +3,7 @@ class ExistingBackup {
   final String filepath;
   final int lastModifiedTimestamp;
   final int totalAssetCount;
+  final int fileSize; // in bytes
   final String? matchingModFilepath;
 
   const ExistingBackup({
@@ -10,14 +11,19 @@ class ExistingBackup {
     required this.filepath,
     required this.lastModifiedTimestamp,
     required this.totalAssetCount,
+    required this.fileSize,
     this.matchingModFilepath,
   });
+
+  /// File size formatted in megabytes (e.g. "12.3 MB").
+  String get fileSizeMB => '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
 
   ExistingBackup copyWith({
     String? filename,
     String? filepath,
     int? lastModifiedTimestamp,
     int? totalAssetCount,
+    int? fileSize,
     String? matchingModFilepath,
   }) {
     return ExistingBackup(
@@ -26,6 +32,7 @@ class ExistingBackup {
       lastModifiedTimestamp:
           lastModifiedTimestamp ?? this.lastModifiedTimestamp,
       totalAssetCount: totalAssetCount ?? this.totalAssetCount,
+      fileSize: fileSize ?? this.fileSize,
       matchingModFilepath: matchingModFilepath ?? this.matchingModFilepath,
     );
   }

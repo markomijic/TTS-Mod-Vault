@@ -74,7 +74,7 @@ class BackupsGridCard extends HookConsumerWidget {
           child: ClipRect(
             child: Stack(
               children: [
-                // Background image or color
+                // Background image or fallback
                 if (imageExists)
                   Positioned.fill(
                     child: Image.file(
@@ -85,30 +85,29 @@ class BackupsGridCard extends HookConsumerWidget {
                 else
                   Container(
                     color: Colors.grey[850],
-                    width: double.infinity,
-                    height: double.infinity,
-                    child: Icon(
+                    alignment: Alignment.center,
+                    child: const Icon(
                       Icons.folder_zip_outlined,
                       size: 60,
                     ),
                   ),
 
-                // Corner icon
+                // Top-right status icon (only overlay left)
                 Align(
-                  alignment: AlignmentGeometry.topRight,
+                  alignment: Alignment.topRight,
                   child: Padding(
-                    padding: EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(4),
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.all(Radius.circular(4)),
+                        borderRadius: BorderRadius.circular(4),
                         color: Colors.black.withAlpha(180),
                       ),
                       child: CustomTooltip(
                         message: hasMatchingMod ? "Imported" : "Not imported",
-                        waitDuration: Duration(milliseconds: 300),
+                        waitDuration: const Duration(milliseconds: 300),
                         child: Icon(
                           Icons.extension_outlined,
-                          size: 32,
+                          size: 28,
                           color: hasMatchingMod ? Colors.green : Colors.red,
                         ),
                       ),
@@ -116,36 +115,34 @@ class BackupsGridCard extends HookConsumerWidget {
                   ),
                 ),
 
-                // Bottom text
+                // Bottom info bar
                 Align(
-                  alignment: AlignmentGeometry.bottomLeft,
+                  alignment: Alignment.bottomCenter,
                   child: ClipRect(
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
                       child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(180),
-                        ),
-                        padding: EdgeInsets.all(4),
                         width: double.infinity,
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(140),
+                        ),
                         child: Column(
-                          spacing: 4,
+                          spacing: 2,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              formattedDate, // + ' ' + formattedDate,
-                              style: TextStyle(fontSize: 14),
-                            ),
-                            Divider(height: 1),
-                            Text(
                               p.basenameWithoutExtension(backup.filename),
-                              maxLines: 4,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
+                              maxLines: 5,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
                                 fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
+                            Text(formattedDate),
+                            Text(backup.fileSizeMB),
                           ],
                         ),
                       ),

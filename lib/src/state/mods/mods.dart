@@ -38,6 +38,7 @@ import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
+        backupCacheProvider,
         directoriesProvider,
         existingAssetListsProvider,
         existingBackupsProvider,
@@ -77,6 +78,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     try {
       if (clearCache) {
         await ref.read(storageProvider).clearAllModData();
+        await ref.read(backupCacheProvider).clear();
       }
     } catch (e) {
       debugPrint("loadModsData - error on clearing cache: $e");
@@ -680,15 +682,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
-/*     if (backup != null && backup.totalAssetCount == null) {
-      final backupTotalAssetCount = await ref
-          .read(existingBackupsProvider.notifier)
-          .listZipContents(backup.filepath);
-
-      backup = backup.copyWith(totalAssetCount: backupTotalAssetCount);
-      ref.read(existingBackupsProvider.notifier).addBackup(backup);
-    } */
-
     final backupStatus = backup == null
         ? ExistingBackupStatusEnum.noBackup
         : (mod.dateTimeStamp == null ||
@@ -722,15 +715,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   Future<void> updateModBackup(Mod mod) async {
     ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
-/* 
-    if (backup != null && backup.totalAssetCount == null) {
-      final backupTotalAssetCount = await ref
-          .read(existingBackupsProvider.notifier)
-          .listZipContents(backup.filepath);
-
-      backup = backup.copyWith(totalAssetCount: backupTotalAssetCount);
-      ref.read(existingBackupsProvider.notifier).addBackup(backup);
-    } */
 
     final backupStatus = backup == null
         ? ExistingBackupStatusEnum.noBackup

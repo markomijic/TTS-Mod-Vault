@@ -3,6 +3,7 @@ import 'package:tts_mod_vault/src/models/log_entry.dart';
 import 'package:tts_mod_vault/src/providers/log_provider.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets_state.dart';
 import 'package:tts_mod_vault/src/state/asset/existing_assets.dart';
+import 'package:tts_mod_vault/src/state/backup/backup_cache.dart';
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart';
 import 'package:tts_mod_vault/src/state/backup/backup.dart';
 import 'package:tts_mod_vault/src/state/backup/existing_backups.dart';
@@ -72,6 +73,8 @@ final loadingMessageProvider = StateProvider<String>((ref) => 'Loading');
 final selectedUrlProvider = StateProvider<String>((ref) => '');
 
 final storageProvider = Provider((ref) => Storage());
+
+final backupCacheProvider = Provider((ref) => BackupCache());
 
 final directoriesProvider =
     StateNotifierProvider<DirectoriesNotifier, DirectoriesState>(

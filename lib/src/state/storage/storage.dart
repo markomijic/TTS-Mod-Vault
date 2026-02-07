@@ -136,7 +136,8 @@ class Storage {
       final value = switch (visibility) {
         AudioAssetVisibility.alwaysShow => 'alwaysShow',
         AudioAssetVisibility.alwaysHide => 'alwaysHide',
-        AudioAssetVisibility.useGlobalSetting => throw StateError('Should have been deleted'),
+        AudioAssetVisibility.useGlobalSetting =>
+          throw StateError('Should have been deleted'),
       };
       await _metadataBox.put('$modName$showAudioAssetsSuffix', value);
     }

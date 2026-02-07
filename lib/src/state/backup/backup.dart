@@ -119,12 +119,16 @@ class BackupNotifier extends StateNotifier<BackupState> {
 
           if (message.success) {
             // Add new backup to state
+            final backupFile = File(targetBackupFilePath);
+            final backupFileSize =
+                backupFile.existsSync() ? backupFile.lengthSync() : 0;
             final newBackup = ExistingBackup(
               filename: backupFileName,
               filepath: targetBackupFilePath,
               lastModifiedTimestamp:
                   DateTime.now().millisecondsSinceEpoch ~/ 1000,
               totalAssetCount: totalAssetCount,
+              fileSize: backupFileSize,
             );
             ref.read(existingBackupsProvider.notifier).addBackup(newBackup);
           }

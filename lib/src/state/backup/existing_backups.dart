@@ -1,12 +1,12 @@
-import 'dart:io' show Directory, File, Process;
+import 'dart:io' show Directory, File, Platform;
 import 'dart:isolate' show Isolate;
 import 'dart:math' show max, min;
-import 'dart:io' show Platform;
 
-import 'package:archive/archive.dart' show ZipDecoder;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as path;
+import 'package:tts_mod_vault/src/state/backup/backup_cache.dart'
+    show BackupCache;
 import 'package:tts_mod_vault/src/state/backup/existing_backups_state.dart'
     show ExistingBackupsState;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
@@ -15,11 +15,14 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
     show Mod, ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
+        backupCacheProvider,
         directoriesProvider,
         loadingMessageProvider,
         settingsProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show getBackupFilenameByMod;
+import 'package:tts_mod_vault/src/utils/zip_asset_counter.dart'
+    show ZipAssetCounter;
 
 class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
   final Ref ref;
@@ -55,49 +58,105 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
 
     ref.read(loadingMessageProvider.notifier).state = 'Loading backup files';
 
-    // Split files into ASCII and Unicode groups
-    final asciiFiles = <File>[];
-    final unicodeFiles = <File>[];
-
+    // Stat all files to get filesystem metadata
+    final fileMetas = <_FileMeta>[];
     for (final file in files) {
-      if (_containsUnicode(file.path)) {
-        unicodeFiles.add(file);
+      try {
+        final stat = await file.stat();
+        fileMetas.add(_FileMeta(
+          filepath: path.normalize(file.path),
+          filename: path.basename(file.path),
+          lastModified: stat.modified.millisecondsSinceEpoch ~/ 1000,
+          fileSize: stat.size,
+        ));
+      } catch (e) {
+        debugPrint('loadExistingBackups - stat error: $e');
+      }
+    }
+
+    // Load cache
+    final cache = ref.read(backupCacheProvider);
+
+    // Separate cached vs uncached files
+    final backups = <ExistingBackup>[];
+    final uncachedMetas = <_FileMeta>[];
+    final uncachedIndices = <int>[]; // Index into backups list
+
+    for (final meta in fileMetas) {
+      final key =
+          BackupCache.cacheKey(meta.filepath, meta.lastModified, meta.fileSize);
+      final cachedCount = cache.get(key);
+
+      if (cachedCount != null) {
+        backups.add(ExistingBackup(
+          filename: meta.filename,
+          filepath: meta.filepath,
+          fileSize: meta.fileSize,
+          lastModifiedTimestamp: meta.lastModified,
+          totalAssetCount: cachedCount,
+        ));
       } else {
-        asciiFiles.add(file);
+        uncachedIndices.add(backups.length);
+        // Placeholder — will be replaced after isolate processing
+        backups.add(ExistingBackup(
+          filename: meta.filename,
+          filepath: meta.filepath,
+          fileSize: meta.fileSize,
+          lastModifiedTimestamp: meta.lastModified,
+          totalAssetCount: 0,
+        ));
+        uncachedMetas.add(meta);
       }
     }
 
     debugPrint(
-        'loadExistingBackups - Processing ${asciiFiles.length} ASCII files in isolates, ${unicodeFiles.length} Unicode files in main thread');
+        'loadExistingBackups - ${fileMetas.length - uncachedMetas.length} cache hits, '
+        '${uncachedMetas.length} cache misses');
 
-    final numberOfIsolates = max(Platform.numberOfProcessors - 2, 2);
-    final chunkedAsciiFiles = _chunkList(asciiFiles, numberOfIsolates);
-    final futures = chunkedAsciiFiles
-        .map((chunk) => Isolate.run(() => _processBackupFiles(chunk)))
-        .toList();
+    if (uncachedMetas.isNotEmpty) {
+      // Chunk uncached file paths across isolates
+      final uncachedPaths = uncachedMetas.map((m) => m.filepath).toList();
+      final numberOfIsolates = max(Platform.numberOfProcessors - 2, 2);
+      final chunks = _chunkList(uncachedPaths, numberOfIsolates);
 
-    if (unicodeFiles.isNotEmpty) {
-      futures.add(_processBackupFiles(unicodeFiles));
+      final results = await Future.wait(
+        chunks.map((chunk) => Isolate.run(() => _countAssetsForFiles(chunk))),
+      );
+
+      final allCounts = results.expand((list) => list).toList();
+
+      // Fill in the placeholders and update cache
+      final newCacheEntries = <String, int>{};
+      for (int j = 0; j < uncachedMetas.length; j++) {
+        final meta = uncachedMetas[j];
+        final count = allCounts[j];
+        final idx = uncachedIndices[j];
+
+        backups[idx] = ExistingBackup(
+          filename: meta.filename,
+          filepath: meta.filepath,
+          fileSize: meta.fileSize,
+          lastModifiedTimestamp: meta.lastModified,
+          totalAssetCount: count,
+        );
+
+        final key = BackupCache.cacheKey(
+            meta.filepath, meta.lastModified, meta.fileSize);
+        newCacheEntries[key] = count;
+      }
+
+      // Persist new entries and prune stale ones
+      await cache.putAll(newCacheEntries);
+      final validKeys = fileMetas
+          .map((m) =>
+              BackupCache.cacheKey(m.filepath, m.lastModified, m.fileSize))
+          .toSet();
+      await cache.pruneStaleEntries(validKeys);
     }
-
-    final results = await Future.wait(futures);
-    final backups = results.expand((list) => list).toList();
 
     state = ExistingBackupsState(backups: backups);
 
     debugPrint('loadExistingBackups - finished at ${DateTime.now()}');
-  }
-
-  bool _containsUnicode(String filePath) {
-    final fileName = path.basename(filePath);
-
-    // Check if any character in the filename is outside ASCII range (0-127)
-    for (int i = 0; i < fileName.length; i++) {
-      if (fileName.codeUnitAt(i) > 127) {
-        return true;
-      }
-    }
-    return false;
   }
 
   List<List<T>> _chunkList<T>(List<T> list, int chunkSize) {
@@ -243,103 +302,31 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
   }
 }
 
-// Top-level functions required by Isolate.run
-Future<List<String>> _listWithUnzip(String zipPath) async {
-  try {
-    final result = await Process.run('unzip', ['-Z1', zipPath]);
-
-    if (result.exitCode != 0) {
-      debugPrint('_listWithUnzip result error: ${result.stderr}');
-      return _fallbackToDartZip(zipPath);
-    }
-
-    final lines = (result.stdout as String).split('\n');
-    return lines.where((line) => line.trim().isNotEmpty).toList();
-  } catch (e) {
-    debugPrint('_listWithUnzip error: $e');
-    return _fallbackToDartZip(zipPath);
-  }
-}
-
-Future<List<String>> _listWithTar(String zipPath) async {
-  try {
-    final result = await Process.run('tar', ['-tf', zipPath]);
-
-    if (result.exitCode != 0) {
-      debugPrint('_listWithTar result error: ${result.stderr}');
-      return _fallbackToDartZip(zipPath);
-    }
-
-    final lines = (result.stdout as String).split('\n');
-    return lines.where((line) => line.trim().isNotEmpty).toList();
-  } catch (e) {
-    debugPrint('_listWithTar error: $e');
-    return _fallbackToDartZip(zipPath);
-  }
-}
-
-Future<List<String>> _fallbackToDartZip(String zipPath) async {
-  debugPrint('Falling back to Dart archive package for: $zipPath');
-
-  try {
-    final bytes = await File(zipPath).readAsBytes();
-    final archive = ZipDecoder().decodeBytes(bytes);
-
-    return archive.files
-        // Normalize to forward slashes to align with Tar and Unzip methods
-        .map((file) => file.name.trim().replaceAll('\\', '/'))
-        .where((name) => name.isNotEmpty)
-        .toList();
-  } catch (e) {
-    debugPrint('_fallbackToDartZip error: $e');
-    return [];
-  }
-}
-
-Future<int> listZipContents(String zipPath) async {
-  List<String> filePaths;
-  if (Platform.isWindows) {
-    filePaths = await _listWithTar(zipPath);
-  } else {
-    filePaths = await _listWithUnzip(zipPath);
-  }
-
-  final folderCounts = <String, int>{};
-  for (final path in filePaths) {
-    if (path.endsWith('/')) continue; // Skip folders
-    final folder =
-        path.contains('/') ? path.substring(0, path.lastIndexOf('/')) : 'root';
-    folderCounts.update(folder, (count) => count + 1, ifAbsent: () => 1);
-  }
-
-  // Calculate total for asset folders
-  const assetFolders = ['Assetbundles', 'Audio', 'Images', 'PDF', 'Models'];
-  final assetTotal = assetFolders
-      .map((folder) => folderCounts['Mods/$folder'] ?? 0)
-      .fold(0, (a, b) => a + b);
-
-  return assetTotal;
-}
-
-Future<List<ExistingBackup>> _processBackupFiles(List<File> files) async {
-  final backups = <ExistingBackup>[];
-
-  for (final file in files) {
+/// Top-level function for Isolate.run — counts assets for a batch of zip files
+/// using the custom central directory reader (no process spawning, no full read).
+Future<List<int>> _countAssetsForFiles(List<String> filePaths) async {
+  final counts = <int>[];
+  for (final filePath in filePaths) {
     try {
-      final stat = await file.stat();
-      final filename = path.basename(file.path);
-      final totalAssetCount = await listZipContents(file.path);
-
-      backups.add(ExistingBackup(
-        filename: filename,
-        filepath: path.normalize(file.path),
-        lastModifiedTimestamp: stat.modified.millisecondsSinceEpoch ~/ 1000,
-        totalAssetCount: totalAssetCount,
-      ));
-    } catch (e) {
-      debugPrint("_processBackupFiles error $e");
+      final count = await ZipAssetCounter.countAssets(filePath);
+      counts.add(count);
+    } catch (_) {
+      counts.add(0);
     }
   }
+  return counts;
+}
 
-  return backups;
+class _FileMeta {
+  final String filepath;
+  final String filename;
+  final int lastModified;
+  final int fileSize;
+
+  _FileMeta({
+    required this.filepath,
+    required this.filename,
+    required this.lastModified,
+    required this.fileSize,
+  });
 }

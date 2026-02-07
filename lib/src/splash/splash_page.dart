@@ -16,7 +16,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         loadingMessageProvider,
         modsProvider,
         settingsProvider,
-        storageProvider;
+        storageProvider,
+        backupCacheProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show checkForUpdatesOnGitHub, showDownloadLatestVersionDialog;
 import 'package:window_manager/window_manager.dart' show windowManager;
@@ -47,6 +48,7 @@ class SplashPage extends HookConsumerWidget {
 
         // Initialize storage, TTS Data Directory and Settings
         await ref.read(storageProvider).initializeStorage();
+        await ref.read(backupCacheProvider).initialize();
         await ref.read(settingsProvider.notifier).initializeSettings();
         directoriesNotifier.initializeDirectories();
 

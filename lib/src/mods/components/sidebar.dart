@@ -66,141 +66,146 @@ class Sidebar extends HookConsumerWidget {
               : null,
           color: isHovered.value ? null : scaffoldBackgroundColor,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 8,
-          children: [
-            const Spacer(),
-            _SidebarItem(
-              icon: Icons.extension_sharp,
-              label: 'Mods',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () {
-                ref.read(selectedPageProvider.notifier).state = AppPage.mods;
-              },
-            ),
-            if (backupsDir.isNotEmpty)
-              _SidebarItem(
-                icon: Icons.folder_zip,
-                label: 'Backups',
-                isExpanded: isHovered.value,
-                isDisabled: actionInProgress,
-                onPressed: () {
-                  ref.read(selectedPageProvider.notifier).state =
-                      AppPage.backups;
-                },
-              ),
-            _GradientDivider(isExpanded: isHovered.value),
-            _SidebarItem(
-              icon: Icons.refresh,
-              label: 'Refresh',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showConfirmDialogWithCheckbox(
-                context,
-                title: 'Refresh all data?',
-                onConfirm: (checkboxValue) async => await ref
-                    .read(loaderProvider)
-                    .refreshAppData(checkboxValue),
-                checkboxInfoMessage:
-                    "This option reloads everything from your files instead of using saved information from cache\n\nIt will take longer depending on number of items to load\n\nYour asset files won't be affected",
-                checkboxLabel: "Clear Vault cache",
-              ),
-            ),
-            _SidebarItem(
-              icon: Icons.delete_sweep,
-              label: 'Cleanup',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () async {
-                final cleanupNotifier = ref.read(cleanupProvider.notifier);
-                await cleanupNotifier.startCleanup(
-                  (count) {
-                    if (count > 0) {
-                      final itemTypes =
-                          ref.read(settingsProvider).showSavedObjects
-                              ? "mods, saves and saved objects"
-                              : "mods and saves";
-
-                      showConfirmDialog(
-                        context,
-                        '$count asset files found that are not used by any of your $itemTypes.\n\nAre you sure you want to delete them?',
-                        () async {
-                          await cleanupNotifier.executeDelete();
-                        },
-                        () {
-                          cleanupNotifier.resetState();
-                        },
-                      );
-                    } else {
-                      showSnackBar(context, 'No files found to delete');
-                    }
-                  },
-                );
-              },
-            ),
-            _GradientDivider(isExpanded: isHovered.value),
-            _SidebarItem(
-              icon: Icons.unarchive,
-              label: 'Import backups',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () async {
-                await ref.read(bulkActionsProvider.notifier).importBackups();
-              },
-            ),
-            _SidebarItem(
-              icon: Icons.upload_file,
-              label: 'Import JSON',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => ImportJsonDialog(
-                  onConfirm:
-                      (jsonFilePath, destinationFolder, modType, pngFilePath) {
-                    ref.read(importBackupProvider.notifier).importJson(
-                          jsonFilePath,
-                          destinationFolder,
-                          modType,
-                          pngFilePath,
-                        );
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 8,
+              children: [
+                _SidebarItem(
+                  icon: Icons.extension_sharp,
+                  label: 'Mods',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () {
+                    ref.read(selectedPageProvider.notifier).state =
+                        AppPage.mods;
                   },
                 ),
-              ),
+                if (backupsDir.isNotEmpty)
+                  _SidebarItem(
+                    icon: Icons.folder_zip,
+                    label: 'Backups',
+                    isExpanded: isHovered.value,
+                    isDisabled: actionInProgress,
+                    onPressed: () {
+                      ref.read(selectedPageProvider.notifier).state =
+                          AppPage.backups;
+                    },
+                  ),
+                _GradientDivider(isExpanded: isHovered.value),
+                _SidebarItem(
+                  icon: Icons.refresh,
+                  label: 'Refresh',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () => showConfirmDialogWithCheckbox(
+                    context,
+                    title: 'Refresh all data?',
+                    onConfirm: (checkboxValue) async => await ref
+                        .read(loaderProvider)
+                        .refreshAppData(checkboxValue),
+                    checkboxInfoMessage:
+                        "This option reloads everything from your files instead of using saved information from cache\n\nIt will take longer depending on number of items to load\n\nYour asset files won't be affected",
+                    checkboxLabel: "Clear Vault cache",
+                  ),
+                ),
+                _SidebarItem(
+                  icon: Icons.delete_sweep,
+                  label: 'Cleanup',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () async {
+                    final cleanupNotifier = ref.read(cleanupProvider.notifier);
+                    await cleanupNotifier.startCleanup(
+                      (count) {
+                        if (count > 0) {
+                          final itemTypes =
+                              ref.read(settingsProvider).showSavedObjects
+                                  ? "mods, saves and saved objects"
+                                  : "mods and saves";
+
+                          showConfirmDialog(
+                            context,
+                            '$count asset files found that are not used by any of your $itemTypes.\n\nAre you sure you want to delete them?',
+                            () async {
+                              await cleanupNotifier.executeDelete();
+                            },
+                            () {
+                              cleanupNotifier.resetState();
+                            },
+                          );
+                        } else {
+                          showSnackBar(context, 'No files found to delete');
+                        }
+                      },
+                    );
+                  },
+                ),
+                _GradientDivider(isExpanded: isHovered.value),
+                _SidebarItem(
+                  icon: Icons.unarchive,
+                  label: 'Import backups',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () async {
+                    await ref
+                        .read(bulkActionsProvider.notifier)
+                        .importBackups();
+                  },
+                ),
+                _SidebarItem(
+                  icon: Icons.upload_file,
+                  label: 'Import JSON',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (context) => ImportJsonDialog(
+                      onConfirm: (jsonFilePath, destinationFolder, modType,
+                          pngFilePath) {
+                        ref.read(importBackupProvider.notifier).importJson(
+                              jsonFilePath,
+                              destinationFolder,
+                              modType,
+                              pngFilePath,
+                            );
+                      },
+                    ),
+                  ),
+                ),
+                _SidebarItem(
+                  icon: Icons.download,
+                  label: 'Download Workshop Mods',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (context) => DownloadModsDialog(),
+                  ),
+                ),
+                _GradientDivider(isExpanded: isHovered.value),
+                _SidebarItem(
+                  icon: Icons.help_outline_rounded,
+                  label: 'Help',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () => showHelpDialog(context),
+                ),
+                _SidebarItem(
+                  icon: Icons.settings,
+                  label: 'Settings',
+                  isExpanded: isHovered.value,
+                  isDisabled: actionInProgress,
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (context) => SettingsDialog(),
+                  ),
+                ),
+              ],
             ),
-            _SidebarItem(
-              icon: Icons.download,
-              label: 'Download Workshop Mods',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => DownloadModsDialog(),
-              ),
-            ),
-            _GradientDivider(isExpanded: isHovered.value),
-            _SidebarItem(
-              icon: Icons.help_outline_rounded,
-              label: 'Help',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showHelpDialog(context),
-            ),
-            _SidebarItem(
-              icon: Icons.settings,
-              label: 'Settings',
-              isExpanded: isHovered.value,
-              isDisabled: actionInProgress,
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => SettingsDialog(),
-              ),
-            ),
-            const Spacer(),
-          ],
+          ),
         ),
       ),
     );

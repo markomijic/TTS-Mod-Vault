@@ -5,6 +5,8 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useEffect, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
+import 'package:tts_mod_vault/src/state/analytics/analytics_service.dart'
+    show AnalyticsService;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show ErrorMessage, MessageProgressIndicator;
 import 'package:tts_mod_vault/src/splash/components/select_directories_widget.dart'
@@ -52,12 +54,14 @@ class SplashPage extends HookConsumerWidget {
         await ref.read(settingsProvider.notifier).initializeSettings();
         directoriesNotifier.initializeDirectories();
 
+        final packageInfo = await PackageInfo.fromPlatform();
+        AnalyticsService.initAndPing(appVersion: packageInfo.version);
+
         // Check for updates on start
         if (ref.read(settingsProvider).checkForUpdatesOnStart) {
           final newTagVersion = await checkForUpdatesOnGitHub();
 
           if (newTagVersion.isNotEmpty) {
-            final packageInfo = await PackageInfo.fromPlatform();
             final currentVersion = packageInfo.version;
 
             if (context.mounted) {

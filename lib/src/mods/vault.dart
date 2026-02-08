@@ -17,6 +17,7 @@ class Vault extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedPage = ref.watch(selectedPageProvider);
     final sidebarWidth = useState<double>(40);
+
     useCleanupSnackbar(context, ref);
     useBackupSnackbar(context, ref);
 
@@ -28,9 +29,10 @@ class Vault extends HookConsumerWidget {
               children: [
                 SizedBox(width: sidebarWidth.value),
                 Expanded(
-                    child: selectedPage == AppPage.mods
-                        ? const ModsPage()
-                        : const BackupsPage()),
+                  child: selectedPage == AppPage.mods
+                      ? const ModsPage()
+                      : const BackupsPage(),
+                ),
               ],
             ),
             Sidebar(width: sidebarWidth.value),

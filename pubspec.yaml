@@ -38,6 +38,7 @@ dependencies:
   fixnum: ^1.1.1
   supabase_flutter: ^2.12.0
   shared_preferences: ^2.5.4
+  flutter_dotenv: ^6.0.0
   
 dev_dependencies:
   flutter_test:
@@ -64,4 +65,5 @@ flutter:
   generate: true
 
   assets:
+    - .env
     - assets/icon/

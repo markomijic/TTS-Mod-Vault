@@ -110,15 +110,7 @@ class ModsGridCard extends HookConsumerWidget {
                       ? Colors.white70
                       : Colors.transparent,
             ),
-            /* boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ] 
-                : null, */
+           
           ),
           child: Stack(
             children: [

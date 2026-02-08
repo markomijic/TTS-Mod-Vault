@@ -337,192 +337,194 @@ class SettingsFoldersColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          spacing: 4,
-          children: [
-            SectionHeader(title: "Mods Folder"),
-            CustomTooltip(
-              message:
-                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
-              child: Icon(Icons.info_outline),
-            ),
-          ],
-        ),
-        Row(
-          spacing: 8,
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: SelectableText(
-                  modsDir.value,
-                  style: const TextStyle(color: Colors.black),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            spacing: 4,
+            children: [
+              SectionHeader(title: "Mods Folder"),
+              CustomTooltip(
+                message:
+                    'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
+                child: Icon(Icons.info_outline),
+              ),
+            ],
+          ),
+          Row(
+            spacing: 8,
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
+                  ),
+                  child: SelectableText(
+                    modsDir.value,
+                    style: const TextStyle(color: Colors.black),
+                  ),
                 ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                String? ttsDir;
-                try {
-                  ttsDir = await FilePicker.platform.getDirectoryPath(
-                    lockParentWindow: true,
-                  );
-                } catch (e) {
-                  debugPrint("File picker error $e");
-                  if (context.mounted) {
-                    showSnackBar(context, "Failed to open file picker");
-                    Navigator.pop(context);
+              ElevatedButton(
+                onPressed: () async {
+                  String? ttsDir;
+                  try {
+                    ttsDir = await FilePicker.platform.getDirectoryPath(
+                      lockParentWindow: true,
+                    );
+                  } catch (e) {
+                    debugPrint("File picker error $e");
+                    if (context.mounted) {
+                      showSnackBar(context, "Failed to open file picker");
+                      Navigator.pop(context);
+                    }
+                    return;
                   }
-                  return;
-                }
 
-                if (ttsDir == null) return;
+                  if (ttsDir == null) return;
 
-                if (!await directoriesNotifier.isModsDirectoryValid(
-                    ttsDir, false)) {
-                  if (context.mounted) {
-                    showSnackBar(context, 'Invalid Mods folder');
+                  if (!await directoriesNotifier.isModsDirectoryValid(
+                      ttsDir, false)) {
+                    if (context.mounted) {
+                      showSnackBar(context, 'Invalid Mods folder');
+                    }
+                  } else {
+                    modsDir.value = ttsDir.endsWith('Mods')
+                        ? ttsDir
+                        : path.join(ttsDir, 'Mods');
                   }
-                } else {
-                  modsDir.value = ttsDir.endsWith('Mods')
-                      ? ttsDir
-                      : path.join(ttsDir, 'Mods');
-                }
-              },
-              child: const Text('Select'),
-            ),
-          ],
-        ),
-        SizedBox(height: 16),
-        Row(
-          spacing: 4,
-          children: [
-            SectionHeader(title: "Saves Folder"),
-            CustomTooltip(
-              message:
-                  'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
-              child: Icon(Icons.info_outline),
-            ),
-          ],
-        ),
-        Row(
-          spacing: 8,
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: SelectableText(
-                  savesDir.value,
-                  style: const TextStyle(color: Colors.black),
+                },
+                child: const Text('Select'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            spacing: 4,
+            children: [
+              SectionHeader(title: "Saves Folder"),
+              CustomTooltip(
+                message:
+                    'All subfolders of the chosen folder are included\nData will be refreshed if saving changes to a folder',
+                child: Icon(Icons.info_outline),
+              ),
+            ],
+          ),
+          Row(
+            spacing: 8,
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
+                  ),
+                  child: SelectableText(
+                    savesDir.value,
+                    style: const TextStyle(color: Colors.black),
+                  ),
                 ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                String? ttsDir;
-                try {
-                  ttsDir = await FilePicker.platform.getDirectoryPath(
-                    lockParentWindow: true,
-                  );
-                } catch (e) {
-                  debugPrint("File picker error $e");
-                  if (context.mounted) {
-                    showSnackBar(context, "Failed to open file picker");
-                    Navigator.pop(context);
+              ElevatedButton(
+                onPressed: () async {
+                  String? ttsDir;
+                  try {
+                    ttsDir = await FilePicker.platform.getDirectoryPath(
+                      lockParentWindow: true,
+                    );
+                  } catch (e) {
+                    debugPrint("File picker error $e");
+                    if (context.mounted) {
+                      showSnackBar(context, "Failed to open file picker");
+                      Navigator.pop(context);
+                    }
+                    return;
                   }
-                  return;
-                }
 
-                if (ttsDir == null) return;
+                  if (ttsDir == null) return;
 
-                if (!await directoriesNotifier.isSavesDirectoryValid(
-                    ttsDir, false)) {
-                  if (context.mounted) {
-                    showSnackBar(context, 'Invalid Saves folder');
+                  if (!await directoriesNotifier.isSavesDirectoryValid(
+                      ttsDir, false)) {
+                    if (context.mounted) {
+                      showSnackBar(context, 'Invalid Saves folder');
+                    }
+                  } else {
+                    savesDir.value = ttsDir.endsWith('Saves')
+                        ? ttsDir
+                        : path.join(ttsDir, 'Saves');
                   }
-                } else {
-                  savesDir.value = ttsDir.endsWith('Saves')
-                      ? ttsDir
-                      : path.join(ttsDir, 'Saves');
-                }
-              },
-              child: const Text('Select'),
-            ),
-          ],
-        ),
-        SizedBox(height: 16),
-        Row(
-          spacing: 4,
-          children: [
-            SectionHeader(title: "Backups Folder"),
-            CustomTooltip(
-              message:
-                  'Backup Folder is required for Backup State feature to work after a restart or data refresh\nData will be refreshed if saving changes to a folder',
-              child: Icon(Icons.info_outline),
-            ),
-          ],
-        ),
-        Row(
-          spacing: 8,
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: SelectableText(
-                  backupsDir.value,
-                  style: const TextStyle(color: Colors.black),
+                },
+                child: const Text('Select'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            spacing: 4,
+            children: [
+              SectionHeader(title: "Backups Folder"),
+              CustomTooltip(
+                message:
+                    'Backup Folder is required for Backup State feature to work after a restart or data refresh\nData will be refreshed if saving changes to a folder',
+                child: Icon(Icons.info_outline),
+              ),
+            ],
+          ),
+          Row(
+            spacing: 8,
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
+                  ),
+                  child: SelectableText(
+                    backupsDir.value,
+                    style: const TextStyle(color: Colors.black),
+                  ),
                 ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                String? dir;
-                try {
-                  dir = await FilePicker.platform.getDirectoryPath(
-                    lockParentWindow: true,
-                  );
-                } catch (e) {
-                  debugPrint("File picker error $e");
-                  if (context.mounted) {
-                    showSnackBar(context, "Failed to open file picker");
-                    Navigator.pop(context);
+              ElevatedButton(
+                onPressed: () async {
+                  String? dir;
+                  try {
+                    dir = await FilePicker.platform.getDirectoryPath(
+                      lockParentWindow: true,
+                    );
+                  } catch (e) {
+                    debugPrint("File picker error $e");
+                    if (context.mounted) {
+                      showSnackBar(context, "Failed to open file picker");
+                      Navigator.pop(context);
+                    }
+                    return;
                   }
-                  return;
-                }
 
-                if (dir != null) {
-                  backupsDir.value = dir;
-                }
-              },
-              child: const Text('Select'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                backupsDir.value = '';
-              },
-              child: const Text('Reset'),
-            ),
-          ],
-        ),
-      ],
+                  if (dir != null) {
+                    backupsDir.value = dir;
+                  }
+                },
+                child: const Text('Select'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  backupsDir.value = '';
+                },
+                child: const Text('Reset'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

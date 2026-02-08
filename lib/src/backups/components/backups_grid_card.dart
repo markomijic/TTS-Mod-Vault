@@ -22,11 +22,6 @@ class BackupsGridCard extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isHovered = useState(false);
 
-    final formattedDate = useMemoized(() {
-      return formatTimestamp(backup.lastModifiedTimestamp.toString()) ??
-          'Last modified: N/A';
-    }, [backup]);
-
     final matchingModImagePath = useMemoized(() {
       if (backup.matchingModFilepath == null) return null;
 
@@ -97,18 +92,48 @@ class BackupsGridCard extends HookConsumerWidget {
                   alignment: Alignment.topRight,
                   child: Padding(
                     padding: const EdgeInsets.all(4),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
-                        color: Colors.black.withAlpha(180),
-                      ),
-                      child: CustomTooltip(
-                        message: hasMatchingMod ? "Imported" : "Not imported",
-                        waitDuration: const Duration(milliseconds: 300),
-                        child: Icon(
-                          Icons.extension_outlined,
-                          size: 28,
-                          color: hasMatchingMod ? Colors.green : Colors.red,
+                    child: CustomTooltip(
+                      message:
+                          "${hasMatchingMod ? "Imported" : "Not imported"}\n${backup.fileSizeMB}\n${backup.totalAssetCount} asset files\n${formatTimestamp(backup.lastModifiedTimestamp.toString())}",
+                      waitDuration: const Duration(milliseconds: 300),
+                      child: Container(
+                        padding: EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          color: Colors.black.withAlpha(180),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              spacing: 2,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  backup.totalAssetCount.toString(),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.extension,
+                                  size: 20,
+                                  color: hasMatchingMod
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              ],
+                            ),
+                            Text(
+                              backup.fileSizeMB,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -127,23 +152,14 @@ class BackupsGridCard extends HookConsumerWidget {
                         decoration: BoxDecoration(
                           color: Colors.black.withAlpha(140),
                         ),
-                        child: Column(
-                          spacing: 2,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              p.basenameWithoutExtension(backup.filename),
-                              maxLines: 5,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(formattedDate),
-                            Text(backup.fileSizeMB),
-                          ],
+                        child: Text(
+                          p.basenameWithoutExtension(backup.filename),
+                          maxLines: 5,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),

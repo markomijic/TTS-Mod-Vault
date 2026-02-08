@@ -284,7 +284,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           assetLists: mod.assetLists,
           assetCount: mod.assetCount,
           existingAssetCount: mod.existingAssetCount,
-          missingAssetCount: mod.missingAssetCount,
           hasAudioAssets: mod.hasAudioAssets,
           audioVisibility:
               audioPreferences[mod.jsonFileName] ?? mod.audioVisibility,
@@ -667,7 +666,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         assetLists: mod.assetLists,
         assetCount: mod.assetCount,
         existingAssetCount: mod.existingAssetCount,
-        missingAssetCount: mod.missingAssetCount,
         audioVisibility: mod.audioVisibility,
         hasAudioAssets: mod.hasAudioAssets,
         backupStatus: backupStatus,
@@ -706,10 +704,74 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       assetLists: assetLists.$1,
       assetCount: assetLists.$2,
       existingAssetCount: assetLists.$3,
-      missingAssetCount: assetLists.$2 - assetLists.$3,
       hasAudioAssets: assetLists.$4,
       audioVisibility: mod.audioVisibility,
     );
+  }
+
+  /// Finds all mods that reference any of the [affectedFilenames] and
+  /// re-processes their asset lists against the current existingAssetListsProvider.
+  /// Skips [excludeJsonFileName] (typically the already-updated selected mod).
+  Future<void> refreshModsWithSharedAssets(
+    Set<String> affectedFilenames, {
+    String? excludeJsonFileName,
+  }) async {
+    if (!state.hasValue || affectedFilenames.isEmpty) return;
+
+    // Get all cached URLs in one call (no JSON parsing)
+    final allModUrls = ref.read(storageProvider).getAllModUrls();
+
+    // Find which mods reference any of the affected filenames
+    final affectedModJsonFileNames = <String>{};
+
+    for (final entry in allModUrls.entries) {
+      final modJsonFileName = entry.key;
+      if (modJsonFileName == excludeJsonFileName) continue;
+
+      final urls = entry.value;
+      if (urls == null) continue;
+
+      for (final url in urls.keys) {
+        if (affectedFilenames.contains(getFileNameFromURL(url))) {
+          affectedModJsonFileNames.add(modJsonFileName);
+          break; // This mod is affected, no need to check more URLs
+        }
+      }
+    }
+
+    if (affectedModJsonFileNames.isEmpty) return;
+
+    // Re-process each affected mod's assets (same as reprocessModAssets but without setSelectedMod)
+    final allMods = getAllMods();
+
+    for (final mod in allMods) {
+      if (!affectedModJsonFileNames.contains(mod.jsonFileName)) continue;
+
+      final urls = ref.read(storageProvider).getModUrls(mod.jsonFileName);
+      if (urls == null) continue;
+
+      final assetLists = _getAssetListsFromUrls(urls, mod);
+
+      final updatedMod = Mod(
+        modType: mod.modType,
+        jsonFilePath: mod.jsonFilePath,
+        jsonFileName: mod.jsonFileName,
+        parentFolderName: mod.parentFolderName,
+        saveName: mod.saveName,
+        createdAtTimestamp: mod.createdAtTimestamp,
+        dateTimeStamp: mod.dateTimeStamp,
+        imageFilePath: mod.imageFilePath,
+        backup: mod.backup,
+        backupStatus: mod.backupStatus,
+        audioVisibility: mod.audioVisibility,
+        assetLists: assetLists.$1,
+        assetCount: assetLists.$2,
+        existingAssetCount: assetLists.$3,
+        hasAudioAssets: assetLists.$4,
+      );
+
+      updateMod(updatedMod);
+    }
   }
 
   Future<void> updateModBackup(Mod mod) async {
@@ -738,7 +800,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       assetLists: mod.assetLists,
       assetCount: mod.assetCount,
       existingAssetCount: mod.existingAssetCount,
-      missingAssetCount: mod.missingAssetCount,
       hasAudioAssets: mod.hasAudioAssets,
       audioVisibility: mod.audioVisibility,
     );
@@ -778,7 +839,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         assetLists: assetLists.$1,
         assetCount: assetLists.$2,
         existingAssetCount: assetLists.$3,
-        missingAssetCount: assetLists.$2 - assetLists.$3,
         hasAudioAssets: assetLists.$4,
       );
 
@@ -817,6 +877,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       return Asset(
         url: normalizedUrl,
         fileExists: filepath != null,
+        type: type,
         filePath: filepath,
       );
     }).toList();

@@ -263,6 +263,10 @@ class ImagesViewerGridCard extends HookConsumerWidget {
                 await ref
                     .read(modsProvider.notifier)
                     .updateSelectedMod(selectedMod);
+                final filename = getFileNameFromURL(asset.url);
+                await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
+                      {filename},
+                      excludeJsonFileName: selectedMod.jsonFileName);
                 if (context.mounted) showSnackBar(context, 'File deleted');
               } else {
                 showSnackBar(context, 'Failed to delete file');

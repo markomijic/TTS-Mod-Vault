@@ -221,7 +221,7 @@ class AssetsUrl extends HookConsumerWidget {
               final selectedMod = ref.read(selectedModProvider);
               if (selectedMod == null) break;
 
-              await ref.read(downloadProvider.notifier).downloadFiles(
+              final downloaded = await ref.read(downloadProvider.notifier).downloadFiles(
                 modAssetListUrls: [asset.url],
                 type: type,
                 downloadingAllFiles: false,
@@ -229,6 +229,11 @@ class AssetsUrl extends HookConsumerWidget {
               await ref
                   .read(modsProvider.notifier)
                   .updateSelectedMod(selectedMod);
+              if (downloaded.isNotEmpty) {
+                await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
+                      downloaded.toSet(),
+                      excludeJsonFileName: selectedMod.jsonFileName);
+              }
               break;
 
             case ContextMenuActionEnum.checkUrl:
@@ -306,6 +311,10 @@ class AssetsUrl extends HookConsumerWidget {
                 await ref
                     .read(modsProvider.notifier)
                     .updateSelectedMod(selectedMod);
+                final filename = getFileNameFromURL(asset.url);
+                await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
+                      {filename},
+                      excludeJsonFileName: selectedMod.jsonFileName);
                 if (context.mounted) showSnackBar(context, 'File deleted');
               } else {
                 showSnackBar(context, 'Failed to delete file');

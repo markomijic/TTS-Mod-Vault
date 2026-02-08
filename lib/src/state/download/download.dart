@@ -76,56 +76,59 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   // MARK: DL all files
-  Future<void> downloadAllFiles(Mod mod) async {
+  Future<Set<String>> downloadAllFiles(Mod mod) async {
     ref
         .read(logProvider.notifier)
         .addInfo('Starting download for: ${mod.saveName}');
 
-    await downloadFiles(
+    final Set<String> allDownloaded = {};
+
+    allDownloaded.addAll(await downloadFiles(
       modAssetListUrls: mod.assetLists.assetBundles
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
       type: AssetTypeEnum.assetBundle,
-    );
+    ));
 
-    await downloadFiles(
+    allDownloaded.addAll(await downloadFiles(
       modAssetListUrls: mod.assetLists.audio
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
       type: AssetTypeEnum.audio,
-    );
+    ));
 
-    await downloadFiles(
+    allDownloaded.addAll(await downloadFiles(
       modAssetListUrls: mod.assetLists.images
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
       type: AssetTypeEnum.image,
-    );
+    ));
 
-    await downloadFiles(
+    allDownloaded.addAll(await downloadFiles(
       modAssetListUrls: mod.assetLists.models
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
       type: AssetTypeEnum.model,
-    );
+    ));
 
-    await downloadFiles(
+    allDownloaded.addAll(await downloadFiles(
       modAssetListUrls: mod.assetLists.pdf
           .where((e) => !e.fileExists)
           .map((e) => e.url)
           .toList(),
       type: AssetTypeEnum.pdf,
-    );
+    ));
 
     ref
         .read(logProvider.notifier)
         .addSuccess('Download completed: ${mod.saveName}');
 
     resetState();
+    return allDownloaded;
   }
 
   // MARK: Reset state
@@ -152,17 +155,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   // MARK: DL FILES
-  Future<void> downloadFiles({
+  Future<List<String>> downloadFiles({
     required List<String> modAssetListUrls,
     required AssetTypeEnum type,
     bool downloadingAllFiles = true,
   }) async {
     if (modAssetListUrls.isEmpty) {
-      return;
+      return [];
     }
 
     if (state.cancelledDownloads) {
-      return;
+      return [];
     }
 
     final urls = modAssetListUrls.where((url) {
@@ -310,6 +313,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         resetState();
       }
     }
+
+    return successfulDownloads.map((e) => e.$1).toList();
   }
 
   // MARK: Resolve URL

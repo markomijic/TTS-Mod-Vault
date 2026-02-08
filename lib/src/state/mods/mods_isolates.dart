@@ -325,6 +325,7 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
       return Asset(
         url: url,
         fileExists: filepath != null,
+        type: type,
         filePath: filepath,
       );
     }).toList();

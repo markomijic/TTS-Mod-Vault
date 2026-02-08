@@ -487,7 +487,6 @@ class _AudioAssetsButton extends ConsumerWidget {
                   assetLists: selectedMod.assetLists,
                   assetCount: selectedMod.assetCount,
                   existingAssetCount: selectedMod.existingAssetCount,
-                  missingAssetCount: selectedMod.missingAssetCount,
                   hasAudioAssets: selectedMod.hasAudioAssets,
                   // -----------------------------------------
                   audioVisibility: AudioAssetVisibility.useGlobalSetting,
@@ -539,7 +538,6 @@ class _AudioAssetsButton extends ConsumerWidget {
                   assetLists: selectedMod.assetLists,
                   assetCount: selectedMod.assetCount,
                   existingAssetCount: selectedMod.existingAssetCount,
-                  missingAssetCount: selectedMod.missingAssetCount,
                   hasAudioAssets: selectedMod.hasAudioAssets,
                   // -----------------------------------------
                   audioVisibility: AudioAssetVisibility.alwaysShow,
@@ -590,7 +588,6 @@ class _AudioAssetsButton extends ConsumerWidget {
                   assetLists: selectedMod.assetLists,
                   assetCount: selectedMod.assetCount,
                   existingAssetCount: selectedMod.existingAssetCount,
-                  missingAssetCount: selectedMod.missingAssetCount,
                   hasAudioAssets: selectedMod.hasAudioAssets,
                   // -----------------------------------------
                   audioVisibility: AudioAssetVisibility.alwaysHide,
@@ -661,15 +658,22 @@ class _MissingFilesButton extends StatelessWidget {
                 .nonNulls
                 .toList();
 
-            await ref.read(downloadProvider.notifier).downloadFiles(
-                  modAssetListUrls: urls,
-                  type: assetType,
-                  downloadingAllFiles: false,
-                );
+            final downloaded =
+                await ref.read(downloadProvider.notifier).downloadFiles(
+                      modAssetListUrls: urls,
+                      type: assetType,
+                      downloadingAllFiles: false,
+                    );
 
             await ref
                 .read(modsProvider.notifier)
                 .updateSelectedMod(selectedMod);
+
+            if (downloaded.isNotEmpty) {
+              await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
+                  downloaded.toSet(),
+                  excludeJsonFileName: selectedMod.jsonFileName);
+            }
           },
           child: Icon(Icons.download, size: 20),
         ),

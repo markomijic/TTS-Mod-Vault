@@ -29,7 +29,6 @@ class Mod {
   final AssetLists assetLists;
   final int assetCount;
   final int existingAssetCount;
-  final int missingAssetCount;
   final AudioAssetVisibility audioVisibility;
   final bool hasAudioAssets;
   final String? dateTimeStamp;
@@ -51,7 +50,6 @@ class Mod {
     required this.assetLists,
     required this.assetCount,
     required this.existingAssetCount,
-    required this.missingAssetCount,
     required this.audioVisibility,
     required this.hasAudioAssets,
   });
@@ -80,11 +78,12 @@ class Mod {
       assetLists: assetLists,
       assetCount: assetCount,
       existingAssetCount: existingAssetCount,
-      missingAssetCount: missingAssetCount,
       audioVisibility: audioVisibility,
       hasAudioAssets: hasAudioAssets,
     );
   }
+
+  int get missingAssetCount => assetCount - existingAssetCount;
 
   List<Asset> getAllAssets() {
     return [

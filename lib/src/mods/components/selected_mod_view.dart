@@ -167,6 +167,15 @@ class _SelectedModViewComponent extends HookConsumerWidget {
       selectedAssetTypeFilter.value = null;
     }, [selectedMod]);
 
+    final title = useMemoized(() {
+      return switch (selectedMod.modType) {
+        ModTypeEnum.mod => selectedMod.saveName,
+        ModTypeEnum.save =>
+          '${selectedMod.jsonFileName}\n${selectedMod.saveName}',
+        ModTypeEnum.savedObject => selectedMod.saveName,
+      };
+    }, [selectedMod]);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -182,9 +191,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  selectedMod.modType == ModTypeEnum.mod
-                      ? selectedMod.saveName
-                      : '${selectedMod.jsonFileName}\n${selectedMod.saveName}',
+                  title,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

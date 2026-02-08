@@ -538,8 +538,12 @@ Future<Map<String, String?>> _extractInitialModMetadataFromFile(
   const chunkSize = 10;
 
   await for (final chunk in _readFileInChunks(file, chunkSize)) {
-    // Try to extract data from current chunk
-    saveName ??= _extractSaveNameFromString(chunk, modType);
+    if (modType == ModTypeEnum.savedObject) {
+      saveName = jsonFileName;
+    } else {
+      // Try to extract data from current chunk
+      saveName ??= _extractSaveNameFromString(chunk, modType);
+    }
     dateTimeStamp ??= _extractDateTimeStampFromString(chunk);
 
     // If we found both, we can stop

@@ -517,7 +517,13 @@ String getBackupFilenameByMod(Mod mod, bool forceIncludeJsonFilename) {
     return sanitizeFileName("${mod.saveName}.ttsmod");
   }
 
-  return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
+  switch (mod.modType) {
+    case ModTypeEnum.savedObject:
+      return sanitizeFileName("${mod.saveName} (saved object).ttsmod");
+
+    default:
+      return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
+  }
 }
 
 Future<void> openInFileExplorer(String filePath) async {

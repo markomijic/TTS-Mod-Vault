@@ -110,7 +110,6 @@ class ModsGridCard extends HookConsumerWidget {
                       ? Colors.white70
                       : Colors.transparent,
             ),
-           
           ),
           child: Stack(
             children: [
@@ -141,7 +140,7 @@ class ModsGridCard extends HookConsumerWidget {
                   alignment: Alignment.center,
                   child: Icon(Icons.extension_sharp, size: 48),
                 ),
-              if (showTitleOnCards || mod.modType != ModTypeEnum.mod)
+              if (showTitleOnCards || mod.modType == ModTypeEnum.save)
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: ClipRect(

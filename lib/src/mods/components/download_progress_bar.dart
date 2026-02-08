@@ -11,63 +11,72 @@ class DownloadProgressBar extends ConsumerWidget {
     final downloadState = ref.watch(downloadProvider);
     final canceling = downloadState.cancelledDownloads;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      spacing: 4,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (!canceling && downloadState.statusMessage != null)
-              Text(
-                downloadState.statusMessage!,
-                style: TextStyle(fontSize: 16),
-              ),
-            if (canceling)
-              Text(
-                'Cancelling downloads',
-                style: TextStyle(fontSize: 16),
-              ),
-            if (!canceling)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await ref
-                        .read(downloadProvider.notifier)
-                        .handleCancelDownloadsButton();
-                  },
-                  child: Text('Cancel'),
-                ),
-              )
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 8, bottom: 8),
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(32),
-            ),
-            child: Stack(
-              children: [
-                FractionallySizedBox(
-                  widthFactor: downloadState.progress.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(32),
-                    ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        spacing: 4,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!canceling && downloadState.statusMessage != null)
+                Expanded(
+                  child: Text(
+                    downloadState.statusMessage!,
+                    maxLines: 4,
+                    style: TextStyle(fontSize: 18),
                   ),
                 ),
-              ],
+              if (canceling)
+                Text(
+                  'Cancelling downloads',
+                  style: TextStyle(fontSize: 18),
+                ),
+              if (!canceling)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await ref
+                          .read(downloadProvider.notifier)
+                          .handleCancelDownloadsButton();
+                    },
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                )
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8, bottom: 8),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Stack(
+                children: [
+                  FractionallySizedBox(
+                    widthFactor: downloadState.progress.clamp(0.0, 1.0),
+                    child: Container(
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

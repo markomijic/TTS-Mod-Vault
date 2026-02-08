@@ -33,28 +33,24 @@ class BulkActionsProgressBar extends HookConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (!bulkActionsState.cancelledBulkAction) ...[
-                Expanded(
-                  child: Text(
-                    bulkActionsState.statusMessage,
-                    style: TextStyle(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              Expanded(
+                child: Text(
+                  bulkActionsState.statusMessage,
+                  maxLines: 4,
+                  style: TextStyle(fontSize: 20),
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ),
+              if (!bulkActionsState.cancelledBulkAction)
                 ElevatedButton(
                   onPressed: () {
                     if (!bulkActionsState.cancelledBulkAction) {
                       ref.read(bulkActionsProvider.notifier).cancelBulkAction();
                     }
                   },
-                  child: Text('Cancel all'),
-                ),
-              ] else
-                Expanded(
                   child: Text(
-                    bulkActionsState.statusMessage,
+                    'Cancel all',
                     style: TextStyle(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
             ],

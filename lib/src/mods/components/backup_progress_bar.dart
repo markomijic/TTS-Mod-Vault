@@ -46,52 +46,56 @@ class BackupProgressBar extends HookConsumerWidget {
       return SizedBox.shrink();
     }
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      spacing: 4,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          spacing: 4,
-          children: [
-            Text(
-              progressText,
-              style: TextStyle(fontSize: 16),
-            ),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(fontSize: 16),
-                overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        spacing: 4,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              Text(
+                progressText,
+                style: TextStyle(fontSize: 20),
+              ),
+              Expanded(
+                child: Text(
+                  message,
+                  maxLines: 4,
+                  style: TextStyle(fontSize: 20),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8, bottom: 8),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Stack(
+                children: [
+                  FractionallySizedBox(
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Container(
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 8, bottom: 8),
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(32),
-            ),
-            child: Stack(
-              children: [
-                FractionallySizedBox(
-                  widthFactor: progress.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                  ),
-                )
-              ],
-            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -231,21 +231,23 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title:
-                      Text(isShared ? 'Delete Shared Asset' : 'Delete Asset'),
+                  title: Text(isShared
+                      ? 'Delete shared asset file'
+                      : 'Delete asset file'),
                   content: Text(
                     isShared
                         ? 'This asset is shared with ${sharingMods.length} other mod(s):\n${sharingMods.join(", ")}\n\nDelete anyway?'
                         : 'Are you sure you want to delete this file?\n\n${getFileNameFromURL(asset.url)}',
                   ),
                   actions: [
-                    TextButton(
+                    ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(false),
                       child: const Text('Cancel'),
                     ),
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text('Delete'),
+                      icon: Icon(Icons.delete),
+                      label: const Text('Delete'),
                     ),
                   ],
                 ),

@@ -17,6 +17,7 @@ class SettingsState {
   final List<UrlReplacementPreset> urlReplacementPresets;
   final double assetUrlFontSize;
   final List<String> ignoredSubfolders;
+  final List<String> ignoredDomains;
 
   const SettingsState({
     required this.useModsListView,
@@ -28,9 +29,10 @@ class SettingsState {
     required this.defaultSortOption,
     required this.forceBackupJsonFilename,
     required this.ignoreAudioAssets,
-    required this.urlReplacementPresets,
     required this.assetUrlFontSize,
+    required this.urlReplacementPresets,
     required this.ignoredSubfolders,
+    required this.ignoredDomains,
   });
 
   factory SettingsState.defaultState() {
@@ -44,9 +46,10 @@ class SettingsState {
       defaultSortOption: SortOptionEnum.alphabeticalAsc,
       forceBackupJsonFilename: false,
       ignoreAudioAssets: true,
-      urlReplacementPresets: const [],
       assetUrlFontSize: 12,
+      urlReplacementPresets: const [],
       ignoredSubfolders: const [],
+      ignoredDomains: const [],
     );
   }
 
@@ -65,6 +68,7 @@ class SettingsState {
           urlReplacementPresets.map((p) => p.toJson()).toList(),
       'assetUrlFontSize': assetUrlFontSize,
       'ignoredSubfolders': ignoredSubfolders,
+      'ignoredDomains': ignoredDomains,
     };
   }
 
@@ -84,6 +88,7 @@ class SettingsState {
       urlReplacementPresets: _parsePresetList(json['urlReplacementPresets']),
       assetUrlFontSize: _parseDouble(json['assetUrlFontSize'], 12.0),
       ignoredSubfolders: _parseStringList(json['ignoredSubfolders']),
+      ignoredDomains: _parseStringList(json['ignoredDomains']),
     );
   }
 

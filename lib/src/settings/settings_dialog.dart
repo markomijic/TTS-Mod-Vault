@@ -95,7 +95,8 @@ class SettingsDialog extends HookConsumerWidget {
     final textFieldController = useTextEditingController(
         text: concurrentDownloadsValue.value.toString());
     final textFieldFocusNode = useFocusNode();
-    final ignoredDomains = useState<List<String>>([]);
+    final ignoredDomains =
+        useState<List<String>>(List.from(settings.ignoredDomains));
 
     // Features
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
@@ -136,6 +137,7 @@ class SettingsDialog extends HookConsumerWidget {
             .toList(),
         assetUrlFontSize: assetUrlFontSize.value,
         ignoredSubfolders: ignoredSubfolders.value,
+        ignoredDomains: ignoredDomains.value,
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -246,6 +248,7 @@ class SettingsDialog extends HookConsumerWidget {
                                     textFieldController: textFieldController,
                                     textFieldFocusNode: textFieldFocusNode,
                                     numberValue: concurrentDownloadsValue,
+                                    ignoredDomains: ignoredDomains,
                                   );
 
                                 case SettingsSection.updateUrlsPresets:
@@ -769,7 +772,7 @@ class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
               }
             },
             icon: const Icon(Icons.add),
-            label: const Text('Add Preset'),
+            label: const Text('Add preset'),
           ),
         ],
       ),
@@ -917,70 +920,84 @@ class SettingsNetworkColumn extends StatelessWidget {
     required this.textFieldController,
     required this.textFieldFocusNode,
     required this.numberValue,
+    required this.ignoredDomains,
   });
 
   final TextEditingController textFieldController;
   final FocusNode textFieldFocusNode;
   final ValueNotifier<int> numberValue;
+  final ValueNotifier<List<String>> ignoredDomains;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Row(
-                spacing: 4,
-                children: [
-                  Text(
-                    'Number of concurrent downloads',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  CustomTooltip(
-                    message:
-                        "Lower the value if you experience working URLs failing to download when downloading from multiple URLs at once\nDefault value: 5",
-                    child: Icon(Icons.info_outline),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 50,
-              child: TextField(
-                textAlign: TextAlign.center,
-                controller: textFieldController,
-                cursorColor: Colors.black,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(2),
-                ],
-                style:
-                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Row(
+                  spacing: 4,
+                  children: [
+                    Text(
+                      'Number of concurrent downloads',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    CustomTooltip(
+                      message:
+                          "Lower the value if you experience working URLs failing to download when downloading from multiple URLs at once\nDefault value: 5",
+                      child: Icon(Icons.info_outline),
+                    ),
+                  ],
                 ),
-                focusNode: textFieldFocusNode,
-                onChanged: (value) {
-                  final num = int.tryParse(value);
-                  if (value.startsWith("0")) {
-                    textFieldController.text = '1';
-                    textFieldController.selection = TextSelection.fromPosition(
-                      TextPosition(offset: textFieldController.text.length),
-                    );
-                    numberValue.value = 1;
-                  } else if (num != null && num >= 1 && num <= 99) {
-                    numberValue.value = num;
-                  }
-                },
               ),
-            ),
-          ],
-        ),
-      ],
+              SizedBox(
+                width: 50,
+                child: TextField(
+                  textAlign: TextAlign.center,
+                  controller: textFieldController,
+                  cursorColor: Colors.black,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(2),
+                  ],
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
+                  ),
+                  focusNode: textFieldFocusNode,
+                  onChanged: (value) {
+                    final num = int.tryParse(value);
+                    if (value.startsWith("0")) {
+                      textFieldController.text = '1';
+                      textFieldController.selection =
+                          TextSelection.fromPosition(
+                        TextPosition(offset: textFieldController.text.length),
+                      );
+                      numberValue.value = 1;
+                    } else if (num != null && num >= 1 && num <= 99) {
+                      numberValue.value = num;
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          EditableStringList(
+            title: 'Ignored domains',
+            tooltipMessage:
+                'Domain names added here will be ignored when downloading asset files\nCase-sensitive',
+            values: ignoredDomains.value,
+            addLabel: 'Add domain name',
+            onChanged: (list) => ignoredDomains.value = list,
+          ),
+        ],
+      ),
     );
   }
 }

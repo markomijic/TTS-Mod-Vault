@@ -185,6 +185,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         statusMessage: 'Downloading ${type.label}',
       );
 
+      final ignoredDomains = ref.read(settingsProvider).ignoredDomains;
       final int batchSize = ref.read(settingsProvider).concurrentDownloads;
 
       for (int i = 0; i < urls.length; i += batchSize) {
@@ -198,6 +199,15 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         );
 
         await Future.wait(batch.map((originalUrl) async {
+          // Skip if URL domain is in ignored list
+          if (ignoredDomains.isNotEmpty) {
+            final uri = Uri.tryParse(originalUrl);
+            if (uri != null &&
+                ignoredDomains.any((d) => uri.host.contains(d))) {
+              return;
+            }
+          }
+
           // Set filename and path
           final fileName = getFileNameFromURL(originalUrl);
           final directory =

@@ -34,6 +34,7 @@ import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
         processInitialModsInIsolate,
         processMultipleBatchesInIsolate,
         renameAssetFile,
+        buildAssetListsFromUrls,
         updateUrlPrefixesFilesIsolate;
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -46,6 +47,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModProvider,
         settingsProvider,
         sortAndFilterProvider,
+        refreshingSharedAssetsProvider,
         storageProvider,
         multiModsProvider;
 import 'package:tts_mod_vault/src/state/storage/storage.dart' show Storage;
@@ -135,6 +137,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       final initialMods = await getInitialMods(allPaths);
+
+      // Prune storage entries for mods no longer on disk
+      final validJsonFileNames = initialMods.map((m) => m.jsonFileName).toSet();
+      await ref.read(storageProvider).pruneOrphanedModData(validJsonFileNames);
 
       // Prepare cached data for all mods using bulk reads
       debugPrint('Loading cached data from storage');
@@ -277,6 +283,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           parentFolderName: mod.parentFolderName,
           saveName: mod.saveName,
           createdAtTimestamp: mod.createdAtTimestamp,
+          lastModifiedTimestamp: mod.lastModifiedTimestamp,
           dateTimeStamp: mod.dateTimeStamp,
           imageFilePath: mod.imageFilePath,
           backupStatus: mod.backupStatus,
@@ -291,14 +298,14 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
         switch (modWithPreference.modType) {
           case ModTypeEnum.mod:
-            mods.add(_getInitialModWithBackup(modWithPreference));
+            mods.add(_getModWithBackup(modWithPreference));
             break;
           case ModTypeEnum.save:
-            saves.add(_getInitialModWithBackup(modWithPreference));
+            saves.add(_getModWithBackup(modWithPreference));
             break;
           case ModTypeEnum.savedObject:
             if (showSavedObjects) {
-              savedObjects.add(_getInitialModWithBackup(modWithPreference));
+              savedObjects.add(_getModWithBackup(modWithPreference));
             }
             break;
         }
@@ -642,17 +649,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Mod _getInitialModWithBackup(Mod mod) {
+  Mod _getModWithBackup(Mod mod) {
     try {
       final backup =
           ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
-
-      final backupStatus = backup == null
-          ? ExistingBackupStatusEnum.noBackup
-          : (mod.dateTimeStamp == null ||
-                  backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
-              ? ExistingBackupStatusEnum.upToDate
-              : ExistingBackupStatusEnum.outOfDate;
 
       return Mod(
         modType: mod.modType,
@@ -661,6 +661,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         parentFolderName: mod.parentFolderName,
         saveName: mod.saveName,
         createdAtTimestamp: mod.createdAtTimestamp,
+        lastModifiedTimestamp: mod.lastModifiedTimestamp,
         dateTimeStamp: mod.dateTimeStamp,
         imageFilePath: mod.imageFilePath,
         assetLists: mod.assetLists,
@@ -668,7 +669,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         existingAssetCount: mod.existingAssetCount,
         audioVisibility: mod.audioVisibility,
         hasAudioAssets: mod.hasAudioAssets,
-        backupStatus: backupStatus,
+        backupStatus: getModBackupStatus(
+          backup,
+          mod.dateTimeStamp,
+          mod.existingAssetCount,
+        ),
         backup: backup,
       );
     } catch (e) {
@@ -676,18 +681,22 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<Mod> getCompleteMod(Mod mod, Map<String, String> jsonURLs) async {
+  Future<Mod> getCompleteMod(
+    Mod mod,
+    Map<String, String> jsonURLs, {
+    bool refreshLastModified = false,
+  }) async {
     ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
-    final backupStatus = backup == null
-        ? ExistingBackupStatusEnum.noBackup
-        : (mod.dateTimeStamp == null ||
-                backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
-            ? ExistingBackupStatusEnum.upToDate
-            : ExistingBackupStatusEnum.outOfDate;
-
     final assetLists = _getAssetListsFromUrls(jsonURLs, mod);
+
+    int lastModifiedTimestamp = mod.lastModifiedTimestamp;
+    if (refreshLastModified) {
+      final fileStat = await File(mod.jsonFilePath).stat();
+      lastModifiedTimestamp =
+          fileStat.modified.microsecondsSinceEpoch ~/ 1000;
+    }
 
     // Creating new Mod object because copyWith returns previous backup value if new one is null
     return Mod(
@@ -697,10 +706,15 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       parentFolderName: mod.parentFolderName,
       saveName: mod.saveName,
       createdAtTimestamp: mod.createdAtTimestamp,
+      lastModifiedTimestamp: lastModifiedTimestamp,
       dateTimeStamp: mod.dateTimeStamp,
       imageFilePath: mod.imageFilePath,
       backup: backup,
-      backupStatus: backupStatus,
+      backupStatus: getModBackupStatus(
+        backup,
+        mod.dateTimeStamp,
+        assetLists.$3,
+      ),
       assetLists: assetLists.$1,
       assetCount: assetLists.$2,
       existingAssetCount: assetLists.$3,
@@ -709,19 +723,121 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     );
   }
 
+  ExistingBackupStatusEnum getModBackupStatus(
+    ExistingBackup? backup,
+    String? dateTimeStamp,
+    int existingAssetCount,
+  ) {
+    ExistingBackupStatusEnum backupStatus = ExistingBackupStatusEnum.noBackup;
+
+    if (backup != null) {
+      if (dateTimeStamp == null ||
+          backup.lastModifiedTimestamp > int.parse(dateTimeStamp)) {
+        if (backup.totalAssetCount != existingAssetCount) {
+          backupStatus = ExistingBackupStatusEnum.assetCountMismatch;
+        } else {
+          backupStatus = ExistingBackupStatusEnum.upToDate;
+        }
+      } else {
+        backupStatus = ExistingBackupStatusEnum.outOfDate;
+      }
+    }
+    return backupStatus;
+  }
+
   /// Finds all mods that reference any of the [affectedFilenames] and
   /// re-processes their asset lists against the current existingAssetListsProvider.
   /// Skips [excludeJsonFileName] (typically the already-updated selected mod).
+  /// Heavy computation runs in isolates to avoid UI lag.
   Future<void> refreshModsWithSharedAssets(
     Set<String> affectedFilenames, {
     String? excludeJsonFileName,
   }) async {
     if (!state.hasValue || affectedFilenames.isEmpty) return;
 
-    // Get all cached URLs in one call (no JSON parsing)
-    final allModUrls = ref.read(storageProvider).getAllModUrls();
+    ref.read(refreshingSharedAssetsProvider.notifier).state = true;
+    try {
+      // 1. Read all data on UI thread (fast provider reads)
+      final allModUrls = ref.read(storageProvider).getAllModUrls();
+      final existingAssets = ref.read(existingAssetListsProvider);
+      final ignoreAudioGlobal = ref.read(settingsProvider).ignoreAudioAssets;
+      final allMods = getAllMods();
+      final modAudioPreferences = <String, AudioAssetVisibility>{};
+      for (final mod in allMods) {
+        modAudioPreferences[mod.jsonFileName] = mod.audioVisibility;
+      }
 
-    // Find which mods reference any of the affected filenames
+      // 2. Find affected mods in isolate
+      final affectedModJsonFileNames = await Isolate.run(
+        () => _findAffectedModsStatic(
+            allModUrls, affectedFilenames, excludeJsonFileName),
+      );
+
+      if (affectedModJsonFileNames.isEmpty) return;
+
+      // 3. Recompute asset lists in isolate
+      final recomputedResults = await Isolate.run(
+        () => _recomputeAffectedModAssetsStatic(
+          affectedModJsonFileNames: affectedModJsonFileNames,
+          allModUrls: allModUrls,
+          assetBundles: existingAssets.assetBundles,
+          audio: existingAssets.audio,
+          images: existingAssets.images,
+          models: existingAssets.models,
+          pdf: existingAssets.pdf,
+          ignoreAudioGlobal: ignoreAudioGlobal,
+          modAudioPreferences: modAudioPreferences,
+        ),
+      );
+
+      // 4. Apply updates in a single batch on UI thread
+      final recomputedMap = <String, (AssetLists, int, int, bool)>{};
+      for (final result in recomputedResults) {
+        recomputedMap[result.$1] = (result.$2, result.$3, result.$4, result.$5);
+      }
+
+      final updatedMods = <Mod>[];
+      for (final mod in allMods) {
+        final recomputed = recomputedMap[mod.jsonFileName];
+        if (recomputed == null) continue;
+
+        updatedMods.add(Mod(
+          modType: mod.modType,
+          jsonFilePath: mod.jsonFilePath,
+          jsonFileName: mod.jsonFileName,
+          parentFolderName: mod.parentFolderName,
+          saveName: mod.saveName,
+          createdAtTimestamp: mod.createdAtTimestamp,
+          lastModifiedTimestamp: mod.lastModifiedTimestamp,
+          dateTimeStamp: mod.dateTimeStamp,
+          imageFilePath: mod.imageFilePath,
+          backup: mod.backup,
+          backupStatus: getModBackupStatus(
+            mod.backup,
+            mod.dateTimeStamp,
+            recomputed.$3,
+          ),
+          audioVisibility: mod.audioVisibility,
+          assetLists: recomputed.$1,
+          assetCount: recomputed.$2,
+          existingAssetCount: recomputed.$3,
+          hasAudioAssets: recomputed.$4,
+        ));
+      }
+
+      updateModsBatch(updatedMods);
+    } finally {
+      ref.read(refreshingSharedAssetsProvider.notifier).state = false;
+    }
+  }
+
+  /// Finds which mod jsonFileNames reference any of the affected filenames.
+  /// Runs in an isolate.
+  static Set<String> _findAffectedModsStatic(
+    Map<String, Map<String, String>?> allModUrls,
+    Set<String> affectedFilenames,
+    String? excludeJsonFileName,
+  ) {
     final affectedModJsonFileNames = <String>{};
 
     for (final entry in allModUrls.entries) {
@@ -734,56 +850,112 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       for (final url in urls.keys) {
         if (affectedFilenames.contains(getFileNameFromURL(url))) {
           affectedModJsonFileNames.add(modJsonFileName);
-          break; // This mod is affected, no need to check more URLs
+          break;
         }
       }
     }
 
-    if (affectedModJsonFileNames.isEmpty) return;
+    return affectedModJsonFileNames;
+  }
 
-    // Re-process each affected mod's assets (same as reprocessModAssets but without setSelectedMod)
-    final allMods = getAllMods();
+  /// Recomputes asset lists for affected mods. Runs in an isolate.
+  static List<(String, AssetLists, int, int, bool)>
+      _recomputeAffectedModAssetsStatic({
+    required Set<String> affectedModJsonFileNames,
+    required Map<String, Map<String, String>?> allModUrls,
+    required Map<String, String> assetBundles,
+    required Map<String, String> audio,
+    required Map<String, String> images,
+    required Map<String, String> models,
+    required Map<String, String> pdf,
+    required bool ignoreAudioGlobal,
+    required Map<String, AudioAssetVisibility> modAudioPreferences,
+  }) {
+    final results = <(String, AssetLists, int, int, bool)>[];
 
-    for (final mod in allMods) {
-      if (!affectedModJsonFileNames.contains(mod.jsonFileName)) continue;
-
-      final urls = ref.read(storageProvider).getModUrls(mod.jsonFileName);
+    for (final jsonFileName in affectedModJsonFileNames) {
+      final urls = allModUrls[jsonFileName];
       if (urls == null) continue;
 
-      final assetLists = _getAssetListsFromUrls(urls, mod);
-
-      final updatedMod = Mod(
-        modType: mod.modType,
-        jsonFilePath: mod.jsonFilePath,
-        jsonFileName: mod.jsonFileName,
-        parentFolderName: mod.parentFolderName,
-        saveName: mod.saveName,
-        createdAtTimestamp: mod.createdAtTimestamp,
-        dateTimeStamp: mod.dateTimeStamp,
-        imageFilePath: mod.imageFilePath,
-        backup: mod.backup,
-        backupStatus: mod.backupStatus,
-        audioVisibility: mod.audioVisibility,
-        assetLists: assetLists.$1,
-        assetCount: assetLists.$2,
-        existingAssetCount: assetLists.$3,
-        hasAudioAssets: assetLists.$4,
+      final assetData = buildAssetListsFromUrls(
+        urls,
+        assetBundles,
+        audio,
+        images,
+        models,
+        pdf,
+        ignoreAudioGlobal,
+        jsonFileName,
+        modAudioPreferences,
       );
 
-      updateMod(updatedMod);
+      results.add((
+        jsonFileName,
+        assetData.$1,
+        assetData.$2,
+        assetData.$3,
+        assetData.$4
+      ));
+    }
+
+    return results;
+  }
+
+  /// Updates multiple mods in a single state mutation, triggering only one rebuild.
+  void updateModsBatch(List<Mod> updatedMods) {
+    if (!state.hasValue || updatedMods.isEmpty) return;
+
+    try {
+      final updatedByPath = <String, Mod>{};
+      for (final mod in updatedMods) {
+        updatedByPath[p.normalize(mod.jsonFilePath)] = mod;
+      }
+
+      List<Mod>? newMods;
+      List<Mod>? newSaves;
+      List<Mod>? newSavedObjects;
+
+      for (final mod in updatedMods) {
+        switch (mod.modType) {
+          case ModTypeEnum.mod:
+            newMods ??= [...state.value!.mods];
+            break;
+          case ModTypeEnum.save:
+            newSaves ??= [...state.value!.saves];
+            break;
+          case ModTypeEnum.savedObject:
+            newSavedObjects ??= [...state.value!.savedObjects];
+            break;
+        }
+      }
+
+      void applyToList(List<Mod> list) {
+        for (int i = 0; i < list.length; i++) {
+          final updated = updatedByPath[p.normalize(list[i].jsonFilePath)];
+          if (updated != null) {
+            list[i] = updated;
+          }
+        }
+      }
+
+      if (newMods != null) applyToList(newMods);
+      if (newSaves != null) applyToList(newSaves);
+      if (newSavedObjects != null) applyToList(newSavedObjects);
+
+      state = AsyncValue.data(state.value!.copyWith(
+        mods: newMods,
+        saves: newSaves,
+        savedObjects: newSavedObjects,
+      ));
+    } catch (e, stack) {
+      debugPrint('updateModsBatch error: $e');
+      state = AsyncValue.error(e, stack);
     }
   }
 
   Future<void> updateModBackup(Mod mod) async {
     ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
-
-    final backupStatus = backup == null
-        ? ExistingBackupStatusEnum.noBackup
-        : (mod.dateTimeStamp == null ||
-                backup.lastModifiedTimestamp > int.parse(mod.dateTimeStamp!))
-            ? ExistingBackupStatusEnum.upToDate
-            : ExistingBackupStatusEnum.outOfDate;
 
     // Creating new Mod object because copyWith returns previous backup value if new one is null
     final updatedMod = Mod(
@@ -792,8 +964,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       jsonFileName: mod.jsonFileName,
       parentFolderName: mod.parentFolderName,
       saveName: mod.saveName,
-      backupStatus: backupStatus,
+      backupStatus: getModBackupStatus(
+        backup,
+        mod.dateTimeStamp,
+        mod.existingAssetCount,
+      ),
       createdAtTimestamp: mod.createdAtTimestamp,
+      lastModifiedTimestamp: mod.lastModifiedTimestamp,
       backup: backup,
       dateTimeStamp: mod.dateTimeStamp,
       imageFilePath: mod.imageFilePath,
@@ -830,10 +1007,15 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         parentFolderName: mod.parentFolderName,
         saveName: mod.saveName,
         createdAtTimestamp: mod.createdAtTimestamp,
+        lastModifiedTimestamp: mod.lastModifiedTimestamp,
         dateTimeStamp: mod.dateTimeStamp,
         imageFilePath: mod.imageFilePath,
         backup: mod.backup,
-        backupStatus: mod.backupStatus,
+        backupStatus: getModBackupStatus(
+          mod.backup,
+          mod.dateTimeStamp,
+          assetLists.$3,
+        ),
         audioVisibility: mod.audioVisibility,
         // -----------------------------------------
         assetLists: assetLists.$1,
@@ -944,12 +1126,65 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   void setSelectedMod(Mod mod) {
-    ref.read(multiModsProvider.notifier).state = {mod};
-    // ref.read(selectedModProvider.notifier).state = mod;
+    ref.read(multiModsProvider.notifier).state = {mod.jsonFilePath};
   }
 
   void resetSelectedMod() {
     ref.read(multiModsProvider.notifier).state = {};
+  }
+
+  Future<void> deleteMod(Mod mod) async {
+    try {
+      if (!state.hasValue) return;
+
+      // Delete JSON file
+      final jsonFile = File(mod.jsonFilePath);
+      if (await jsonFile.exists()) {
+        await jsonFile.delete();
+      }
+
+      // Delete image file if it exists
+      if (mod.imageFilePath != null) {
+        final imageFile = File(mod.imageFilePath!);
+        if (await imageFile.exists()) {
+          await imageFile.delete();
+        }
+      }
+
+      // Clean up cached storage data
+      await ref.read(storageProvider).deleteMod(mod.jsonFileName);
+
+      // Remove from state
+      final currentState = state.value!;
+      final normalizedPath = p.normalize(mod.jsonFilePath);
+
+      switch (mod.modType) {
+        case ModTypeEnum.mod:
+          final updatedList = currentState.mods
+              .where((m) => p.normalize(m.jsonFilePath) != normalizedPath)
+              .toList();
+          state = AsyncValue.data(currentState.copyWith(mods: updatedList));
+          break;
+        case ModTypeEnum.save:
+          final updatedList = currentState.saves
+              .where((m) => p.normalize(m.jsonFilePath) != normalizedPath)
+              .toList();
+          state = AsyncValue.data(currentState.copyWith(saves: updatedList));
+          break;
+        case ModTypeEnum.savedObject:
+          final updatedList = currentState.savedObjects
+              .where((m) => p.normalize(m.jsonFilePath) != normalizedPath)
+              .toList();
+          state =
+              AsyncValue.data(currentState.copyWith(savedObjects: updatedList));
+          break;
+      }
+
+      resetSelectedMod();
+    } catch (e) {
+      debugPrint('deleteMod error: $e');
+      rethrow;
+    }
   }
 
   Future<void> updateModAsset({
@@ -975,7 +1210,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       final jsonURLs = await getUrlsByMod(selectedMod, true);
-      final completeMod = await getCompleteMod(selectedMod, jsonURLs);
+      final completeMod = await getCompleteMod(selectedMod, jsonURLs,
+          refreshLastModified: true);
 
       await ref
           .read(storageProvider)
@@ -1036,7 +1272,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           .loadExistingAssetsLists();
 
       final jsonURLs = extractUrlsFromJsonString(result.jsonString);
-      final completeMod = await getCompleteMod(mod, jsonURLs);
+      final completeMod =
+          await getCompleteMod(mod, jsonURLs, refreshLastModified: true);
 
       await ref.read(storageProvider).updateModUrls(mod.jsonFileName, jsonURLs);
 

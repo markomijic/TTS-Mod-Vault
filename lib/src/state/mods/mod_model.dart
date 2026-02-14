@@ -26,6 +26,7 @@ class Mod {
   final String parentFolderName;
   final String saveName;
   final int createdAtTimestamp;
+  final int lastModifiedTimestamp;
   final AssetLists assetLists;
   final int assetCount;
   final int existingAssetCount;
@@ -44,6 +45,7 @@ class Mod {
     required this.saveName,
     required this.backupStatus,
     required this.createdAtTimestamp,
+    required this.lastModifiedTimestamp,
     required this.backup,
     required this.dateTimeStamp,
     required this.imageFilePath,
@@ -71,6 +73,7 @@ class Mod {
       parentFolderName: initial.parentFolderName,
       saveName: initial.saveName,
       createdAtTimestamp: initial.createdAtTimestamp,
+      lastModifiedTimestamp: initial.lastModifiedTimestamp,
       dateTimeStamp: initial.dateTimeStamp,
       imageFilePath: initial.imageFilePath,
       backupStatus: initial.backupStatus,
@@ -118,6 +121,7 @@ class InitialMod {
   final String parentFolderName;
   final String saveName;
   final int createdAtTimestamp;
+  final int lastModifiedTimestamp;
   final String? dateTimeStamp;
   final String? imageFilePath;
   final ExistingBackupStatusEnum backupStatus;
@@ -129,6 +133,7 @@ class InitialMod {
     required this.parentFolderName,
     required this.saveName,
     required this.createdAtTimestamp,
+    required this.lastModifiedTimestamp,
     required this.dateTimeStamp,
     required this.imageFilePath,
     required this.backupStatus,

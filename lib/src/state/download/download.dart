@@ -1,5 +1,5 @@
 import 'dart:convert' show JsonEncoder, json;
-import 'dart:io' show File;
+import 'dart:io' show File, FileMode, RandomAccessFile;
 
 import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
 import 'package:dio/dio.dart'
@@ -964,10 +964,27 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       final filePath = '$targetDirectory/$modId.json';
       final file = File(filePath);
 
-      await file.writeAsString(jsonString);
+      await _writeStringPreservingCreationTime(file, jsonString);
       return 'Mod saved to: $filePath';
     } catch (e) {
       return 'Error for mod json file: $e';
+    }
+  }
+
+  /// Writes [content] to [file] without resetting the filesystem creation time.
+  /// Uses FileMode.append (OPEN_ALWAYS on Windows) to avoid CREATE_ALWAYS
+  /// which can reset the creation timestamp.
+  Future<void> _writeStringPreservingCreationTime(
+    File file,
+    String content,
+  ) async {
+    final RandomAccessFile raf = await file.open(mode: FileMode.append);
+    try {
+      await raf.truncate(0);
+      await raf.setPosition(0);
+      await raf.writeString(content);
+    } finally {
+      await raf.close();
     }
   }
 

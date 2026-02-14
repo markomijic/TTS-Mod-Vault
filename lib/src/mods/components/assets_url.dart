@@ -10,6 +10,7 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -252,7 +253,7 @@ class AssetsUrl extends HookConsumerWidget {
               final selectedMod = ref.read(selectedModProvider);
               if (selectedMod == null || !context.mounted) break;
 
-              final sharingMods = ref
+              final sharingMods = await ref
                   .read(deleteAssetsProvider.notifier)
                   .getModsSharingAsset(asset.url, selectedMod.jsonFileName);
 
@@ -260,9 +261,31 @@ class AssetsUrl extends HookConsumerWidget {
               if (sharingMods.isEmpty) {
                 showSnackBar(context, 'Asset is not shared with other mods');
               } else {
-                showSnackBar(
-                  context,
-                  'Shared with ${sharingMods.length} mod(s): ${sharingMods.join(", ")}',
+                final summaryParts = <String>[];
+                final detailParts = <String>[];
+                for (final type in ModTypeEnum.values) {
+                  final names = sharingMods[type];
+                  if (names == null || names.isEmpty) continue;
+                  summaryParts.add(
+                      '${names.length} ${type.label}${names.length > 1 ? "s" : ""}');
+                  detailParts.add(
+                      '${type.label[0].toUpperCase()}${type.label.substring(1)}s:\n${names.join("\n")}');
+                }
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Shared Asset'),
+                    content: SingleChildScrollView(
+                      child: Text(
+                          'This asset is shared with ${summaryParts.join(", ")}.\n\n${detailParts.join("\n\n")}'),
+                    ),
+                    actions: [
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),
                 );
               }
               break;
@@ -271,29 +294,67 @@ class AssetsUrl extends HookConsumerWidget {
               final selectedMod = ref.read(selectedModProvider);
               if (selectedMod == null || !context.mounted) break;
 
-              final sharingMods = ref
+              final sharingMods = await ref
                   .read(deleteAssetsProvider.notifier)
                   .getModsSharingAsset(asset.url, selectedMod.jsonFileName);
 
               final isShared = sharingMods.isNotEmpty;
+              String deleteMessage;
+              String? detailsText;
+              if (isShared) {
+                final summaryParts = <String>[];
+                final detailParts = <String>[];
+                for (final type in ModTypeEnum.values) {
+                  final names = sharingMods[type];
+                  if (names == null || names.isEmpty) continue;
+                  summaryParts.add(
+                      '${names.length} ${type.label}${names.length > 1 ? "s" : ""}');
+                  detailParts.add(
+                      '${type.label[0].toUpperCase()}${type.label.substring(1)}s:\n${names.join("\n")}');
+                }
+                deleteMessage =
+                    'This asset is shared with ${summaryParts.join(", ")}.\n\nDelete anyway?';
+                detailsText = detailParts.join('\n\n');
+              } else {
+                deleteMessage =
+                    'Are you sure you want to delete this file?\n\n${getFileNameFromURL(asset.url)}';
+              }
               final confirmed = await showDialog<bool>(
                 context: context,
-                builder: (context) => AlertDialog(
+                builder: (dialogContext) => AlertDialog(
                   title: Text(isShared
                       ? 'Delete shared asset file'
                       : 'Delete asset file'),
-                  content: Text(
-                    isShared
-                        ? 'This asset is shared with ${sharingMods.length} other mod(s):\n${sharingMods.join(", ")}\n\nDelete anyway?'
-                        : 'Are you sure you want to delete this file?\n\n${getFileNameFromURL(asset.url)}',
-                  ),
+                  content: Text(deleteMessage),
                   actions: [
+                    if (detailsText != null)
+                      TextButton(
+                        onPressed: () {
+                          showDialog(
+                            context: dialogContext,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Shared with'),
+                              content: SingleChildScrollView(
+                                child: Text(detailsText!),
+                              ),
+                              actions: [
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(),
+                                  child: const Text('Close'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: const Text('View Details'),
+                      ),
                     ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(false),
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
                       child: const Text('Cancel'),
                     ),
                     ElevatedButton.icon(
-                      onPressed: () => Navigator.of(context).pop(true),
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
                       icon: Icon(Icons.delete),
                       label: const Text('Delete'),
                     ),

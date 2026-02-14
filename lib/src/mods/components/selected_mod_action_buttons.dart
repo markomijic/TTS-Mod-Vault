@@ -2,22 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
-import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show SelectedModActionsMenu;
-import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
-    show ExistingBackupStatusEnum;
+    show SelectedModActionsMenu, SingleModBackupDialog;
+import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
+    show PostBackupDeletionEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         backupProvider,
-        directoriesProvider,
+        deleteAssetsProvider,
         downloadProvider,
         modsProvider,
-        settingsProvider;
-import 'package:tts_mod_vault/src/utils.dart'
-    show showConfirmDialog, showBackupConfirmDialog;
+        selectedModProvider;
 
 class SelectedModActionButtons extends HookConsumerWidget {
   final Mod selectedMod;
@@ -27,14 +24,13 @@ class SelectedModActionButtons extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasMissingFiles = useMemoized(() {
-      if (selectedMod.assetLists == null) return false;
-
       return selectedMod.getAllAssets().any((asset) => !asset.fileExists);
     }, [selectedMod]);
 
     final modsNotifier = ref.watch(modsProvider.notifier);
     final backupNotifier = ref.watch(backupProvider.notifier);
     final downloadNotifier = ref.watch(downloadProvider.notifier);
+    final deleteAssetsNotifier = ref.watch(deleteAssetsProvider.notifier);
     final actionInProgress = ref.watch(actionInProgressProvider);
 
     return Padding(
@@ -51,64 +47,73 @@ class SelectedModActionButtons extends HookConsumerWidget {
                       return;
                     }
 
-                    await downloadNotifier.downloadAllFiles(selectedMod);
+                    final downloaded = await downloadNotifier.downloadAllFiles(selectedMod);
                     await modsNotifier.updateSelectedMod(selectedMod);
+                    if (downloaded.isNotEmpty) {
+                      await modsNotifier.refreshModsWithSharedAssets(
+                          downloaded,
+                          excludeJsonFileName: selectedMod.jsonFileName);
+                    }
                   }
                 : null,
             label: const Text('Download'),
           ),
           ElevatedButton.icon(
             icon: Icon(Icons.archive),
-            onPressed: () async {
+            onPressed: () {
               if (actionInProgress) {
                 return;
               }
 
-              final showWarningMessage =
-                  ref.read(settingsProvider).showBackupState &&
-                      ref.read(directoriesProvider).backupsDir.isEmpty;
+              showDialog(
+                context: context,
+                builder: (context) => SingleModBackupDialog(
+                  mod: selectedMod,
+                  onConfirm:
+                      (backupFolder, downloadFirst, postBackupDeletion) async {
+                    // Capture provider references before any async operations
+                    final modsRef = modsNotifier;
+                    final downloadRef = downloadNotifier;
+                    final backupRef = backupNotifier;
+                    final deleteRef = deleteAssetsNotifier;
 
-              final setBackupFolderMessage =
-                  "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable backup state feature in Settings to hide this warning";
+                    // Use a mutable reference so we always have the fresh mod
+                    var currentMod = selectedMod;
 
-              if (selectedMod.backupStatus ==
-                  ExistingBackupStatusEnum.noBackup) {
-                if (showWarningMessage) {
-                  showConfirmDialog(
-                    context,
-                    "$setBackupFolderMessage\n\nContinue with creating a backup?",
-                    () async {
-                      await backupNotifier.createBackup(selectedMod);
-                      await modsNotifier.updateSelectedMod(selectedMod);
-                    },
-                    () {},
-                  );
-                } else {
-                  await backupNotifier.createBackup(selectedMod);
-                  await modsNotifier.updateSelectedMod(selectedMod);
-                }
-                return;
-              }
+                    // 1. Download if requested
+                    Set<String> downloadedFilenames = {};
+                    if (downloadFirst) {
+                      downloadedFilenames = await downloadRef.downloadAllFiles(currentMod);
+                      await modsRef.updateSelectedMod(currentMod);
+                      currentMod = ref.read(selectedModProvider) ?? currentMod;
+                    }
 
-              String backupMessage =
-                  'Backup already exists at:\n${selectedMod.backup!.filepath}';
-              String message = showWarningMessage
-                  ? '$setBackupFolderMessage\n\n$backupMessage'
-                  : backupMessage;
+                    // 2. Create backup
+                    await backupRef.createBackup(currentMod, backupFolder);
+                    modsRef.updateModBackup(currentMod);
 
-              showBackupConfirmDialog(
-                context,
-                message,
-                () async {
-                  final backupFolder = p.dirname(selectedMod.backup!.filepath);
+                    // 3. Delete assets if requested
+                    Set<String> deletedFilenames = {};
+                    if (postBackupDeletion != PostBackupDeletionEnum.none) {
+                      final deleted =
+                          await deleteRef.deleteModAssetsAfterBackup(
+                              currentMod, postBackupDeletion);
+                      deletedFilenames = deleted.toSet();
 
-                  await backupNotifier.createBackup(selectedMod, backupFolder);
-                  await modsNotifier.updateSelectedMod(selectedMod);
-                },
-                () async {
-                  await backupNotifier.createBackup(selectedMod);
-                  await modsNotifier.updateSelectedMod(selectedMod);
-                },
+                      if (deleted.isNotEmpty) {
+                        await modsRef.updateSelectedMod(currentMod);
+                      }
+                    }
+
+                    // 4. Refresh other mods that share affected assets
+                    final allAffected = {...downloadedFilenames, ...deletedFilenames};
+                    if (allAffected.isNotEmpty) {
+                      await modsRef.refreshModsWithSharedAssets(
+                          allAffected,
+                          excludeJsonFileName: currentMod.jsonFileName);
+                    }
+                  },
+                ),
               );
             },
             label: const Text('Backup'),

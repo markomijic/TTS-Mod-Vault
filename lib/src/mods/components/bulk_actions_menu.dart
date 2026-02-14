@@ -13,7 +13,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModTypeProvider,
         sortAndFilterProvider;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show BulkBackupDialog, showUpdateUrlsDialog;
+    show BulkBackupDialog, BulkDeleteDialog, showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialogWithCheckbox;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
@@ -43,9 +43,9 @@ class BulkActionsMenu extends HookConsumerWidget {
     }, [selectedModType, sortAndFilterState]);
 
     final bulkActionLimited = useMemoized(() {
-      return ((selectedFolders.length +
-                  sortAndFilterState.filteredBackupStatuses.length) >
-              0) ||
+      return selectedFolders.isNotEmpty ||
+          sortAndFilterState.filteredBackupStatuses.isNotEmpty ||
+          sortAndFilterState.filteredAssets.isNotEmpty ||
           searchQuery.isNotEmpty;
     }, [selectedFolders, sortAndFilterState, searchQuery]);
 
@@ -109,11 +109,12 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               builder: (context) => BulkBackupDialog(
                 title: 'Backup all',
                 initialBehavior: BulkBackupBehaviorEnum.replaceIfOutOfDate,
-                onConfirm: (behavior, folder) {
+                onConfirm: (behavior, folder, postBackupDeletion) {
                   ref.read(bulkActionsProvider.notifier).backupAllMods(
                         ref.read(filteredModsProvider),
                         behavior,
                         folder,
+                        postBackupDeletion,
                       );
                 },
               ),
@@ -137,20 +138,45 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               builder: (context) => BulkBackupDialog(
                 title: 'Download & backup all',
                 initialBehavior: BulkBackupBehaviorEnum.replaceIfOutOfDate,
-                onConfirm: (behavior, folder) {
+                onConfirm: (behavior, folder, postBackupDeletion) {
                   ref
                       .read(bulkActionsProvider.notifier)
                       .downloadAndBackupAllMods(
                         ref.read(filteredModsProvider),
                         behavior,
                         folder,
+                        postBackupDeletion,
                       );
                 },
               ),
             );
           },
         ),
-        Divider(color: Colors.black, height: 1),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          leadingIcon: Icon(Icons.delete, color: Colors.black),
+          child:
+              Text('Delete all assets', style: TextStyle(color: Colors.black)),
+          onPressed: () {
+            if (actionInProgress) return;
+
+            showDialog(
+              context: context,
+              builder: (context) => BulkDeleteDialog(
+                title: 'Delete all assets',
+                onConfirm: (deletionOption) {
+                  ref.read(bulkActionsProvider.notifier).deleteAssetsAllMods(
+                        ref.read(filteredModsProvider),
+                        deletionOption,
+                      );
+                },
+              ),
+            );
+          },
+        ),
         MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,

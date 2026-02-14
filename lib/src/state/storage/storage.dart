@@ -143,12 +143,13 @@ class Storage {
     }
   }
 
-  /* Future<void> deleteMod(String modName) async {
+  Future<void> deleteMod(String modName) async {
     await Future.wait([
       _metadataBox.delete('$modName$dateTimeStampSuffix'),
-      _urlsBox.delete(modName)
+      _metadataBox.delete('$modName$showAudioAssetsSuffix'),
+      _urlsBox.delete(modName),
     ]);
-  } */
+  }
 
   // Bulk operations for better performance with many mods
   Future<void> saveAllModUrlsData(
@@ -236,5 +237,38 @@ class Storage {
   Future<void> clearAllModData() async {
     await Hive.box<dynamic>(urlsBox).clear();
     await Hive.box<String>(metadataBox).clear();
+  }
+
+  Future<void> pruneOrphanedModData(Set<String> validJsonFileNames) async {
+    // Prune _urlsBox
+    final urlKeysToDelete = <dynamic>[];
+    for (final key in _urlsBox.keys) {
+      if (!validJsonFileNames.contains(key as String)) {
+        urlKeysToDelete.add(key);
+      }
+    }
+    if (urlKeysToDelete.isNotEmpty) {
+      await _urlsBox.deleteAll(urlKeysToDelete);
+    }
+
+    // Prune _metadataBox — extract base jsonFileName from suffixed keys
+    final metaKeysToDelete = <String>[];
+    for (final key in _metadataBox.keys) {
+      final k = key as String;
+      String baseName;
+      if (k.endsWith(dateTimeStampSuffix)) {
+        baseName = k.substring(0, k.length - dateTimeStampSuffix.length);
+      } else if (k.endsWith(showAudioAssetsSuffix)) {
+        baseName = k.substring(0, k.length - showAudioAssetsSuffix.length);
+      } else {
+        baseName = k;
+      }
+      if (!validJsonFileNames.contains(baseName)) {
+        metaKeysToDelete.add(k);
+      }
+    }
+    if (metaKeysToDelete.isNotEmpty) {
+      await _metadataBox.deleteAll(metaKeysToDelete);
+    }
   }
 }

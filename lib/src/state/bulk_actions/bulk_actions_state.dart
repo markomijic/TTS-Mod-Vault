@@ -5,7 +5,8 @@ enum BulkActionsStatusEnum {
   updateUrls,
   downloadAndBackupAll,
   updateModsAll,
-  importingBackups;
+  importingBackups,
+  deleteAssetsAll;
 }
 
 enum BulkBackupBehaviorEnum {
@@ -16,6 +17,16 @@ enum BulkBackupBehaviorEnum {
   final String label;
 
   const BulkBackupBehaviorEnum(this.label);
+}
+
+enum PostBackupDeletionEnum {
+  none('None'),
+  deleteNonSharedAssets('Delete non-shared assets'),
+  deleteAllAssets('Delete all assets');
+
+  final String label;
+
+  const PostBackupDeletionEnum(this.label);
 }
 
 class BulkActionsState {

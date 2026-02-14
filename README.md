@@ -22,7 +22,7 @@ Features:
 - Open Files - You can open Audio, Images and PDF files
 - Download Workshop Mod by ID - Enter the ID of TTS Mod you want to download and the tool will download both the JSON and image files
 
-Created using Flutter 3.38.5
+Created using Flutter 3.38.10
 
 If you want to build the app follow the official Flutter documentation to get started using Flutter: https://docs.flutter.dev/get-started/install
 

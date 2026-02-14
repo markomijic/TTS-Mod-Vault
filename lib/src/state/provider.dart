@@ -54,11 +54,49 @@ final filteredLogProvider =
 
 final selectedPageProvider = StateProvider<AppPage>((ref) => AppPage.mods);
 
-final multiModsProvider = StateProvider<Set<Mod>>((ref) => {});
+final multiModsProvider = StateProvider<Set<String>>((ref) => {});
 
 final selectedModProvider = Provider<Mod?>((ref) {
-  final mods = ref.watch(multiModsProvider);
-  return mods.isNotEmpty ? mods.first : null;
+  final paths = ref.watch(multiModsProvider);
+  if (paths.isEmpty) return null;
+
+  final modsState = ref.watch(modsProvider);
+  if (!modsState.hasValue) return null;
+
+  final modType = ref.watch(selectedModTypeProvider);
+  final selectedPath = paths.first;
+  final data = modsState.value!;
+
+  final list = switch (modType) {
+    ModTypeEnum.mod => data.mods,
+    ModTypeEnum.save => data.saves,
+    ModTypeEnum.savedObject => data.savedObjects,
+  };
+
+  for (final mod in list) {
+    if (mod.jsonFilePath == selectedPath) return mod;
+  }
+  return null;
+});
+
+final selectedModsListProvider = Provider<List<Mod>>((ref) {
+  final paths = ref.watch(multiModsProvider);
+  if (paths.isEmpty) return [];
+
+  final modsState = ref.watch(modsProvider);
+  if (!modsState.hasValue) return [];
+
+  final modType = ref.watch(selectedModTypeProvider);
+  final data = modsState.value!;
+
+  final list = switch (modType) {
+    ModTypeEnum.mod => data.mods,
+    ModTypeEnum.save => data.saves,
+    ModTypeEnum.savedObject => data.savedObjects,
+  };
+
+  final modsByPath = {for (final mod in list) mod.jsonFilePath: mod};
+  return paths.map((p) => modsByPath[p]).whereType<Mod>().toList();
 });
 
 // Separate search queries for each page
@@ -134,6 +172,8 @@ final sortAndFilterProvider =
   (ref) => SortAndFilterNotifier(ref),
 );
 
+final refreshingSharedAssetsProvider = StateProvider<bool>((ref) => false);
+
 final actionInProgressProvider = Provider<bool>((ref) {
   final modsAsyncValue = ref.watch(modsProvider);
   final isDownloading = ref.watch(downloadProvider).isDownloading;
@@ -142,6 +182,7 @@ final actionInProgressProvider = Provider<bool>((ref) {
   final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
   final backupStatus = ref.watch(backupProvider).status;
   final deletingBackup = ref.watch(existingBackupsProvider).deletingBackup;
+  final refreshingSharedAssets = ref.watch(refreshingSharedAssetsProvider);
 
   return deleteAssetsStatus != DeleteAssetsStatusEnum.idle ||
       cleanUpStatus != CleanUpStatusEnum.idle ||
@@ -149,7 +190,8 @@ final actionInProgressProvider = Provider<bool>((ref) {
       bulkActionStatus != BulkActionsStatusEnum.idle ||
       isDownloading ||
       modsAsyncValue is AsyncLoading ||
-      deletingBackup;
+      deletingBackup ||
+      refreshingSharedAssets;
 });
 
 final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
@@ -249,6 +291,11 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
     case SortOptionEnum.missingAssets:
       filteredMods
           .sort((a, b) => (b.missingAssetCount).compareTo(a.missingAssetCount));
+      break;
+    case SortOptionEnum.lastModifiedDesc:
+      filteredMods.sort((a, b) =>
+          (b.lastModifiedTimestamp).compareTo(a.lastModifiedTimestamp));
+      break;
   }
 
   return filteredMods;

@@ -10,7 +10,11 @@ import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
-    show BulkActionsState, BulkActionsStatusEnum, BulkBackupBehaviorEnum;
+    show
+        BulkActionsState,
+        BulkActionsStatusEnum,
+        BulkBackupBehaviorEnum,
+        PostBackupDeletionEnum;
 import 'package:tts_mod_vault/src/state/bulk_actions/mod_update_result.dart'
     show ModUpdateResult, ModUpdateStatus;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
@@ -22,6 +26,7 @@ import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         backupProvider,
+        deleteAssetsProvider,
         directoriesProvider,
         downloadProvider,
         importBackupProvider,
@@ -71,6 +76,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
     final modsNotifier = ref.read(modsProvider.notifier);
     final downloadNotifier = ref.read(downloadProvider.notifier);
+    final Set<String> allAffectedFilenames = {};
 
     for (int i = 0; i < mods.length; i++) {
       final mod = mods[i];
@@ -90,8 +96,14 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
               'Downloading "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
       modsNotifier.setSelectedMod(mod);
-      await downloadNotifier.downloadAllFiles(mod);
+      final downloaded = await downloadNotifier.downloadAllFiles(mod);
+      allAffectedFilenames.addAll(downloaded);
       await modsNotifier.updateSelectedMod(mod);
+    }
+
+    // Refresh other mods that share any of the downloaded assets
+    if (allAffectedFilenames.isNotEmpty) {
+      await modsNotifier.refreshModsWithSharedAssets(allAffectedFilenames);
     }
 
     if (state.cancelledBulkAction) {
@@ -112,6 +124,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     List<Mod> mods,
     BulkBackupBehaviorEnum backupBehavior,
     String? folder,
+    PostBackupDeletionEnum postBackupDeletion,
   ) async {
     ref
         .read(logProvider.notifier)
@@ -136,6 +149,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
     final modsNotifier = ref.read(modsProvider.notifier);
     final backupNotifier = ref.read(backupProvider.notifier);
+    final Set<String> allDeletedFilenames = {};
 
     for (int i = 0; i < mods.length; i++) {
       final mod = mods[i];
@@ -181,6 +195,31 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       modsNotifier.setSelectedMod(mod);
       await backupNotifier.createBackup(mod, modBackupFolder);
       modsNotifier.updateModBackup(mod);
+
+      // Delete assets after backup if configured
+      if (postBackupDeletion != PostBackupDeletionEnum.none) {
+        if (state.cancelledBulkAction) {
+          break;
+        }
+
+        state = state.copyWith(
+            statusMessage:
+                'Deleting assets for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+
+        final deletedFilenames = await ref
+            .read(deleteAssetsProvider.notifier)
+            .deleteModAssetsAfterBackup(mod, postBackupDeletion);
+        allDeletedFilenames.addAll(deletedFilenames);
+
+        if (deletedFilenames.isNotEmpty) {
+          await modsNotifier.updateSelectedMod(mod);
+        }
+      }
+    }
+
+    // Refresh other mods that share any of the deleted assets
+    if (allDeletedFilenames.isNotEmpty) {
+      await modsNotifier.refreshModsWithSharedAssets(allDeletedFilenames);
     }
 
     if (state.cancelledBulkAction) {
@@ -199,6 +238,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     List<Mod> mods,
     BulkBackupBehaviorEnum backupBehavior,
     String? folder,
+    PostBackupDeletionEnum postBackupDeletion,
   ) async {
     state = state.copyWith(
       status: BulkActionsStatusEnum.downloadAndBackupAll,
@@ -217,6 +257,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     final modsNotifier = ref.read(modsProvider.notifier);
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final backupNotifier = ref.read(backupProvider.notifier);
+    final Set<String> allAffectedFilenames = {};
 
     for (int i = 0; i < mods.length; i++) {
       final mod = mods[i];
@@ -236,7 +277,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
               'Downloading & backing up "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
 
       modsNotifier.setSelectedMod(mod);
-      await downloadNotifier.downloadAllFiles(mod);
+      final downloaded = await downloadNotifier.downloadAllFiles(mod);
+      allAffectedFilenames.addAll(downloaded);
       await modsNotifier.updateSelectedMod(mod);
 
       if (state.cancelledBulkAction) {
@@ -271,11 +313,101 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       if (selectedMod != null) {
         await backupNotifier.createBackup(selectedMod, modBackupFolder);
         modsNotifier.updateModBackup(selectedMod);
+
+        // Delete assets after backup if configured
+        if (postBackupDeletion != PostBackupDeletionEnum.none) {
+          if (state.cancelledBulkAction) {
+            break;
+          }
+
+          state = state.copyWith(
+              statusMessage:
+                  'Deleting assets for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+
+          final deletedFilenames = await ref
+              .read(deleteAssetsProvider.notifier)
+              .deleteModAssetsAfterBackup(selectedMod, postBackupDeletion);
+          allAffectedFilenames.addAll(deletedFilenames);
+
+          if (deletedFilenames.isNotEmpty) {
+            await modsNotifier.updateSelectedMod(selectedMod);
+          }
+        }
       }
+    }
+
+    // Refresh other mods that share any of the affected assets
+    if (allAffectedFilenames.isNotEmpty) {
+      await modsNotifier.refreshModsWithSharedAssets(allAffectedFilenames);
     }
 
     _resetState();
     downloadNotifier.resetState();
+  }
+
+// MARK: Delete Assets
+  Future<void> deleteAssetsAllMods(
+    List<Mod> mods,
+    PostBackupDeletionEnum deletionOption,
+  ) async {
+    if (mods.isEmpty) return;
+
+    ref
+        .read(logProvider.notifier)
+        .addInfo('Starting bulk asset deletion for ${mods.length} mods');
+
+    state = state.copyWith(
+      status: BulkActionsStatusEnum.deleteAssetsAll,
+      totalModNumber: mods.length,
+      statusMessage: 'Deleting assets...',
+    );
+
+    final modsNotifier = ref.read(modsProvider.notifier);
+    final Set<String> allDeletedFilenames = {};
+
+    for (int i = 0; i < mods.length; i++) {
+      final mod = mods[i];
+
+      if (state.cancelledBulkAction) {
+        break;
+      }
+
+      // Yield to UI thread on every iteration to keep app responsive
+      await Future.delayed(Duration.zero);
+
+      debugPrint('Deleting assets for: ${mod.saveName}');
+
+      state = state.copyWith(
+          currentModNumber: i + 1,
+          statusMessage:
+              'Deleting assets for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+
+      modsNotifier.setSelectedMod(mod);
+
+      final deletedFilenames = await ref
+          .read(deleteAssetsProvider.notifier)
+          .deleteModAssetsAfterBackup(mod, deletionOption);
+      allDeletedFilenames.addAll(deletedFilenames);
+
+      if (deletedFilenames.isNotEmpty) {
+        await modsNotifier.updateSelectedMod(mod);
+      }
+    }
+
+    // Refresh other mods that share any of the deleted assets
+    if (allDeletedFilenames.isNotEmpty) {
+      await modsNotifier.refreshModsWithSharedAssets(allDeletedFilenames);
+    }
+
+    if (state.cancelledBulkAction) {
+      ref.read(logProvider.notifier).addWarning(
+          'Bulk asset deletion cancelled (${state.currentModNumber}/${mods.length} completed)');
+    } else {
+      ref.read(logProvider.notifier).addSuccess(
+          'Bulk asset deletion completed: ${mods.length} mods processed');
+    }
+
+    _resetState();
   }
 
 // MARK: Update URLs
@@ -450,6 +582,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       return;
     }
 
+    final Set<String> allImportedFilenames = {};
+
     for (int i = 0; i < filePaths.length; i++) {
       final path = filePaths[i];
 
@@ -469,7 +603,17 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Importing "$fileName" (${i + 1}/${filePaths.length})');
 
-      await ref.read(importBackupProvider.notifier).importBackupFromPath(path);
+      final importedFilenames = await ref
+          .read(importBackupProvider.notifier)
+          .importBackupFromPath(path);
+      allImportedFilenames.addAll(importedFilenames);
+    }
+
+    // Refresh other mods that share any of the imported assets
+    if (allImportedFilenames.isNotEmpty) {
+      await ref
+          .read(modsProvider.notifier)
+          .refreshModsWithSharedAssets(allImportedFilenames);
     }
 
     _resetState();
@@ -503,6 +647,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       case BulkActionsStatusEnum.importingBackups:
         _cancelImportingBackups();
+        break;
+
+      case BulkActionsStatusEnum.deleteAssetsAll:
+        _cancelDeleteAssetsAll();
         break;
     }
   }
@@ -555,5 +703,13 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   Future<void> _cancelUpdateModsAll() async {
     state = state.copyWith(
         cancelledBulkAction: true, statusMessage: "Cancelling updating mods");
+  }
+
+  void _cancelDeleteAssetsAll() {
+    state = state.copyWith(
+      cancelledBulkAction: true,
+      statusMessage:
+          "Cancelling asset deletion for all ${ref.read(selectedModTypeProvider).label}s",
+    );
   }
 }

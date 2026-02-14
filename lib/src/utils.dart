@@ -23,7 +23,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         bulkActionsProvider,
         downloadProvider,
-        existingBackupsProvider;
+        existingBackupsProvider,
+        modsProvider;
 import 'package:url_launcher/url_launcher.dart'
     show LaunchMode, canLaunchUrl, launchUrl;
 import 'package:http/http.dart' as http;
@@ -128,9 +129,10 @@ final ThemeData darkTheme = ThemeData(
   ),
 );
 
+final _nonAlphanumericRegex = RegExp(r'[^a-zA-Z0-9]');
+
 String getFileNameFromURL(String url) {
-  // Keep only letters and numbers, remove everything else
-  return url.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+  return url.replaceAll(_nonAlphanumericRegex, '');
 }
 
 String getFileNameFromPath(String path) {
@@ -706,39 +708,19 @@ void showModContextMenu(
           children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
+      PopupMenuItem(
+        value: ContextMenuActionEnum.deleteMod,
+        child: Row(
+          spacing: 8,
+          children: [Icon(Icons.delete), Text('Delete')],
+        ),
+      ),
       if (mod.backup != null) ...[
         const PopupMenuItem(
           padding: EdgeInsets.zero,
           height: 1,
           child: Divider(height: 1),
         ),
-        /* PopupMenuItem(
-          value: ContextMenuActionEnum.backupSubmenu,
-          child: Row(
-            spacing: 8,
-            children: [
-              Icon(Icons.folder_zip_outlined),
-              Text('Backup'),
-              Spacer(),
-              Icon(Icons.chevron_right, size: 20),
-            ],
-          ),
-        ), */
-/*         PopupMenuItem(
-          value: ContextMenuActionEnum.copyBackupFilename,
-          child: Row(
-            spacing: 8,
-            children: [Icon(Icons.file_copy), Text('Copy Backup Filename')],
-          ),
-        ), 
-        PopupMenuItem(
-          value: ContextMenuActionEnum.deleteBackup,
-          child: Row(
-            spacing: 8,
-            children: [Icon(Icons.delete), Text('Delete Backup')],
-          ),
-        ), */
-
         PopupMenuItem(
           value: 'importBackup',
           child: Row(
@@ -894,6 +876,28 @@ void showModContextMenu(
         case ContextMenuActionEnum.backupSubmenu:
           if (context.mounted && mod.backup != null) {
             _showBackupSubmenu(context, ref, position, mod);
+          }
+          break;
+
+        case ContextMenuActionEnum.deleteMod:
+          if (context.mounted) {
+            showConfirmDialog(
+              context,
+              'Are you sure you want to delete\n${mod.saveName}?',
+              () async {
+                try {
+                  await ref.read(modsProvider.notifier).deleteMod(mod);
+                  if (context.mounted) {
+                    showSnackBar(
+                        context, '${mod.saveName} deleted successfully');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    showSnackBar(context, 'Failed to delete mod: $e');
+                  }
+                }
+              },
+            );
           }
           break;
 

@@ -10,6 +10,7 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
+import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show formatTimestamp, showBackupContextMenu;
 
@@ -20,6 +21,7 @@ class BackupsGridCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
     final isHovered = useState(false);
 
     final matchingModImagePath = useMemoized(() {
@@ -41,6 +43,10 @@ class BackupsGridCard extends HookConsumerWidget {
     final hasMatchingMod = useMemoized(() {
       return backup.matchingModFilepath != null;
     }, [backup.matchingModFilepath]);
+
+    final backupFilename = useMemoized(() {
+      return p.basenameWithoutExtension(backup.filename);
+    }, [backup]);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -76,8 +82,22 @@ class BackupsGridCard extends HookConsumerWidget {
                       File(matchingModImagePath!),
                       fit: BoxFit.cover,
                     ),
-                  )
-                else
+                  ),
+                if (!imageExists && !showTitleOnCards)
+                  Container(
+                    color: Colors.grey[850],
+                    alignment: Alignment.center,
+                    child: Text(
+                      backupFilename,
+                      maxLines: 5,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                if (!imageExists && showTitleOnCards)
                   Container(
                     color: Colors.grey[850],
                     alignment: Alignment.center,
@@ -141,30 +161,30 @@ class BackupsGridCard extends HookConsumerWidget {
                 ),
 
                 // Bottom info bar
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: ClipRect(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(140),
-                        ),
-                        child: Text(
-                          p.basenameWithoutExtension(backup.filename),
-                          maxLines: 5,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                if (showTitleOnCards)
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: ClipRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(140),
+                          ),
+                          child: Text(
+                            backupFilename,
+                            maxLines: 5,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

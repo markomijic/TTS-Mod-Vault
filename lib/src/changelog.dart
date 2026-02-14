@@ -36,6 +36,42 @@ void showChangelogDialog(BuildContext context) {
 
 String getChangelog() {
   return """
+v1.4.0
+
+It is recommended to clear the cache on the first run
+(Refresh → Clear Vault cache)
+
+BREAKING CHANGE
+Saved object backup file naming has been changed to
+Filename (saved object).ttsmod
+Backups of saved objects made with previous versions will not be detected until renamed
+
+Features:
+· Updated UI layout with sidebar
+· Backups tab
+· Backup information caching for faster loading times
+· Check for shared asset URLs
+· Check for invalid asset URLs
+· Mod and asset file deletion
+· Multi-select support for bulk actions
+· Sorting by missing assets and recently updated
+· Asset-based filtering (missing, complete, audio)
+· Filtering backups by asset count mismatch
+· New setting to ignore audio assets
+· New setting for Asset URL font size
+· Per-mod audio asset handling
+· JSON import support
+· Update URL presets in Settings
+· Mod updates from Steam Workshop
+
+Changes:
+· Updated saved object backup naming
+· Clear cache moved to Refresh and renamed to Clear Vault cache
+· Removed setting to show or hide URL replacement features
+· Various UI updates and refinements
+· General bug fixes and improvements
+
+
 v1.3.0
 Due to asset URL bug fixes in this version, it is recommended to clear the cache on the first run
 The new URL replacement features are disabled by default and can be enabled in Settings

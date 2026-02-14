@@ -4,7 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart'
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show showUpdateUrlsDialog, BulkBackupDialog;
+    show showUpdateUrlsDialog, BulkBackupDialog, BulkDeleteDialog;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
@@ -12,7 +12,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         bulkActionsProvider,
-        multiModsProvider,
+        selectedModsListProvider,
         selectedModTypeProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialogWithCheckbox;
@@ -22,7 +22,7 @@ class MultiSelectView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMods = ref.watch(multiModsProvider);
+    final selectedMods = ref.watch(selectedModsListProvider);
     final modType = ref.watch(selectedModTypeProvider);
     final actionInProgress = ref.watch(actionInProgressProvider);
 
@@ -119,11 +119,12 @@ class MultiSelectView extends HookConsumerWidget {
                       title: 'Backup all',
                       initialBehavior:
                           BulkBackupBehaviorEnum.replaceIfOutOfDate,
-                      onConfirm: (behavior, folder) {
+                      onConfirm: (behavior, folder, postBackupAction) {
                         ref.read(bulkActionsProvider.notifier).backupAllMods(
                               selectedMods.toList(),
                               behavior,
                               folder,
+                              postBackupAction,
                             );
                       },
                     ),
@@ -147,13 +148,36 @@ class MultiSelectView extends HookConsumerWidget {
                       title: 'Download & backup all',
                       initialBehavior:
                           BulkBackupBehaviorEnum.replaceIfOutOfDate,
-                      onConfirm: (behavior, folder) {
+                      onConfirm: (behavior, folder, postBackupAction) {
                         ref
                             .read(bulkActionsProvider.notifier)
                             .downloadAndBackupAllMods(
                               selectedMods.toList(),
                               behavior,
                               folder,
+                              postBackupAction,
+                            );
+                      },
+                    ),
+                  );
+                },
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.delete, size: 18),
+                label: const Text('Delete assets'),
+                onPressed: () {
+                  if (actionInProgress) return;
+
+                  showDialog(
+                    context: context,
+                    builder: (context) => BulkDeleteDialog(
+                      title: 'Delete assets',
+                      onConfirm: (deletionOption) {
+                        ref
+                            .read(bulkActionsProvider.notifier)
+                            .deleteAssetsAllMods(
+                              selectedMods.toList(),
+                              deletionOption,
                             );
                       },
                     ),

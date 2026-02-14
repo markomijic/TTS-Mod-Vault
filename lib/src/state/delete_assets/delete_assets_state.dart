@@ -26,10 +26,12 @@ class SharedAssetInfo {
 
 class ScanResult {
   final List<String> filesToDelete;
+  final List<String> sharedFilesToDelete;
   final SharedAssetInfo sharedAssetInfo;
 
   const ScanResult({
     required this.filesToDelete,
+    required this.sharedFilesToDelete,
     required this.sharedAssetInfo,
   });
 }
@@ -37,6 +39,7 @@ class ScanResult {
 class DeleteAssetsState {
   final DeleteAssetsStatusEnum status;
   final List<String> filesToDelete;
+  final List<String> sharedFilesToDelete;
   final int totalFiles;
   final int currentFile;
   final String? errorMessage;
@@ -46,6 +49,7 @@ class DeleteAssetsState {
   const DeleteAssetsState({
     this.status = DeleteAssetsStatusEnum.idle,
     this.filesToDelete = const [],
+    this.sharedFilesToDelete = const [],
     this.totalFiles = 0,
     this.currentFile = 0,
     this.errorMessage,
@@ -56,6 +60,7 @@ class DeleteAssetsState {
   DeleteAssetsState copyWith({
     DeleteAssetsStatusEnum? status,
     List<String>? filesToDelete,
+    List<String>? sharedFilesToDelete,
     int? totalFiles,
     int? currentFile,
     String? errorMessage,
@@ -65,6 +70,7 @@ class DeleteAssetsState {
     return DeleteAssetsState(
       status: status ?? this.status,
       filesToDelete: filesToDelete ?? this.filesToDelete,
+      sharedFilesToDelete: sharedFilesToDelete ?? this.sharedFilesToDelete,
       totalFiles: totalFiles ?? this.totalFiles,
       currentFile: currentFile ?? this.currentFile,
       errorMessage: errorMessage ?? this.errorMessage,

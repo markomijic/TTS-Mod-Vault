@@ -87,6 +87,7 @@ class SortAndFilterState {
 enum SortOptionEnum {
   alphabeticalAsc('A-Z'),
   dateCreatedDesc('Newest'),
+  lastModifiedDesc('Recently updated'),
   missingAssets('Missing assets');
 
   final String label;

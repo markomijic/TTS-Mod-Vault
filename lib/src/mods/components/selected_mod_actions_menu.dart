@@ -15,7 +15,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         downloadProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show showSnackBar, copyToClipboard;
+    show showSnackBar;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets_state.dart'
     show DeleteAssetsStatusEnum, SharedAssetInfo;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets.dart'
@@ -46,13 +46,6 @@ class SelectedModActionsMenu extends HookConsumerWidget {
               style: TextStyle(color: Colors.black)),
           onPressed: () async {
             if (actionInProgress) return;
-
-            if (selectedMod.assetLists == null) {
-              if (context.mounted) {
-                showSnackBar(context, 'No assets found in this mod');
-              }
-              return;
-            }
 
             // Get the navigator context before the menu closes
             final navigator = Navigator.of(context);
@@ -172,18 +165,16 @@ class SelectedModActionsMenu extends HookConsumerWidget {
                 if (context.mounted) {
                   showSnackBar(context,
                       deleteAssetsState.statusMessage ?? 'Operation completed');
-
-                  deleteAssetsNotifier.resetState();
                 }
+                deleteAssetsNotifier.resetState();
                 break;
 
               case DeleteAssetsStatusEnum.error:
                 if (context.mounted) {
                   showSnackBar(context,
                       deleteAssetsState.statusMessage ?? 'An error occurred');
-
-                  deleteAssetsNotifier.resetState();
                 }
+                deleteAssetsNotifier.resetState();
                 break;
             }
           },
@@ -252,32 +243,81 @@ void _showDeleteConfirmDialog(
   Mod selectedMod,
   WidgetRef ref,
 ) async {
+  bool includeShared = false;
+  final hasSharedAssets = deleteAssetsState.sharedFilesToDelete.isNotEmpty;
+
   final result = await showDialog<String>(
     context: context,
     builder: (BuildContext context) {
-      return BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-        child: AlertDialog(
-          content: Text(
-              'Delete ${deleteAssetsState.filesToDelete.length} ${multipleAssets ? "asset files" : "asset file"} that ${multipleAssets ? "are" : "is"} only used by this mod?$sharedMessage\n\nThis action cannot be undone.'),
-          actions: [
-            if (sharedInfo != null && sharedInfo.sharedAssetDetails.isNotEmpty)
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop('details');
-                },
-                child: const Text('View Details'),
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final safeCount = deleteAssetsState.filesToDelete.length;
+          final sharedCount = deleteAssetsState.sharedFilesToDelete.length;
+          final totalCount =
+              includeShared ? safeCount + sharedCount : safeCount;
+          final isMultiple = totalCount != 1;
+
+          String message;
+          if (safeCount > 0) {
+            message =
+                'Delete $safeCount ${isMultiple ? "asset files" : "asset file"} that ${isMultiple ? "are" : "is"} only used by this mod?$sharedMessage';
+          } else {
+            message =
+                'All assets are shared with other mods. Check the box below to delete them anyway.';
+          }
+
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+            child: AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('$message\n\nThis action cannot be undone.'),
+                  if (hasSharedAssets) ...[
+                    const SizedBox(height: 16),
+                    CheckboxListTile(
+                      value: includeShared,
+                      onChanged: (value) {
+                        setState(() {
+                          includeShared = value ?? false;
+                        });
+                      },
+                      title: Text(
+                        'Also delete $sharedCount shared ${sharedCount == 1 ? "asset" : "assets"}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ],
+                ],
               ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop('cancel'),
-              child: const Text('Cancel'),
+              actions: [
+                if (sharedInfo != null &&
+                    sharedInfo.sharedAssetDetails.isNotEmpty)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop('details');
+                    },
+                    child: const Text('View Details'),
+                  ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop('cancel'),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: (safeCount > 0 || includeShared)
+                      ? () => Navigator.of(context)
+                          .pop(includeShared ? 'confirm_shared' : 'confirm')
+                      : null,
+                  child: const Text('Confirm'),
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop('confirm'),
-              child: const Text('Confirm'),
-            ),
-          ],
-        ),
+          );
+        },
       );
     },
   );
@@ -286,8 +326,25 @@ void _showDeleteConfirmDialog(
 
   switch (result) {
     case 'confirm':
-      await deleteAssetsNotifier.executeDelete();
+      final deletedFilenames =
+          await deleteAssetsNotifier.executeDelete(includeShared: false);
       await modsNotifier.updateSelectedMod(selectedMod);
+      if (deletedFilenames.isNotEmpty) {
+        await modsNotifier.refreshModsWithSharedAssets(deletedFilenames.toSet(),
+            excludeJsonFileName: selectedMod.jsonFileName);
+      }
+      deleteAssetsNotifier.resetState();
+      break;
+    case 'confirm_shared':
+      final deletedSharedFilenames =
+          await deleteAssetsNotifier.executeDelete(includeShared: true);
+      await modsNotifier.updateSelectedMod(selectedMod);
+      if (deletedSharedFilenames.isNotEmpty) {
+        await modsNotifier.refreshModsWithSharedAssets(
+            deletedSharedFilenames.toSet(),
+            excludeJsonFileName: selectedMod.jsonFileName);
+      }
+      deleteAssetsNotifier.resetState();
       break;
     case 'details':
       if (sharedInfo != null) {
@@ -328,6 +385,17 @@ Future<void> _showSharedAssetsDetailsDialog(
       mod.jsonFileName: mod.saveName.isEmpty ? mod.jsonFileName : mod.saveName
   };
 
+  // Invert the map: asset -> [mods] becomes mod -> [assets]
+  final Map<String, List<String>> modToAssets = {};
+  for (final entry in sharedInfo.sharedAssetDetails.entries) {
+    final assetUrl = entry.key;
+    for (final modJsonFileName in entry.value) {
+      modToAssets.putIfAbsent(modJsonFileName, () => []).add(assetUrl);
+    }
+  }
+
+  final modEntries = modToAssets.entries.toList();
+
   await showDialog(
     context: context,
     builder: (BuildContext builderContext) {
@@ -335,56 +403,43 @@ Future<void> _showSharedAssetsDetailsDialog(
         filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
         child: AlertDialog(
           title: const Text('Shared Assets Details'),
-          content: ListView.builder(
-            shrinkWrap: true,
-            itemCount: sharedInfo.sharedAssetDetails.length,
-            itemBuilder: (itemContext, index) {
-              final entry =
-                  sharedInfo.sharedAssetDetails.entries.elementAt(index);
-              final assetUrl = entry.key;
-              final sharingModJsonFileNames = entry.value;
+          content: SizedBox(
+            width: 500,
+            height: 400,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: modEntries.length,
+              itemBuilder: (itemContext, index) {
+                final entry = modEntries[index];
+                final modJsonFileName = entry.key;
+                final assetUrls = entry.value;
+                final displayName =
+                    modNameMap[modJsonFileName] ?? modJsonFileName;
 
-              final displayNamesText = sharingModJsonFileNames
-                  .map((jsonFileName) =>
-                      modNameMap[jsonFileName] ?? jsonFileName)
-                  .join('\n');
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SelectableText(
-                          assetUrl,
-                          selectionColor: Colors.blue,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          onPressed: () => copyToClipboard(
-                            itemContext,
-                            assetUrl,
-                            showSnackBarAfterCopying: false,
-                          ),
-                          icon: Icon(Icons.copy),
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16.0, top: 2.0),
-                      child: SelectableText(
-                        displayNamesText,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SelectableText(
+                        displayName,
                         selectionColor: Colors.blue,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    const Divider(),
-                  ],
-                ),
-              );
-            },
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16.0, top: 2.0),
+                        child: SelectableText(
+                          assetUrls.join('\n'),
+                          selectionColor: Colors.blue,
+                        ),
+                      ),
+                      const Divider(),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
           actions: [
             ElevatedButton(

@@ -56,7 +56,7 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
     }
   }
 
-  Future<void> importBackupFromPath(String filePath) async {
+  Future<Set<String>> importBackupFromPath(String filePath) async {
     ModTypeEnum? modType;
     try {
       final bytes = await File(filePath).readAsBytes();
@@ -137,10 +137,17 @@ class ImportBackupNotifier extends StateNotifier<ImportBackupState> {
               importedJsonFilePath,
               modType,
             );
+
+        // Return all extracted asset filenames for shared asset refresh
+        return extractedAssets.values
+            .expand((assets) => assets.keys)
+            .toSet();
       }
     } catch (e) {
       debugPrint('importBackup error: $e');
     }
+
+    return {};
   }
 
   bool _isJsonFile(String inputPath) {

@@ -39,7 +39,7 @@ class ModsListItem extends HookConsumerWidget {
     }, [mod.imageFilePath]);
 
     final isSelected = useMemoized(() {
-      return multiSelectMods.contains(mod);
+      return multiSelectMods.contains(mod.jsonFilePath);
     }, [multiSelectMods, mod]);
 
     final filesMessage = useMemoized(() {
@@ -49,12 +49,15 @@ class ModsListItem extends HookConsumerWidget {
       return '$missingCount missing $fileLabel';
     }, [mod.existingAssetCount]);
 
-    final backupHasSameAssetCount = useMemoized(() {
-      if (mod.backup != null && mod.backup?.totalAssetCount != null) {
-        return mod.backup!.totalAssetCount == mod.existingAssetCount;
-      }
-      return true;
-    }, [mod.backup, mod.existingAssetCount]);
+    final backupStatusColor = useMemoized(
+      () => switch (mod.backupStatus) {
+        ExistingBackupStatusEnum.upToDate => Colors.green,
+        ExistingBackupStatusEnum.outOfDate => Colors.red,
+        ExistingBackupStatusEnum.assetCountMismatch => Colors.yellow,
+        ExistingBackupStatusEnum.noBackup => Colors.black,
+      },
+      [mod.backupStatus],
+    );
 
     return Listener(
         onPointerDown: (event) {
@@ -76,12 +79,12 @@ class ModsListItem extends HookConsumerWidget {
             if (isCtrlPressed) {
               // Ctrl+Click: Toggle multi-selection
               final currentSelected = ref.read(multiModsProvider);
-              final newSelected = Set<Mod>.from(currentSelected);
+              final newSelected = Set<String>.from(currentSelected);
 
-              if (newSelected.contains(mod)) {
-                newSelected.remove(mod);
+              if (newSelected.contains(mod.jsonFilePath)) {
+                newSelected.remove(mod.jsonFilePath);
               } else {
-                newSelected.add(mod);
+                newSelected.add(mod.jsonFilePath);
               }
 
               ref.read(multiModsProvider.notifier).state = newSelected;
@@ -180,16 +183,11 @@ class ModsListItem extends HookConsumerWidget {
                             message:
                                 'Update: ${formatTimestamp(mod.dateTimeStamp) ?? 'N/A'}\n'
                                 'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}'
-                                '${backupHasSameAssetCount ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.existingAssetCount}'}',
+                                '${mod.backupStatus == ExistingBackupStatusEnum.upToDate ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.existingAssetCount}'}',
                             child: Icon(
                               Icons.folder_zip_outlined,
                               size: 28,
-                              color: mod.backupStatus ==
-                                      ExistingBackupStatusEnum.upToDate
-                                  ? backupHasSameAssetCount
-                                      ? Colors.green
-                                      : Colors.yellow
-                                  : Colors.red,
+                              color: backupStatusColor,
                             ),
                           ),
                       ],

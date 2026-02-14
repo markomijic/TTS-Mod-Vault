@@ -137,7 +137,7 @@ Future<IsolateWorkResult> processMultipleBatchesInIsolate(
 
         // Build asset lists eagerly in isolate with O(1) lookups
         if (jsonURLs != null) {
-          final assetLists = _buildAssetListsFromUrls(
+          final assetLists = buildAssetListsFromUrls(
             jsonURLs,
             workData.existingAssetBundles,
             workData.existingAudio,
@@ -259,7 +259,7 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
 /// Builds AssetLists from URLs with O(1) existence checks
 /// This function runs in isolate and doesn't have access to Riverpod
 /// Returns: (AssetLists, totalCount, existingCount, hasAudio)
-(AssetLists, int, int, bool) _buildAssetListsFromUrls(
+(AssetLists, int, int, bool) buildAssetListsFromUrls(
   Map<String, String> urlsData,
   Map<String, String> assetBundles,
   Map<String, String> audio,
@@ -518,6 +518,8 @@ Future<InitialMod?> _processSingleFileOptimized(
       saveName: saveName.isNotEmpty ? saveName.trim() : jsonFileName,
       backupStatus: ExistingBackupStatusEnum.noBackup,
       createdAtTimestamp: jsonFileStat.changed.millisecondsSinceEpoch ~/ 1000,
+      lastModifiedTimestamp:
+          jsonFileStat.modified.microsecondsSinceEpoch ~/ 1000,
       dateTimeStamp: dateTimeStamp,
       jsonFileName: jsonFileName,
       imageFilePath: imageFilePath,

@@ -6,14 +6,18 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
-    show BulkBackupBehaviorEnum;
+    show BulkBackupBehaviorEnum, PostBackupDeletionEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show directoriesProvider, settingsProvider;
 
 class BulkBackupDialog extends HookConsumerWidget {
   final String title;
   final BulkBackupBehaviorEnum initialBehavior;
-  final Function(BulkBackupBehaviorEnum behavior, String folder) onConfirm;
+  final Function(
+    BulkBackupBehaviorEnum behavior,
+    String folder,
+    PostBackupDeletionEnum postBackupDeletion,
+  ) onConfirm;
 
   const BulkBackupDialog({
     super.key,
@@ -28,6 +32,7 @@ class BulkBackupDialog extends HookConsumerWidget {
     final showBackupState = ref.watch(settingsProvider).showBackupState;
     final selectedBehavior = useState(initialBehavior);
     final selectedFolder = useState(ref.read(directoriesProvider).backupsDir);
+    final selectedPostBackupDeletion = useState(PostBackupDeletionEnum.none);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -61,6 +66,7 @@ class BulkBackupDialog extends HookConsumerWidget {
                         onConfirm.call(
                           selectedBehavior.value,
                           selectedFolder.value,
+                          selectedPostBackupDeletion.value,
                         );
                         Navigator.pop(context);
                       },
@@ -116,6 +122,49 @@ class BulkBackupDialog extends HookConsumerWidget {
                   onChanged: (BulkBackupBehaviorEnum? newValue) {
                     if (newValue != null) {
                       selectedBehavior.value = newValue;
+                    }
+                  },
+                ),
+              ],
+            ),
+            Row(
+              spacing: 8,
+              children: [
+                const Expanded(
+                  child: Text('After backup:'),
+                ),
+                DropdownButton<PostBackupDeletionEnum>(
+                  value: selectedPostBackupDeletion.value,
+                  dropdownColor: Colors.white,
+                  style: TextStyle(color: Colors.white),
+                  underline: Container(
+                    height: 2,
+                    color: Colors.white,
+                  ),
+                  focusColor: Colors.transparent,
+                  selectedItemBuilder: (BuildContext context) {
+                    return PostBackupDeletionEnum.values.map<Widget>((item) {
+                      return Container(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          item.label,
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      );
+                    }).toList();
+                  },
+                  items: PostBackupDeletionEnum.values.map((deletion) {
+                    return DropdownMenuItem<PostBackupDeletionEnum>(
+                      value: deletion,
+                      child: Text(
+                        deletion.label,
+                        style: const TextStyle(color: Colors.black),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (PostBackupDeletionEnum? newValue) {
+                    if (newValue != null) {
+                      selectedPostBackupDeletion.value = newValue;
                     }
                   },
                 ),

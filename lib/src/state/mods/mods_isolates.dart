@@ -656,7 +656,7 @@ String? _dateTimeToUnixTimestampSync(String dateValue) {
 
 Future<List<String>> getJsonFilesInDirectory({
   required String directoryPath,
-  String? excludeDirectory,
+  required List<String> ignoredSubfolders,
 }) async {
   final List<String> jsonFilePaths = [];
   final List<String> excludeFiles = [
@@ -674,8 +674,10 @@ Future<List<String>> getJsonFilesInDirectory({
     await for (final entity in directory.list(recursive: true)) {
       if (entity is File &&
           path.extension(entity.path).toLowerCase() == '.json') {
-        if (excludeDirectory != null &&
-            path.isWithin(excludeDirectory, entity.path)) {
+        if (ignoredSubfolders.any((folder) {
+          final relativePath = path.relative(entity.path, from: directoryPath);
+          return path.split(path.dirname(relativePath)).contains(folder);
+        })) {
           continue;
         }
 

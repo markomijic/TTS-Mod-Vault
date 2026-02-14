@@ -16,50 +16,37 @@ class SettingsState {
   final bool ignoreAudioAssets;
   final List<UrlReplacementPreset> urlReplacementPresets;
   final double assetUrlFontSize;
+  final List<String> ignoredSubfolders;
 
   const SettingsState({
-    this.useModsListView = false,
-    this.showTitleOnCards = false,
-    this.checkForUpdatesOnStart = true,
-    this.concurrentDownloads = 5,
-    this.showSavedObjects = false,
-    this.showBackupState = true,
-    this.defaultSortOption = SortOptionEnum.alphabeticalAsc,
-    this.forceBackupJsonFilename = false,
-    this.ignoreAudioAssets = true,
-    this.urlReplacementPresets = const [],
-    this.assetUrlFontSize = 12.0,
+    required this.useModsListView,
+    required this.showTitleOnCards,
+    required this.checkForUpdatesOnStart,
+    required this.concurrentDownloads,
+    required this.showSavedObjects,
+    required this.showBackupState,
+    required this.defaultSortOption,
+    required this.forceBackupJsonFilename,
+    required this.ignoreAudioAssets,
+    required this.urlReplacementPresets,
+    required this.assetUrlFontSize,
+    required this.ignoredSubfolders,
   });
 
-  SettingsState copyWith({
-    bool? useModsListView,
-    bool? showTitleOnCards,
-    bool? checkForUpdatesOnStart,
-    int? concurrentDownloads,
-    bool? enableTtsModdersFeatures,
-    bool? showSavedObjects,
-    bool? showBackupState,
-    SortOptionEnum? defaultSortOption,
-    bool? forceBackupJsonFilename,
-    bool? ignoreAudioAssets,
-    List<UrlReplacementPreset>? urlReplacementPresets,
-    double? assetUrlFontSize,
-  }) {
+  factory SettingsState.defaultState() {
     return SettingsState(
-      useModsListView: useModsListView ?? this.useModsListView,
-      showTitleOnCards: showTitleOnCards ?? this.showTitleOnCards,
-      checkForUpdatesOnStart:
-          checkForUpdatesOnStart ?? this.checkForUpdatesOnStart,
-      concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
-      showSavedObjects: showSavedObjects ?? this.showSavedObjects,
-      showBackupState: showBackupState ?? this.showBackupState,
-      defaultSortOption: defaultSortOption ?? this.defaultSortOption,
-      forceBackupJsonFilename:
-          forceBackupJsonFilename ?? this.forceBackupJsonFilename,
-      ignoreAudioAssets: ignoreAudioAssets ?? this.ignoreAudioAssets,
-      urlReplacementPresets:
-          urlReplacementPresets ?? this.urlReplacementPresets,
-      assetUrlFontSize: assetUrlFontSize ?? this.assetUrlFontSize,
+      useModsListView: false,
+      showTitleOnCards: false,
+      checkForUpdatesOnStart: true,
+      concurrentDownloads: 5,
+      showSavedObjects: false,
+      showBackupState: true,
+      defaultSortOption: SortOptionEnum.alphabeticalAsc,
+      forceBackupJsonFilename: false,
+      ignoreAudioAssets: true,
+      urlReplacementPresets: const [],
+      assetUrlFontSize: 12,
+      ignoredSubfolders: const [],
     );
   }
 
@@ -77,6 +64,7 @@ class SettingsState {
       'urlReplacementPresets':
           urlReplacementPresets.map((p) => p.toJson()).toList(),
       'assetUrlFontSize': assetUrlFontSize,
+      'ignoredSubfolders': ignoredSubfolders,
     };
   }
 
@@ -95,6 +83,7 @@ class SettingsState {
       ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], true),
       urlReplacementPresets: _parsePresetList(json['urlReplacementPresets']),
       assetUrlFontSize: _parseDouble(json['assetUrlFontSize'], 12.0),
+      ignoredSubfolders: _parseStringList(json['ignoredSubfolders']),
     );
   }
 
@@ -152,5 +141,12 @@ class SettingsState {
         })
         .whereType<UrlReplacementPreset>()
         .toList();
+  }
+
+  static List<String> _parseStringList(dynamic value) {
+    if (value == null) return [];
+    if (value is! List) return [];
+
+    return value.map((item) => item?.toString()).whereType<String>().toList();
   }
 }

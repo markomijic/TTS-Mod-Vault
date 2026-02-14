@@ -108,19 +108,25 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final savesDir = ref.read(directoriesProvider).savesDir.toString();
       final savedObjectsDir =
           ref.read(directoriesProvider).savedObjectsDir.toString();
+      final ignoredSubfolders = ref.read(settingsProvider).ignoredSubfolders;
 
       final jsonPathsFutures = [
-        Isolate.run(() => getJsonFilesInDirectory(directoryPath: workshopDir)),
+        Isolate.run(() => getJsonFilesInDirectory(
+              directoryPath: workshopDir,
+              ignoredSubfolders: ignoredSubfolders,
+            )),
         Isolate.run(() => getJsonFilesInDirectory(
               directoryPath: savesDir,
-              excludeDirectory: savedObjectsDir,
+              ignoredSubfolders: ["Saved Objects", ...ignoredSubfolders],
             )),
       ];
 
       final showSavedObjects = ref.read(settingsProvider).showSavedObjects;
       if (showSavedObjects) {
-        jsonPathsFutures.add(Isolate.run(
-            () => getJsonFilesInDirectory(directoryPath: savedObjectsDir)));
+        jsonPathsFutures.add(Isolate.run(() => getJsonFilesInDirectory(
+              directoryPath: savedObjectsDir,
+              ignoredSubfolders: ignoredSubfolders,
+            )));
       }
 
       final jsonPaths = await Future.wait(jsonPathsFutures);
@@ -694,8 +700,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     int lastModifiedTimestamp = mod.lastModifiedTimestamp;
     if (refreshLastModified) {
       final fileStat = await File(mod.jsonFilePath).stat();
-      lastModifiedTimestamp =
-          fileStat.modified.microsecondsSinceEpoch ~/ 1000;
+      lastModifiedTimestamp = fileStat.modified.microsecondsSinceEpoch ~/ 1000;
     }
 
     // Creating new Mod object because copyWith returns previous backup value if new one is null

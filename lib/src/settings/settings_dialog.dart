@@ -11,6 +11,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
 import 'package:path/path.dart' as path;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
+import 'package:tts_mod_vault/src/settings/editable_list.dart'
+    show EditableStringList;
 import 'package:tts_mod_vault/src/state/directories/directories.dart'
     show DirectoriesNotifier;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
@@ -93,6 +95,7 @@ class SettingsDialog extends HookConsumerWidget {
     final textFieldController = useTextEditingController(
         text: concurrentDownloadsValue.value.toString());
     final textFieldFocusNode = useFocusNode();
+    final ignoredDomains = useState<List<String>>([]);
 
     // Features
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
@@ -108,6 +111,8 @@ class SettingsDialog extends HookConsumerWidget {
     final modsDir = useState(ref.read(directoriesProvider).modsDir);
     final savesDir = useState(ref.read(directoriesProvider).savesDir);
     final backupsDir = useState(ref.read(directoriesProvider).backupsDir);
+    final ignoredSubfolders =
+        useState<List<String>>(List.from(settings.ignoredSubfolders));
 
     Future<void> saveSettingsChanges() async {
       int concurrentDownloads = int.tryParse(textFieldController.text) ?? 5;
@@ -130,6 +135,7 @@ class SettingsDialog extends HookConsumerWidget {
                 p.newUrl.trim().isNotEmpty)
             .toList(),
         assetUrlFontSize: assetUrlFontSize.value,
+        ignoredSubfolders: ignoredSubfolders.value,
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -232,6 +238,7 @@ class SettingsDialog extends HookConsumerWidget {
                                     directoriesNotifier: directoriesNotifier,
                                     savesDir: savesDir,
                                     backupsDir: backupsDir,
+                                    ignoredSubfolders: ignoredSubfolders,
                                   );
 
                                 case SettingsSection.network:
@@ -328,12 +335,14 @@ class SettingsFoldersColumn extends StatelessWidget {
     required this.directoriesNotifier,
     required this.savesDir,
     required this.backupsDir,
+    required this.ignoredSubfolders,
   });
 
   final ValueNotifier<String> modsDir;
   final DirectoriesNotifier directoriesNotifier;
   final ValueNotifier<String> savesDir;
   final ValueNotifier<String> backupsDir;
+  final ValueNotifier<List<String>> ignoredSubfolders;
 
   @override
   Widget build(BuildContext context) {
@@ -522,6 +531,15 @@ class SettingsFoldersColumn extends StatelessWidget {
                 child: const Text('Reset'),
               ),
             ],
+          ),
+          SizedBox(height: 16),
+          EditableStringList(
+            title: 'Ignored subfolders',
+            tooltipMessage:
+                'Subfolders of Mods, Saves, and Saved Objects folders listed here will be ignored\nManual refresh of data is needed after saving changes\nNames are case-sensitive',
+            values: ignoredSubfolders.value,
+            addLabel: 'Add subfolder name',
+            onChanged: (list) => ignoredSubfolders.value = list,
           ),
         ],
       ),

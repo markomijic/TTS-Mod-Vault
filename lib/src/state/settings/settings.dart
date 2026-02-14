@@ -9,12 +9,12 @@ import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
 class SettingsNotifier extends StateNotifier<SettingsState> {
   final Ref ref;
 
-  SettingsNotifier(this.ref) : super(const SettingsState());
+  SettingsNotifier(this.ref) : super(SettingsState.defaultState());
 
   Future<void> initializeSettings() async {
     final settingsJson = ref.read(storageProvider).getSettings();
 
-    SettingsState newState = SettingsState();
+    SettingsState newState = SettingsState.defaultState();
 
     if (settingsJson != null) {
       try {
@@ -22,7 +22,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         debugPrint('Loaded settings from json');
       } catch (e) {
         debugPrint('Failed to load settings from json: $e');
-        newState = SettingsState();
+        newState = SettingsState.defaultState();
       }
     }
 
@@ -36,9 +36,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   Future<void> resetToDefaultSettings() async {
-    final newState = SettingsState(
-      urlReplacementPresets: state.urlReplacementPresets,
-    );
-    await saveSettings(newState);
+    await saveSettings(SettingsState.defaultState());
   }
 }

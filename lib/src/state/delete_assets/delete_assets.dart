@@ -345,6 +345,8 @@ class DeleteAssetsNotifier extends Notifier<DeleteAssetsState> {
       return [];
     }
 
+    state = state.copyWith(status: DeleteAssetsStatusEnum.scanning);
+
     // Get all mods and their URLs for shared asset detection
     final allMods = ref.read(modsProvider.notifier).getAllMods();
     final jsonFileNames = allMods.map((m) => m.jsonFileName).toList();
@@ -387,6 +389,8 @@ class DeleteAssetsNotifier extends Notifier<DeleteAssetsState> {
           .read(existingAssetListsProvider.notifier)
           .setExistingAssetsListByType(type);
     }
+
+    state = state.copyWith(status: DeleteAssetsStatusEnum.idle);
 
     return filesToDelete;
   }

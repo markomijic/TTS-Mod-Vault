@@ -335,18 +335,18 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         savedObjects: savedObjects,
       ));
 
-      final selectedMod = ref.read(selectedModProvider);
+      final multiMods = ref.read(multiModsProvider);
 
-      // If there was previously a mod selected - update selected mod
-      if (selectedMod != null) {
-        final mod = allProcessedMods.firstWhereOrNull(
-            (m) => m.jsonFilePath == selectedMod.jsonFilePath);
+      // If there was previously one mod selected - check if it still exists
+      if (multiMods.length == 1) {
+        final mod = allProcessedMods
+            .firstWhereOrNull((m) => m.jsonFilePath == multiMods.first);
 
-        if (mod != null) {
-          updateSelectedMod(mod);
-        } else {
+        if (mod == null) {
           resetSelectedMod();
         }
+      } else {
+        resetSelectedMod(); // TODO rename this + setSelectedMod
       }
 
       final endTime = DateTime.now();
@@ -464,9 +464,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   // TODO remove & replace with getCompleteMod + updateMod?
-  Future<void> updateSelectedMod(Mod selectedMod) async {
+  Future<Mod> updateSelectedMod(Mod selectedMod) async {
     try {
-      if (!state.hasValue) return;
+      if (!state.hasValue) return selectedMod;
 
       final modList = switch (selectedMod.modType) {
         ModTypeEnum.mod => state.value!.mods,
@@ -478,7 +478,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         (m) => m.jsonFilePath == selectedMod.jsonFilePath,
       );
 
-      if (modIndex == -1) return;
+      if (modIndex == -1) return selectedMod;
 
       final urls =
           ref.read(storageProvider).getModUrls(selectedMod.jsonFileName) ??
@@ -488,8 +488,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       final updatedList = [...modList];
       updatedList[modIndex] = updatedMod;
-
-      setSelectedMod(updatedMod);
 
       switch (selectedMod.modType) {
         case ModTypeEnum.mod:
@@ -503,10 +501,14 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
               AsyncValue.data(state.value!.copyWith(savedObjects: updatedList));
           break;
       }
+
+      return updatedMod;
     } catch (e, stack) {
       debugPrint('updateSelectedMod error: $e');
       state = AsyncValue.error(e, stack);
     }
+
+    return selectedMod;
   }
 
   void updateMod(Mod mod) {
@@ -958,7 +960,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     }
   }
 
-  Future<void> updateModBackup(Mod mod) async {
+  Future<Mod> updateModBackup(Mod mod) async {
     ExistingBackup? backup =
         ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
 
@@ -988,9 +990,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
     updateMod(updatedMod);
 
-    if (ref.read(selectedModProvider)?.jsonFilePath == mod.jsonFilePath) {
-      setSelectedMod(updatedMod);
-    }
+    return updatedMod;
   }
 
   /// Re-processes a single mod's assets with updated audio preference
@@ -1031,11 +1031,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // Update the mod in state
       updateMod(updatedMod);
-
-      // Update selected mod if it's the one being reprocessed
-      if (ref.read(selectedModProvider)?.jsonFilePath == mod.jsonFilePath) {
-        setSelectedMod(updatedMod);
-      }
     } catch (e, stack) {
       debugPrint('reprocessModAssets error: $e');
       state = AsyncValue.error(e, stack);
@@ -1223,7 +1218,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           .updateModUrls(selectedMod.jsonFileName, jsonURLs);
 
       updateMod(completeMod);
-      setSelectedMod(completeMod);
     } catch (e) {
       debugPrint('updateModAsset error: $e');
       state = AsyncValue.error(e, StackTrace.current);
@@ -1283,7 +1277,6 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       await ref.read(storageProvider).updateModUrls(mod.jsonFileName, jsonURLs);
 
       updateMod(completeMod);
-      setSelectedMod(completeMod);
     }
   }
 }

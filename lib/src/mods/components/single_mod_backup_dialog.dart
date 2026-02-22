@@ -106,11 +106,17 @@ class SingleModBackupDialog extends HookConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 16,
+          spacing: 8,
           children: [
-            Text(
-              'Backup "${mod.saveName}"',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            SizedBox(
+              width: 500,
+              child: Text(
+                'Backup ${mod.saveName}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+              ),
             ),
             // Backup location choice (only if backup exists)
             if (hasExistingBackup)
@@ -172,31 +178,27 @@ class SingleModBackupDialog extends HookConsumerWidget {
                 ],
               ),
             // Download missing assets checkbox
-            Row(
-              spacing: 8,
-              children: [
-                Checkbox(
-                  value: downloadMissingFirst.value,
-                  onChanged: hasMissingAssets
-                      ? (value) {
-                          downloadMissingFirst.value = value ?? false;
-                        }
-                      : null,
-                  checkColor: Colors.black,
-                  activeColor: Colors.white,
-                ),
-                Expanded(
-                  child: Text(
-                    hasMissingAssets
-                        ? 'Download missing assets first'
-                        : 'No missing assets',
+            if (hasMissingAssets)
+              Row(
+                spacing: 8,
+                children: [
+                  Checkbox(
+                    visualDensity: VisualDensity.compact,
+                    value: downloadMissingFirst.value,
+                    onChanged: (value) {
+                      downloadMissingFirst.value = value ?? false;
+                    },
+                    checkColor: Colors.black,
+                    activeColor: Colors.white,
+                  ),
+                  Text(
+                    'Download missing assets first',
                     style: TextStyle(
-                      color: hasMissingAssets ? Colors.white : Colors.grey,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             // After backup dropdown
             Row(
               spacing: 8,

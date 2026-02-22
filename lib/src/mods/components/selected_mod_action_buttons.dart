@@ -47,11 +47,11 @@ class SelectedModActionButtons extends HookConsumerWidget {
                       return;
                     }
 
-                    final downloaded = await downloadNotifier.downloadAllFiles(selectedMod);
+                    final downloaded =
+                        await downloadNotifier.downloadAllFiles(selectedMod);
                     await modsNotifier.updateSelectedMod(selectedMod);
                     if (downloaded.isNotEmpty) {
-                      await modsNotifier.refreshModsWithSharedAssets(
-                          downloaded,
+                      await modsNotifier.refreshModsWithSharedAssets(downloaded,
                           excludeJsonFileName: selectedMod.jsonFileName);
                     }
                   }
@@ -83,21 +83,23 @@ class SelectedModActionButtons extends HookConsumerWidget {
                     // 1. Download if requested
                     Set<String> downloadedFilenames = {};
                     if (downloadFirst) {
-                      downloadedFilenames = await downloadRef.downloadAllFiles(currentMod);
-                      await modsRef.updateSelectedMod(currentMod);
-                      currentMod = ref.read(selectedModProvider) ?? currentMod;
+                      downloadedFilenames =
+                          await downloadRef.downloadAllFiles(currentMod);
+                      currentMod = await modsRef.updateSelectedMod(currentMod);
                     }
 
                     // 2. Create backup
                     await backupRef.createBackup(currentMod, backupFolder);
-                    modsRef.updateModBackup(currentMod);
+                    currentMod = await modsRef.updateModBackup(currentMod);
 
                     // 3. Delete assets if requested
                     Set<String> deletedFilenames = {};
                     if (postBackupDeletion != PostBackupDeletionEnum.none) {
                       final deleted =
                           await deleteRef.deleteModAssetsAfterBackup(
-                              currentMod, postBackupDeletion);
+                        currentMod,
+                        postBackupDeletion,
+                      );
                       deletedFilenames = deleted.toSet();
 
                       if (deleted.isNotEmpty) {
@@ -106,10 +108,12 @@ class SelectedModActionButtons extends HookConsumerWidget {
                     }
 
                     // 4. Refresh other mods that share affected assets
-                    final allAffected = {...downloadedFilenames, ...deletedFilenames};
+                    final allAffected = {
+                      ...downloadedFilenames,
+                      ...deletedFilenames
+                    };
                     if (allAffected.isNotEmpty) {
-                      await modsRef.refreshModsWithSharedAssets(
-                          allAffected,
+                      await modsRef.refreshModsWithSharedAssets(allAffected,
                           excludeJsonFileName: currentMod.jsonFileName);
                     }
                   },

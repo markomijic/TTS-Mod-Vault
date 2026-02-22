@@ -152,7 +152,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     final Set<String> allDeletedFilenames = {};
 
     for (int i = 0; i < mods.length; i++) {
-      final mod = mods[i];
+      Mod currentMod = mods[i];
 
       if (state.cancelledBulkAction) {
         break;
@@ -163,38 +163,38 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       String modBackupFolder = selectedBackupFolder;
 
-      if (mod.backupStatus != ExistingBackupStatusEnum.noBackup) {
+      if (currentMod.backupStatus != ExistingBackupStatusEnum.noBackup) {
         switch (backupBehavior) {
           case BulkBackupBehaviorEnum.skip:
             continue;
 
           case BulkBackupBehaviorEnum.replace:
-            if (mod.backup != null) {
-              modBackupFolder = p.dirname(mod.backup!.filepath);
+            if (currentMod.backup != null) {
+              modBackupFolder = p.dirname(currentMod.backup!.filepath);
             }
             break;
 
           case BulkBackupBehaviorEnum.replaceIfOutOfDate:
-            if (mod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
+            if (currentMod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
               continue;
             }
-            if (mod.backup != null) {
-              modBackupFolder = p.dirname(mod.backup!.filepath);
+            if (currentMod.backup != null) {
+              modBackupFolder = p.dirname(currentMod.backup!.filepath);
             }
             break;
         }
       }
 
-      debugPrint('Backing up: ${mod.saveName}');
+      debugPrint('Backing up: ${currentMod.saveName}');
 
       state = state.copyWith(
           currentModNumber: i + 1,
           statusMessage:
-              'Backing up "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+              'Backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
 
-      modsNotifier.setSelectedMod(mod);
-      await backupNotifier.createBackup(mod, modBackupFolder);
-      modsNotifier.updateModBackup(mod);
+      modsNotifier.setSelectedMod(currentMod);
+      await backupNotifier.createBackup(currentMod, modBackupFolder);
+      currentMod = await modsNotifier.updateModBackup(currentMod);
 
       // Delete assets after backup if configured
       if (postBackupDeletion != PostBackupDeletionEnum.none) {
@@ -204,15 +204,15 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
         state = state.copyWith(
             statusMessage:
-                'Deleting assets for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+                'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
 
         final deletedFilenames = await ref
             .read(deleteAssetsProvider.notifier)
-            .deleteModAssetsAfterBackup(mod, postBackupDeletion);
+            .deleteModAssetsAfterBackup(currentMod, postBackupDeletion);
         allDeletedFilenames.addAll(deletedFilenames);
 
         if (deletedFilenames.isNotEmpty) {
-          await modsNotifier.updateSelectedMod(mod);
+          await modsNotifier.updateSelectedMod(currentMod);
         }
       }
     }
@@ -260,7 +260,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     final Set<String> allAffectedFilenames = {};
 
     for (int i = 0; i < mods.length; i++) {
-      final mod = mods[i];
+      Mod currentMod = mods[i];
 
       if (state.cancelledBulkAction) {
         break;
@@ -269,17 +269,17 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       // Yield to UI thread on every iteration to keep app responsive
       await Future.delayed(Duration.zero);
 
-      debugPrint('Downloading & backing up: ${mod.saveName}');
+      debugPrint('Downloading & backing up: ${currentMod.saveName}');
 
       state = state.copyWith(
           currentModNumber: i + 1,
           statusMessage:
-              'Downloading & backing up "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+              'Downloading & backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
 
-      modsNotifier.setSelectedMod(mod);
-      final downloaded = await downloadNotifier.downloadAllFiles(mod);
+      modsNotifier.setSelectedMod(currentMod);
+      final downloaded = await downloadNotifier.downloadAllFiles(currentMod);
       allAffectedFilenames.addAll(downloaded);
-      await modsNotifier.updateSelectedMod(mod);
+      currentMod = await modsNotifier.updateSelectedMod(currentMod);
 
       if (state.cancelledBulkAction) {
         break;
@@ -287,23 +287,23 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       String modBackupFolder = selectedBackupFolder;
 
-      if (mod.backupStatus != ExistingBackupStatusEnum.noBackup) {
+      if (currentMod.backupStatus != ExistingBackupStatusEnum.noBackup) {
         switch (backupBehavior) {
           case BulkBackupBehaviorEnum.skip:
             continue;
 
           case BulkBackupBehaviorEnum.replace:
-            if (mod.backup != null) {
-              modBackupFolder = p.dirname(mod.backup!.filepath);
+            if (currentMod.backup != null) {
+              modBackupFolder = p.dirname(currentMod.backup!.filepath);
             }
             break;
 
           case BulkBackupBehaviorEnum.replaceIfOutOfDate:
-            if (mod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
+            if (currentMod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
               continue;
             }
-            if (mod.backup != null) {
-              modBackupFolder = p.dirname(mod.backup!.filepath);
+            if (currentMod.backup != null) {
+              modBackupFolder = p.dirname(currentMod.backup!.filepath);
             }
             break;
         }
@@ -312,7 +312,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       final selectedMod = ref.read(selectedModProvider);
       if (selectedMod != null) {
         await backupNotifier.createBackup(selectedMod, modBackupFolder);
-        modsNotifier.updateModBackup(selectedMod);
+        currentMod = await modsNotifier.updateModBackup(selectedMod);
 
         // Delete assets after backup if configured
         if (postBackupDeletion != PostBackupDeletionEnum.none) {
@@ -322,7 +322,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
           state = state.copyWith(
               statusMessage:
-                  'Deleting assets for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+                  'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
 
           final deletedFilenames = await ref
               .read(deleteAssetsProvider.notifier)
@@ -366,7 +366,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     final Set<String> allDeletedFilenames = {};
 
     for (int i = 0; i < mods.length; i++) {
-      final mod = mods[i];
+      final currentMod = mods[i];
 
       if (state.cancelledBulkAction) {
         break;
@@ -375,22 +375,22 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       // Yield to UI thread on every iteration to keep app responsive
       await Future.delayed(Duration.zero);
 
-      debugPrint('Deleting assets for: ${mod.saveName}');
+      debugPrint('Deleting assets for: ${currentMod.saveName}');
 
       state = state.copyWith(
           currentModNumber: i + 1,
           statusMessage:
-              'Deleting assets for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+              'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
 
-      modsNotifier.setSelectedMod(mod);
+      modsNotifier.setSelectedMod(currentMod);
 
       final deletedFilenames = await ref
           .read(deleteAssetsProvider.notifier)
-          .deleteModAssetsAfterBackup(mod, deletionOption);
+          .deleteModAssetsAfterBackup(currentMod, deletionOption);
       allDeletedFilenames.addAll(deletedFilenames);
 
       if (deletedFilenames.isNotEmpty) {
-        await modsNotifier.updateSelectedMod(mod);
+        await modsNotifier.updateSelectedMod(currentMod);
       }
     }
 

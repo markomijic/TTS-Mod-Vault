@@ -27,6 +27,8 @@ import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mods.dart';
 import 'package:tts_mod_vault/src/state/settings/settings.dart';
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart';
+import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter.dart';
+import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter_state.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart';
 import 'package:tts_mod_vault/src/state/storage/storage.dart';
@@ -194,27 +196,54 @@ final actionInProgressProvider = Provider<bool>((ref) {
       refreshingSharedAssets;
 });
 
+final backupSortAndFilterProvider =
+    StateNotifierProvider<BackupSortAndFilterNotifier, BackupSortAndFilterState>(
+  (ref) => BackupSortAndFilterNotifier(),
+);
+
 final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
   final existingBackups = ref.watch(existingBackupsProvider);
   final searchQuery = ref.watch(backupsSearchQueryProvider);
+  final backupSortAndFilter = ref.watch(backupSortAndFilterProvider);
 
-  // Filter backups
-  final filteredBackups = existingBackups.backups
-      .map((bk) {
-        if (searchQuery.isNotEmpty) {
-          if (!bk.filename.toLowerCase().contains(searchQuery.toLowerCase())) {
-            return null; // Exclude if doesn't match search
-          }
-        }
+  final filtered = existingBackups.backups.where((bk) {
+    if (searchQuery.isNotEmpty &&
+        !bk.filename.toLowerCase().contains(searchQuery.toLowerCase())) {
+      return false;
+    }
 
-        return bk;
-      })
-      .nonNulls
-      .toList();
+    if (backupSortAndFilter.filteredBackupFolders.isNotEmpty &&
+        !backupSortAndFilter.filteredBackupFolders
+            .contains(bk.parentFolderName)) {
+      return false;
+    }
 
-  filteredBackups.sort(
-      (a, b) => a.filename.toLowerCase().compareTo(b.filename.toLowerCase()));
-  return filteredBackups;
+    if (backupSortAndFilter.filteredMatchStatuses.isNotEmpty) {
+      final hasMatch = bk.matchingModFilepath != null;
+      final matchesStatus = (backupSortAndFilter.filteredMatchStatuses
+                  .contains(BackupMatchStatusEnum.hasMatchingMod) &&
+              hasMatch) ||
+          (backupSortAndFilter.filteredMatchStatuses
+                  .contains(BackupMatchStatusEnum.noMatchingMod) &&
+              !hasMatch);
+      if (!matchesStatus) return false;
+    }
+
+    return true;
+  }).toList();
+
+  switch (backupSortAndFilter.sortOption) {
+    case BackupSortOptionEnum.alphabeticalAsc:
+      filtered.sort(
+          (a, b) => a.filename.toLowerCase().compareTo(b.filename.toLowerCase()));
+    case BackupSortOptionEnum.newestFirst:
+      filtered.sort(
+          (a, b) => b.lastModifiedTimestamp.compareTo(a.lastModifiedTimestamp));
+    case BackupSortOptionEnum.largestFirst:
+      filtered.sort((a, b) => b.fileSize.compareTo(a.fileSize));
+  }
+
+  return filtered;
 });
 
 final filteredModsProvider = Provider<List<Mod>>((ref) {

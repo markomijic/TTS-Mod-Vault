@@ -14,8 +14,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         deleteAssetsProvider,
         downloadProvider,
         modsProvider;
-import 'package:tts_mod_vault/src/utils.dart'
-    show showSnackBar;
+import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets_state.dart'
     show DeleteAssetsStatusEnum, SharedAssetInfo;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets.dart'
@@ -269,40 +268,46 @@ void _showDeleteConfirmDialog(
           return BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
             child: AlertDialog(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('$message\n\nThis action cannot be undone.'),
-                  if (hasSharedAssets) ...[
-                    const SizedBox(height: 16),
-                    CheckboxListTile(
-                      value: includeShared,
-                      onChanged: (value) {
-                        setState(() {
-                          includeShared = value ?? false;
-                        });
-                      },
-                      title: Text(
-                        'Also delete $sharedCount shared ${sharedCount == 1 ? "asset" : "assets"}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+              content: SizedBox(
+                width: 500,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$message\n\nThis action cannot be undone.'),
+                    if (hasSharedAssets) ...[
+                      const SizedBox(height: 16),
+                      CheckboxListTile(
+                        value: includeShared,
+                        onChanged: (value) {
+                          setState(() {
+                            includeShared = value ?? false;
+                          });
+                        },
+                        title: Text(
+                          'Also delete $sharedCount shared ${sharedCount == 1 ? "asset" : "assets"}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
                       ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
+              actionsAlignment: MainAxisAlignment.start,
               actions: [
                 if (sharedInfo != null &&
                     sharedInfo.sharedAssetDetails.isNotEmpty)
-                  TextButton(
+                  ElevatedButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop('details');
                     },
-                    child: const Text('View Details'),
+                    icon: Icon(Icons.list),
+                    label: const Text('View Details'),
                   ),
+                Spacer(),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop('cancel'),
                   child: const Text('Cancel'),
@@ -404,8 +409,8 @@ Future<void> _showSharedAssetsDetailsDialog(
         child: AlertDialog(
           title: const Text('Shared Assets Details'),
           content: SizedBox(
-            width: 500,
-            height: 400,
+            width: 850,
+            //  height: 600,
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: modEntries.length,

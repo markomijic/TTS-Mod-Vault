@@ -80,9 +80,13 @@ class BulkBackupDialog extends HookConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 16,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+            SizedBox(
+              width: 500,
+              child: Text(
+                title,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+              ),
             ),
             Row(
               spacing: 8,

@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
+import 'package:flutter_hooks/flutter_hooks.dart'
+    show
+        useEffect,
+        useFocusNode,
+        useMemoized,
+        useState,
+        useTextEditingController;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
@@ -152,6 +158,21 @@ class _SelectedModViewComponent extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedAssetTypeFilter = useState<AssetTypeEnum?>(null);
     final downloadFilter = useState(ExistingAssetsFilter.all);
+    final isSearchActive = useState(false);
+    final searchQuery = useState('');
+    final searchController = useTextEditingController();
+    final searchFocusNode = useFocusNode();
+
+    useEffect(() {
+      void onFocusChange() {
+        if (!searchFocusNode.hasFocus && searchController.text.isEmpty) {
+          isSearchActive.value = false;
+        }
+      }
+
+      searchFocusNode.addListener(onFocusChange);
+      return () => searchFocusNode.removeListener(onFocusChange);
+    }, []);
 
     final downloadState = ref.watch(downloadProvider);
     final backupStatus = ref.watch(backupProvider).status;
@@ -167,6 +188,13 @@ class _SelectedModViewComponent extends HookConsumerWidget {
       selectedAssetTypeFilter.value = null;
     }, [selectedMod]);
 
+    useEffect(() {
+      isSearchActive.value = false;
+      searchQuery.value = '';
+      searchController.clear();
+      return null;
+    }, [selectedMod.jsonFileName]);
+
     final title = useMemoized(() {
       return switch (selectedMod.modType) {
         ModTypeEnum.mod => selectedMod.saveName,
@@ -175,6 +203,17 @@ class _SelectedModViewComponent extends HookConsumerWidget {
         ModTypeEnum.savedObject => selectedMod.saveName,
       };
     }, [selectedMod]);
+
+    final typesWithVisibleAssets = useMemoized(() {
+      if (searchQuery.value.isEmpty) return null;
+      return listItems
+          .whereType<_AssetItem>()
+          .where((item) => item.asset.url
+              .toLowerCase()
+              .contains(searchQuery.value.toLowerCase()))
+          .map((item) => item.type)
+          .toSet();
+    }, [listItems, searchQuery.value]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,6 +302,80 @@ class _SelectedModViewComponent extends HookConsumerWidget {
               if (selectedMod.hasAudioAssets) ...[
                 _AudioAssetsButton(selectedMod: selectedMod),
               ],
+              isSearchActive.value
+                  ? SizedBox(
+                      width: 300,
+                      height: 32,
+                      child: TextField(
+                        controller: searchController,
+                        focusNode: searchFocusNode,
+                        autofocus: true,
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 20),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.black,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              Icons.clear,
+                              color: Colors.black,
+                              size: 17,
+                            ),
+                            onPressed: () {
+                              searchController.clear();
+                              searchQuery.value = '';
+                              isSearchActive.value = false;
+                            },
+                          ),
+                          hintText: 'Search',
+                          hintStyle: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (value) => searchQuery.value = value,
+                      ),
+                    )
+                  : SizedBox(
+                      height: 32,
+                      width: 32,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          isSearchActive.value = true;
+                          searchFocusNode.requestFocus();
+                        },
+                        style: ButtonStyle(
+                          backgroundColor:
+                              WidgetStateProperty.all(Colors.white),
+                          foregroundColor:
+                              WidgetStateProperty.all(Colors.black),
+                          padding: WidgetStateProperty.all(EdgeInsets.zero),
+                          shape: WidgetStateProperty.all(
+                            CircleBorder(),
+                          ),
+                        ),
+                        child: Icon(Icons.search, size: 20),
+                      ),
+                    ),
               ...availableAssetTypes.map((type) {
                 return FilterChip(
                   showCheckmark: false,
@@ -297,11 +410,24 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                   return const SizedBox.shrink();
                 }
 
+                // Hide header if search is active and no assets match
+                if (typesWithVisibleAssets != null &&
+                    !typesWithVisibleAssets.contains(item.type)) {
+                  return const SizedBox.shrink();
+                }
+
                 // Check if this is the first visible header
                 final isFirstHeader = !listItems.take(index).any((prevItem) {
                   if (prevItem is! _HeaderItem) return false;
-                  return selectedAssetTypeFilter.value == null ||
-                      prevItem.type == selectedAssetTypeFilter.value;
+                  if (selectedAssetTypeFilter.value != null &&
+                      prevItem.type != selectedAssetTypeFilter.value) {
+                    return false;
+                  }
+                  if (typesWithVisibleAssets != null &&
+                      !typesWithVisibleAssets.contains(prevItem.type)) {
+                    return false;
+                  }
+                  return true;
                 });
 
                 return _buildHeader(
@@ -321,6 +447,14 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 if (downloadFilter.value ==
                         ExistingAssetsFilter.downloadedOnly &&
                     !item.asset.fileExists) {
+                  return const SizedBox.shrink();
+                }
+
+                // Filter by search query
+                if (searchQuery.value.isNotEmpty &&
+                    !item.asset.url
+                        .toLowerCase()
+                        .contains(searchQuery.value.toLowerCase())) {
                   return const SizedBox.shrink();
                 }
 

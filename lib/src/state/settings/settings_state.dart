@@ -6,6 +6,7 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.da
 
 class SettingsState {
   final bool useModsListView;
+  final bool useBackupsListView;
   final bool showTitleOnCards;
   final bool checkForUpdatesOnStart;
   final int concurrentDownloads;
@@ -21,6 +22,7 @@ class SettingsState {
 
   const SettingsState({
     required this.useModsListView,
+    required this.useBackupsListView,
     required this.showTitleOnCards,
     required this.checkForUpdatesOnStart,
     required this.concurrentDownloads,
@@ -38,6 +40,7 @@ class SettingsState {
   factory SettingsState.defaultState() {
     return SettingsState(
       useModsListView: false,
+      useBackupsListView: false,
       showTitleOnCards: false,
       checkForUpdatesOnStart: true,
       concurrentDownloads: 5,
@@ -56,6 +59,7 @@ class SettingsState {
   Map<String, dynamic> toJson() {
     return {
       'useModsListView': useModsListView,
+      'useBackupsListView': useBackupsListView,
       'showTitleOnCards': showTitleOnCards,
       'checkForUpdatesOnStart': checkForUpdatesOnStart,
       'concurrentDownloads': concurrentDownloads,
@@ -75,6 +79,7 @@ class SettingsState {
   factory SettingsState.fromJson(Map<String, dynamic> json) {
     return SettingsState(
       useModsListView: _parseBool(json['useModsListView'], false),
+      useBackupsListView: _parseBool(json['useBackupsListView'], false),
       showTitleOnCards: _parseBool(json['showTitleOnCards'], false),
       checkForUpdatesOnStart: _parseBool(json['checkForUpdatesOnStart'], true),
       concurrentDownloads: _parseInt(json['concurrentDownloads'], 5),

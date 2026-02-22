@@ -162,6 +162,31 @@ class MultiSelectView extends HookConsumerWidget {
                   );
                 },
               ),
+              if (allModsAreMod)
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.update),
+                  label: const Text('Update mods'),
+                  onPressed: () {
+                    if (actionInProgress) return;
+
+                    showConfirmDialogWithCheckbox(
+                      context,
+                      title: 'Update all mods',
+                      message:
+                          'Check for updates and download newer versions from Steam Workshop',
+                      checkboxLabel: 'Force update',
+                      checkboxInfoMessage:
+                          'Re-download all mods even if already up to date',
+                      onConfirm: (forceUpdate) {
+                        ref.read(bulkActionsProvider.notifier).updateModsAll(
+                              selectedMods.toList(),
+                              forceUpdate,
+                              context,
+                            );
+                      },
+                    );
+                  },
+                ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.delete, size: 18),
                 label: const Text('Delete assets'),
@@ -206,31 +231,6 @@ class MultiSelectView extends HookConsumerWidget {
                   );
                 },
               ),
-              if (allModsAreMod)
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.update),
-                  label: const Text('Update mods'),
-                  onPressed: () {
-                    if (actionInProgress) return;
-
-                    showConfirmDialogWithCheckbox(
-                      context,
-                      title: 'Update all mods',
-                      message:
-                          'Check for updates and download newer versions from Steam Workshop',
-                      checkboxLabel: 'Force update',
-                      checkboxInfoMessage:
-                          'Re-download all mods even if already up to date',
-                      onConfirm: (forceUpdate) {
-                        ref.read(bulkActionsProvider.notifier).updateModsAll(
-                              selectedMods.toList(),
-                              forceUpdate,
-                              context,
-                            );
-                      },
-                    );
-                  },
-                ),
             ],
           ),
         ),

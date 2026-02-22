@@ -1,6 +1,7 @@
 class ExistingBackup {
   final String filename;
   final String filepath;
+  final String parentFolderName;
   final int lastModifiedTimestamp;
   final int totalAssetCount;
   final int fileSize; // in bytes
@@ -9,6 +10,7 @@ class ExistingBackup {
   const ExistingBackup({
     required this.filename,
     required this.filepath,
+    required this.parentFolderName,
     required this.lastModifiedTimestamp,
     required this.totalAssetCount,
     required this.fileSize,
@@ -21,6 +23,7 @@ class ExistingBackup {
   ExistingBackup copyWith({
     String? filename,
     String? filepath,
+    String? parentFolderName,
     int? lastModifiedTimestamp,
     int? totalAssetCount,
     int? fileSize,
@@ -29,6 +32,7 @@ class ExistingBackup {
     return ExistingBackup(
       filename: filename ?? this.filename,
       filepath: filepath ?? this.filepath,
+      parentFolderName: parentFolderName ?? this.parentFolderName,
       lastModifiedTimestamp:
           lastModifiedTimestamp ?? this.lastModifiedTimestamp,
       totalAssetCount: totalAssetCount ?? this.totalAssetCount,

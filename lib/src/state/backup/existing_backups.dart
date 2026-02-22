@@ -16,6 +16,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         backupCacheProvider,
+        backupSortAndFilterProvider,
         directoriesProvider,
         loadingMessageProvider,
         settingsProvider,
@@ -63,9 +64,11 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     for (final file in files) {
       try {
         final stat = await file.stat();
+        final normalizedPath = path.normalize(file.path);
         fileMetas.add(_FileMeta(
-          filepath: path.normalize(file.path),
+          filepath: normalizedPath,
           filename: path.basename(file.path),
+          parentFolderName: path.basename(path.dirname(normalizedPath)),
           lastModified: stat.modified.millisecondsSinceEpoch ~/ 1000,
           fileSize: stat.size,
         ));
@@ -91,6 +94,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
         backups.add(ExistingBackup(
           filename: meta.filename,
           filepath: meta.filepath,
+          parentFolderName: meta.parentFolderName,
           fileSize: meta.fileSize,
           lastModifiedTimestamp: meta.lastModified,
           totalAssetCount: cachedCount,
@@ -101,6 +105,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
         backups.add(ExistingBackup(
           filename: meta.filename,
           filepath: meta.filepath,
+          parentFolderName: meta.parentFolderName,
           fileSize: meta.fileSize,
           lastModifiedTimestamp: meta.lastModified,
           totalAssetCount: 0,
@@ -135,6 +140,7 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
         backups[idx] = ExistingBackup(
           filename: meta.filename,
           filepath: meta.filepath,
+          parentFolderName: meta.parentFolderName,
           fileSize: meta.fileSize,
           lastModifiedTimestamp: meta.lastModified,
           totalAssetCount: count,
@@ -155,6 +161,8 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     }
 
     state = ExistingBackupsState(backups: backups);
+
+    ref.read(backupSortAndFilterProvider.notifier).setFolders(backups);
 
     debugPrint('loadExistingBackups - finished at ${DateTime.now()}');
   }
@@ -320,12 +328,14 @@ Future<List<int>> _countAssetsForFiles(List<String> filePaths) async {
 class _FileMeta {
   final String filepath;
   final String filename;
+  final String parentFolderName;
   final int lastModified;
   final int fileSize;
 
   _FileMeta({
     required this.filepath,
     required this.filename,
+    required this.parentFolderName,
     required this.lastModified,
     required this.fileSize,
   });

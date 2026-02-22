@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/backups/components/backups_grid_card.dart'
     show BackupsGridCard;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show filteredBackupsProvider;
+import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
+    show ExistingBackup;
 
-class BackupsGrid extends ConsumerWidget {
-  const BackupsGrid({super.key});
+class BackupsGrid extends StatelessWidget {
+  final List<ExistingBackup> backups;
+
+  const BackupsGrid({super.key, required this.backups});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final backups = ref.watch(filteredBackupsProvider);
-
+  Widget build(BuildContext context) {
     if (backups.isEmpty) {
       return Center(
         child: Padding(

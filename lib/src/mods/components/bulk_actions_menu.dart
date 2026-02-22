@@ -152,6 +152,39 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
+        if (selectedModType == ModTypeEnum.mod)
+          MenuItemButton(
+            style: MenuItemButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            leadingIcon: Icon(Icons.update, color: Colors.black),
+            child:
+                Text('Update all mods', style: TextStyle(color: Colors.black)),
+            onPressed: () {
+              if (actionInProgress) return;
+
+              showConfirmDialogWithCheckbox(
+                context,
+                title: 'Update all mods',
+                message:
+                    'Check for updates and download newer versions from Steam Workshop',
+                checkboxLabel: 'Force update',
+                checkboxInfoMessage:
+                    'Re-download all mods even if already up to date',
+                showWarning: true,
+                warningText:
+                    "This feature has been tested with various mods, however it's recommended to let\nTabletop Simulator handle updates for subscribed mods to avoid unexpected issues.",
+                onConfirm: (forceUpdate) {
+                  ref.read(bulkActionsProvider.notifier).updateModsAll(
+                        ref.read(filteredModsProvider),
+                        forceUpdate,
+                        context,
+                      );
+                },
+              );
+            },
+          ),
         MenuItemButton(
           style: MenuItemButton.styleFrom(
             backgroundColor: Colors.white,
@@ -201,39 +234,6 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             );
           },
         ),
-        if (selectedModType == ModTypeEnum.mod)
-          MenuItemButton(
-            style: MenuItemButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            ),
-            leadingIcon: Icon(Icons.update, color: Colors.black),
-            child:
-                Text('Update all mods', style: TextStyle(color: Colors.black)),
-            onPressed: () {
-              if (actionInProgress) return;
-
-              showConfirmDialogWithCheckbox(
-                context,
-                title: 'Update all mods',
-                message:
-                    'Check for updates and download newer versions from Steam Workshop',
-                checkboxLabel: 'Force update',
-                checkboxInfoMessage:
-                    'Re-download all mods even if already up to date',
-                showWarning: true,
-                warningText:
-                    "This feature has been tested with various mods, however it's recommended to let\nTabletop Simulator handle updates for subscribed mods to avoid unexpected issues.",
-                onConfirm: (forceUpdate) {
-                  ref.read(bulkActionsProvider.notifier).updateModsAll(
-                        ref.read(filteredModsProvider),
-                        forceUpdate,
-                        context,
-                      );
-                },
-              );
-            },
-          ),
       ],
       builder: (
         BuildContext context,

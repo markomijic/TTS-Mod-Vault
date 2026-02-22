@@ -89,9 +89,8 @@ class FilterButton extends HookConsumerWidget {
               }
             },
             style: ButtonStyle(
-              backgroundColor:
-                  WidgetStateProperty.all(Colors.white), // Background
-              foregroundColor: WidgetStateProperty.all(Colors.black), // Icon
+              backgroundColor: WidgetStateProperty.all(Colors.white),
+              foregroundColor: WidgetStateProperty.all(Colors.black),
             ),
             icon: Icon(Icons.filter_list, size: 20),
           );
@@ -126,6 +125,9 @@ class FilterButton extends HookConsumerWidget {
 
           // Main "Assets" submenu item
           SubmenuButton(
+            menuStyle: MenuStyle(
+              backgroundColor: WidgetStateProperty.all(Colors.white),
+            ),
             leadingIcon: Icon(
               Icons.check,
               color: selectedAssetCounts.isNotEmpty
@@ -186,6 +188,9 @@ class FilterButton extends HookConsumerWidget {
 
           // Main "Folders" submenu item
           SubmenuButton(
+            menuStyle: MenuStyle(
+              backgroundColor: WidgetStateProperty.all(Colors.white),
+            ),
             leadingIcon: Icon(
               Icons.check,
               color: selectedFolders.isNotEmpty
@@ -291,6 +296,9 @@ class FilterButton extends HookConsumerWidget {
                 color: sortAndFilterState.filteredBackupStatuses.isNotEmpty
                     ? Colors.black
                     : Colors.transparent,
+              ),
+              menuStyle: MenuStyle(
+                backgroundColor: WidgetStateProperty.all(Colors.white),
               ),
               style: MenuItemButton.styleFrom(
                 backgroundColor: Colors.white,

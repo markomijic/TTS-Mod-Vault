@@ -7,7 +7,7 @@ import 'package:file_picker/file_picker.dart' show FilePicker;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p
-    show basenameWithoutExtension, join, normalize, relative;
+    show basename, basenameWithoutExtension, dirname, join, normalize, relative;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show
         BackupCompleteMessage,
@@ -125,6 +125,7 @@ class BackupNotifier extends StateNotifier<BackupState> {
             final newBackup = ExistingBackup(
               filename: backupFileName,
               filepath: targetBackupFilePath,
+              parentFolderName: p.basename(p.dirname(targetBackupFilePath)),
               lastModifiedTimestamp:
                   DateTime.now().millisecondsSinceEpoch ~/ 1000,
               totalAssetCount: totalAssetCount,

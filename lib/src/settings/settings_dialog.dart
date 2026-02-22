@@ -83,6 +83,7 @@ class SettingsDialog extends HookConsumerWidget {
 
     // UI
     final useModsListViewBox = useState(settings.useModsListView);
+    final useBackupsListViewBox = useState(settings.useBackupsListView);
     final showTitleOnCardsBox = useState(settings.showTitleOnCards);
     final defaultSortOption = useState(settings.defaultSortOption);
     final assetUrlFontSize = useState(settings.assetUrlFontSize);
@@ -121,6 +122,7 @@ class SettingsDialog extends HookConsumerWidget {
 
       final newState = SettingsState(
         useModsListView: useModsListViewBox.value,
+        useBackupsListView: useBackupsListViewBox.value,
         showTitleOnCards: showTitleOnCardsBox.value,
         checkForUpdatesOnStart: checkForUpdatesOnStartBox.value,
         concurrentDownloads: concurrentDownloads,
@@ -225,6 +227,7 @@ class SettingsDialog extends HookConsumerWidget {
                                 case SettingsSection.interface:
                                   return SettingsInterfaceColumn(
                                     useModsListViewBox: useModsListViewBox,
+                                    useBackupsListViewBox: useBackupsListViewBox,
                                     showTitleOnCardsBox: showTitleOnCardsBox,
                                     defaultSortOption: defaultSortOption,
                                     assetUrlFontSize: assetUrlFontSize,
@@ -784,6 +787,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
   const SettingsInterfaceColumn({
     super.key,
     required this.useModsListViewBox,
+    required this.useBackupsListViewBox,
     required this.showTitleOnCardsBox,
     required this.defaultSortOption,
     required this.assetUrlFontSize,
@@ -792,6 +796,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
   });
 
   final ValueNotifier<bool> useModsListViewBox;
+  final ValueNotifier<bool> useBackupsListViewBox;
   final ValueNotifier<bool> showTitleOnCardsBox;
   final ValueNotifier<SortOptionEnum> defaultSortOption;
   final ValueNotifier<double> assetUrlFontSize;
@@ -811,6 +816,16 @@ class SettingsInterfaceColumn extends StatelessWidget {
           contentPadding: EdgeInsets.all(0),
           onChanged: (value) {
             useModsListViewBox.value = value ?? useModsListViewBox.value;
+          },
+        ),
+        CheckboxListTile(
+          title: const Text('Display backups as a list instead of grid'),
+          value: useBackupsListViewBox.value,
+          checkColor: Colors.black,
+          activeColor: Colors.white,
+          contentPadding: EdgeInsets.all(0),
+          onChanged: (value) {
+            useBackupsListViewBox.value = value ?? useBackupsListViewBox.value;
           },
         ),
         CheckboxListTile(
@@ -991,7 +1006,7 @@ class SettingsNetworkColumn extends StatelessWidget {
           EditableStringList(
             title: 'Ignored domains',
             tooltipMessage:
-                'Domain names added here will be ignored when downloading asset files\nCase-sensitive',
+                'Domain names added here will be ignored when downloading asset files\nExample: imgur.com\nCase-sensitive',
             values: ignoredDomains.value,
             addLabel: 'Add domain name',
             onChanged: (list) => ignoredDomains.value = list,

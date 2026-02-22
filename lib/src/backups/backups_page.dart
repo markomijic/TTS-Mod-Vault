@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show ConsumerWidget, WidgetRef, HookConsumerWidget;
+import 'package:tts_mod_vault/src/backups/components/backups_view.dart'
+    show BackupsView;
 import 'package:tts_mod_vault/src/backups/components/components.dart'
-    show BackupsGrid;
+    show BackupSortButton, BackupFilterButton;
 import 'package:tts_mod_vault/src/mods/components/components.dart';
 import 'package:tts_mod_vault/src/state/provider.dart'
     show backupsSearchQueryProvider, filteredBackupsProvider;
@@ -23,13 +25,15 @@ class BackupsPage extends ConsumerWidget {
             children: [
               _BackupsTitle(),
               Search(searchQueryProvider: backupsSearchQueryProvider),
+              BackupSortButton(),
+              BackupFilterButton(),
             ],
           ),
         ),
         Expanded(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
-            child: BackupsGrid(),
+            child: BackupsView(),
           ),
         ),
         BulkActionsProgressBar(),

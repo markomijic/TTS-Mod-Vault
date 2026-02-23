@@ -21,7 +21,6 @@ class BackupsGridCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showTitleOnCards = ref.watch(settingsProvider).showTitleOnCards;
     final isHovered = useState(false);
 
     final matchingModImagePath = useMemoized(() {
@@ -83,21 +82,8 @@ class BackupsGridCard extends HookConsumerWidget {
                       fit: BoxFit.cover,
                     ),
                   ),
-                if (!imageExists && !showTitleOnCards)
-                  Container(
-                    color: Colors.grey[850],
-                    alignment: Alignment.center,
-                    child: Text(
-                      backupFilename,
-                      maxLines: 5,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                if (!imageExists && showTitleOnCards)
+
+                if (!imageExists)
                   Container(
                     color: Colors.grey[850],
                     alignment: Alignment.center,
@@ -159,32 +145,29 @@ class BackupsGridCard extends HookConsumerWidget {
                     ),
                   ),
                 ),
-
-                // Bottom info bar
-                if (showTitleOnCards)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: ClipRect(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                        child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(140),
-                          ),
-                          child: Text(
-                            backupFilename,
-                            maxLines: 5,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                            ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(140),
+                        ),
+                        child: Text(
+                          backupFilename,
+                          maxLines: 5,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ),
                   ),
+                ),
               ],
             ),
           ),

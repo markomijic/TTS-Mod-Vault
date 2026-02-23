@@ -271,14 +271,15 @@ void _showDeleteConfirmDialog(
               content: SizedBox(
                 width: 500,
                 child: Column(
+                  spacing: 16,
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$message\n\nThis action cannot be undone.'),
+                    Text(message),
                     if (hasSharedAssets) ...[
-                      const SizedBox(height: 16),
                       CheckboxListTile(
                         value: includeShared,
+                        visualDensity: VisualDensity.compact,
                         onChanged: (value) {
                           setState(() {
                             includeShared = value ?? false;
@@ -293,10 +294,17 @@ void _showDeleteConfirmDialog(
                         dense: true,
                       ),
                     ],
+                    Row(
+                      spacing: 8,
+                      children: [
+                        Icon(Icons.warning_amber_rounded),
+                        Text('This action cannot be undone.'),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              actionsAlignment: MainAxisAlignment.start,
+              actionsAlignment: MainAxisAlignment.spaceBetween,
               actions: [
                 if (sharedInfo != null &&
                     sharedInfo.sharedAssetDetails.isNotEmpty)
@@ -306,18 +314,27 @@ void _showDeleteConfirmDialog(
                     },
                     icon: Icon(Icons.list),
                     label: const Text('View Details'),
-                  ),
-                Spacer(),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop('cancel'),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: (safeCount > 0 || includeShared)
-                      ? () => Navigator.of(context)
-                          .pop(includeShared ? 'confirm_shared' : 'confirm')
-                      : null,
-                  child: const Text('Confirm'),
+                  )
+                else
+                  SizedBox.shrink(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  spacing: 8,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop('cancel'),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: (safeCount > 0 || includeShared)
+                          ? () => Navigator.of(context)
+                              .pop(includeShared ? 'confirm_shared' : 'confirm')
+                          : null,
+                      icon: Icon(Icons.delete_outline),
+                      label: const Text('Delete'),
+                    ),
+                  ],
                 ),
               ],
             ),

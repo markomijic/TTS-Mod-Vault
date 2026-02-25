@@ -122,6 +122,7 @@ class FilterButton extends HookConsumerWidget {
               sortAndFilterNotifier.clearFilteredAssets();
             },
           ),
+          const Divider(height: 1, color: Colors.black),
 
           // Main "Assets" submenu item
           SubmenuButton(

@@ -515,8 +515,8 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 assetType: headerItem.type,
                 selectedMod: selectedMod,
               ),
-            if (headerItem.type == AssetTypeEnum.image && !actionInProgress)
-              _OpenImagesViewerButton(selectedMod: selectedMod)
+            /*   if (headerItem.type == AssetTypeEnum.image && !actionInProgress)
+              _OpenImagesViewerButton() */
           ],
         ),
       ),
@@ -746,10 +746,8 @@ class _AudioAssetsButton extends ConsumerWidget {
   }
 }
 
-class _OpenImagesViewerButton extends StatelessWidget {
-  final Mod selectedMod;
-
-  const _OpenImagesViewerButton({required this.selectedMod});
+/* class _OpenImagesViewerButton extends StatelessWidget {
+  const _OpenImagesViewerButton();
 
   @override
   Widget build(BuildContext context) {
@@ -768,7 +766,7 @@ class _OpenImagesViewerButton extends StatelessWidget {
       ),
     );
   }
-}
+} */
 
 class _MissingFilesButton extends StatelessWidget {
   final WidgetRef ref;

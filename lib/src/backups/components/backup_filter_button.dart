@@ -74,11 +74,28 @@ class BackupFilterButton extends HookConsumerWidget {
               backupSortAndFilterNotifier.clearFilteredFolders();
               backupSortAndFilterNotifier.clearFilteredMatchStatuses();
             },
-            child: const Text('Clear all'),
+            child: Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.clear),
+                Expanded(
+                  child: Text(
+                    'Clear all',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 1, color: Colors.black),
           if (folders.isNotEmpty)
             SubmenuButton(
+              leadingIcon: Icon(
+                Icons.check,
+                color: selectedFolders.isNotEmpty
+                    ? Colors.black
+                    : Colors.transparent,
+              ),
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all(Colors.white),
                 foregroundColor: WidgetStateProperty.all(Colors.black),
@@ -89,16 +106,28 @@ class BackupFilterButton extends HookConsumerWidget {
               ),
               menuChildren: [
                 MenuItemButton(
-                  closeOnActivate: true,
+                  closeOnActivate: false,
                   style: MenuItemButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
+                    iconColor: Colors.black,
                   ),
                   onPressed: () =>
                       backupSortAndFilterNotifier.clearFilteredFolders(),
-                  child: const Text('Clear all'),
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(Icons.clear),
+                      Expanded(
+                        child: Text(
+                          'Clear all',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const Divider(height: 1),
+                const Divider(height: 1, color: Colors.black),
                 ...folders.map((folder) {
                   final isSelected = selectedFolders.contains(folder);
 
@@ -123,7 +152,12 @@ class BackupFilterButton extends HookConsumerWidget {
                         Icon(isSelected
                             ? Icons.check_box
                             : Icons.check_box_outline_blank),
-                        Text(folder),
+                        Expanded(
+                          child: Text(
+                            folder,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -139,6 +173,12 @@ class BackupFilterButton extends HookConsumerWidget {
               ),
             ),
           SubmenuButton(
+            leadingIcon: Icon(
+              Icons.check,
+              color: selectedMatchStatuses.isNotEmpty
+                  ? Colors.black
+                  : Colors.transparent,
+            ),
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(Colors.white),
               foregroundColor: WidgetStateProperty.all(Colors.black),
@@ -148,6 +188,29 @@ class BackupFilterButton extends HookConsumerWidget {
               backgroundColor: WidgetStateProperty.all(Colors.white),
             ),
             menuChildren: [
+              MenuItemButton(
+                closeOnActivate: false,
+                style: MenuItemButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  iconColor: Colors.black,
+                ),
+                onPressed: () =>
+                    backupSortAndFilterNotifier.clearFilteredMatchStatuses(),
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    Icon(Icons.clear),
+                    Expanded(
+                      child: Text(
+                        'Clear all',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Colors.black),
               ...BackupMatchStatusEnum.values.map((status) {
                 final isSelected = selectedMatchStatuses.contains(status);
 
@@ -173,7 +236,12 @@ class BackupFilterButton extends HookConsumerWidget {
                       Icon(isSelected
                           ? Icons.check_box
                           : Icons.check_box_outline_blank),
-                      Text(status.label),
+                      Expanded(
+                        child: Text(
+                          status.label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:tts_mod_vault/src/models/url_replacement_preset.dart'
     show UrlReplacementPreset;
+import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter_state.dart'
+    show BackupSortOptionEnum;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
     show SortOptionEnum;
 
@@ -13,6 +15,7 @@ class SettingsState {
   final bool showSavedObjects;
   final bool showBackupState;
   final SortOptionEnum defaultSortOption;
+  final BackupSortOptionEnum defaultBackupSortOption;
   final bool forceBackupJsonFilename;
   final bool ignoreAudioAssets;
   final List<UrlReplacementPreset> urlReplacementPresets;
@@ -29,6 +32,7 @@ class SettingsState {
     required this.showSavedObjects,
     required this.showBackupState,
     required this.defaultSortOption,
+    required this.defaultBackupSortOption,
     required this.forceBackupJsonFilename,
     required this.ignoreAudioAssets,
     required this.assetUrlFontSize,
@@ -47,6 +51,7 @@ class SettingsState {
       showSavedObjects: false,
       showBackupState: true,
       defaultSortOption: SortOptionEnum.alphabeticalAsc,
+      defaultBackupSortOption: BackupSortOptionEnum.alphabeticalAsc,
       forceBackupJsonFilename: false,
       ignoreAudioAssets: true,
       assetUrlFontSize: 12,
@@ -66,6 +71,7 @@ class SettingsState {
       'showSavedObjects': showSavedObjects,
       'showBackupState': showBackupState,
       'defaultSortOption': defaultSortOption.label,
+      'defaultBackupSortOption': defaultBackupSortOption.label,
       'forceBackupJsonFilename': forceBackupJsonFilename,
       'ignoreAudioAssets': ignoreAudioAssets,
       'urlReplacementPresets':
@@ -87,6 +93,8 @@ class SettingsState {
       showBackupState: _parseBool(json['showBackupState'], true),
       defaultSortOption: _parseSortOptionEnum(
           json['defaultSortOption'], SortOptionEnum.alphabeticalAsc),
+      defaultBackupSortOption: _parseBackupSortOptionEnum(
+          json['defaultBackupSortOption'], BackupSortOptionEnum.alphabeticalAsc),
       forceBackupJsonFilename:
           _parseBool(json['forceBackupJsonFilename'], false),
       ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], true),
@@ -95,6 +103,13 @@ class SettingsState {
       ignoredSubfolders: _parseStringList(json['ignoredSubfolders']),
       ignoredDomains: _parseStringList(json['ignoredDomains']),
     );
+  }
+
+  static BackupSortOptionEnum _parseBackupSortOptionEnum(
+      dynamic value, BackupSortOptionEnum defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is String) return BackupSortOptionEnum.fromLabel(value);
+    return defaultValue;
   }
 
   static SortOptionEnum _parseSortOptionEnum(

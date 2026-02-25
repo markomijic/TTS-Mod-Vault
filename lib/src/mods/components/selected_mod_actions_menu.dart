@@ -40,6 +40,21 @@ class SelectedModActionsMenu extends HookConsumerWidget {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           ),
+          leadingIcon: Icon(Icons.image, color: Colors.black),
+          child: Text('View Images', style: TextStyle(color: Colors.black)),
+          onPressed: () async {
+            if (actionInProgress) return;
+
+            if (context.mounted) {
+              Navigator.of(context).pushNamed('/images-viewer');
+            }
+          },
+        ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
           leadingIcon: Icon(Icons.link, color: Colors.black),
           child: Text('Check for invalid URLs',
               style: TextStyle(color: Colors.black)),

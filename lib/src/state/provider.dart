@@ -198,7 +198,7 @@ final actionInProgressProvider = Provider<bool>((ref) {
 
 final backupSortAndFilterProvider =
     StateNotifierProvider<BackupSortAndFilterNotifier, BackupSortAndFilterState>(
-  (ref) => BackupSortAndFilterNotifier(),
+  (ref) => BackupSortAndFilterNotifier(ref),
 );
 
 final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {

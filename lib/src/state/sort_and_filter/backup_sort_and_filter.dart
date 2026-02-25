@@ -1,11 +1,16 @@
-import 'package:hooks_riverpod/hooks_riverpod.dart' show StateNotifier;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
+import 'package:tts_mod_vault/src/state/provider.dart' show settingsProvider;
 import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter_state.dart';
 
 class BackupSortAndFilterNotifier
     extends StateNotifier<BackupSortAndFilterState> {
-  BackupSortAndFilterNotifier() : super(BackupSortAndFilterState.initial());
+  final Ref ref;
+
+  BackupSortAndFilterNotifier(this.ref)
+      : super(BackupSortAndFilterState.initial(
+            ref.read(settingsProvider).defaultBackupSortOption));
 
   void setSortOption(BackupSortOptionEnum sortOption) {
     state = state.copyWith(sortOption: sortOption);

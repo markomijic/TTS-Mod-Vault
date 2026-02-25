@@ -27,6 +27,8 @@ import 'package:tts_mod_vault/src/models/url_replacement_preset.dart'
     show UrlReplacementPreset;
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart'
     show SettingsState;
+import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter_state.dart'
+    show BackupSortOptionEnum;
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart'
     show SortOptionEnum;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
@@ -86,6 +88,7 @@ class SettingsDialog extends HookConsumerWidget {
     final useBackupsListViewBox = useState(settings.useBackupsListView);
     final showTitleOnCardsBox = useState(settings.showTitleOnCards);
     final defaultSortOption = useState(settings.defaultSortOption);
+    final defaultBackupSortOption = useState(settings.defaultBackupSortOption);
     final assetUrlFontSize = useState(settings.assetUrlFontSize);
     final assetUrlFontSizeController =
         useTextEditingController(text: settings.assetUrlFontSize.toString());
@@ -129,6 +132,7 @@ class SettingsDialog extends HookConsumerWidget {
         showSavedObjects: showSavedObjects.value,
         showBackupState: showBackupState.value,
         defaultSortOption: defaultSortOption.value,
+        defaultBackupSortOption: defaultBackupSortOption.value,
         forceBackupJsonFilename: forceBackupJsonFilename.value,
         ignoreAudioAssets: ignoreAudioAssets.value,
         urlReplacementPresets: urlPresets.value
@@ -227,9 +231,12 @@ class SettingsDialog extends HookConsumerWidget {
                                 case SettingsSection.interface:
                                   return SettingsInterfaceColumn(
                                     useModsListViewBox: useModsListViewBox,
-                                    useBackupsListViewBox: useBackupsListViewBox,
+                                    useBackupsListViewBox:
+                                        useBackupsListViewBox,
                                     showTitleOnCardsBox: showTitleOnCardsBox,
                                     defaultSortOption: defaultSortOption,
+                                    defaultBackupSortOption:
+                                        defaultBackupSortOption,
                                     assetUrlFontSize: assetUrlFontSize,
                                     assetUrlFontSizeController:
                                         assetUrlFontSizeController,
@@ -790,6 +797,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
     required this.useBackupsListViewBox,
     required this.showTitleOnCardsBox,
     required this.defaultSortOption,
+    required this.defaultBackupSortOption,
     required this.assetUrlFontSize,
     required this.assetUrlFontSizeController,
     required this.assetUrlFontSizeFocusNode,
@@ -799,6 +807,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
   final ValueNotifier<bool> useBackupsListViewBox;
   final ValueNotifier<bool> showTitleOnCardsBox;
   final ValueNotifier<SortOptionEnum> defaultSortOption;
+  final ValueNotifier<BackupSortOptionEnum> defaultBackupSortOption;
   final ValueNotifier<double> assetUrlFontSize;
   final TextEditingController assetUrlFontSizeController;
   final FocusNode assetUrlFontSizeFocusNode;
@@ -842,7 +851,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Default sort',
+                'Default mod sort',
                 style: TextStyle(fontSize: 16),
               ),
             ),
@@ -878,6 +887,51 @@ class SettingsInterfaceColumn extends StatelessWidget {
               onChanged: (SortOptionEnum? newValue) {
                 if (newValue != null) {
                   defaultSortOption.value = newValue;
+                }
+              },
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Default backup sort',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            DropdownButton<BackupSortOptionEnum>(
+              value: defaultBackupSortOption.value,
+              dropdownColor: Colors.white,
+              style: TextStyle(color: Colors.white),
+              underline: Container(
+                height: 2,
+                color: Colors.white,
+              ),
+              focusColor: Colors.transparent,
+              selectedItemBuilder: (BuildContext context) {
+                return BackupSortOptionEnum.values.map<Widget>((item) {
+                  return Container(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      item.label,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  );
+                }).toList();
+              },
+              items: BackupSortOptionEnum.values.map((sortOption) {
+                return DropdownMenuItem<BackupSortOptionEnum>(
+                  value: sortOption,
+                  child: Text(
+                    sortOption.label,
+                    style: TextStyle(color: Colors.black),
+                  ),
+                );
+              }).toList(),
+              onChanged: (BackupSortOptionEnum? newValue) {
+                if (newValue != null) {
+                  defaultBackupSortOption.value = newValue;
                 }
               },
             ),

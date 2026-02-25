@@ -5,6 +5,13 @@ enum BackupSortOptionEnum {
 
   const BackupSortOptionEnum(this.label);
   final String label;
+
+  static BackupSortOptionEnum fromLabel(String label) {
+    for (BackupSortOptionEnum option in BackupSortOptionEnum.values) {
+      if (option.label == label) return option;
+    }
+    return alphabeticalAsc;
+  }
 }
 
 enum BackupMatchStatusEnum {
@@ -28,12 +35,14 @@ class BackupSortAndFilterState {
     required this.filteredMatchStatuses,
   });
 
-  factory BackupSortAndFilterState.initial() {
-    return const BackupSortAndFilterState(
-      sortOption: BackupSortOptionEnum.alphabeticalAsc,
-      backupFolders: {},
-      filteredBackupFolders: {},
-      filteredMatchStatuses: {},
+  factory BackupSortAndFilterState.initial([
+    BackupSortOptionEnum sortOption = BackupSortOptionEnum.alphabeticalAsc,
+  ]) {
+    return BackupSortAndFilterState(
+      sortOption: sortOption,
+      backupFolders: const {},
+      filteredBackupFolders: const {},
+      filteredMatchStatuses: const {},
     );
   }
 

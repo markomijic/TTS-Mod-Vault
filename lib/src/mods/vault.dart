@@ -29,9 +29,12 @@ class Vault extends HookConsumerWidget {
               children: [
                 SizedBox(width: sidebarWidth.value),
                 Expanded(
-                  child: selectedPage == AppPage.mods
-                      ? const ModsPage()
-                      : const BackupsPage(),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    child: selectedPage == AppPage.mods
+                        ? const ModsPage(key: ValueKey(AppPage.mods))
+                        : const BackupsPage(key: ValueKey(AppPage.backups)),
+                  ),
                 ),
               ],
             ),

@@ -271,6 +271,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
                 deleteMessage =
                     'Are you sure you want to delete this file?\n\n${getFileNameFromURL(asset.url)}';
               }
+              if (!context.mounted) break;
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (dialogContext) => AlertDialog(
@@ -291,8 +292,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
                               ),
                               actions: [
                                 ElevatedButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(),
+                                  onPressed: () => Navigator.of(context).pop(),
                                   child: const Text('Close'),
                                 ),
                               ],
@@ -325,9 +325,10 @@ class ImagesViewerGridCard extends HookConsumerWidget {
                     .read(modsProvider.notifier)
                     .updateSelectedMod(selectedMod);
                 final filename = getFileNameFromURL(asset.url);
-                await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
-                      {filename},
-                      excludeJsonFileName: selectedMod.jsonFileName);
+                await ref
+                    .read(modsProvider.notifier)
+                    .refreshModsWithSharedAssets({filename},
+                        excludeJsonFileName: selectedMod.jsonFileName);
                 if (context.mounted) showSnackBar(context, 'File deleted');
               } else {
                 showSnackBar(context, 'Failed to delete file');

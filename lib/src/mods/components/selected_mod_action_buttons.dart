@@ -13,8 +13,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         backupProvider,
         deleteAssetsProvider,
         downloadProvider,
-        modsProvider,
-        selectedModProvider;
+        modsProvider;
 
 class SelectedModActionButtons extends HookConsumerWidget {
   final Mod selectedMod;

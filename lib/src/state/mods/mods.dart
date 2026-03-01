@@ -44,7 +44,6 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         existingAssetListsProvider,
         existingBackupsProvider,
         loadingMessageProvider,
-        selectedModProvider,
         settingsProvider,
         sortAndFilterProvider,
         refreshingSharedAssetsProvider,

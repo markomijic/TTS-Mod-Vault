@@ -87,8 +87,7 @@ Future<void> showHelpDialog(BuildContext context) async {
                     }
                   },
                 ),
-                // TODO enable
-                /* _HelpListTile(
+                _HelpListTile(
                   icon: Icons.favorite,
                   title: 'Support on Ko-fi',
                   onTap: () async {
@@ -98,7 +97,7 @@ Future<void> showHelpDialog(BuildContext context) async {
                       Navigator.of(context).pop();
                     }
                   },
-                ), */
+                ),
               ],
             ),
           ),

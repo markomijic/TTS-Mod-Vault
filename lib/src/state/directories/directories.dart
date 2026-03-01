@@ -100,12 +100,20 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
   Future<bool> isSavesDirectoryValid(
     String initialDir, [
     updateState = true,
+    allowCustomPath = false,
   ]) async {
     final directory = Directory(initialDir);
 
     final doesDirectoryExist = await directory.exists();
 
     if (!doesDirectoryExist) return false;
+
+    if (allowCustomPath) {
+      if (updateState) {
+        state = state.updateSaves(initialDir);
+      }
+      return true;
+    }
 
     bool result = false;
 

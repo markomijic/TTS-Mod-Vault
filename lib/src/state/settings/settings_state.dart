@@ -18,6 +18,7 @@ class SettingsState {
   final BackupSortOptionEnum defaultBackupSortOption;
   final bool forceBackupJsonFilename;
   final bool ignoreAudioAssets;
+  final bool allowCustomSavesFolder;
   final List<UrlReplacementPreset> urlReplacementPresets;
   final double assetUrlFontSize;
   final List<String> ignoredSubfolders;
@@ -35,6 +36,7 @@ class SettingsState {
     required this.defaultBackupSortOption,
     required this.forceBackupJsonFilename,
     required this.ignoreAudioAssets,
+    required this.allowCustomSavesFolder,
     required this.assetUrlFontSize,
     required this.urlReplacementPresets,
     required this.ignoredSubfolders,
@@ -54,6 +56,7 @@ class SettingsState {
       defaultBackupSortOption: BackupSortOptionEnum.alphabeticalAsc,
       forceBackupJsonFilename: false,
       ignoreAudioAssets: true,
+      allowCustomSavesFolder: false,
       assetUrlFontSize: 12,
       urlReplacementPresets: const [],
       ignoredSubfolders: const [],
@@ -74,6 +77,7 @@ class SettingsState {
       'defaultBackupSortOption': defaultBackupSortOption.label,
       'forceBackupJsonFilename': forceBackupJsonFilename,
       'ignoreAudioAssets': ignoreAudioAssets,
+      'allowCustomSavesFolder': allowCustomSavesFolder,
       'urlReplacementPresets':
           urlReplacementPresets.map((p) => p.toJson()).toList(),
       'assetUrlFontSize': assetUrlFontSize,
@@ -98,6 +102,7 @@ class SettingsState {
       forceBackupJsonFilename:
           _parseBool(json['forceBackupJsonFilename'], false),
       ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], true),
+      allowCustomSavesFolder: _parseBool(json['allowCustomSavesFolder'], false),
       urlReplacementPresets: _parsePresetList(json['urlReplacementPresets']),
       assetUrlFontSize: _parseDouble(json['assetUrlFontSize'], 12.0),
       ignoredSubfolders: _parseStringList(json['ignoredSubfolders']),

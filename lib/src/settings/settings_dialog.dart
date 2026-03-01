@@ -108,6 +108,7 @@ class SettingsDialog extends HookConsumerWidget {
     final showSavedObjects = useState(settings.showSavedObjects);
     final showBackupState = useState(settings.showBackupState);
     final ignoreAudioAssets = useState(settings.ignoreAudioAssets);
+    final allowCustomSavesFolder = useState(settings.allowCustomSavesFolder);
     final urlPresets = useState<List<UrlReplacementPreset>>(
       List.from(settings.urlReplacementPresets),
     );
@@ -135,6 +136,7 @@ class SettingsDialog extends HookConsumerWidget {
         defaultBackupSortOption: defaultBackupSortOption.value,
         forceBackupJsonFilename: forceBackupJsonFilename.value,
         ignoreAudioAssets: ignoreAudioAssets.value,
+        allowCustomSavesFolder: allowCustomSavesFolder.value,
         urlReplacementPresets: urlPresets.value
             .where((p) =>
                 p.label.trim().isNotEmpty ||
@@ -160,7 +162,8 @@ class SettingsDialog extends HookConsumerWidget {
           ref.read(directoriesProvider).savesDir != savesDir.value ||
           ref.read(directoriesProvider).backupsDir != backupsDir.value) {
         if (await directoriesNotifier.isModsDirectoryValid(modsDir.value) &&
-            await directoriesNotifier.isSavesDirectoryValid(savesDir.value)) {
+            await directoriesNotifier.isSavesDirectoryValid(
+                savesDir.value, true, allowCustomSavesFolder.value)) {
           if (ref.read(directoriesProvider).backupsDir != backupsDir.value) {
             directoriesNotifier.updateBackupsDirectory(backupsDir.value);
           }
@@ -251,6 +254,8 @@ class SettingsDialog extends HookConsumerWidget {
                                     savesDir: savesDir,
                                     backupsDir: backupsDir,
                                     ignoredSubfolders: ignoredSubfolders,
+                                    allowCustomSavesFolder:
+                                        allowCustomSavesFolder,
                                   );
 
                                 case SettingsSection.network:
@@ -349,6 +354,7 @@ class SettingsFoldersColumn extends StatelessWidget {
     required this.savesDir,
     required this.backupsDir,
     required this.ignoredSubfolders,
+    required this.allowCustomSavesFolder,
   });
 
   final ValueNotifier<String> modsDir;
@@ -356,6 +362,7 @@ class SettingsFoldersColumn extends StatelessWidget {
   final ValueNotifier<String> savesDir;
   final ValueNotifier<String> backupsDir;
   final ValueNotifier<List<String>> ignoredSubfolders;
+  final ValueNotifier<bool> allowCustomSavesFolder;
 
   @override
   Widget build(BuildContext context) {
@@ -471,7 +478,9 @@ class SettingsFoldersColumn extends StatelessWidget {
 
                   if (ttsDir == null) return;
 
-                  if (!await directoriesNotifier.isSavesDirectoryValid(
+                  if (allowCustomSavesFolder.value) {
+                    savesDir.value = ttsDir;
+                  } else if (!await directoriesNotifier.isSavesDirectoryValid(
                       ttsDir, false)) {
                     if (context.mounted) {
                       showSnackBar(context, 'Invalid Saves folder');
@@ -485,6 +494,27 @@ class SettingsFoldersColumn extends StatelessWidget {
                 child: const Text('Select'),
               ),
             ],
+          ),
+          CheckboxListTile(
+            title: Row(
+              spacing: 4,
+              children: [
+                const Text('Allow custom Saves folder path'),
+                CustomTooltip(
+                  message:
+                      'When enabled, the Saves folder is not required to be named "Saves"',
+                  child: Icon(Icons.info_outline),
+                ),
+              ],
+            ),
+            value: allowCustomSavesFolder.value,
+            checkColor: Colors.black,
+            activeColor: Colors.white,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (value) {
+              allowCustomSavesFolder.value =
+                  value ?? allowCustomSavesFolder.value;
+            },
           ),
           SizedBox(height: 16),
           Row(

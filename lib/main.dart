@@ -11,11 +11,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  await Hive.initFlutter('TTS Mod Vault-beta');
+  await Hive.initFlutter('TTS Mod Vault');
 
   WindowOptions windowOptions = const WindowOptions(
     minimumSize: Size(854, 480),
-    title: 'TTS Mod Vault 2.0.0-rc1',
+    title: 'TTS Mod Vault 2.0.0',
     center: true,
   );
 

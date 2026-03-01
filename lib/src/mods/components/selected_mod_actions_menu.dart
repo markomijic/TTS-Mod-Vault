@@ -9,11 +9,9 @@ import 'package:tts_mod_vault/src/mods/components/url_check_results_dialog.dart'
     show UrlCheckResultsDialog;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show
-        actionInProgressProvider,
-        deleteAssetsProvider,
-        modsProvider;
-import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
+    show actionInProgressProvider, deleteAssetsProvider, modsProvider;
+import 'package:tts_mod_vault/src/utils.dart'
+    show showSnackBar, copyToClipboard;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets_state.dart'
     show DeleteAssetsStatusEnum, SharedAssetInfo;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets.dart'
@@ -280,6 +278,8 @@ void _showDeleteConfirmDialog(
                     if (hasSharedAssets) ...[
                       CheckboxListTile(
                         value: includeShared,
+                        checkColor: Colors.black,
+                        activeColor: Colors.white,
                         visualDensity: VisualDensity.compact,
                         onChanged: (value) {
                           setState(() {
@@ -427,47 +427,72 @@ Future<void> _showSharedAssetsDetailsDialog(
         child: AlertDialog(
           title: const Text('Shared Assets Details'),
           content: SizedBox(
-            width: 850,
+            width: 1000,
             //  height: 600,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: modEntries.length,
-              itemBuilder: (itemContext, index) {
-                final entry = modEntries[index];
-                final modJsonFileName = entry.key;
-                final assetUrls = entry.value;
-                final displayName =
-                    modNameMap[modJsonFileName] ?? modJsonFileName;
+            child: Theme(
+              data: Theme.of(builderContext).copyWith(
+                textSelectionTheme: TextSelectionThemeData(
+                  selectionColor: Colors.grey[850],
+                ),
+              ),
+              child: SelectionArea(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: modEntries.length,
+                  itemBuilder: (itemContext, index) {
+                    final entry = modEntries[index];
+                    final modJsonFileName = entry.key;
+                    final assetUrls = entry.value;
+                    final displayName =
+                        modNameMap[modJsonFileName] ?? modJsonFileName;
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SelectableText(
-                        displayName,
-                        selectionColor: Colors.blue,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(left: 16.0, top: 2.0),
+                            child: Text(assetUrls.join('\n')),
+                          ),
+                          if (index < (modEntries.length - 1)) ...[
+                            const Divider(),
+                            const SizedBox(height: 4)
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16.0, top: 2.0),
-                        child: SelectableText(
-                          assetUrls.join('\n'),
-                          selectionColor: Colors.blue,
-                        ),
-                      ),
-                      const Divider(),
-                    ],
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+              ),
             ),
           ),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Close'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final allText = modEntries.map((entry) {
+                  final name = modNameMap[entry.key] ?? entry.key;
+                  final urls = entry.value.map((u) => '  $u').join('\n');
+                  return '$name\n$urls';
+                }).join('\n\n');
+                await copyToClipboard(builderContext, allText,
+                    showSnackBarAfterCopying: false);
+                if (builderContext.mounted) {
+                  showSnackBar(builderContext, 'Copied to clipboard');
+                }
+              },
+              icon: Icon(Icons.copy_all),
+              label: const Text('Copy All'),
             ),
           ],
         ),

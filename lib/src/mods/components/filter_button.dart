@@ -141,9 +141,46 @@ class FilterButton extends HookConsumerWidget {
               iconColor: Colors.black,
             ),
             menuChildren: [
-              ...FilterAssetsEnum.values.map((assetCount) {
-                final isSelected = selectedAssetCounts.contains(assetCount);
-
+              // "Clear all" option
+              MenuItemButton(
+                closeOnActivate: false,
+                style: MenuItemButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  iconColor: Colors.black,
+                ),
+                child: const Row(
+                  spacing: 8,
+                  children: [
+                    Icon(Icons.clear),
+                    Expanded(
+                      child: Text(
+                        'Clear all',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                onPressed: () {
+                  sortAndFilterNotifier.clearFilteredAssets();
+                },
+              ),
+              const Divider(height: 1, color: Colors.black),
+              // Status section
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Text(
+                  'Status',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ...[FilterAssetsEnum.missing, FilterAssetsEnum.complete]
+                  .map((assetFilter) {
+                final isSelected = selectedAssetCounts.contains(assetFilter);
                 return MenuItemButton(
                   closeOnActivate: false,
                   style: MenuItemButton.styleFrom(
@@ -161,7 +198,7 @@ class FilterButton extends HookConsumerWidget {
                       ),
                       Expanded(
                         child: Text(
-                          assetCount.label,
+                          assetFilter.label,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -169,9 +206,62 @@ class FilterButton extends HookConsumerWidget {
                   ),
                   onPressed: () {
                     if (isSelected) {
-                      sortAndFilterNotifier.removeFilteredAssets(assetCount);
+                      sortAndFilterNotifier.removeFilteredAssets(assetFilter);
                     } else {
-                      sortAndFilterNotifier.addFilteredAssets(assetCount);
+                      sortAndFilterNotifier.addFilteredAssets(assetFilter);
+                    }
+                  },
+                );
+              }),
+              const Divider(height: 1, color: Colors.black),
+              // Asset type section
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Text(
+                  'Type',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ...[
+                FilterAssetsEnum.assetBundle,
+                FilterAssetsEnum.audio,
+                FilterAssetsEnum.image,
+                FilterAssetsEnum.model,
+                FilterAssetsEnum.pdf,
+              ].map((assetFilter) {
+                final isSelected = selectedAssetCounts.contains(assetFilter);
+                return MenuItemButton(
+                  closeOnActivate: false,
+                  style: MenuItemButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    iconColor: Colors.black,
+                  ),
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        isSelected
+                            ? Icons.check_box
+                            : Icons.check_box_outline_blank,
+                      ),
+                      Expanded(
+                        child: Text(
+                          assetFilter.label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  onPressed: () {
+                    if (isSelected) {
+                      sortAndFilterNotifier.removeFilteredAssets(assetFilter);
+                    } else {
+                      sortAndFilterNotifier.addFilteredAssets(assetFilter);
                     }
                   },
                 );

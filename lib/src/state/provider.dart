@@ -196,8 +196,8 @@ final actionInProgressProvider = Provider<bool>((ref) {
       refreshingSharedAssets;
 });
 
-final backupSortAndFilterProvider =
-    StateNotifierProvider<BackupSortAndFilterNotifier, BackupSortAndFilterState>(
+final backupSortAndFilterProvider = StateNotifierProvider<
+    BackupSortAndFilterNotifier, BackupSortAndFilterState>(
   (ref) => BackupSortAndFilterNotifier(ref),
 );
 
@@ -233,14 +233,22 @@ final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
   }).toList();
 
   switch (backupSortAndFilter.sortOption) {
-    case BackupSortOptionEnum.alphabeticalAsc:
-      filtered.sort(
-          (a, b) => a.filename.toLowerCase().compareTo(b.filename.toLowerCase()));
-    case BackupSortOptionEnum.newestFirst:
+    case BackupSortOptionEnum.nameAsc:
+      filtered.sort((a, b) =>
+          a.filename.toLowerCase().compareTo(b.filename.toLowerCase()));
+    case BackupSortOptionEnum.nameDesc:
+      filtered.sort((a, b) =>
+          b.filename.toLowerCase().compareTo(a.filename.toLowerCase()));
+    case BackupSortOptionEnum.sizeDesc:
+      filtered.sort((a, b) => b.fileSize.compareTo(a.fileSize));
+    case BackupSortOptionEnum.sizeAsc:
+      filtered.sort((a, b) => a.fileSize.compareTo(b.fileSize));
+    case BackupSortOptionEnum.dateDesc:
       filtered.sort(
           (a, b) => b.lastModifiedTimestamp.compareTo(a.lastModifiedTimestamp));
-    case BackupSortOptionEnum.largestFirst:
-      filtered.sort((a, b) => b.fileSize.compareTo(a.fileSize));
+    case BackupSortOptionEnum.dateAsc:
+      filtered.sort(
+          (a, b) => a.lastModifiedTimestamp.compareTo(b.lastModifiedTimestamp));
   }
 
   return filtered;
@@ -291,16 +299,33 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
     }
 
     if (sortAndFilter.filteredAssets.isNotEmpty) {
-      if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.complete)) {
-        return mod.assetCount == mod.existingAssetCount;
+      final filters = sortAndFilter.filteredAssets;
+      if (filters.contains(FilterAssetsEnum.complete) &&
+          mod.assetCount != mod.existingAssetCount) {
+        return false;
       }
-
-      if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.missing)) {
-        return (mod.missingAssetCount) > 0;
+      if (filters.contains(FilterAssetsEnum.missing) &&
+          mod.missingAssetCount == 0) {
+        return false;
       }
-
-      if (sortAndFilter.filteredAssets.contains(FilterAssetsEnum.audio)) {
-        return mod.hasAudioAssets;
+      if (filters.contains(FilterAssetsEnum.audio) && !mod.hasAudioAssets) {
+        return false;
+      }
+      if (filters.contains(FilterAssetsEnum.image) &&
+          mod.assetLists.images.isEmpty) {
+        return false;
+      }
+      if (filters.contains(FilterAssetsEnum.model) &&
+          mod.assetLists.models.isEmpty) {
+        return false;
+      }
+      if (filters.contains(FilterAssetsEnum.pdf) &&
+          mod.assetLists.pdf.isEmpty) {
+        return false;
+      }
+      if (filters.contains(FilterAssetsEnum.assetBundle) &&
+          mod.assetLists.assetBundles.isEmpty) {
+        return false;
       }
     }
 

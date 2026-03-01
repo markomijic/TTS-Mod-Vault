@@ -53,7 +53,7 @@ class SettingsState {
       showSavedObjects: false,
       showBackupState: true,
       defaultSortOption: SortOptionEnum.alphabeticalAsc,
-      defaultBackupSortOption: BackupSortOptionEnum.alphabeticalAsc,
+      defaultBackupSortOption: BackupSortOptionEnum.nameAsc,
       forceBackupJsonFilename: false,
       ignoreAudioAssets: true,
       allowCustomSavesFolder: false,
@@ -98,7 +98,7 @@ class SettingsState {
       defaultSortOption: _parseSortOptionEnum(
           json['defaultSortOption'], SortOptionEnum.alphabeticalAsc),
       defaultBackupSortOption: _parseBackupSortOptionEnum(
-          json['defaultBackupSortOption'], BackupSortOptionEnum.alphabeticalAsc),
+          json['defaultBackupSortOption'], BackupSortOptionEnum.nameAsc),
       forceBackupJsonFilename:
           _parseBool(json['forceBackupJsonFilename'], false),
       ignoreAudioAssets: _parseBool(json['ignoreAudioAssets'], true),

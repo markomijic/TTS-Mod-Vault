@@ -4,7 +4,11 @@ import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
 enum FilterAssetsEnum {
   missing('Missing'),
   complete('Complete'),
-  audio("Audio");
+  assetBundle('AssetBundles'),
+  audio('Audio'),
+  image('Images'),
+  model('Models'),
+  pdf('PDF');
 
   const FilterAssetsEnum(this.label);
 

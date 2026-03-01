@@ -577,9 +577,9 @@ class SettingsFoldersColumn extends StatelessWidget {
           ),
           SizedBox(height: 16),
           EditableStringList(
-            title: 'Ignored subfolders',
+            title: 'Excluded subfolders',
             tooltipMessage:
-                'Subfolders of Mods, Saves, and Saved Objects folders listed here will be ignored\nManual refresh of data is needed after saving changes\nNames are case-sensitive',
+                'Subfolders inside Mods, Saves, and Saved Objects listed here will not be processed\nManual refresh of data is needed after saving changes\nNames are case-sensitive',
             values: ignoredSubfolders.value,
             addLabel: 'Add subfolder name',
             onChanged: (list) => ignoredSubfolders.value = list,
@@ -1088,9 +1088,9 @@ class SettingsNetworkColumn extends StatelessWidget {
           ),
           SizedBox(height: 16),
           EditableStringList(
-            title: 'Ignored domains',
+            title: 'Excluded domains',
             tooltipMessage:
-                'Domain names added here will be ignored when downloading asset files\nExample: imgur.com\nCase-sensitive',
+                'Domains listed here are excluded from asset downloads\nExample: imgur.com\nNames are case-sensitive',
             values: ignoredDomains.value,
             addLabel: 'Add domain name',
             onChanged: (list) => ignoredDomains.value = list,

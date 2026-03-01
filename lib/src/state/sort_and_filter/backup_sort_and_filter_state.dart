@@ -1,7 +1,10 @@
 enum BackupSortOptionEnum {
-  alphabeticalAsc('A-Z'),
-  newestFirst('Newest'),
-  largestFirst('Largest');
+  nameAsc('A-Z'),
+  nameDesc('Z-A'),
+  sizeDesc('Largest'),
+  sizeAsc('Smallest'),
+  dateDesc('Newest'),
+  dateAsc('Oldest');
 
   const BackupSortOptionEnum(this.label);
   final String label;
@@ -10,7 +13,7 @@ enum BackupSortOptionEnum {
     for (BackupSortOptionEnum option in BackupSortOptionEnum.values) {
       if (option.label == label) return option;
     }
-    return alphabeticalAsc;
+    return nameAsc;
   }
 }
 
@@ -36,7 +39,7 @@ class BackupSortAndFilterState {
   });
 
   factory BackupSortAndFilterState.initial([
-    BackupSortOptionEnum sortOption = BackupSortOptionEnum.alphabeticalAsc,
+    BackupSortOptionEnum sortOption = BackupSortOptionEnum.nameAsc,
   ]) {
     return BackupSortAndFilterState(
       sortOption: sortOption,

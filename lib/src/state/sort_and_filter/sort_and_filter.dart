@@ -104,9 +104,15 @@ class SortAndFilterNotifier extends StateNotifier<SortAndFilterState> {
   }
 
   void addFilteredAssets(FilterAssetsEnum assetFilter) {
-    state = state.copyWith(
-      filteredAssets: {assetFilter},
-    );
+    final updated = Set<FilterAssetsEnum>.from(state.filteredAssets);
+    // Status filters are mutually exclusive
+    if (assetFilter == FilterAssetsEnum.missing) {
+      updated.remove(FilterAssetsEnum.complete);
+    } else if (assetFilter == FilterAssetsEnum.complete) {
+      updated.remove(FilterAssetsEnum.missing);
+    }
+    updated.add(assetFilter);
+    state = state.copyWith(filteredAssets: updated);
   }
 
   // Methods to remove

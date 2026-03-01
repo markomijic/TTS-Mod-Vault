@@ -36,14 +36,13 @@ void showChangelogDialog(BuildContext context) {
 
 String getChangelog() {
   return """
-v1.4.0
+v2.0.0
 
 It is recommended to clear the cache on the first run
 (Refresh → Clear Vault cache)
 
 BREAKING CHANGE
-Saved object backup file naming has been changed to
-Filename (saved object).ttsmod
+Saved object backup file naming has been changed to "Filename (saved object).ttsmod"
 Backups of saved objects made with previous versions will not be detected until renamed
 
 Features:
@@ -54,11 +53,13 @@ Features:
 · Check for invalid asset URLs
 · Mod and asset file deletion
 · Multi-select support for bulk actions
+· Searching assets of selected mod
 · Sorting by missing assets and recently updated
-· Asset-based filtering (missing, complete, audio)
-· Filtering backups by asset count mismatch
-· New setting to ignore audio assets
+· Filtering by asset status and type
+· Filtering mods by backup asset count mismatch
 · New setting for Asset URL font size
+· New setting for custom Saves folder path
+· New settings for excluding audio, subfolders and domains
 · Per-mod audio asset handling
 · JSON import support
 · Update URL presets in Settings

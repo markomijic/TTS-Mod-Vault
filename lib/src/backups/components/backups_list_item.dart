@@ -109,42 +109,35 @@ class BackupsListItem extends HookConsumerWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Row(
-                      spacing: 6,
-                      children: [
-                        CustomTooltip(
-                          message: "${backup.totalAssetCount} asset files",
-                          child: Text(
+                    CustomTooltip(
+                      message:
+                          "${hasMatchingMod ? "Imported" : "Not imported"}\n${backup.fileSizeMB}\n${backup.totalAssetCount} asset files\n${formatTimestamp(backup.lastModifiedTimestamp.toString())}",
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
                             backup.totalAssetCount.toString(),
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: 20,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        Text(
-                          backup.fileSizeMB,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        CustomTooltip(
-                          message: hasMatchingMod ? "Imported" : "Not imported",
-                          child: Icon(
+                          SizedBox(width: 2),
+                          Icon(
                             Icons.extension,
                             size: 22,
                             color: hasMatchingMod ? Colors.green : Colors.red,
                           ),
-                        ),
-                        CustomTooltip(
-                          message: formatTimestamp(
-                                  backup.lastModifiedTimestamp.toString()) ??
-                              'N/A',
-                          child: const Icon(
-                            Icons.schedule,
-                            size: 22,
-                            color: Colors.blue,
+                          SizedBox(width: 8),
+                          Text(
+                            backup.fileSizeMB,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

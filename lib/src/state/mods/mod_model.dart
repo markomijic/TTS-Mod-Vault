@@ -36,6 +36,7 @@ class Mod {
   final String? imageFilePath;
   final ExistingBackupStatusEnum backupStatus;
   final ExistingBackup? backup;
+  final List<String>? invalidUrls;
 
   const Mod({
     required this.modType,
@@ -54,6 +55,7 @@ class Mod {
     required this.existingAssetCount,
     required this.audioVisibility,
     required this.hasAudioAssets,
+    this.invalidUrls,
   });
 
   factory Mod.fromInitial(

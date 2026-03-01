@@ -158,6 +158,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedAssetTypeFilter = useState<AssetTypeEnum?>(null);
     final downloadFilter = useState(ExistingAssetsFilter.all);
+    final showInvalidOnly = useState(false);
     final isSearchActive = useState(false);
     final searchQuery = useState('');
     final searchController = useTextEditingController();
@@ -186,6 +187,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
 
     useMemoized(() {
       selectedAssetTypeFilter.value = null;
+      showInvalidOnly.value = false;
     }, [selectedMod]);
 
     useEffect(() {
@@ -376,6 +378,21 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                         child: Icon(Icons.search, size: 20),
                       ),
                     ),
+              if (selectedMod.invalidUrls != null &&
+                  selectedMod.invalidUrls!.isNotEmpty)
+                FilterChip(
+                  showCheckmark: false,
+                  label: const Text('Invalid'),
+                  selected: showInvalidOnly.value,
+                  onSelected: (v) => showInvalidOnly.value = v,
+                  selectedColor: Colors.red[500],
+                  visualDensity: VisualDensity.compact,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ...availableAssetTypes.map((type) {
                 return FilterChip(
                   showCheckmark: false,
@@ -447,6 +464,13 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 if (downloadFilter.value ==
                         ExistingAssetsFilter.downloadedOnly &&
                     !item.asset.fileExists) {
+                  return const SizedBox.shrink();
+                }
+
+                // Filter by invalid URLs
+                if (showInvalidOnly.value &&
+                    !(selectedMod.invalidUrls?.contains(item.asset.url) ??
+                        false)) {
                   return const SizedBox.shrink();
                 }
 

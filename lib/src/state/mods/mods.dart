@@ -682,6 +682,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           mod.existingAssetCount,
         ),
         backup: backup,
+        invalidUrls: mod.invalidUrls,
       );
     } catch (e) {
       return mod;
@@ -828,6 +829,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           assetCount: recomputed.$2,
           existingAssetCount: recomputed.$3,
           hasAudioAssets: recomputed.$4,
+          invalidUrls: mod.invalidUrls,
         ));
       }
 
@@ -985,11 +987,35 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       existingAssetCount: mod.existingAssetCount,
       hasAudioAssets: mod.hasAudioAssets,
       audioVisibility: mod.audioVisibility,
+      invalidUrls: mod.invalidUrls,
     );
 
     updateMod(updatedMod);
 
     return updatedMod;
+  }
+
+  void updateModInvalidUrls(Mod mod, List<String> invalidUrls) {
+    final updatedMod = Mod(
+      modType: mod.modType,
+      jsonFilePath: mod.jsonFilePath,
+      jsonFileName: mod.jsonFileName,
+      parentFolderName: mod.parentFolderName,
+      saveName: mod.saveName,
+      createdAtTimestamp: mod.createdAtTimestamp,
+      lastModifiedTimestamp: mod.lastModifiedTimestamp,
+      dateTimeStamp: mod.dateTimeStamp,
+      imageFilePath: mod.imageFilePath,
+      backup: mod.backup,
+      backupStatus: mod.backupStatus,
+      assetLists: mod.assetLists,
+      assetCount: mod.assetCount,
+      existingAssetCount: mod.existingAssetCount,
+      hasAudioAssets: mod.hasAudioAssets,
+      audioVisibility: mod.audioVisibility,
+      invalidUrls: invalidUrls,
+    );
+    updateMod(updatedMod);
   }
 
   /// Re-processes a single mod's assets with updated audio preference
@@ -1026,6 +1052,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         assetCount: assetLists.$2,
         existingAssetCount: assetLists.$3,
         hasAudioAssets: assetLists.$4,
+        invalidUrls: mod.invalidUrls,
       );
 
       // Update the mod in state

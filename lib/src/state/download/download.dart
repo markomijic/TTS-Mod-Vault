@@ -3,7 +3,7 @@ import 'dart:io' show File, FileMode, RandomAccessFile;
 
 import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
 import 'package:dio/dio.dart'
-    show CancelToken, Dio, DioException, DioExceptionType, Options;
+    show BaseOptions, CancelToken, Dio, DioException, DioExceptionType, Options;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show debugPrint;
@@ -47,7 +47,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   final Map<String, CancelToken> _cancelTokens = {};
 
   DownloadNotifier(this.ref)
-      : dio = Dio(),
+      : dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15))),
         super(const DownloadState());
 
   // MARK: Cancel DL button
@@ -147,6 +147,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       url,
       tempPath,
       cancelToken: cancelToken,
+      options: Options(
+        receiveTimeout: const Duration(seconds: 60),
+      ),
       onReceiveProgress: (received, total) {
         if (total <= 0 || batchLength > 1) return;
         state = state.copyWith(progress: received / total);
@@ -328,7 +331,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   // MARK: Resolve URL
-  Future<String> resolveUrlWithScheme(String url) async {
+  Future<String> resolveUrlWithScheme(String url,
+      {CancelToken? cancelToken}) async {
     // If URL already starts with http/https, return it directly
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
@@ -337,9 +341,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final httpsUrl = 'https://$url';
     final httpUrl = 'http://$url';
 
-    if (await _checkUrl(httpsUrl)) {
+    if (await _checkUrl(httpsUrl, cancelToken: cancelToken)) {
       return httpsUrl;
-    } else if (await _checkUrl(httpUrl)) {
+    } else if (await _checkUrl(httpUrl, cancelToken: cancelToken)) {
       return httpUrl;
     } else {
       return url; // Could not resolve; return original
@@ -350,17 +354,20 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   /// Core URL checking logic (no scheme resolution to avoid circular dependency)
   /// Returns true if the URL returns a valid response (200-399 status code)
   /// First tries HEAD request, then falls back to GET if HEAD fails (some servers don't support HEAD)
-  Future<bool> _checkUrl(String url) async {
+  Future<bool> _checkUrl(String url, {CancelToken? cancelToken}) async {
     try {
       // Try HEAD request first (faster, doesn't download content)
       try {
         final headResponse = await dio.request(
           url,
+          cancelToken: cancelToken,
           options: Options(
             method: 'HEAD',
             validateStatus: (status) => status != null && status < 500,
             followRedirects: true,
             maxRedirects: 5,
+            sendTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
           ),
         );
 
@@ -369,12 +376,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           return true;
         }
       } catch (headError) {
+        if (headError is DioException &&
+            headError.type == DioExceptionType.cancel) {
+          rethrow;
+        }
         debugPrint('HEAD request failed for $url, trying GET: $headError');
       }
 
       // Fallback to GET request with range header (only download first byte to check if URL works)
       final getResponse = await dio.request(
         url,
+        cancelToken: cancelToken,
         options: Options(
           method: 'GET',
           headers: {
@@ -383,6 +395,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           validateStatus: (status) => status != null && status < 500,
           followRedirects: true,
           maxRedirects: 5,
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
         ),
       );
 
@@ -399,11 +413,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   /// Checks if a URL is live (not invalid/404)
   /// Returns true if the URL returns a valid response (200-399 status code)
   /// First tries HEAD request, then falls back to GET if HEAD fails (some servers don't support HEAD)
-  Future<bool> isUrlLive(String url) async {
+  Future<bool> isUrlLive(String url, {CancelToken? cancelToken}) async {
     try {
       // Resolve URL with scheme if needed
-      final resolvedUrl = await resolveUrlWithScheme(url);
-      return await _checkUrl(resolvedUrl);
+      final resolvedUrl =
+          await resolveUrlWithScheme(url, cancelToken: cancelToken);
+      return await _checkUrl(resolvedUrl, cancelToken: cancelToken);
     } catch (e) {
       debugPrint('Error checking URL $url: $e');
       return false;
@@ -411,29 +426,23 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   // MARK: Check all URLs
-  /// Checks all URLs in a mod to see if they're still live
-  /// Returns a list of URLs that are invalid
-  /// The onComplete callback is called after the state is reset, allowing dialogs to be shown
-  Future<void> checkModUrlsLive(
-    Mod mod, {
-    void Function(List<String> invalidUrls)? onComplete,
-  }) async {
+  Future<void> checkModUrlsLive(Mod mod) async {
     final invalidUrls = <String>[];
 
     final allAssets = mod.getAllAssets();
     final int batchSize = ref.read(settingsProvider).concurrentDownloads;
+    final checkToken = CancelToken();
+    _cancelTokens['_url_check'] = checkToken;
 
     try {
       state = state.copyWith(
-        isDownloading: true,
+        //isDownloading: true, // Not setting this to true so that progress bar appears only in url check results dialog
         progress: 0.0,
         statusMessage: 'Checked 0/${allAssets.length} URLs',
       );
 
       for (int i = 0; i < allAssets.length; i += batchSize) {
-        if (state.cancelledDownloads) {
-          break;
-        }
+        if (checkToken.isCancelled) break;
 
         final batch = allAssets.sublist(
           i,
@@ -441,9 +450,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         );
 
         await Future.wait(batch.map((asset) async {
-          final isLive = await isUrlLive(asset.url);
+          if (checkToken.isCancelled) return;
+          final isLive = await isUrlLive(asset.url, cancelToken: checkToken);
           if (!isLive) invalidUrls.add(asset.url);
         }));
+
+        if (checkToken.isCancelled) break;
 
         // Update progress after each batch
         final checked = (i + batch.length).clamp(0, allAssets.length);
@@ -453,16 +465,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         );
       }
     } finally {
+      _cancelTokens.remove('_url_check');
       state = state.copyWith(
         isDownloading: false,
         progress: 0.0,
         statusMessage: null,
         cancelledDownloads: false,
       );
-
-      // Call the callback after state is reset, so the UI has returned to normal
-      // and the dialog context will be valid
-      onComplete?.call(invalidUrls);
+    }
+    if (!checkToken.isCancelled) {
+      ref.read(modsProvider.notifier).updateModInvalidUrls(mod, invalidUrls);
     }
   }
 

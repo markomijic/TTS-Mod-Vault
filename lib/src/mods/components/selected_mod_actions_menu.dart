@@ -6,13 +6,12 @@ import 'dart:ui' show ImageFilter;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/mods/components/url_check_results_dialog.dart'
-    show buildUrlCheckResultsDialog;
+    show UrlCheckResultsDialog;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
         deleteAssetsProvider,
-        downloadProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/utils.dart' show showSnackBar;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets_state.dart'
@@ -58,24 +57,11 @@ class SelectedModActionsMenu extends HookConsumerWidget {
           leadingIcon: Icon(Icons.link, color: Colors.black),
           child: Text('Check for invalid URLs',
               style: TextStyle(color: Colors.black)),
-          onPressed: () async {
+          onPressed: () {
             if (actionInProgress) return;
-
-            // Get the navigator context before the menu closes
-            final navigator = Navigator.of(context);
-
-            await ref.read(downloadProvider.notifier).checkModUrlsLive(
-              selectedMod,
-              onComplete: (invalidUrls) {
-                showDialog(
-                  context: navigator.context,
-                  builder: (builderContext) => buildUrlCheckResultsDialog(
-                    builderContext,
-                    invalidUrls,
-                    selectedMod,
-                  ),
-                );
-              },
+            showDialog(
+              context: context,
+              builder: (ctx) => UrlCheckResultsDialog(mod: selectedMod),
             );
           },
         ),

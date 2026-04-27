@@ -43,8 +43,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   final Ref ref;
   final Dio dio;
 
-  // Map to store active CancelTokens
-  final Map<String, CancelToken> _cancelTokens = {};
+  // Active cancel tokens for in-flight downloads / URL checks
+  final Set<CancelToken> _cancelTokens = {};
 
   DownloadNotifier(this.ref)
       : dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15))),
@@ -69,7 +69,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       statusMessage: null,
     );
 
-    for (final token in _cancelTokens.values) {
+    for (final token in _cancelTokens) {
       token.cancel('All downloads cancelled by user');
     }
     _cancelTokens.clear();
@@ -80,6 +80,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     ref
         .read(logProvider.notifier)
         .addInfo('Starting download for: ${mod.saveName}');
+
+    // Clear any sticky cancel flag from a previous run
+    if (state.cancelledDownloads) {
+      state = state.copyWith(cancelledDownloads: false);
+    }
 
     final Set<String> allDownloaded = {};
 
@@ -140,9 +145,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<void> _downloadUrl(
     String url,
     String tempPath,
-    CancelToken cancelToken,
-    int batchLength,
-  ) async {
+    CancelToken cancelToken, {
+    void Function(double fraction)? onProgress,
+  }) async {
     await dio.download(
       url,
       tempPath,
@@ -151,10 +156,53 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         receiveTimeout: const Duration(seconds: 60),
       ),
       onReceiveProgress: (received, total) {
-        if (total <= 0 || batchLength > 1) return;
-        state = state.copyWith(progress: received / total);
+        if (total <= 0) return;
+        onProgress?.call(received / total);
       },
     );
+  }
+
+  // MARK: DL URL w/ retry
+  /// Wraps [_downloadUrl] with exponential backoff for transient failures.
+  /// Retries on connection/receive timeouts, connection errors, and 5xx.
+  /// Does not retry on cancel or 4xx.
+  Future<void> _downloadUrlWithRetry(
+    String url,
+    String tempPath,
+    CancelToken cancelToken, {
+    void Function(double fraction)? onProgress,
+    int maxAttempts = 3,
+  }) async {
+    int attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        await _downloadUrl(url, tempPath, cancelToken, onProgress: onProgress);
+        return;
+      } on DioException catch (e) {
+        if (attempt >= maxAttempts ||
+            cancelToken.isCancelled ||
+            !_isRetryableDioError(e)) {
+          rethrow;
+        }
+        final delayMs = 500 * (1 << (attempt - 1)); // 500, 1000, 2000
+        debugPrint(
+            'Retrying download (attempt ${attempt + 1}/$maxAttempts) '
+            'after ${delayMs}ms for $url: ${e.type}');
+        await Future.delayed(Duration(milliseconds: delayMs));
+      }
+    }
+  }
+
+  bool _isRetryableDioError(DioException e) {
+    if (e.type == DioExceptionType.cancel) return false;
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError) {
+      return true;
+    }
+    final code = e.response?.statusCode;
+    return code != null && code >= 500 && code < 600;
   }
 
   // MARK: DL FILES
@@ -168,7 +216,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
 
     if (state.cancelledDownloads) {
-      return [];
+      // Within a bulk run, the flag short-circuits remaining types.
+      // For a standalone single-asset call, clear it and start fresh.
+      if (downloadingAllFiles) {
+        return [];
+      }
+      state = state.copyWith(cancelledDownloads: false);
     }
 
     final urls = modAssetListUrls.where((url) {
@@ -189,19 +242,28 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       );
 
       final ignoredDomains = ref.read(settingsProvider).ignoredDomains;
-      final int batchSize = ref.read(settingsProvider).concurrentDownloads;
+      final int workerCount = ref.read(settingsProvider).concurrentDownloads;
 
-      for (int i = 0; i < urls.length; i += batchSize) {
-        if (state.cancelledDownloads) {
-          break;
-        }
+      // Worker-pool state: file-count progress + per-active-job byte fraction
+      int completed = 0;
+      final progressByJob = <int, double>{};
 
-        final batch = urls.sublist(
-          i,
-          i + batchSize > urls.length ? urls.length : i + batchSize,
+      void publishProgress() {
+        final fractional = progressByJob.values
+            .fold<double>(0, (acc, v) => acc + v);
+        final p = ((completed + fractional) / urls.length).clamp(0.0, 1.0);
+        state = state.copyWith(
+          statusMessage: 'Downloading ${type.label} $completed/${urls.length}',
+          progress: p,
         );
+      }
 
-        await Future.wait(batch.map((originalUrl) async {
+      Future<void> processOne(int jobId, String originalUrl) async {
+        CancelToken? cancelToken;
+        String? tempPath;
+        String urlForLog = originalUrl;
+
+        try {
           // Skip if URL domain is in ignored list
           if (ignoredDomains.isNotEmpty) {
             final uri = Uri.tryParse(originalUrl);
@@ -215,73 +277,62 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           final fileName = getFileNameFromURL(originalUrl);
           final directory =
               ref.read(directoriesProvider.notifier).getDirectoryByType(type);
-          final tempPath = p.join(directory, '${fileName}_temp');
+          tempPath = p.join(directory, '${fileName}_temp');
 
           // Set url and cancel token
           final url = await resolveUrlWithScheme(originalUrl);
-          final cancelToken = CancelToken();
-          _cancelTokens[url] = cancelToken;
+          urlForLog = url;
+          cancelToken = CancelToken();
+          _cancelTokens.add(cancelToken);
+
+          if (state.cancelledDownloads) return;
+
+          void onProgress(double fraction) {
+            progressByJob[jobId] = fraction;
+            publishProgress();
+          }
 
           try {
-            if (state.cancelledDownloads) {
-              _cancelTokens.remove(url);
-              return;
-            }
-
-            try {
-              await _downloadUrl(
-                url,
-                tempPath,
-                cancelToken,
-                batch.length,
-              );
-            } on DioException catch (e) {
-              // Check is Steam CDN url missing a trailing '/'
-              if (e.response?.statusCode == 404 &&
-                  url.startsWith(newSteamUserContentUrl) &&
-                  !url.endsWith('/')) {
-                await _downloadUrl(
-                  '$url/',
-                  tempPath,
-                  cancelToken,
-                  batch.length,
-                );
-              } else {
-                rethrow;
-              }
-            }
-
-            final tempFile = File(tempPath);
-            final bytes = await tempFile.readAsBytes();
-            final firstContent = String.fromCharCodes(bytes.take(100).toList());
-            bool isErrorPage = false;
-
-            // Check for HTML error pages
-            if (firstContent.contains('<html>') ||
-                firstContent.contains('<!DOCTYPE')) {
-              debugPrint("File is a HTML error page");
-              isErrorPage = true;
-            }
-
-            if (cancelToken.isCancelled || isErrorPage) {
-              if (await tempFile.exists()) {
-                await tempFile.delete();
-              }
+            await _downloadUrlWithRetry(url, tempPath, cancelToken,
+                onProgress: onProgress);
+          } on DioException catch (e) {
+            // Check is Steam CDN url missing a trailing '/'
+            if (e.response?.statusCode == 404 &&
+                url.startsWith(newSteamUserContentUrl) &&
+                !url.endsWith('/')) {
+              await _downloadUrlWithRetry('$url/', tempPath, cancelToken,
+                  onProgress: onProgress);
             } else {
-              final finalPath = p.join(directory,
-                  fileName + getExtensionByType(type, tempPath, bytes));
-              await tempFile.rename(finalPath);
-
-              // Track successful download
-              successfulDownloads.add((fileName, finalPath));
+              rethrow;
             }
+          }
 
-            // Remove the token after download
-            _cancelTokens.remove(url);
-          } catch (e) {
-            // Remove the token in case of error
-            _cancelTokens.remove(url);
+          final tempFile = File(tempPath);
+          final bytes = await tempFile.readAsBytes();
+          final firstContent = String.fromCharCodes(bytes.take(100).toList());
+          bool isErrorPage = false;
 
+          // Check for HTML error pages
+          if (firstContent.contains('<html>') ||
+              firstContent.contains('<!DOCTYPE')) {
+            debugPrint("File is a HTML error page");
+            isErrorPage = true;
+          }
+
+          if (cancelToken.isCancelled || isErrorPage) {
+            if (await tempFile.exists()) {
+              await tempFile.delete();
+            }
+          } else {
+            final finalPath = p.join(directory,
+                fileName + getExtensionByType(type, tempPath, bytes));
+            await tempFile.rename(finalPath);
+
+            // Track successful download
+            successfulDownloads.add((fileName, finalPath));
+          }
+        } catch (e) {
+          if (tempPath != null) {
             try {
               if (await File(tempPath).exists()) {
                 await File(tempPath).delete();
@@ -289,27 +340,37 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             } catch (e) {
               debugPrint('Error deleting file after download error $e');
             }
+          }
 
-            // Handle cancellation specifically
-            if (e is DioException && e.type == DioExceptionType.cancel) {
-              debugPrint('Download cancelled for $url');
-              return; // Don't treat cancellation as an error
-            }
-
+          // Handle cancellation specifically
+          if (e is DioException && e.type == DioExceptionType.cancel) {
+            debugPrint('Download cancelled for $urlForLog');
+          } else {
             debugPrint('Error occurred while downloading files: $e');
           }
-        }));
-
-        // Progress per batch
-        if (batch.length > 1) {
-          final completed = (i + batch.length).clamp(0, urls.length);
-          state = state.copyWith(
-            statusMessage:
-                'Downloading ${type.label} $completed/${urls.length}',
-            progress: (completed / urls.length).clamp(0.0, 1.0),
-          );
+        } finally {
+          if (cancelToken != null) _cancelTokens.remove(cancelToken);
+          progressByJob.remove(jobId);
+          completed++;
+          publishProgress();
         }
       }
+
+      // Hand-rolled worker pool: each worker pulls the next URL by atomic
+      // index increment (safe because Dart is single-threaded). A finished
+      // worker immediately picks the next URL — no head-of-line blocking
+      // from a slow file like the previous fixed-batch Future.wait did.
+      int nextIndex = 0;
+      final workers = List.generate(workerCount, (_) async {
+        while (true) {
+          if (state.cancelledDownloads) return;
+          if (nextIndex >= urls.length) return;
+          final myIndex = nextIndex++;
+          await processOne(myIndex, urls[myIndex]);
+        }
+      });
+
+      await Future.wait(workers);
     } catch (e) {
       debugPrint('downloadAllFiles error: $e');
     } finally {
@@ -432,7 +493,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final allAssets = mod.getAllAssets();
     final int batchSize = ref.read(settingsProvider).concurrentDownloads;
     final checkToken = CancelToken();
-    _cancelTokens['_url_check'] = checkToken;
+    _cancelTokens.add(checkToken);
 
     try {
       state = state.copyWith(
@@ -465,7 +526,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         );
       }
     } finally {
-      _cancelTokens.remove('_url_check');
+      _cancelTokens.remove(checkToken);
       state = state.copyWith(
         isDownloading: false,
         progress: 0.0,

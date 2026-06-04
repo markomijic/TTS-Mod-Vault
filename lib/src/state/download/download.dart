@@ -371,8 +371,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           ),
         );
 
-        // Consider 2xx and 3xx as live
         if (headResponse.statusCode != null && headResponse.statusCode! < 400) {
+          // CDNs sometimes return 200 with an HTML error page for deleted content
+          final contentType =
+              headResponse.headers.value('content-type') ?? '';
+          if (contentType.contains('text/html')) {
+            return false;
+          }
           return true;
         }
       } catch (headError) {
@@ -400,10 +405,15 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         ),
       );
 
-      // Consider 2xx (200-299) and partial content (206) as live
-      // Also accept 3xx redirects
-      return getResponse.statusCode != null &&
-          (getResponse.statusCode! < 400 || getResponse.statusCode == 206);
+      if (getResponse.statusCode == null || getResponse.statusCode! >= 400) {
+        return false;
+      }
+      // CDNs sometimes return 200 with an HTML error page for deleted content
+      final contentType = getResponse.headers.value('content-type') ?? '';
+      if (contentType.contains('text/html')) {
+        return false;
+      }
+      return true;
     } catch (e) {
       return false;
     }

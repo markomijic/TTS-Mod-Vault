@@ -10,7 +10,10 @@ import 'src/app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
-  await dotenv.load(fileName: '.env');
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {}
+
   await Hive.initFlutter('TTS Mod Vault');
 
   WindowOptions windowOptions = const WindowOptions(

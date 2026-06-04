@@ -23,6 +23,7 @@ class SettingsState {
   final double assetUrlFontSize;
   final List<String> ignoredSubfolders;
   final List<String> ignoredDomains;
+  final String proxyUrl;
 
   const SettingsState({
     required this.useModsListView,
@@ -41,6 +42,7 @@ class SettingsState {
     required this.urlReplacementPresets,
     required this.ignoredSubfolders,
     required this.ignoredDomains,
+    this.proxyUrl = '',
   });
 
   factory SettingsState.defaultState() {
@@ -83,6 +85,7 @@ class SettingsState {
       'assetUrlFontSize': assetUrlFontSize,
       'ignoredSubfolders': ignoredSubfolders,
       'ignoredDomains': ignoredDomains,
+      'proxyUrl': proxyUrl,
     };
   }
 
@@ -107,6 +110,7 @@ class SettingsState {
       assetUrlFontSize: _parseDouble(json['assetUrlFontSize'], 12.0),
       ignoredSubfolders: _parseStringList(json['ignoredSubfolders']),
       ignoredDomains: _parseStringList(json['ignoredDomains']),
+      proxyUrl: _parseString(json['proxyUrl'], ''),
     );
   }
 
@@ -178,5 +182,11 @@ class SettingsState {
     if (value is! List) return [];
 
     return value.map((item) => item?.toString()).whereType<String>().toList();
+  }
+
+  static String _parseString(dynamic value, String defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is String) return value;
+    return defaultValue;
   }
 }

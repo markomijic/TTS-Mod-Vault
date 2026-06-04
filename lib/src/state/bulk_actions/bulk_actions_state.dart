@@ -6,7 +6,8 @@ enum BulkActionsStatusEnum {
   downloadAndBackupAll,
   updateModsAll,
   importingBackups,
-  deleteAssetsAll;
+  deleteAssetsAll,
+  checkUrlsAll;
 }
 
 enum BulkBackupBehaviorEnum {

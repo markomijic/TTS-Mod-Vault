@@ -542,6 +542,53 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
   }
 
+  // MARK: Check URLs
+  Future<void> checkUrlsAllMods(List<Mod> mods) async {
+    ref
+        .read(logProvider.notifier)
+        .addInfo('Starting bulk URL check for ${mods.length} mods');
+
+    state = state.copyWith(
+      status: BulkActionsStatusEnum.checkUrlsAll,
+      totalModNumber: mods.length,
+    );
+
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+    final modsNotifier = ref.read(modsProvider.notifier);
+    int withInvalid = 0;
+
+    for (int i = 0; i < mods.length; i++) {
+      if (state.cancelledBulkAction) break;
+
+      await Future.delayed(Duration.zero);
+
+      final mod = mods[i];
+      state = state.copyWith(
+        currentModNumber: i + 1,
+        statusMessage:
+            'Checking URLs for "${mod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
+
+      await downloadNotifier.checkModUrlsLive(mod);
+
+      // Read the updated mod to see if it has invalid URLs
+      final updated = await modsNotifier.updateSelectedMod(mod);
+      if (updated.invalidUrls?.isNotEmpty ?? false) withInvalid++;
+    }
+
+    if (!state.cancelledBulkAction) {
+      final summary = withInvalid == 0
+          ? 'All URLs valid across ${mods.length} mods'
+          : '$withInvalid / ${mods.length} mods have invalid URLs';
+
+      withInvalid == 0
+          ? ref.read(logProvider.notifier).addSuccess(summary)
+          : ref.read(logProvider.notifier).addWarning(summary);
+    }
+
+    _resetState();
+  }
+
   // MARK: Import
   Future<void> importBackups({String? filePath}) async {
     state = state.copyWith(
@@ -652,7 +699,19 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       case BulkActionsStatusEnum.deleteAssetsAll:
         _cancelDeleteAssetsAll();
         break;
+
+      case BulkActionsStatusEnum.checkUrlsAll:
+        _cancelCheckUrlsAll();
+        break;
     }
+  }
+
+  void _cancelCheckUrlsAll() {
+    ref.read(downloadProvider.notifier).cancelAllDownloads();
+    state = state.copyWith(
+      cancelledBulkAction: true,
+      statusMessage: 'Cancelling URL check',
+    );
   }
 
   void _cancelDownloadAll() {

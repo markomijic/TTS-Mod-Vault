@@ -132,7 +132,7 @@ final ThemeData darkTheme = ThemeData(
 final _nonAlphanumericRegex = RegExp(r'[^a-zA-Z0-9]');
 
 String getFileNameFromURL(String url) {
-  return url.replaceAll(_nonAlphanumericRegex, '');
+  return url.toLowerCase().replaceAll(_nonAlphanumericRegex, '');
 }
 
 String getFileNameFromPath(String path) {

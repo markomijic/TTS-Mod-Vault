@@ -121,7 +121,7 @@ Future<Map<String, String>> _getDirectoryFileNamesAndPaths(
   final assetMap = <String, String>{};
 
   for (final file in files) {
-    final filename = p.basenameWithoutExtension(file.path);
+    final filename = p.basenameWithoutExtension(file.path).toLowerCase();
     final mappedFilename = filename.startsWith(getFileNameFromURL(oldCloudUrl))
         ? filename.replaceFirst(getFileNameFromURL(oldCloudUrl),
             getFileNameFromURL(newSteamUserContentUrl))

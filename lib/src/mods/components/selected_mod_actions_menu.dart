@@ -9,7 +9,7 @@ import 'package:tts_mod_vault/src/mods/components/url_check_results_dialog.dart'
     show UrlCheckResultsDialog;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/provider.dart'
-    show actionInProgressProvider, deleteAssetsProvider, modsProvider;
+    show actionInProgressProvider, deleteAssetsProvider, downloadProvider, modsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show showSnackBar, copyToClipboard;
 import 'package:tts_mod_vault/src/state/delete_assets/delete_assets_state.dart'
@@ -91,6 +91,57 @@ class SelectedModActionsMenu extends HookConsumerWidget {
             if (context.mounted) {
               showSnackBar(context,
                   'Copied ${missingAssets.length} missing ${missingAssets.length > 1 ? 'URLs' : 'URL'} to clipboard');
+            }
+          },
+        ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          leadingIcon: Icon(Icons.refresh, color: Colors.black),
+          child: Text('Re-download all assets',
+              style: TextStyle(color: Colors.black)),
+          onPressed: () async {
+            if (actionInProgress) return;
+
+            final hasAssets = selectedMod.getAllAssets().isNotEmpty;
+            if (!hasAssets) return;
+
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: AlertDialog(
+                  title: const Text('Re-download all assets?'),
+                  content: Text(
+                    'This will re-download all ${selectedMod.assetCount} assets for "${selectedMod.saveName}", overwriting existing files.\n\nContinue?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Re-download'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+
+            if (confirmed != true) return;
+            if (!context.mounted) return;
+
+            final modsNotifier = ref.read(modsProvider.notifier);
+            final downloaded = await ref
+                .read(downloadProvider.notifier)
+                .redownloadAllFiles(selectedMod);
+            await modsNotifier.updateSelectedMod(selectedMod);
+            if (downloaded.isNotEmpty) {
+              await modsNotifier.refreshModsWithSharedAssets(downloaded,
+                  excludeJsonFileName: selectedMod.jsonFileName);
             }
           },
         ),

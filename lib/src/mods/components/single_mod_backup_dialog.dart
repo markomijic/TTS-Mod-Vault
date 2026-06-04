@@ -91,6 +91,22 @@ class SingleModBackupDialog extends HookConsumerWidget {
                 onPressed: effectiveFolder == null || effectiveFolder.isEmpty
                     ? null
                     : () {
+                        // Remember this folder for next time if it's a newly
+                        // selected directory (not just re-using an existing backup)
+                        final isSelectingNewFolder =
+                            !hasExistingBackup ||
+                            locationChoice.value ==
+                                BackupLocationChoice.selectNew;
+                        if (isSelectingNewFolder &&
+                            selectedFolder.value.isNotEmpty &&
+                            selectedFolder.value != backupsDir) {
+                          final dirNotifier =
+                              ref.read(directoriesProvider.notifier);
+                          dirNotifier.updateBackupsDirectory(
+                              selectedFolder.value);
+                          dirNotifier.saveDirectories();
+                        }
+
                         onConfirm.call(
                           effectiveFolder,
                           downloadMissingFirst.value,

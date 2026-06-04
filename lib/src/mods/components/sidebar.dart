@@ -17,6 +17,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         directoriesProvider,
         importBackupProvider,
         loaderProvider,
+        loggingProvider,
         selectedPageProvider,
         settingsProvider;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -202,6 +203,15 @@ class Sidebar extends HookConsumerWidget {
                     context: context,
                     builder: (context) => SettingsDialog(),
                   ),
+                ),
+                _SidebarItem(
+                  icon: Icons.terminal,
+                  label: 'Debug Console',
+                  isExpanded: isHovered.value,
+                  isDisabled: false,
+                  onPressed: () => ref
+                      .read(loggingProvider.notifier)
+                      .toggleVisibility(),
                 ),
               ],
             ),

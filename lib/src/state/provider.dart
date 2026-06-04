@@ -31,9 +31,16 @@ import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter.d
 import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter_state.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/sort_and_filter_state.dart';
+import 'package:tts_mod_vault/src/state/logging/logging.dart';
+import 'package:tts_mod_vault/src/state/logging/logging_state.dart' show LoggingState;
 import 'package:tts_mod_vault/src/state/storage/storage.dart';
 
 enum AppPage { mods, backups }
+
+final loggingProvider =
+    StateNotifierProvider<LoggingNotifier, LoggingState>(
+  (ref) => LoggingNotifier(ref),
+);
 
 final logProvider = StateNotifierProvider<LogNotifier, List<LogEntry>>((ref) {
   return LogNotifier();
@@ -50,7 +57,7 @@ final filteredLogProvider =
   final lowerQuery = searchQuery.toLowerCase();
   return logs.where((entry) {
     return entry.message.toLowerCase().contains(lowerQuery) ||
-        entry.formattedTimestamp.contains(lowerQuery);
+        entry.formattedTimestamp.toLowerCase().contains(lowerQuery);
   }).toList();
 });
 

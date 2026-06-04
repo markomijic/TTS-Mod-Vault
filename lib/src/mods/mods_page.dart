@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show AsyncValueX, ConsumerWidget, HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show
         ErrorMessage,
@@ -19,6 +20,7 @@ import 'package:tts_mod_vault/src/mods/components/filter_button.dart'
     show FilterButton;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
+        filteredModsProvider,
         loadingMessageProvider,
         modsProvider,
         modsSearchQueryProvider,
@@ -69,6 +71,13 @@ class ModsColumn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final type = ref.watch(selectedModTypeProvider);
+    final filtered = ref.watch(filteredModsProvider);
+    final modsState = ref.watch(modsProvider).valueOrNull;
+    final total = modsState == null ? 0 : switch (type) {
+      ModTypeEnum.mod => modsState.mods.length,
+      ModTypeEnum.save => modsState.saves.length,
+      ModTypeEnum.savedObject => modsState.savedObjects.length,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,6 +96,21 @@ class ModsColumn extends ConsumerWidget {
               SortButton(),
               FilterButton(),
               BulkActionsMenu(),
+              if (total > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    filtered.length == total
+                        ? '$total'
+                        : '${filtered.length} / $total',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: filtered.length == total
+                          ? Colors.white54
+                          : Colors.white,
+                    ),
+                  ),
+                ),
               CustomTooltip(
                 message:
                     """• Left-click a ${type.label} to see assets and actions

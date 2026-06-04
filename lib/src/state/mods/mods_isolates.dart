@@ -235,21 +235,36 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
     assetKeys.addAll(value.subtypes);
   }
 
-  // Create regex pattern for each exact asset key
   for (final key in assetKeys) {
-    // Pattern: "key": "url_value"
-    // Handles various whitespace scenarios and captures the URL
-    final pattern = RegExp(
+    // JSON-style: "Key": "url"
+    final jsonPattern = RegExp(
       '"$key"\\s*:\\s*"([^"]*)"',
       caseSensitive: true,
     );
-
-    final matches = pattern.allMatches(jsonString);
-    for (final match in matches) {
+    for (final match in jsonPattern.allMatches(jsonString)) {
       final url = match.group(1);
-      if (url != null && url.isNotEmpty) {
-        urls[url] = key;
-      }
+      if (url != null && url.isNotEmpty) urls[url] = key;
+    }
+
+    // Lua-style inside LuaScript values.
+    // Double-quoted Lua strings are JSON-escaped in the raw file: Key = \"url\"
+    final luaDoublePattern = RegExp(
+      r'\b' + RegExp.escape(key) + r'\s*=\s*\\"([^\\"]*)\\"',
+      caseSensitive: true,
+    );
+    for (final match in luaDoublePattern.allMatches(jsonString)) {
+      final url = match.group(1);
+      if (url != null && url.isNotEmpty) urls[url] = key;
+    }
+
+    // Single-quoted Lua strings are not escaped in JSON: Key = 'url'
+    final luaSinglePattern = RegExp(
+      r"\b" + RegExp.escape(key) + r"\s*=\s*'([^']*)'",
+      caseSensitive: true,
+    );
+    for (final match in luaSinglePattern.allMatches(jsonString)) {
+      final url = match.group(1);
+      if (url != null && url.isNotEmpty) urls[url] = key;
     }
   }
 

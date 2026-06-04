@@ -559,7 +559,14 @@ Future<bool> openUrl(String url) async {
   try {
     if (url.isEmpty) return false;
 
-    final Uri uri = Uri.parse(url);
+    // URLs without a scheme (e.g. "example.com/path") parse as relative URIs
+    // which url_launcher cannot open. Default to https.
+    final schemeUrl =
+        url.startsWith('http://') || url.startsWith('https://')
+            ? url
+            : 'https://$url';
+
+    final Uri uri = Uri.parse(schemeUrl);
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);

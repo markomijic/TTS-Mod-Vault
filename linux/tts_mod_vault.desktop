@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=TTS Mod Vault
+Comment=Tabletop Simulator mod manager — backup, download and manage assets
+Categories=Utility;
+Icon=tts_mod_vault
+Exec=tts_mod_vault
+Terminal=false

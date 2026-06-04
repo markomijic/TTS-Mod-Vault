@@ -496,9 +496,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             ? DownloadProgressBar()
             : backupStatus != BackupStatusEnum.idle
                 ? BackupProgressBar()
-                : listItems.isNotEmpty
-                    ? SelectedModActionButtons(selectedMod: selectedMod)
-                    : const SizedBox.shrink()
+                : SelectedModActionButtons(selectedMod: selectedMod)
       ],
     );
   }

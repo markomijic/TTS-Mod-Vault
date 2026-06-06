@@ -9,6 +9,8 @@ import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
 import 'package:open_filex/open_filex.dart' show OpenFilex;
 import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
+import 'package:tts_mod_vault/src/mods/components/save_as_mod_dialog.dart'
+    show SaveAsModDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
@@ -701,6 +703,14 @@ void showModContextMenu(
           ),
         ),
       ],
+      if (mod.modType == ModTypeEnum.save)
+        PopupMenuItem(
+          value: ContextMenuActionEnum.saveAsMod,
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.drive_file_move), Text('Save as Mod')],
+          ),
+        ),
       PopupMenuItem(
         value: ContextMenuActionEnum.copySaveName,
         child: Row(
@@ -832,6 +842,15 @@ void showModContextMenu(
 
         case ContextMenuActionEnum.openBackupInExplorer:
           openInFileExplorer(mod.backup!.filepath);
+          break;
+
+        case ContextMenuActionEnum.saveAsMod:
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => SaveAsModDialog(save: mod),
+            );
+          }
           break;
 
         case ContextMenuActionEnum.copySaveName:

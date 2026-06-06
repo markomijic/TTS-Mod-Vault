@@ -18,4 +18,5 @@ enum ContextMenuActionEnum {
   checkUrl,
   checkShared,
   deleteMod,
+  saveAsMod,
 }

@@ -1,4 +1,4 @@
-import 'dart:io' show File, Platform;
+import 'dart:io' show Directory, File, Platform;
 import 'dart:isolate' show Isolate;
 import 'dart:math' show max;
 
@@ -653,6 +653,59 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     } catch (e, stack) {
       debugPrint('addSingleMod error: $e');
       state = AsyncValue.error(e, stack);
+    }
+  }
+
+  /// Copies a save's JSON file (and its sibling image) into [targetFolder] using
+  /// [fileName] as the new base name, then registers it as a mod.
+  ///
+  /// Returns a result message describing the outcome. If a file with the chosen
+  /// name already exists in [targetFolder], nothing is copied and a warning
+  /// message is returned.
+  Future<String> saveAsMod(
+    Mod save,
+    String targetFolder,
+    String fileName,
+  ) async {
+    try {
+      // Strip any user-typed extension to avoid e.g. ".json.json"
+      final baseName = p.basenameWithoutExtension(fileName.trim());
+      if (baseName.isEmpty) {
+        return 'Please enter a valid file name';
+      }
+
+      final targetPath = p.join(targetFolder, '$baseName.json');
+
+      // Warn and abort on collision instead of overwriting
+      if (File(targetPath).existsSync()) {
+        return 'A file named "$baseName.json" already exists in the target folder';
+      }
+
+      // Ensure the target folder exists
+      await Directory(targetFolder).create(recursive: true);
+
+      // Copy the JSON file
+      await File(save.jsonFilePath).copy(targetPath);
+
+      // Copy the sibling image if present (failure does not abort the operation)
+      if (save.imageFilePath != null && save.imageFilePath!.isNotEmpty) {
+        try {
+          final imageSource = File(save.imageFilePath!);
+          if (imageSource.existsSync()) {
+            await imageSource.copy(p.join(targetFolder, '$baseName.png'));
+          }
+        } catch (e) {
+          debugPrint('saveAsMod - image copy failed: $e');
+        }
+      }
+
+      // Register the copied file as a mod
+      await addSingleMod(targetPath, ModTypeEnum.mod);
+
+      return '${save.saveName} saved as mod successfully';
+    } catch (e) {
+      debugPrint('saveAsMod error: $e');
+      return 'Failed to save as mod: $e';
     }
   }
 

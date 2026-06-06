@@ -119,12 +119,14 @@ class MultiSelectView extends HookConsumerWidget {
                       title: 'Backup all',
                       initialBehavior:
                           BulkBackupBehaviorEnum.replaceIfOutOfDate,
-                      onConfirm: (behavior, folder, postBackupAction) {
+                      onConfirm:
+                          (behavior, folder, postBackupAction, setAsDefault) {
                         ref.read(bulkActionsProvider.notifier).backupAllMods(
                               selectedMods.toList(),
                               behavior,
                               folder,
                               postBackupAction,
+                              setAsDefault,
                             );
                       },
                     ),
@@ -148,7 +150,8 @@ class MultiSelectView extends HookConsumerWidget {
                       title: 'Download & backup all',
                       initialBehavior:
                           BulkBackupBehaviorEnum.replaceIfOutOfDate,
-                      onConfirm: (behavior, folder, postBackupAction) {
+                      onConfirm:
+                          (behavior, folder, postBackupAction, setAsDefault) {
                         ref
                             .read(bulkActionsProvider.notifier)
                             .downloadAndBackupAllMods(
@@ -156,6 +159,7 @@ class MultiSelectView extends HookConsumerWidget {
                               behavior,
                               folder,
                               postBackupAction,
+                              setAsDefault,
                             );
                       },
                     ),

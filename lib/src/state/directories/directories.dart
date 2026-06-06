@@ -3,7 +3,8 @@ import 'package:flutter/material.dart' show debugPrint;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/provider.dart' show storageProvider;
+import 'package:tts_mod_vault/src/state/provider.dart'
+    show modsProvider, storageProvider;
 
 import 'directories_state.dart'
     show DirectoriesState, DirectoriesStateExtensions;
@@ -134,6 +135,17 @@ class DirectoriesNotifier extends StateNotifier<DirectoriesState> {
 
   void updateBackupsDirectory(String backupsDir) async {
     state = state.updateBackups(backupsDir);
+  }
+
+  /// Persists [folder] as the default backups directory and triggers a full
+  /// data reload so backup state is recomputed against the new folder.
+  /// Call this only AFTER backup work has completed, since the reload would
+  /// otherwise disrupt an in-progress backup.
+  Future<void> setAsDefaultBackupDirAndReload(String folder) async {
+    if (folder.isEmpty || state.backupsDir == folder) return;
+    updateBackupsDirectory(folder);
+    await saveDirectories();
+    ref.read(modsProvider.notifier).loadModsData();
   }
 
   String getDirectoryByType(AssetTypeEnum type) {

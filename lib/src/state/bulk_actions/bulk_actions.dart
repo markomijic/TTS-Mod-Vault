@@ -125,6 +125,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     BulkBackupBehaviorEnum backupBehavior,
     String? folder,
     PostBackupDeletionEnum postBackupDeletion,
+    bool setAsDefaultBackupFolder,
   ) async {
     ref
         .read(logProvider.notifier)
@@ -230,7 +231,17 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           'Bulk backup completed: ${state.currentModNumber} mods backed up');
     }
 
+    final wasCancelled = state.cancelledBulkAction;
+
     _resetState();
+
+    // Save the chosen folder as default and reload only after all backups are
+    // done, so the reload doesn't disrupt the in-progress backup.
+    if (setAsDefaultBackupFolder && !wasCancelled) {
+      await ref
+          .read(directoriesProvider.notifier)
+          .setAsDefaultBackupDirAndReload(selectedBackupFolder);
+    }
   }
 
 // MARK: DL & Backup
@@ -239,6 +250,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     BulkBackupBehaviorEnum backupBehavior,
     String? folder,
     PostBackupDeletionEnum postBackupDeletion,
+    bool setAsDefaultBackupFolder,
   ) async {
     state = state.copyWith(
       status: BulkActionsStatusEnum.downloadAndBackupAll,
@@ -341,8 +353,18 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       await modsNotifier.refreshModsWithSharedAssets(allAffectedFilenames);
     }
 
+    final wasCancelled = state.cancelledBulkAction;
+
     _resetState();
     downloadNotifier.resetState();
+
+    // Save the chosen folder as default and reload only after all backups are
+    // done, so the reload doesn't disrupt the in-progress backup.
+    if (setAsDefaultBackupFolder && !wasCancelled) {
+      await ref
+          .read(directoriesProvider.notifier)
+          .setAsDefaultBackupDirAndReload(selectedBackupFolder);
+    }
   }
 
 // MARK: Delete Assets

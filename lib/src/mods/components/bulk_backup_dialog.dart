@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show CustomTooltip;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum, PostBackupDeletionEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -17,6 +19,7 @@ class BulkBackupDialog extends HookConsumerWidget {
     BulkBackupBehaviorEnum behavior,
     String folder,
     PostBackupDeletionEnum postBackupDeletion,
+    bool setAsDefaultBackupFolder,
   ) onConfirm;
 
   const BulkBackupDialog({
@@ -33,6 +36,7 @@ class BulkBackupDialog extends HookConsumerWidget {
     final selectedBehavior = useState(initialBehavior);
     final selectedFolder = useState(ref.read(directoriesProvider).backupsDir);
     final selectedPostBackupDeletion = useState(PostBackupDeletionEnum.none);
+    final setAsDefault = useState(false);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -67,6 +71,7 @@ class BulkBackupDialog extends HookConsumerWidget {
                           selectedBehavior.value,
                           selectedFolder.value,
                           selectedPostBackupDeletion.value,
+                          setAsDefault.value,
                         );
                         Navigator.pop(context);
                       },
@@ -176,11 +181,38 @@ class BulkBackupDialog extends HookConsumerWidget {
             ),
             if (backupsDir.isEmpty && showBackupState)
               Row(
-                spacing: 8,
                 children: [
+                  SizedBox(width: 4),
                   Icon(Icons.warning_amber_rounded),
-                  Text(
-                      "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable Backup State feature in Settings to hide this warning"),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                        "Set a backup folder in Settings to show backup state after a restart or data refresh\nOr disable Backup State feature in Settings to hide this warning"),
+                  ),
+                ],
+              ),
+            if (backupsDir.isEmpty)
+              Row(
+                spacing: 4,
+                children: [
+                  Checkbox(
+                    visualDensity: VisualDensity.compact,
+                    value: setAsDefault.value,
+                    onChanged: (value) {
+                      setAsDefault.value = value ?? false;
+                    },
+                    checkColor: Colors.black,
+                    activeColor: Colors.white,
+                  ),
+                  const Text(
+                    'Set as default backup folder',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  const CustomTooltip(
+                    message:
+                        'After the backups finish, this folder will be saved as your default backup folder and a full data reload will run.',
+                    child: Icon(Icons.info_outline),
+                  ),
                 ],
               ),
             Text('Save new backups to: ${selectedFolder.value}'),

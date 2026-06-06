@@ -12,6 +12,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         backupProvider,
         deleteAssetsProvider,
+        directoriesProvider,
         downloadProvider,
         modsProvider;
 
@@ -68,13 +69,15 @@ class SelectedModActionButtons extends HookConsumerWidget {
                 context: context,
                 builder: (context) => SingleModBackupDialog(
                   mod: selectedMod,
-                  onConfirm:
-                      (backupFolder, downloadFirst, postBackupDeletion) async {
+                  onConfirm: (backupFolder, downloadFirst, postBackupDeletion,
+                      setAsDefault) async {
                     // Capture provider references before any async operations
                     final modsRef = modsNotifier;
                     final downloadRef = downloadNotifier;
                     final backupRef = backupNotifier;
                     final deleteRef = deleteAssetsNotifier;
+                    final directoriesRef =
+                        ref.read(directoriesProvider.notifier);
 
                     // Use a mutable reference so we always have the fresh mod
                     var currentMod = selectedMod;
@@ -114,6 +117,15 @@ class SelectedModActionButtons extends HookConsumerWidget {
                     if (allAffected.isNotEmpty) {
                       await modsRef.refreshModsWithSharedAssets(allAffected,
                           excludeJsonFileName: currentMod.jsonFileName);
+                    }
+
+                    // 5. Save the chosen folder as default and reload, only
+                    // after the backup is done so the reload doesn't disrupt it.
+                    if (setAsDefault &&
+                        backupFolder != null &&
+                        backupFolder.isNotEmpty) {
+                      await directoriesRef
+                          .setAsDefaultBackupDirAndReload(backupFolder);
                     }
                   },
                 ),

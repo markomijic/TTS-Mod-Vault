@@ -6,6 +6,8 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized, useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/src/mods/components/components.dart'
+    show CustomTooltip;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
@@ -22,6 +24,7 @@ class SingleModBackupDialog extends HookConsumerWidget {
     String? backupFolder,
     bool downloadMissingFirst,
     PostBackupDeletionEnum postBackupDeletion,
+    bool setAsDefaultBackupFolder,
   ) onConfirm;
 
   const SingleModBackupDialog({
@@ -49,6 +52,7 @@ class SingleModBackupDialog extends HookConsumerWidget {
     final selectedFolder = useState(backupsDir);
     final downloadMissingFirst = useState(false);
     final selectedPostBackupDeletion = useState(PostBackupDeletionEnum.none);
+    final setAsDefault = useState(false);
 
     // Determine which folder will be used for backup
     final effectiveFolder = hasExistingBackup &&
@@ -95,6 +99,7 @@ class SingleModBackupDialog extends HookConsumerWidget {
                           effectiveFolder,
                           downloadMissingFirst.value,
                           selectedPostBackupDeletion.value,
+                          setAsDefault.value,
                         );
                         Navigator.pop(context);
                       },
@@ -246,10 +251,36 @@ class SingleModBackupDialog extends HookConsumerWidget {
             // Warning about backup folder
             if (showWarning)
               Row(
-                spacing: 8,
                 children: [
+                  SizedBox(width: 4),
                   Icon(Icons.warning_amber_rounded),
+                  SizedBox(width: 8),
                   Expanded(child: Text(setBackupFolderMessage)),
+                ],
+              ),
+            // Offer to save the chosen folder as the default backup folder
+            if (backupsDir.isEmpty)
+              Row(
+                spacing: 4,
+                children: [
+                  Checkbox(
+                    visualDensity: VisualDensity.compact,
+                    value: setAsDefault.value,
+                    onChanged: (value) {
+                      setAsDefault.value = value ?? false;
+                    },
+                    checkColor: Colors.black,
+                    activeColor: Colors.white,
+                  ),
+                  const Text(
+                    'Set as default backup folder',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  const CustomTooltip(
+                    message:
+                        'After the backup finishes, this folder will be saved as your default backup folder and a full data reload will run.',
+                    child: Icon(Icons.info_outline),
+                  ),
                 ],
               ),
             // Show current backup path

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
-    show HookConsumerWidget, WidgetRef;
+    show HookConsumerWidget, WidgetRef, AsyncValueX;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show CustomTooltip;
 
@@ -11,7 +11,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         actionInProgressProvider,
         modsSearchQueryProvider,
         selectedModTypeProvider,
-        sortAndFilterProvider;
+        sortAndFilterProvider,
+        modsProvider;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show BulkBackupDialog, BulkDeleteDialog, showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/utils.dart'
@@ -60,19 +61,41 @@ class BulkActionsMenu extends HookConsumerWidget {
         textColor: Colors.white,
         smallSize: 12,
         isLabelVisible: bulkActionLimited && !actionInProgress,
-        child: _BulkActionsDropDownButton(),
+        child: _BulkActionsDropDownButton(bulkActionLimited),
       ),
     );
   }
 }
 
 class _BulkActionsDropDownButton extends HookConsumerWidget {
-  const _BulkActionsDropDownButton();
+  final bool bulkActionLimited;
+  const _BulkActionsDropDownButton(this.bulkActionLimited);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionInProgress = ref.watch(actionInProgressProvider);
     final selectedModType = ref.watch(selectedModTypeProvider);
+
+    final filteredMods = ref.watch(filteredModsProvider);
+    final filteredModsLength =
+        useMemoized(() => filteredMods.length.toString(), [filteredMods]);
+
+    final modsState = ref.watch(modsProvider).valueOrNull;
+    final totalMods = useMemoized(
+        () => modsState == null
+            ? 0
+            : switch (selectedModType) {
+                ModTypeEnum.mod => modsState.mods.length,
+                ModTypeEnum.save => modsState.saves.length,
+                ModTypeEnum.savedObject => modsState.savedObjects.length,
+              },
+        [modsState, selectedModType]);
+
+    final bulkActionsButtonText = useMemoized(
+        () => bulkActionLimited
+            ? 'Bulk actions (${'$filteredModsLength/$totalMods'})'
+            : 'Bulk actions',
+        [bulkActionLimited, filteredModsLength, totalMods]);
 
     return MenuAnchor(
       style: MenuStyle(
@@ -250,7 +273,7 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
                     controller.open();
                   }
                 },
-          label: Text('Bulk actions'),
+          label: Text(bulkActionsButtonText),
           icon: Icon(
             Icons.arrow_drop_down,
             size: 26,

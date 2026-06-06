@@ -1,9 +1,10 @@
 import 'dart:convert' show JsonEncoder, json;
-import 'dart:io' show File, FileMode, RandomAccessFile;
+import 'dart:io' show File, FileMode, HttpClient, RandomAccessFile;
 
 import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
 import 'package:dio/dio.dart'
     show BaseOptions, CancelToken, Dio, DioException, DioExceptionType, Options;
+import 'package:dio/io.dart' show IOHttpClientAdapter;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show debugPrint;
@@ -48,7 +49,26 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   DownloadNotifier(this.ref)
       : dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15))),
-        super(const DownloadState());
+        super(const DownloadState()) {
+    _configureProxy();
+  }
+
+  void _configureProxy() {
+    final proxyUrl = ref.read(settingsProvider).proxyUrl;
+    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      if (proxyUrl.isNotEmpty) {
+        client.findProxy = (uri) => 'PROXY $proxyUrl';
+      } else {
+        client.findProxy = null;
+      }
+      return client;
+    };
+  }
+
+  void updateProxySettings() {
+    _configureProxy();
+  }
 
   // MARK: Cancel DL button
   Future<void> handleCancelDownloadsButton() async {

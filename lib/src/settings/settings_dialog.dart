@@ -101,6 +101,10 @@ class SettingsDialog extends HookConsumerWidget {
     final textFieldFocusNode = useFocusNode();
     final ignoredDomains =
         useState<List<String>>(List.from(settings.ignoredDomains));
+    final proxyUrl = useState(settings.proxyUrl);
+    final proxyTextFieldController =
+        useTextEditingController(text: proxyUrl.value);
+    final proxyTextFieldFocusNode = useFocusNode();
 
     // Features
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
@@ -146,6 +150,7 @@ class SettingsDialog extends HookConsumerWidget {
         assetUrlFontSize: assetUrlFontSize.value,
         ignoredSubfolders: ignoredSubfolders.value,
         ignoredDomains: ignoredDomains.value,
+        proxyUrl: proxyTextFieldController.text.trim(),
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -264,6 +269,11 @@ class SettingsDialog extends HookConsumerWidget {
                                     textFieldFocusNode: textFieldFocusNode,
                                     numberValue: concurrentDownloadsValue,
                                     ignoredDomains: ignoredDomains,
+                                    proxyTextFieldController:
+                                        proxyTextFieldController,
+                                    proxyTextFieldFocusNode:
+                                        proxyTextFieldFocusNode,
+                                    proxyUrl: proxyUrl,
                                   );
 
                                 case SettingsSection.updateUrlsPresets:
@@ -1020,12 +1030,18 @@ class SettingsNetworkColumn extends StatelessWidget {
     required this.textFieldFocusNode,
     required this.numberValue,
     required this.ignoredDomains,
+    required this.proxyTextFieldController,
+    required this.proxyTextFieldFocusNode,
+    required this.proxyUrl,
   });
 
   final TextEditingController textFieldController;
   final FocusNode textFieldFocusNode;
   final ValueNotifier<int> numberValue;
   final ValueNotifier<List<String>> ignoredDomains;
+  final TextEditingController proxyTextFieldController;
+  final FocusNode proxyTextFieldFocusNode;
+  final ValueNotifier<String> proxyUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -1094,6 +1110,44 @@ class SettingsNetworkColumn extends StatelessWidget {
             values: ignoredDomains.value,
             addLabel: 'Add domain name',
             onChanged: (list) => ignoredDomains.value = list,
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              const Expanded(
+                child: Row(
+                  spacing: 4,
+                  children: [
+                    Text(
+                      'Proxy URL (optional)',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    CustomTooltip(
+                      message:
+                          'Enter a proxy URL to route network requests through a proxy server\nFormat: http://proxy.example.com:8080 or socks5://proxy.example.com:1080',
+                      child: Icon(Icons.info_outline),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          TextField(
+            controller: proxyTextFieldController,
+            cursorColor: Colors.black,
+            style: TextStyle(color: Colors.black),
+            decoration: InputDecoration(
+              fillColor: Colors.white,
+              filled: true,
+              border: OutlineInputBorder(),
+              hintText: 'http://proxy.example.com:8080',
+              hintStyle: TextStyle(color: Colors.grey),
+            ),
+            focusNode: proxyTextFieldFocusNode,
+            onChanged: (value) {
+              proxyUrl.value = value;
+            },
           ),
         ],
       ),

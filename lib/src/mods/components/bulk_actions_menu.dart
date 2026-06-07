@@ -242,6 +242,20 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           ),
+          leadingIcon: Icon(Icons.link, color: Colors.black),
+          child: Text('Check all URLs', style: TextStyle(color: Colors.black)),
+          onPressed: () {
+            if (actionInProgress) return;
+            ref
+                .read(bulkActionsProvider.notifier)
+                .checkUrlsAllMods(ref.read(filteredModsProvider));
+          },
+        ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
           leadingIcon: Icon(Icons.edit, color: Colors.black),
           child: Text('Update all URLs', style: TextStyle(color: Colors.black)),
           onPressed: () {

@@ -9,6 +9,8 @@ import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
     show ExistingBackupStatusEnum;
+import 'package:tts_mod_vault/src/state/backup/import_backup.dart'
+    show JsonConflictChoice, JsonImportConflict;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show
         BulkActionsState,
@@ -565,7 +567,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   }
 
   // MARK: Import
-  Future<void> importBackups({String? filePath}) async {
+  Future<void> importBackups({
+    String? filePath,
+    Future<JsonConflictChoice> Function(JsonImportConflict conflict)?
+        onJsonConflict,
+    String? targetJsonDir,
+  }) async {
     state = state.copyWith(
         status: BulkActionsStatusEnum.importingBackups,
         statusMessage: 'Select TTSMOD files to import');
@@ -627,7 +634,11 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       final importedFilenames = await ref
           .read(importBackupProvider.notifier)
-          .importBackupFromPath(path);
+          .importBackupFromPath(
+            path,
+            onJsonConflict: onJsonConflict,
+            targetJsonDir: targetJsonDir,
+          );
       allImportedFilenames.addAll(importedFilenames);
     }
 

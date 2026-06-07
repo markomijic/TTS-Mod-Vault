@@ -19,8 +19,14 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         loaderProvider,
         selectedPageProvider,
         settingsProvider;
+import 'package:tts_mod_vault/src/state/backup/import_backup.dart'
+    show JsonConflictChoice;
 import 'package:tts_mod_vault/src/utils.dart'
-    show showConfirmDialog, showSnackBar, showConfirmDialogWithCheckbox;
+    show
+        showConfirmDialog,
+        showSnackBar,
+        showConfirmDialogWithCheckbox,
+        showJsonConflictDialog;
 import 'package:tts_mod_vault/src/help_dialog.dart' show showHelpDialog;
 
 class Sidebar extends HookConsumerWidget {
@@ -150,9 +156,11 @@ class Sidebar extends HookConsumerWidget {
                   isExpanded: isHovered.value,
                   isDisabled: actionInProgress,
                   onPressed: () async {
-                    await ref
-                        .read(bulkActionsProvider.notifier)
-                        .importBackups();
+                    await ref.read(bulkActionsProvider.notifier).importBackups(
+                          onJsonConflict: (c) async => context.mounted
+                              ? await showJsonConflictDialog(context, c)
+                              : JsonConflictChoice.cancel,
+                        );
                   },
                 ),
                 _SidebarItem(

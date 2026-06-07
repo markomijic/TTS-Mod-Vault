@@ -13,6 +13,8 @@ import 'package:tts_mod_vault/src/mods/components/save_as_mod_dialog.dart'
     show SaveAsModDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
+import 'package:tts_mod_vault/src/state/backup/import_backup.dart'
+    show JsonConflictChoice, JsonImportConflict;
 import 'package:tts_mod_vault/src/state/backup/models/existing_backup_model.dart'
     show ExistingBackup;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
@@ -247,6 +249,83 @@ void showBackupConfirmDialog(
     default:
       break;
   }
+}
+
+/// Shown when an imported backup's JSON is OLDER than the local (already
+/// imported) JSON file. Lets the user choose which file to keep.
+Future<JsonConflictChoice> showJsonConflictDialog(
+  BuildContext context,
+  JsonImportConflict conflict,
+) async {
+  final result = await showDialog<JsonConflictChoice>(
+    context: context,
+    barrierDismissible: true,
+    builder: (BuildContext context) {
+      return BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+        child: AlertDialog(
+          title: const Text('Backup is older than your current file'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'The backup for "${conflict.jsonFileName}" contains an older '
+                'version of the file than the one you currently have.\n\n'
+                'Choose which file to keep:',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Your current file: '
+                '${formatTimestamp(conflict.localDateTimeStamp) ?? 'N/A'}\n'
+                '${conflict.existingAssetCount} asset files',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Backup file: '
+                '${formatTimestamp(conflict.backupDateTimeStamp) ?? 'N/A'}\n'
+                '${conflict.backupAssetCount} asset files',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Either way, the asset files from the backup will be imported — '
+                'only the JSON file is affected by your choice.',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(JsonConflictChoice.cancel),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).pop(JsonConflictChoice.useBackup),
+              icon: const Icon(Icons.unarchive),
+              label: const Text('Use backup JSON file'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).pop(JsonConflictChoice.keepCurrent),
+              icon: const Icon(Icons.shield),
+              label: const Text('Keep current JSON file'),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  return result ?? JsonConflictChoice.cancel;
 }
 
 Future<void> showConfirmDialogWithCheckbox(
@@ -563,10 +642,9 @@ Future<bool> openUrl(String url) async {
 
     // URLs without a scheme (e.g. "example.com/path") parse as relative URIs
     // which url_launcher cannot open. Default to https.
-    final schemeUrl =
-        url.startsWith('http://') || url.startsWith('https://')
-            ? url
-            : 'https://$url';
+    final schemeUrl = url.startsWith('http://') || url.startsWith('https://')
+        ? url
+        : 'https://$url';
 
     final Uri uri = Uri.parse(schemeUrl);
 
@@ -775,9 +853,13 @@ void showModContextMenu(
     if (value != null) {
       switch (value) {
         case 'importBackup':
-          await ref
-              .read(bulkActionsProvider.notifier)
-              .importBackups(filePath: mod.backup!.filepath);
+          await ref.read(bulkActionsProvider.notifier).importBackups(
+                filePath: mod.backup!.filepath,
+                targetJsonDir: p.dirname(mod.jsonFilePath),
+                onJsonConflict: (c) async => context.mounted
+                    ? await showJsonConflictDialog(context, c)
+                    : JsonConflictChoice.cancel,
+              );
           break;
 
         case 'openBackupInExplorer':
@@ -1012,9 +1094,13 @@ void _showBackupSubmenu(
     if (value != null && mod.backup != null) {
       switch (value) {
         case 'import':
-          await ref
-              .read(bulkActionsProvider.notifier)
-              .importBackups(filePath: mod.backup!.filepath);
+          await ref.read(bulkActionsProvider.notifier).importBackups(
+                filePath: mod.backup!.filepath,
+                targetJsonDir: p.dirname(mod.jsonFilePath),
+                onJsonConflict: (c) async => context.mounted
+                    ? await showJsonConflictDialog(context, c)
+                    : JsonConflictChoice.cancel,
+              );
           break;
 
         case 'openInExplorer':
@@ -1117,9 +1203,15 @@ void showBackupContextMenu(
     if (value != null) {
       switch (value) {
         case 'import':
-          await ref
-              .read(bulkActionsProvider.notifier)
-              .importBackups(filePath: backup.filepath);
+          await ref.read(bulkActionsProvider.notifier).importBackups(
+                filePath: backup.filepath,
+                targetJsonDir: backup.matchingModFilepath != null
+                    ? p.dirname(backup.matchingModFilepath!)
+                    : null,
+                onJsonConflict: (c) async => context.mounted
+                    ? await showJsonConflictDialog(context, c)
+                    : JsonConflictChoice.cancel,
+              );
           break;
 
         case 'openInExplorer':

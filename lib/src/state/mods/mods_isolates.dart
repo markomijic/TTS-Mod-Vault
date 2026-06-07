@@ -186,7 +186,8 @@ Map<String, String> extractUrlsFromJsonString(String jsonString) {
   Map<String, String> urls = {};
 
   try {
-    // Use regex extraction instead of full JSON parsing
+    // Use regex extraction instead of full JSON parsing. A single pass handles
+    // both plain JSON and asset URLs embedded as escaped JSON in Lua scripts.
     urls = _extractUrlsWithRegex(jsonString);
   } catch (e) {
     debugPrint('extractUrlsFromJson error: $e');
@@ -226,30 +227,34 @@ Map<String, String> _processUrl(String urlKey, String value) {
   return finalUrls;
 }
 
-// Fast regex-based URL extraction using exact AssetTypeEnum subtypes
+// Single combined regex built once from all AssetTypeEnum subtypes.
+// - alternation of every asset key in one pass (group 1 = key)
+// - \\* before each quote tolerates escaped JSON embedded in Lua scripts
+//   (e.g. \"MeshURL\": \"https://...\" spawned at runtime via spawnObjectJSON)
+// - value capture (group 2) stops at the first " or \, i.e. the quote or the
+//   \" that closes the value
+final _assetUrlRegex = (() {
+  final assetKeys = [
+    for (final value in AssetTypeEnum.values) ...value.subtypes,
+  ].map(RegExp.escape).join('|');
+
+  return RegExp(
+    '\\\\*"($assetKeys)\\\\*"\\s*:\\s*\\\\*"([^"\\\\]*)',
+    caseSensitive: true,
+  );
+})();
+
+// Fast regex-based URL extraction using exact AssetTypeEnum subtypes.
+// Matches both plain JSON ("MeshURL": "...") and asset URLs embedded as escaped
+// JSON inside Lua scripts (\"MeshURL\": \"...\") in a single pass.
 Map<String, String> _extractUrlsWithRegex(String jsonString) {
   Map<String, String> urls = {};
 
-  List<String> assetKeys = [];
-  for (final value in AssetTypeEnum.values) {
-    assetKeys.addAll(value.subtypes);
-  }
-
-  // Create regex pattern for each exact asset key
-  for (final key in assetKeys) {
-    // Pattern: "key": "url_value"
-    // Handles various whitespace scenarios and captures the URL
-    final pattern = RegExp(
-      '"$key"\\s*:\\s*"([^"]*)"',
-      caseSensitive: true,
-    );
-
-    final matches = pattern.allMatches(jsonString);
-    for (final match in matches) {
-      final url = match.group(1);
-      if (url != null && url.isNotEmpty) {
-        urls[url] = key;
-      }
+  for (final match in _assetUrlRegex.allMatches(jsonString)) {
+    final key = match.group(1);
+    final url = match.group(2);
+    if (key != null && url != null && url.isNotEmpty) {
+      urls[url] = key;
     }
   }
 
@@ -547,7 +552,7 @@ Future<Map<String, String?>> _extractInitialModMetadataFromFile(
       // Try to extract data from current chunk
       saveName ??= _extractSaveNameFromString(chunk, modType);
     }
-    dateTimeStamp ??= _extractDateTimeStampFromString(chunk);
+    dateTimeStamp ??= extractDateTimeStampFromString(chunk);
 
     // If we found both, we can stop
     if (saveName != null && dateTimeStamp != null) {
@@ -603,7 +608,7 @@ String? _extractSaveNameFromString(String jsonString, ModTypeEnum modType) {
   return null;
 }
 
-String? _extractDateTimeStampFromString(String jsonString) {
+String? extractDateTimeStampFromString(String jsonString) {
   try {
     // First, check for "EpochTime": value pattern (numeric, already in Unix timestamp format)
     final epochRegex = RegExp(r'"EpochTime"\s*:\s*(\d+)');
@@ -625,7 +630,7 @@ String? _extractDateTimeStampFromString(String jsonString) {
       }
     }
   } catch (e) {
-    debugPrint('_extractDateTimeStampFromString error: $e');
+    debugPrint('extractDateTimeStampFromString error: $e');
   }
 
   return null;

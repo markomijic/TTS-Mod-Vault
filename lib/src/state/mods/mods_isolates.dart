@@ -18,7 +18,9 @@ import 'package:tts_mod_vault/src/utils.dart'
     show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
 final urlRegex = RegExp(
-  r'(?:[a-zA-Z]+:\/\/)?[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^{}"]*)?',
+  // Scheme-bearing URLs (https://something) are valid in TTS even without a TLD.
+  // Scheme-less URLs still require a TLD-like domain (e.g. steamusercontent-a.akamaihd.net/...).
+  r'[a-zA-Z]+:\/\/[^{}"\s]+|[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^{}"]*)?',
   caseSensitive: false,
 );
 final nicknameRegex = RegExp(r'"Nickname"\s*:\s*"([^"]*)"');

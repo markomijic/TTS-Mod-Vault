@@ -136,6 +136,37 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     return allDownloaded;
   }
 
+  // MARK: Force re-download all files
+  Future<Set<String>> redownloadAllFiles(Mod mod) async {
+    ref
+        .read(logProvider.notifier)
+        .addInfo('Force re-downloading all assets for: ${mod.saveName}');
+
+    final Set<String> allDownloaded = {};
+
+    for (final (urls, type) in [
+      (mod.assetLists.assetBundles.map((e) => e.url).toList(),
+          AssetTypeEnum.assetBundle),
+      (mod.assetLists.audio.map((e) => e.url).toList(), AssetTypeEnum.audio),
+      (mod.assetLists.images.map((e) => e.url).toList(), AssetTypeEnum.image),
+      (mod.assetLists.models.map((e) => e.url).toList(), AssetTypeEnum.model),
+      (mod.assetLists.pdf.map((e) => e.url).toList(), AssetTypeEnum.pdf),
+    ]) {
+      allDownloaded.addAll(await downloadFiles(
+        modAssetListUrls: urls,
+        type: type,
+        force: true,
+      ));
+    }
+
+    ref
+        .read(logProvider.notifier)
+        .addSuccess('Force re-download completed: ${mod.saveName}');
+
+    resetState();
+    return allDownloaded;
+  }
+
   // MARK: Reset state
   void resetState() {
     state = const DownloadState();
@@ -210,6 +241,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     required List<String> modAssetListUrls,
     required AssetTypeEnum type,
     bool downloadingAllFiles = true,
+    bool force = false,
   }) async {
     if (modAssetListUrls.isEmpty) {
       return [];
@@ -224,12 +256,14 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       state = state.copyWith(cancelledDownloads: false);
     }
 
-    final urls = modAssetListUrls.where((url) {
-      final fileName = getFileNameFromURL(url);
-      return !ref
-          .read(existingAssetListsProvider.notifier)
-          .doesAssetFileExist(fileName, type);
-    }).toList();
+    final urls = force
+        ? List<String>.from(modAssetListUrls)
+        : modAssetListUrls.where((url) {
+            final fileName = getFileNameFromURL(url);
+            return !ref
+                .read(existingAssetListsProvider.notifier)
+                .doesAssetFileExist(fileName, type);
+          }).toList();
 
     // Track successful downloads
     final List<(String, String)> successfulDownloads = [];

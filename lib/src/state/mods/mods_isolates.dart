@@ -17,8 +17,16 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
 import 'package:tts_mod_vault/src/utils.dart'
     show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
 
+// Two branches:
+// 1. Anything with a scheme (https://, steam://, s3://, ...) is taken verbatim
+//    up to a {, } or " - TTS treats the value as an opaque URL it just fetches,
+//    so we must accept hosts that aren't domain-shaped (e.g. https://something,
+//    raw IPs, ports, query strings).
+// 2. Scheme-less but domain-shaped values (e.g. www.example.com/path).
+// The {}/" exclusion still lets us split multi-language values like
+// {en}https://a.com{fr}https://b.com and strip the {en} prefixes.
 final urlRegex = RegExp(
-  r'(?:[a-zA-Z]+:\/\/)?[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^{}"]*)?',
+  r'[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^{}"]+|[a-zA-Z0-9.-]+\.[a-z]{2,}(?:\/[^{}"]*)?',
   caseSensitive: false,
 );
 final nicknameRegex = RegExp(r'"Nickname"\s*:\s*"([^"]*)"');

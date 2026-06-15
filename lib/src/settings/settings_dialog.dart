@@ -87,6 +87,7 @@ class SettingsDialog extends HookConsumerWidget {
     final useModsListViewBox = useState(settings.useModsListView);
     final useBackupsListViewBox = useState(settings.useBackupsListView);
     final showTitleOnCardsBox = useState(settings.showTitleOnCards);
+    final showPdfThumbnails = useState(settings.showPdfThumbnails);
     final defaultSortOption = useState(settings.defaultSortOption);
     final defaultBackupSortOption = useState(settings.defaultBackupSortOption);
     final assetUrlFontSize = useState(settings.assetUrlFontSize);
@@ -146,6 +147,7 @@ class SettingsDialog extends HookConsumerWidget {
         assetUrlFontSize: assetUrlFontSize.value,
         ignoredSubfolders: ignoredSubfolders.value,
         ignoredDomains: ignoredDomains.value,
+        showPdfThumbnails: showPdfThumbnails.value,
       );
 
       if (ref.read(selectedModTypeProvider) == ModTypeEnum.savedObject &&
@@ -237,6 +239,7 @@ class SettingsDialog extends HookConsumerWidget {
                                     useBackupsListViewBox:
                                         useBackupsListViewBox,
                                     showTitleOnCardsBox: showTitleOnCardsBox,
+                                    showPdfThumbnails: showPdfThumbnails,
                                     defaultSortOption: defaultSortOption,
                                     defaultBackupSortOption:
                                         defaultBackupSortOption,
@@ -826,6 +829,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
     required this.useModsListViewBox,
     required this.useBackupsListViewBox,
     required this.showTitleOnCardsBox,
+    required this.showPdfThumbnails,
     required this.defaultSortOption,
     required this.defaultBackupSortOption,
     required this.assetUrlFontSize,
@@ -836,6 +840,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
   final ValueNotifier<bool> useModsListViewBox;
   final ValueNotifier<bool> useBackupsListViewBox;
   final ValueNotifier<bool> showTitleOnCardsBox;
+  final ValueNotifier<bool> showPdfThumbnails;
   final ValueNotifier<SortOptionEnum> defaultSortOption;
   final ValueNotifier<BackupSortOptionEnum> defaultBackupSortOption;
   final ValueNotifier<double> assetUrlFontSize;
@@ -875,6 +880,26 @@ class SettingsInterfaceColumn extends StatelessWidget {
           contentPadding: EdgeInsets.all(0),
           onChanged: (value) {
             showTitleOnCardsBox.value = value ?? showTitleOnCardsBox.value;
+          },
+        ),
+        CheckboxListTile(
+          title: Row(
+            spacing: 4,
+            children: [
+              const Text('Show PDF thumbnails instead of URLs'),
+              CustomTooltip(
+                message:
+                    "Sets the default view for the PDF section when a mod is opened\nYou can still toggle between URLs and thumbnails",
+                child: Icon(Icons.info_outline),
+              ),
+            ],
+          ),
+          value: showPdfThumbnails.value,
+          checkColor: Colors.black,
+          activeColor: Colors.white,
+          contentPadding: EdgeInsets.all(0),
+          onChanged: (value) {
+            showPdfThumbnails.value = value ?? showPdfThumbnails.value;
           },
         ),
         Row(

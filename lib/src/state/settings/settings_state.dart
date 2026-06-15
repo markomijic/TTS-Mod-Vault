@@ -23,6 +23,7 @@ class SettingsState {
   final double assetUrlFontSize;
   final List<String> ignoredSubfolders;
   final List<String> ignoredDomains;
+  final bool showPdfThumbnails;
 
   const SettingsState({
     required this.useModsListView,
@@ -41,6 +42,7 @@ class SettingsState {
     required this.urlReplacementPresets,
     required this.ignoredSubfolders,
     required this.ignoredDomains,
+    required this.showPdfThumbnails,
   });
 
   factory SettingsState.defaultState() {
@@ -61,6 +63,7 @@ class SettingsState {
       urlReplacementPresets: const [],
       ignoredSubfolders: const [],
       ignoredDomains: const [],
+      showPdfThumbnails: false,
     );
   }
 
@@ -83,6 +86,7 @@ class SettingsState {
       'assetUrlFontSize': assetUrlFontSize,
       'ignoredSubfolders': ignoredSubfolders,
       'ignoredDomains': ignoredDomains,
+      'showPdfThumbnails': showPdfThumbnails,
     };
   }
 
@@ -107,6 +111,7 @@ class SettingsState {
       assetUrlFontSize: _parseDouble(json['assetUrlFontSize'], 12.0),
       ignoredSubfolders: _parseStringList(json['ignoredSubfolders']),
       ignoredDomains: _parseStringList(json['ignoredDomains']),
+      showPdfThumbnails: _parseBool(json['showPdfThumbnails'], false),
     );
   }
 

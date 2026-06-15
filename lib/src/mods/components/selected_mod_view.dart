@@ -16,7 +16,8 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         HelpTooltip,
         CustomTooltip,
         BackupProgressBar,
-        MultiSelectView;
+        MultiSelectView,
+        PdfThumbnail;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
@@ -159,6 +160,8 @@ class _SelectedModViewComponent extends HookConsumerWidget {
     final selectedAssetTypeFilter = useState<AssetTypeEnum?>(null);
     final downloadFilter = useState(ExistingAssetsFilter.all);
     final showInvalidOnly = useState(false);
+    final showPdfThumbnails =
+        useState(ref.read(settingsProvider).showPdfThumbnails);
     final isSearchActive = useState(false);
     final searchQuery = useState('');
     final searchController = useTextEditingController();
@@ -185,17 +188,14 @@ class _SelectedModViewComponent extends HookConsumerWidget {
       }).toList();
     }, [selectedMod]);
 
-    useMemoized(() {
+    useEffect(() {
       selectedAssetTypeFilter.value = null;
       showInvalidOnly.value = false;
-    }, [selectedMod]);
-
-    useEffect(() {
       isSearchActive.value = false;
       searchQuery.value = '';
       searchController.clear();
       return null;
-    }, [selectedMod.jsonFileName]);
+    }, [selectedMod.jsonFilePath]);
 
     final title = useMemoized(() {
       return switch (selectedMod.modType) {
@@ -216,6 +216,26 @@ class _SelectedModViewComponent extends HookConsumerWidget {
           .map((item) => item.type)
           .toSet();
     }, [listItems, searchQuery.value]);
+
+    bool assetPassesFilters(Asset asset) {
+      if (downloadFilter.value == ExistingAssetsFilter.missingOnly &&
+          asset.fileExists) {
+        return false;
+      }
+      if (downloadFilter.value == ExistingAssetsFilter.downloadedOnly &&
+          !asset.fileExists) {
+        return false;
+      }
+      if (showInvalidOnly.value &&
+          !(selectedMod.invalidUrls?.contains(asset.url) ?? false)) {
+        return false;
+      }
+      if (searchQuery.value.isNotEmpty &&
+          !asset.url.toLowerCase().contains(searchQuery.value.toLowerCase())) {
+        return false;
+      }
+      return true;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,9 +467,39 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                   return true;
                 });
 
-                return _buildHeader(
-                    context, ref, item, selectedMod, isFirstHeader);
+                final header = _buildHeader(context, ref, item, selectedMod,
+                    isFirstHeader, showPdfThumbnails);
+
+                // For the PDF section in thumbnail mode, render all thumbnails
+                // in a wrapping grid directly under the header.
+                if (item.type == AssetTypeEnum.pdf && showPdfThumbnails.value) {
+                  final visiblePdfs =
+                      item.assets.where(assetPassesFilters).toList();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      header,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: visiblePdfs
+                              .map((asset) => PdfThumbnail(asset: asset))
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return header;
               } else if (item is _AssetItem) {
+                // PDF thumbnails are rendered as a wrap under the header.
+                if (item.type == AssetTypeEnum.pdf && showPdfThumbnails.value) {
+                  return const SizedBox.shrink();
+                }
+
                 // Filter by selected asset type
                 if (selectedAssetTypeFilter.value != null &&
                     item.type != selectedAssetTypeFilter.value) {
@@ -507,6 +557,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
     _HeaderItem headerItem,
     Mod selectedMod,
     bool isFirstHeader,
+    ValueNotifier<bool> showPdfThumbnails,
   ) {
     final actionInProgress = ref.watch(actionInProgressProvider);
 
@@ -537,8 +588,24 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 assetType: headerItem.type,
                 selectedMod: selectedMod,
               ),
-            /*   if (headerItem.type == AssetTypeEnum.image && !actionInProgress)
-              _OpenImagesViewerButton() */
+            if (headerItem.type == AssetTypeEnum.pdf && !actionInProgress)
+              CustomTooltip(
+                message:
+                    showPdfThumbnails.value ? 'Show URLs' : 'Show thumbnails',
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () =>
+                        showPdfThumbnails.value = !showPdfThumbnails.value,
+                    child: Icon(
+                      showPdfThumbnails.value ? Icons.link : Icons.grid_view,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            if (headerItem.type == AssetTypeEnum.image && !actionInProgress)
+              _OpenImagesViewerButton()
           ],
         ),
       ),
@@ -768,7 +835,7 @@ class _AudioAssetsButton extends ConsumerWidget {
   }
 }
 
-/* class _OpenImagesViewerButton extends StatelessWidget {
+class _OpenImagesViewerButton extends StatelessWidget {
   const _OpenImagesViewerButton();
 
   @override
@@ -788,7 +855,7 @@ class _AudioAssetsButton extends ConsumerWidget {
       ),
     );
   }
-} */
+}
 
 class _MissingFilesButton extends StatelessWidget {
   final WidgetRef ref;

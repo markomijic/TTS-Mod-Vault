@@ -38,6 +38,7 @@ dependencies:
   fixnum: ^1.1.1
   supabase_flutter: ^2.12.0
   shared_preferences: ^2.5.4
+  pdfx: ^2.9.2
 
 dev_dependencies:
   flutter_test:

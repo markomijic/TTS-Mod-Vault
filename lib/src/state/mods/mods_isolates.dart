@@ -333,7 +333,8 @@ Map<String, String> _extractUrlsWithRegex(String jsonString) {
 
     final assets = urlsByType[type]!.map((url) {
       final filename = getFileNameFromURL(url);
-      final filepath = assetMap[filename]; // O(1) lookup!
+      final filepath =
+          assetMap[filename.toLowerCase()]; // O(1) case-insensitive lookup!
 
       return Asset(
         url: url,

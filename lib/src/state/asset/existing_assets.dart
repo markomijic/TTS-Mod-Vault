@@ -66,7 +66,8 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
 
   void addExistingAsset(AssetTypeEnum type, String filename, String filepath) {
     final currentMap = _getAssetMapByType(type);
-    final updatedMap = Map<String, String>.from(currentMap)..[filename] = filepath;
+    final updatedMap = Map<String, String>.from(currentMap)
+      ..[filename.toLowerCase()] = filepath;
     _updateStateByType(type, updatedMap);
   }
 
@@ -91,11 +92,11 @@ class ExistingAssetsNotifier extends StateNotifier<ExistingAssetsListsState> {
   }
 
   bool doesAssetFileExist(String assetFileName, AssetTypeEnum type) {
-    return _getAssetMapByType(type).containsKey(assetFileName);
+    return _getAssetMapByType(type).containsKey(assetFileName.toLowerCase());
   }
 
   String? getAssetFilePath(String assetFilename, AssetTypeEnum type) {
-    final filepath = _getAssetMapByType(type)[assetFilename];
+    final filepath = _getAssetMapByType(type)[assetFilename.toLowerCase()];
     return filepath != null ? path.normalize(filepath) : null;
   }
 }
@@ -127,7 +128,11 @@ Future<Map<String, String>> _getDirectoryFileNamesAndPaths(
             getFileNameFromURL(newSteamUserContentUrl))
         : filename;
 
-    assetMap[mappedFilename] = file.path;
+    // Keys are lowercased so lookups are case-insensitive. The URL-derived
+    // lookup name embeds the URL's file extension (e.g. ".pdf" vs ".PDF"),
+    // and TTS stores PDFs with either casing depending on the source URL, so a
+    // case-sensitive match would miss an existing file and re-download it.
+    assetMap[mappedFilename.toLowerCase()] = file.path;
   }
 
   return assetMap;

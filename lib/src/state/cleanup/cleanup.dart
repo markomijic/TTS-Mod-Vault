@@ -49,7 +49,10 @@ class CleanupNotifier extends StateNotifier<CleanUpState> {
             if (urls == null) continue;
 
             for (final url in urls.entries) {
-              files.add(getFileNameFromURL(url.key));
+              // Lowercased for case-insensitive matching against on-disk files;
+              // a URL's extension casing (e.g. ".pdf" vs ".PDF") must not cause
+              // a referenced file to be treated as an orphan and deleted.
+              files.add(getFileNameFromURL(url.key).toLowerCase());
             }
           }
 
@@ -202,7 +205,7 @@ Future<List<String>> processDirectoryInIsolate(
           }
         }
 
-        if (!data.referencedFileNames.contains(fileName)) {
+        if (!data.referencedFileNames.contains(fileName.toLowerCase())) {
           filesToDelete.add(file.path);
         }
       }

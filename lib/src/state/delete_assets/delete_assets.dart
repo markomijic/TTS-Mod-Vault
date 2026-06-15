@@ -223,17 +223,18 @@ class DeleteAssetsNotifier extends Notifier<DeleteAssetsState> {
         // Search for the file in all asset type directories
         String? filePath;
 
-        // Check each asset type map for the filename
-        if (existingAssets.assetBundles.containsKey(fileName)) {
-          filePath = existingAssets.assetBundles[fileName];
-        } else if (existingAssets.audio.containsKey(fileName)) {
-          filePath = existingAssets.audio[fileName];
-        } else if (existingAssets.images.containsKey(fileName)) {
-          filePath = existingAssets.images[fileName];
-        } else if (existingAssets.models.containsKey(fileName)) {
-          filePath = existingAssets.models[fileName];
-        } else if (existingAssets.pdf.containsKey(fileName)) {
-          filePath = existingAssets.pdf[fileName];
+        // Check each asset type map for the filename (keys are lowercased)
+        final key = fileName.toLowerCase();
+        if (existingAssets.assetBundles.containsKey(key)) {
+          filePath = existingAssets.assetBundles[key];
+        } else if (existingAssets.audio.containsKey(key)) {
+          filePath = existingAssets.audio[key];
+        } else if (existingAssets.images.containsKey(key)) {
+          filePath = existingAssets.images[key];
+        } else if (existingAssets.models.containsKey(key)) {
+          filePath = existingAssets.models[key];
+        } else if (existingAssets.pdf.containsKey(key)) {
+          filePath = existingAssets.pdf[key];
         }
 
         if (filePath != null) {

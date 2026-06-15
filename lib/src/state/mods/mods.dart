@@ -1133,7 +1133,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     return urls.map((url) {
       final normalizedUrl = url.replaceAll(oldCloudUrl, newSteamUserContentUrl);
       final filename = getFileNameFromURL(normalizedUrl);
-      final filepath = assetMap[filename]; // O(1) lookup!
+      final filepath =
+          assetMap[filename.toLowerCase()]; // O(1) case-insensitive lookup!
 
       return Asset(
         url: normalizedUrl,

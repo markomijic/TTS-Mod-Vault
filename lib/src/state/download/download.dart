@@ -3,7 +3,14 @@ import 'dart:io' show File, FileMode, RandomAccessFile;
 
 import 'package:bson/bson.dart' show BsonBinary, BsonCodec;
 import 'package:dio/dio.dart'
-    show BaseOptions, CancelToken, Dio, DioException, DioExceptionType, Options;
+    show
+        BaseOptions,
+        CancelToken,
+        Dio,
+        DioException,
+        DioExceptionType,
+        Options,
+        Response;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show debugPrint;
@@ -186,8 +193,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           rethrow;
         }
         final delayMs = 500 * (1 << (attempt - 1)); // 500, 1000, 2000
-        debugPrint(
-            'Retrying download (attempt ${attempt + 1}/$maxAttempts) '
+        debugPrint('Retrying download (attempt ${attempt + 1}/$maxAttempts) '
             'after ${delayMs}ms for $url: ${e.type}');
         await Future.delayed(Duration(milliseconds: delayMs));
       }
@@ -249,8 +255,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       final progressByJob = <int, double>{};
 
       void publishProgress() {
-        final fractional = progressByJob.values
-            .fold<double>(0, (acc, v) => acc + v);
+        final fractional =
+            progressByJob.values.fold<double>(0, (acc, v) => acc + v);
         final p = ((completed + fractional) / urls.length).clamp(0.0, 1.0);
         state = state.copyWith(
           statusMessage: 'Downloading ${type.label} $completed/${urls.length}',
@@ -416,6 +422,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   /// Returns true if the URL returns a valid response (200-399 status code)
   /// First tries HEAD request, then falls back to GET if HEAD fails (some servers don't support HEAD)
   Future<bool> _checkUrl(String url, {CancelToken? cancelToken}) async {
+    // Steam/Akamai serves dead UGC assets as an HTML error page. Depending on
+    // the edge node this can come back with a 200 status (not just 404), so a
+    // status-only check would wrongly mark it live. A real asset never has an
+    // HTML content type, so treat text/html as a dead asset.
+    bool isHtmlErrorPage(Response response) {
+      final contentType =
+          response.headers.value('content-type')?.toLowerCase() ?? '';
+      return contentType.contains('text/html');
+    }
+
     try {
       // Try HEAD request first (faster, doesn't download content)
       try {
@@ -432,8 +448,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           ),
         );
 
-        // Consider 2xx and 3xx as live
-        if (headResponse.statusCode != null && headResponse.statusCode! < 400) {
+        // Consider 2xx and 3xx as live, unless it's an HTML error page
+        if (headResponse.statusCode != null &&
+            headResponse.statusCode! < 400 &&
+            !isHtmlErrorPage(headResponse)) {
           return true;
         }
       } catch (headError) {
@@ -462,9 +480,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       );
 
       // Consider 2xx (200-299) and partial content (206) as live
-      // Also accept 3xx redirects
+      // Also accept 3xx redirects, unless it's an HTML error page
       return getResponse.statusCode != null &&
-          (getResponse.statusCode! < 400 || getResponse.statusCode == 206);
+          (getResponse.statusCode! < 400 || getResponse.statusCode == 206) &&
+          !isHtmlErrorPage(getResponse);
     } catch (e) {
       return false;
     }
@@ -491,7 +510,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final invalidUrls = <String>[];
 
     final allAssets = mod.getAllAssets();
-    final int batchSize = ref.read(settingsProvider).concurrentDownloads;
+    final int workerCount = ref.read(settingsProvider).concurrentDownloads;
     final checkToken = CancelToken();
     _cancelTokens.add(checkToken);
 
@@ -502,29 +521,37 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         statusMessage: 'Checked 0/${allAssets.length} URLs',
       );
 
-      for (int i = 0; i < allAssets.length; i += batchSize) {
-        if (checkToken.isCancelled) break;
+      // Worker-pool (same pattern as downloadFiles): each worker pulls the next
+      // asset by atomic index increment (safe because Dart is single-threaded).
+      // A finished worker immediately picks the next URL, so a single slow /
+      // timing-out URL no longer stalls a whole batch like Future.wait did.
+      int nextIndex = 0;
+      int completed = 0;
 
-        final batch = allAssets.sublist(
-          i,
-          i + batchSize > allAssets.length ? allAssets.length : i + batchSize,
-        );
-
-        await Future.wait(batch.map((asset) async {
-          if (checkToken.isCancelled) return;
-          final isLive = await isUrlLive(asset.url, cancelToken: checkToken);
-          if (!isLive) invalidUrls.add(asset.url);
-        }));
-
-        if (checkToken.isCancelled) break;
-
-        // Update progress after each batch
-        final checked = (i + batch.length).clamp(0, allAssets.length);
+      void publishProgress() {
         state = state.copyWith(
-          statusMessage: 'Checked $checked/${allAssets.length} URLs',
-          progress: (checked / allAssets.length).clamp(0.0, 1.0),
+          statusMessage: 'Checked $completed/${allAssets.length} URLs',
+          progress: (completed / allAssets.length).clamp(0.0, 1.0),
         );
       }
+
+      final workers = List.generate(workerCount, (_) async {
+        while (true) {
+          if (checkToken.isCancelled) return;
+          if (nextIndex >= allAssets.length) return;
+          final myIndex = nextIndex++;
+
+          final asset = allAssets[myIndex];
+          final isLive = await isUrlLive(asset.url, cancelToken: checkToken);
+          if (checkToken.isCancelled) return;
+          if (!isLive) invalidUrls.add(asset.url);
+
+          completed++;
+          publishProgress();
+        }
+      });
+
+      await Future.wait(workers);
     } finally {
       _cancelTokens.remove(checkToken);
       state = state.copyWith(

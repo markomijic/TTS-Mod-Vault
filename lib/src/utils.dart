@@ -748,6 +748,14 @@ void showModContextMenu(
       position.dy,
     ),
     items: [
+      if (mod.assetCount != mod.existingAssetCount)
+        PopupMenuItem(
+          value: ContextMenuActionEnum.download,
+          child: Row(
+            spacing: 8,
+            children: [Icon(Icons.download), Text('Download')],
+          ),
+        ),
       PopupMenuItem(
         value: ContextMenuActionEnum.openImagesViewer,
         child: Row(
@@ -898,6 +906,16 @@ void showModContextMenu(
                 }
               },
             );
+          }
+          break;
+
+        case ContextMenuActionEnum.download:
+          if (context.mounted) {
+            if (ref.read(actionInProgressProvider)) {
+              return;
+            }
+
+            ref.read(downloadProvider.notifier).downloadAllFiles(mod);
           }
           break;
 

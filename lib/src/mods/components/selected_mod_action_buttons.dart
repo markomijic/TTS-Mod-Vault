@@ -47,13 +47,8 @@ class SelectedModActionButtons extends HookConsumerWidget {
                       return;
                     }
 
-                    final downloaded =
-                        await downloadNotifier.downloadAllFiles(selectedMod);
-                    await modsNotifier.updateSelectedMod(selectedMod);
-                    if (downloaded.isNotEmpty) {
-                      await modsNotifier.refreshModsWithSharedAssets(downloaded,
-                          excludeJsonFileName: selectedMod.jsonFileName);
-                    }
+                    await downloadNotifier
+                        .downloadModFilesAndUpdateState(selectedMod);
                   }
                 : null,
             label: const Text('Download'),

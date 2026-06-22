@@ -915,7 +915,9 @@ void showModContextMenu(
               return;
             }
 
-            ref.read(downloadProvider.notifier).downloadAllFiles(mod);
+            ref
+                .read(downloadProvider.notifier)
+                .downloadModFilesAndUpdateState(mod);
           }
           break;
 

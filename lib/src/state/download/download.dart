@@ -143,6 +143,17 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     return allDownloaded;
   }
 
+  // MARK: DL & Update
+  Future<void> downloadModFilesAndUpdateState(Mod mod) async {
+    final downloaded = await downloadAllFiles(mod);
+    await ref.read(modsProvider.notifier).updateSelectedMod(mod);
+    if (downloaded.isNotEmpty) {
+      await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
+          downloaded,
+          excludeJsonFileName: mod.jsonFileName);
+    }
+  }
+
   // MARK: Reset state
   void resetState() {
     state = const DownloadState();
@@ -506,7 +517,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   // MARK: Check all URLs
-  Future<void> checkModUrlsLive(Mod mod) async {
+  /// Checks all of [mod]'s asset URLs and stores the invalid ones on the mod.
+  /// Returns the list of invalid URLs when the check completes, or null if the
+  /// check was cancelled.
+  Future<List<String>?> checkModUrlsLive(Mod mod) async {
     final invalidUrls = <String>[];
 
     final allAssets = mod.getAllAssets();
@@ -561,9 +575,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         cancelledDownloads: false,
       );
     }
-    if (!checkToken.isCancelled) {
-      ref.read(modsProvider.notifier).updateModInvalidUrls(mod, invalidUrls);
+    if (checkToken.isCancelled) {
+      return null;
     }
+
+    ref.read(modsProvider.notifier).updateModInvalidUrls(mod, invalidUrls);
+    return invalidUrls;
   }
 
   // MARK: DL MOD Updates

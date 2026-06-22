@@ -4,7 +4,7 @@ import 'package:flutter/material.dart' show BuildContext, showDialog;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show BulkUpdateResultsDialog;
+    show BulkUpdateResultsDialog, BulkUrlCheckResultsDialog;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
     show BackupStatusEnum;
 import 'package:tts_mod_vault/src/state/backup/backup_status_enum.dart'
@@ -19,6 +19,8 @@ import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
         PostBackupDeletionEnum;
 import 'package:tts_mod_vault/src/state/bulk_actions/mod_update_result.dart'
     show ModUpdateResult, ModUpdateStatus;
+import 'package:tts_mod_vault/src/state/bulk_actions/mod_url_check_result.dart'
+    show ModUrlCheckResult;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
 import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
     show
@@ -165,11 +167,13 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       await Future.delayed(Duration.zero);
 
       String modBackupFolder = selectedBackupFolder;
+      bool performBackup = true;
 
       if (currentMod.backupStatus != ExistingBackupStatusEnum.noBackup) {
         switch (backupBehavior) {
           case BulkBackupBehaviorEnum.skip:
-            continue;
+            performBackup = false;
+            break;
 
           case BulkBackupBehaviorEnum.replace:
             if (currentMod.backup != null) {
@@ -179,7 +183,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
           case BulkBackupBehaviorEnum.replaceIfOutOfDate:
             if (currentMod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
-              continue;
+              performBackup = false;
+              break;
             }
             if (currentMod.backup != null) {
               modBackupFolder = p.dirname(currentMod.backup!.filepath);
@@ -188,16 +193,26 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
         }
       }
 
-      debugPrint('Backing up: ${currentMod.saveName}');
+      // Nothing to do for this mod if we're neither backing up nor deleting.
+      if (!performBackup && postBackupDeletion == PostBackupDeletionEnum.none) {
+        continue;
+      }
+
+      debugPrint(performBackup
+          ? 'Backing up: ${currentMod.saveName}'
+          : 'Deleting assets for: ${currentMod.saveName}');
 
       state = state.copyWith(
           currentModNumber: i + 1,
-          statusMessage:
-              'Backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
+          statusMessage: performBackup
+              ? 'Backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})'
+              : 'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
 
       modsNotifier.setSelectedMod(currentMod);
-      await backupNotifier.createBackup(currentMod, modBackupFolder);
-      currentMod = await modsNotifier.updateModBackup(currentMod);
+      if (performBackup) {
+        await backupNotifier.createBackup(currentMod, modBackupFolder);
+        currentMod = await modsNotifier.updateModBackup(currentMod);
+      }
 
       // Delete assets after backup if configured
       if (postBackupDeletion != PostBackupDeletionEnum.none) {
@@ -300,11 +315,13 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       }
 
       String modBackupFolder = selectedBackupFolder;
+      bool performBackup = true;
 
       if (currentMod.backupStatus != ExistingBackupStatusEnum.noBackup) {
         switch (backupBehavior) {
           case BulkBackupBehaviorEnum.skip:
-            continue;
+            performBackup = false;
+            break;
 
           case BulkBackupBehaviorEnum.replace:
             if (currentMod.backup != null) {
@@ -314,7 +331,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
           case BulkBackupBehaviorEnum.replaceIfOutOfDate:
             if (currentMod.backupStatus != ExistingBackupStatusEnum.outOfDate) {
-              continue;
+              performBackup = false;
+              break;
             }
             if (currentMod.backup != null) {
               modBackupFolder = p.dirname(currentMod.backup!.filepath);
@@ -325,8 +343,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       final selectedMod = ref.read(selectedModProvider);
       if (selectedMod != null) {
-        await backupNotifier.createBackup(selectedMod, modBackupFolder);
-        currentMod = await modsNotifier.updateModBackup(selectedMod);
+        if (performBackup) {
+          await backupNotifier.createBackup(selectedMod, modBackupFolder);
+          currentMod = await modsNotifier.updateModBackup(selectedMod);
+        }
 
         // Delete assets after backup if configured
         if (postBackupDeletion != PostBackupDeletionEnum.none) {
@@ -432,6 +452,77 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
 
     _resetState();
+  }
+
+// MARK: Check URLs
+  Future<void> checkUrlsAllMods(List<Mod> mods, BuildContext context) async {
+    if (mods.isEmpty) return;
+
+    ref
+        .read(logProvider.notifier)
+        .addInfo('Starting bulk URL check for ${mods.length} mods');
+
+    state = state.copyWith(
+      status: BulkActionsStatusEnum.checkUrlsAll,
+      totalModNumber: mods.length,
+      statusMessage: 'Checking URLs...',
+    );
+
+    final modsNotifier = ref.read(modsProvider.notifier);
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+    final results = <ModUrlCheckResult>[];
+
+    for (int i = 0; i < mods.length; i++) {
+      final mod = mods[i];
+
+      if (state.cancelledBulkAction) {
+        break;
+      }
+
+      // Yield to UI thread on every iteration to keep app responsive
+      await Future.delayed(Duration.zero);
+
+      debugPrint('Checking URLs: ${mod.saveName}');
+
+      state = state.copyWith(
+          currentModNumber: i + 1,
+          statusMessage:
+              'Checking URLs for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+
+      modsNotifier.setSelectedMod(mod);
+
+      final invalidUrls = await downloadNotifier.checkModUrlsLive(mod);
+
+      results.add(ModUrlCheckResult(
+        modName: mod.saveName,
+        invalidUrls: invalidUrls ?? const [],
+        cancelled: invalidUrls == null,
+      ));
+    }
+
+    final wasCancelled = state.cancelledBulkAction;
+
+    if (wasCancelled) {
+      ref.read(logProvider.notifier).addWarning(
+          'Bulk URL check cancelled (${state.currentModNumber}/${mods.length} completed)');
+    } else {
+      ref
+          .read(logProvider.notifier)
+          .addSuccess('Bulk URL check completed: ${mods.length} mods checked');
+    }
+
+    _resetState();
+    downloadNotifier.resetState();
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => BulkUrlCheckResultsDialog(
+          results: results,
+          wasCancelled: wasCancelled,
+        ),
+      );
+    }
   }
 
 // MARK: Update URLs
@@ -632,13 +723,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           statusMessage:
               'Importing "$fileName" (${i + 1}/${filePaths.length})');
 
-      final importedFilenames = await ref
-          .read(importBackupProvider.notifier)
-          .importBackupFromPath(
-            path,
-            onJsonConflict: onJsonConflict,
-            targetJsonDir: targetJsonDir,
-          );
+      final importedFilenames =
+          await ref.read(importBackupProvider.notifier).importBackupFromPath(
+                path,
+                onJsonConflict: onJsonConflict,
+                targetJsonDir: targetJsonDir,
+              );
       allImportedFilenames.addAll(importedFilenames);
     }
 
@@ -685,7 +775,21 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       case BulkActionsStatusEnum.deleteAssetsAll:
         _cancelDeleteAssetsAll();
         break;
+
+      case BulkActionsStatusEnum.checkUrlsAll:
+        _cancelCheckUrlsAll();
+        break;
     }
+  }
+
+  void _cancelCheckUrlsAll() {
+    ref.read(downloadProvider.notifier).cancelAllDownloads();
+
+    state = state.copyWith(
+      cancelledBulkAction: true,
+      statusMessage:
+          "Cancelling URL check for all ${ref.read(selectedModTypeProvider).label}s",
+    );
   }
 
   void _cancelDownloadAll() {

@@ -16,7 +16,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
 import 'package:tts_mod_vault/src/mods/components/components.dart'
     show BulkBackupDialog, BulkDeleteDialog, showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/utils.dart'
-    show showConfirmDialogWithCheckbox;
+    show showConfirmDialog, showConfirmDialogWithCheckbox;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
@@ -234,6 +234,30 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
                       );
                 },
               ),
+            );
+          },
+        ),
+        MenuItemButton(
+          style: MenuItemButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+          ),
+          leadingIcon: Icon(Icons.link, color: Colors.black),
+          child: Text('Check for all invalid URLs',
+              style: TextStyle(color: Colors.black)),
+          onPressed: () {
+            if (actionInProgress) return;
+
+            showConfirmDialog(
+              context,
+              'This checks every asset URL across all listed mods with a network '
+              'request per asset, which may take a while.\n\nContinue?',
+              () {
+                ref.read(bulkActionsProvider.notifier).checkUrlsAllMods(
+                      ref.read(filteredModsProvider),
+                      context,
+                    );
+              },
             );
           },
         ),

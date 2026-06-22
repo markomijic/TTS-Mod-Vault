@@ -28,6 +28,7 @@ export 'sort_button.dart';
 export 'bulk_backup_dialog.dart';
 export 'single_mod_backup_dialog.dart';
 export 'bulk_update_results_dialog.dart';
+export 'bulk_url_check_results_dialog.dart';
 export 'update_urls_dialog.dart';
 export 'bulk_actions_menu.dart';
 export 'bulk_delete_dialog.dart';

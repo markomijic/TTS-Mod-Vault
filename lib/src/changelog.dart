@@ -38,27 +38,27 @@ String getChangelog() {
   return """
 v2.1.0
 
-It is recommended to clear the cache on the first run due to new detection of embedded URLs
+It is recommended to clear the cache on the first run due to the new detection of embedded URLs
 (Refresh → Clear Vault cache)
 
 Features:
 · Detection of embedded URLs
-- Viewing PDFs as thumbnails
-- Setting for default view of PDFs (thumbnails or URLs)
-- Save as Mod option in Saves context menu
-- Bulk action to check for all invalid URLs
+· PDF thumbnail previews
+· Setting for the default PDF view (thumbnails or URLs)
+· Save as Mod option in the Saves context menu
+· Bulk action to check all URLs for validity
 
 Changes:
-· Improved asset download and URL checking queuing
-- Added Download option to mod context menu
-- Bulk actions button shows number of affected mods by search and/or filters
-- Updated Importing Backup of existing mods to check for JSON file dates
-- Show action buttons for mods without assets
-- Added option to set backup folder as default when creating backup without preset folder
-- Fixed case where some files wouldn't be recognized due to file extension case sensitivity
-- Fixed URL validator not covering text/html cases
-- Fixed case where URL without domain was ignored
-- Fixed opening of URLs without scheme
+· Improved asset download and URL-checking queues
+· Added a Download option to the Mod context menu
+· Bulk Actions button now shows the number of affected mods based on the current search and/or filters
+· Updated backup import for existing mods to check JSON file dates
+· Added an option to set the backup folder as the default when creating a backup without a preset folder
+· Action buttons are now shown for mods without assets
+· Fixed an issue where some files were not recognized because of file extension case sensitivity
+· Fixed URL validation not covering text/html cases
+· Fixed an issue where URLs without a domain were ignored
+· Fixed opening URLs without a scheme
 
 
 v2.0.0

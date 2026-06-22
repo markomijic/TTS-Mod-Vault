@@ -15,7 +15,7 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         selectedModsListProvider,
         selectedModTypeProvider;
 import 'package:tts_mod_vault/src/utils.dart'
-    show showConfirmDialogWithCheckbox;
+    show showConfirmDialog, showConfirmDialogWithCheckbox;
 
 class MultiSelectView extends HookConsumerWidget {
   const MultiSelectView({super.key});
@@ -210,6 +210,26 @@ class MultiSelectView extends HookConsumerWidget {
                             );
                       },
                     ),
+                  );
+                },
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.link),
+                label: const Text('Check for all invalid URLs'),
+                onPressed: () {
+                  if (actionInProgress) return;
+
+                  showConfirmDialog(
+                    context,
+                    'This checks every asset URL across all selected mods with a '
+                    'network request per asset, which may take a while.\n\n'
+                    'Continue?',
+                    () {
+                      ref.read(bulkActionsProvider.notifier).checkUrlsAllMods(
+                            selectedMods.toList(),
+                            context,
+                          );
+                    },
                   );
                 },
               ),

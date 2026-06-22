@@ -1,6 +1,6 @@
 import 'package:file_picker/file_picker.dart' show FilePicker, FileType;
 import 'package:flutter/foundation.dart' show compute, debugPrint;
-import 'package:flutter/material.dart' show BuildContext, showDialog;
+import 'package:flutter/material.dart' show BuildContext, Navigator, showDialog;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show Ref, StateNotifier;
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
@@ -458,6 +458,11 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   Future<void> checkUrlsAllMods(List<Mod> mods, BuildContext context) async {
     if (mods.isEmpty) return;
 
+    // Capture a stable navigator before the loop runs: the first
+    // setSelectedMod() collapses the multi-selection, which unmounts
+    // MultiSelectView (the BuildContext passed in when invoked from there).
+    final navigator = Navigator.of(context, rootNavigator: true);
+
     ref
         .read(logProvider.notifier)
         .addInfo('Starting bulk URL check for ${mods.length} mods');
@@ -514,9 +519,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     _resetState();
     downloadNotifier.resetState();
 
-    if (context.mounted) {
+    if (navigator.mounted) {
       showDialog(
-        context: context,
+        context: navigator.context,
         builder: (context) => BulkUrlCheckResultsDialog(
           results: results,
           wasCancelled: wasCancelled,
@@ -591,6 +596,11 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     bool forceUpdate,
     BuildContext context,
   ) async {
+    // Capture a stable navigator before the loop runs: the first
+    // setSelectedMod() collapses the multi-selection, which unmounts
+    // MultiSelectView (the BuildContext passed in when invoked from there).
+    final navigator = Navigator.of(context, rootNavigator: true);
+
     state = state.copyWith(
       status: BulkActionsStatusEnum.updateModsAll,
       totalModNumber: mods.length,
@@ -646,9 +656,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     _resetState();
 
     // Show results dialog
-    if (context.mounted) {
+    if (navigator.mounted) {
       showDialog(
-        context: context,
+        context: navigator.context,
         builder: (context) => BulkUpdateResultsDialog(
           results: allResults,
           wasCancelled: cancelled,

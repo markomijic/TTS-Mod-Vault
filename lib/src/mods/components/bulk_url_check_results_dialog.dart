@@ -134,30 +134,49 @@ class _ModSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isExpanded = useState(false);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        Row(
-          children: [
-            const Icon(Icons.error, color: Colors.red, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '${result.modName} (${result.invalidUrls.length})',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => isExpanded.value = !isExpanded.value,
+            child: Row(
+              children: [
+                Icon(
+                  isExpanded.value
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_right,
                   color: Colors.red,
+                  size: 22,
                 ),
-              ),
+                const SizedBox(width: 4),
+                const Icon(Icons.error, color: Colors.red, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${result.modName} (${result.invalidUrls.length})',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 4),
-        ...result.invalidUrls.asMap().entries.map(
-              (e) => _InvalidUrlRow(url: e.value, index: e.key),
-            ),
+        if (isExpanded.value) ...[
+          const SizedBox(height: 4),
+          ...result.invalidUrls.asMap().entries.map(
+                (e) => _InvalidUrlRow(url: e.value, index: e.key),
+              ),
+        ],
       ],
     );
   }

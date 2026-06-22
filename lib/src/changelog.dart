@@ -11,8 +11,7 @@ void showChangelogDialog(BuildContext context) {
         child: AlertDialog(
           title: Text('Changelog'),
           content: SizedBox(
-            width: 1100,
-            height: 550,
+            width: 950,
             child: SingleChildScrollView(
               child: Text(
                 getChangelog(),
@@ -50,7 +49,7 @@ Features:
 
 Changes:
 · Improved asset download and URL-checking queues
-· Added a Download option to the Mod context menu
+· Added a Download option to the mod context menu
 · Bulk Actions button now shows the number of affected mods based on the current search and/or filters
 · Updated backup import for existing mods to check JSON file dates
 · Added an option to set the backup folder as the default when creating a backup without a preset folder

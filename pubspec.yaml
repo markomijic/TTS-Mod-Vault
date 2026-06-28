@@ -36,7 +36,7 @@ dependencies:
   image: ^4.5.4
   bson: ^5.0.7
   fixnum: ^1.1.1
-  printing: ^5.14.2
+  pdfrx_engine: ^0.4.3
 
 dev_dependencies:
   flutter_test:

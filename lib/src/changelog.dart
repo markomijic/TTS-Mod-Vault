@@ -46,6 +46,7 @@ Features:
 · Setting for the default PDF view (thumbnails or URLs)
 · Save as Mod option in the Saves context menu
 · Bulk action to check all URLs for validity
+· Rename mod, save or saved object
 
 Changes:
 · Improved asset download and URL-checking queues

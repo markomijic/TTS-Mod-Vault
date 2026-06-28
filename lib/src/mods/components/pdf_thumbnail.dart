@@ -26,6 +26,10 @@ class PdfThumbnail extends HookConsumerWidget {
 
   static const double _thumbnailHeight = 192;
 
+  /// Width for placeholder/idle tiles, sized to A4 portrait (210x297mm) so they
+  /// match the aspect ratio of a typical rendered PDF page.
+  static const double _thumbnailWidth = _thumbnailHeight * 210 / 297;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isHovered = useState(false);
@@ -104,7 +108,7 @@ class PdfThumbnail extends HookConsumerWidget {
       // shift when the thumbnail finishes rendering.
       content = Container(
         height: _thumbnailHeight,
-        width: _thumbnailHeight,
+        width: _thumbnailWidth,
         color: Colors.black,
       );
     }
@@ -153,7 +157,7 @@ class _PlaceholderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: PdfThumbnail._thumbnailHeight,
-      width: PdfThumbnail._thumbnailHeight,
+      width: PdfThumbnail._thumbnailWidth,
       color: Colors.black,
       padding: const EdgeInsets.all(4),
       alignment: Alignment.center,
@@ -162,7 +166,7 @@ class _PlaceholderTile extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 10,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: Colors.red, fontSize: 12),
+        style: const TextStyle(color: Colors.red, fontSize: 14),
       ),
     );
   }

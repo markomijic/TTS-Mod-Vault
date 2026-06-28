@@ -402,6 +402,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
               if (selectedMod.invalidUrls != null &&
                   selectedMod.invalidUrls!.isNotEmpty)
                 FilterChip(
+                  mouseCursor: SystemMouseCursors.click,
                   showCheckmark: false,
                   label: const Text('Invalid'),
                   selected: showInvalidOnly.value,
@@ -416,6 +417,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 ),
               ...availableAssetTypes.map((type) {
                 return FilterChip(
+                  mouseCursor: SystemMouseCursors.click,
                   showCheckmark: false,
                   label: Text(type.label),
                   selected: selectedAssetTypeFilter.value == type,
@@ -657,6 +659,8 @@ class _AudioAssetsButton extends ConsumerWidget {
                       controller.open();
                     }
                   },
+            mouseCursor: SystemMouseCursors.click,
+
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(
                 hasOverride ? Colors.blue : Colors.white,

@@ -2,6 +2,8 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/clickable_popup_menu_item.dart'
+    show ClickablePopupMenuItem;
 import 'package:tts_mod_vault/src/mods/components/replace_url_dialog.dart'
     show showReplaceUrlDialog;
 import 'package:tts_mod_vault/src/mods/components/shared_asset_helpers.dart'
@@ -57,7 +59,7 @@ void showAssetContextMenu(
       if (asset.fileExists &&
           [AssetTypeEnum.audio, AssetTypeEnum.image, AssetTypeEnum.pdf]
               .contains(type))
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.openFile,
           child: Row(
             spacing: 8,
@@ -68,7 +70,7 @@ void showAssetContextMenu(
           ),
         ),
       if (asset.fileExists)
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.openInExplorer,
           child: Row(
             spacing: 8,
@@ -78,7 +80,7 @@ void showAssetContextMenu(
             ],
           ),
         ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.openInBrowser,
         child: Row(
           spacing: 8,
@@ -88,7 +90,7 @@ void showAssetContextMenu(
           ],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.checkUrl,
         child: Row(
           spacing: 8,
@@ -98,7 +100,7 @@ void showAssetContextMenu(
           ],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.checkShared,
         child: Row(
           spacing: 8,
@@ -108,7 +110,7 @@ void showAssetContextMenu(
           ],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.copyUrl,
         child: Row(
           spacing: 8,
@@ -118,7 +120,7 @@ void showAssetContextMenu(
           ],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.copyFilename,
         child: Row(
           spacing: 8,
@@ -129,7 +131,7 @@ void showAssetContextMenu(
         ),
       ),
       if (!asset.fileExists)
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.download,
           child: Row(
             spacing: 8,
@@ -140,7 +142,7 @@ void showAssetContextMenu(
           ),
         ),
       if (asset.fileExists)
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.deleteAsset,
           child: Row(
             spacing: 8,
@@ -150,7 +152,7 @@ void showAssetContextMenu(
             ],
           ),
         ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.replaceUrl,
         child: Row(
           spacing: 8,

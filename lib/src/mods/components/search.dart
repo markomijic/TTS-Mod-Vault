@@ -81,6 +81,7 @@ class Search extends HookConsumerWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 prefixIcon: const Icon(Icons.search, color: Colors.black),
                 suffixIcon: IconButton(
+                  mouseCursor: SystemMouseCursors.click,
                   icon: const Icon(Icons.clear, color: Colors.black, size: 17),
                   onPressed: () {
                     controller.clear();

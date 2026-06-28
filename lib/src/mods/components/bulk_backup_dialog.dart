@@ -100,6 +100,7 @@ class BulkBackupDialog extends HookConsumerWidget {
                   child: Text('If backup already exists:'),
                 ),
                 DropdownButton<BulkBackupBehaviorEnum>(
+                  mouseCursor: SystemMouseCursors.click,
                   value: selectedBehavior.value,
                   dropdownColor: Colors.white,
                   style: TextStyle(color: Colors.white),
@@ -143,6 +144,7 @@ class BulkBackupDialog extends HookConsumerWidget {
                   child: Text('After backup:'),
                 ),
                 DropdownButton<PostBackupDeletionEnum>(
+                  mouseCursor: SystemMouseCursors.click,
                   value: selectedPostBackupDeletion.value,
                   dropdownColor: Colors.white,
                   style: TextStyle(color: Colors.white),

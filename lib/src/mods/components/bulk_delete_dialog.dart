@@ -55,8 +55,7 @@ class BulkDeleteDialog extends HookConsumerWidget {
           children: [
             Text(
               title,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
             ),
             Row(
               spacing: 8,
@@ -65,6 +64,7 @@ class BulkDeleteDialog extends HookConsumerWidget {
                   child: Text('Shared assets:'),
                 ),
                 DropdownButton<PostBackupDeletionEnum>(
+                  mouseCursor: SystemMouseCursors.click,
                   value: selectedDeletion.value,
                   dropdownColor: Colors.white,
                   style: TextStyle(color: Colors.white),

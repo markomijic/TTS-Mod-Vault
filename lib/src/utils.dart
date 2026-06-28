@@ -8,6 +8,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:mime/mime.dart' show lookupMimeType;
 import 'package:open_filex/open_filex.dart' show OpenFilex;
+import 'package:tts_mod_vault/src/mods/components/clickable_popup_menu_item.dart'
+    show ClickablePopupMenuItem;
 import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
 import 'package:tts_mod_vault/src/mods/components/save_as_mod_dialog.dart'
     show SaveAsModDialog;
@@ -78,6 +80,11 @@ final ThemeData darkTheme = ThemeData(
     backgroundColor: Colors.black,
     foregroundColor: Colors.white,
   ),
+  iconButtonTheme: IconButtonThemeData(
+    style: ButtonStyle(
+      mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
+    ),
+  ),
   colorScheme: ColorScheme.dark(
     primary: Colors.black,
     secondary: Colors.white,
@@ -95,19 +102,24 @@ final ThemeData darkTheme = ThemeData(
     foregroundColor: Colors.white,
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+    style: ButtonStyle(
+      backgroundColor: WidgetStatePropertyAll(Colors.white),
+      foregroundColor: WidgetStatePropertyAll(Colors.black),
+      mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
     ),
   ),
   outlinedButtonTheme: OutlinedButtonThemeData(
-    style: OutlinedButton.styleFrom(
-      foregroundColor: Colors.white,
-      side: BorderSide(color: Colors.white),
+    style: ButtonStyle(
+      foregroundColor: WidgetStatePropertyAll(Colors.white),
+      side: WidgetStatePropertyAll(BorderSide(color: Colors.white)),
+      mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
     ),
   ),
   textButtonTheme: TextButtonThemeData(
-    style: TextButton.styleFrom(foregroundColor: Colors.blue),
+    style: ButtonStyle(
+      foregroundColor: WidgetStatePropertyAll(Colors.blue),
+      mouseCursor: WidgetStatePropertyAll(SystemMouseCursors.click),
+    ),
   ),
   navigationRailTheme: NavigationRailThemeData(
     selectedIconTheme: IconThemeData(color: Colors.black),
@@ -749,21 +761,21 @@ void showModContextMenu(
     ),
     items: [
       if (mod.assetCount != mod.existingAssetCount)
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.download,
           child: Row(
             spacing: 8,
             children: [Icon(Icons.download), Text('Download')],
           ),
         ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.openImagesViewer,
         child: Row(
           spacing: 8,
           children: [Icon(Icons.image), Text('View Images')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.openInExplorer,
         child: Row(
           spacing: 8,
@@ -771,7 +783,7 @@ void showModContextMenu(
         ),
       ),
       if (mod.modType == ModTypeEnum.mod) ...[
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.openSteamWorkshopPage,
           child: Row(
             spacing: 8,
@@ -781,7 +793,7 @@ void showModContextMenu(
             ],
           ),
         ),
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.updateMod,
           child: Row(
             spacing: 8,
@@ -790,28 +802,28 @@ void showModContextMenu(
         ),
       ],
       if (mod.modType == ModTypeEnum.save)
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: ContextMenuActionEnum.saveAsMod,
           child: Row(
             spacing: 8,
             children: [Icon(Icons.drive_file_move), Text('Save as Mod')],
           ),
         ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.copySaveName,
         child: Row(
           spacing: 8,
           children: [Icon(Icons.content_copy), Text('Copy Name')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.copyFilename,
         child: Row(
           spacing: 8,
           children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.deleteMod,
         child: Row(
           spacing: 8,
@@ -824,14 +836,14 @@ void showModContextMenu(
           height: 1,
           child: Divider(height: 1),
         ),
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: 'importBackup',
           child: Row(
             spacing: 8,
             children: [Icon(Icons.unarchive), Text('Import Backup')],
           ),
         ),
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: 'openBackupInExplorer',
           child: Row(
             spacing: 8,
@@ -841,14 +853,14 @@ void showModContextMenu(
             ],
           ),
         ),
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: 'copyBackupFilename',
           child: Row(
             spacing: 8,
             children: [Icon(Icons.file_copy), Text('Copy Backup Filename')],
           ),
         ),
-        PopupMenuItem(
+        ClickablePopupMenuItem(
           value: 'deleteBackup',
           child: Row(
             spacing: 8,
@@ -1081,28 +1093,28 @@ void _showBackupSubmenu(
       submenuPosition.dy,
     ),
     items: [
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'import',
         child: Row(
           spacing: 8,
           children: [Icon(Icons.unarchive), Text('Import Backup')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'openInExplorer',
         child: Row(
           spacing: 8,
           children: [Icon(Icons.folder_open), Text('Open in File Explorer')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'copyFilename',
         child: Row(
           spacing: 8,
           children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'delete',
         child: Row(
           spacing: 8,
@@ -1190,28 +1202,28 @@ void showBackupContextMenu(
       position.dy,
     ),
     items: [
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'import',
         child: Row(
           spacing: 8,
           children: [Icon(Icons.unarchive), Text('Import Backup')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'openInExplorer',
         child: Row(
           spacing: 8,
           children: [Icon(Icons.folder_open), Text('Open in File Explorer')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'copyFilename',
         child: Row(
           spacing: 8,
           children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
-      PopupMenuItem(
+      ClickablePopupMenuItem(
         value: 'delete',
         child: Row(
           spacing: 8,

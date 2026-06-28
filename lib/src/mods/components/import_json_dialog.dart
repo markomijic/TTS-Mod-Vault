@@ -136,6 +136,7 @@ class ImportJsonDialog extends HookConsumerWidget {
                   if (pngFile.value != null)
                     IconButton(
                       icon: const Icon(Icons.clear),
+                      mouseCursor: SystemMouseCursors.click,
                       onPressed: () => pngFile.value = null,
                       tooltip: 'Clear selection',
                     ),
@@ -175,6 +176,7 @@ class ImportJsonDialog extends HookConsumerWidget {
                     style: TextStyle(fontSize: 16),
                   ),
                   DropdownButton<ModTypeEnum>(
+                    mouseCursor: SystemMouseCursors.click,
                     value: modType.value,
                     dropdownColor: Colors.white,
                     style: const TextStyle(color: Colors.white),

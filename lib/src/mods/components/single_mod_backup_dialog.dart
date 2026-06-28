@@ -132,6 +132,7 @@ class SingleModBackupDialog extends HookConsumerWidget {
                     child: Text('Backup location:'),
                   ),
                   DropdownButton<BackupLocationChoice>(
+                    mouseCursor: SystemMouseCursors.click,
                     value: locationChoice.value,
                     dropdownColor: Colors.white,
                     style: TextStyle(color: Colors.white),
@@ -212,6 +213,7 @@ class SingleModBackupDialog extends HookConsumerWidget {
                   child: Text('After backup:'),
                 ),
                 DropdownButton<PostBackupDeletionEnum>(
+                  mouseCursor: SystemMouseCursors.click,
                   value: selectedPostBackupDeletion.value,
                   dropdownColor: Colors.white,
                   style: TextStyle(color: Colors.white),

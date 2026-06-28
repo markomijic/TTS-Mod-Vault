@@ -22,8 +22,8 @@ class BulkUrlCheckResultsDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final modsWithInvalid =
         results.where((r) => r.invalidUrls.isNotEmpty).toList();
-    final totalInvalid = modsWithInvalid.fold<int>(
-        0, (acc, r) => acc + r.invalidUrls.length);
+    final totalInvalid =
+        modsWithInvalid.fold<int>(0, (acc, r) => acc + r.invalidUrls.length);
     final checkedCount = results.where((r) => !r.cancelled).length;
 
     return BackdropFilter(
@@ -75,11 +75,9 @@ class BulkUrlCheckResultsDialog extends HookConsumerWidget {
             ElevatedButton.icon(
               onPressed: () {
                 final text = modsWithInvalid
-                    .map((r) =>
-                        '${r.modName}\n${r.invalidUrls.join('\n')}')
+                    .map((r) => '${r.modName}\n${r.invalidUrls.join('\n')}')
                     .join('\n\n');
-                copyToClipboard(context, text,
-                    showSnackBarAfterCopying: false);
+                copyToClipboard(context, text, showSnackBarAfterCopying: false);
               },
               icon: const Icon(Icons.copy_all),
               label: const Text('Copy all invalid URLs'),
@@ -217,6 +215,7 @@ class _InvalidUrlRow extends HookConsumerWidget {
             IconButton(
               iconSize: 16,
               padding: EdgeInsets.zero,
+              mouseCursor: SystemMouseCursors.click,
               onPressed: () => copyToClipboard(
                 context,
                 url,

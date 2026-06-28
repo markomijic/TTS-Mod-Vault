@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
+import 'package:tts_mod_vault/src/mods/components/clickable_popup_menu_item.dart'
+    show ClickablePopupMenuItem;
 import 'package:tts_mod_vault/src/mods/components/replace_url_dialog.dart'
     show showReplaceUrlDialog;
 import 'package:tts_mod_vault/src/mods/components/shared_asset_helpers.dart'
@@ -58,7 +60,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
           position.dy,
         ),
         items: [
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.openFile,
             child: Row(
               spacing: 8,
@@ -68,7 +70,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.openInExplorer,
             child: Row(
               spacing: 8,
@@ -78,7 +80,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.openInBrowser,
             child: Row(
               spacing: 8,
@@ -88,7 +90,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.checkUrl,
             child: Row(
               spacing: 8,
@@ -98,7 +100,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.checkShared,
             child: Row(
               spacing: 8,
@@ -108,7 +110,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.copyUrl,
             child: Row(
               spacing: 8,
@@ -118,7 +120,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.copyFilename,
             child: Row(
               spacing: 8,
@@ -128,7 +130,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.deleteAsset,
             child: Row(
               spacing: 8,
@@ -138,7 +140,7 @@ class ImagesViewerGridCard extends HookConsumerWidget {
               ],
             ),
           ),
-          PopupMenuItem(
+          ClickablePopupMenuItem(
             value: ContextMenuActionEnum.replaceUrl,
             child: Row(
               spacing: 8,

@@ -14,6 +14,8 @@ migrate_working_dir/
 .vscode/
 .env
 .claude/
+graphify-out/
+CLAUDE.md
 
 # IntelliJ related
 *.iml

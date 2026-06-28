@@ -201,23 +201,34 @@ class SettingsDialog extends HookConsumerWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      NavigationRail(
-                        extended: true,
-                        selectedIndex: selectedSection.value.index,
-                        onDestinationSelected: (index) {
-                          selectedSection.value = SettingsSection.values[index];
-                        },
-                        destinations: SettingsSection.values.map((section) {
-                          return NavigationRailDestination(
-                            icon: Icon(section.icon),
-                            label: Text(section.label),
-                          );
-                        }).toList(),
+                      SizedBox(
+                        width: 250,
+                        child: ListView(
+                          children: SettingsSection.values.map((section) {
+                            final selected = section == selectedSection.value;
+                            return ListTile(
+                              leading: Icon(section.icon),
+                              title: Text(
+                                section.label,
+                                style: TextStyle(fontSize: 18),
+                              ),
+                              hoverColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                              selected: selected,
+                              selectedColor: Colors.black,
+                              selectedTileColor: Colors.white,
+                              mouseCursor: SystemMouseCursors.click,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              onTap: () => selectedSection.value = section,
+                            );
+                          }).toList(),
+                        ),
                       ),
-                      const VerticalDivider(width: 1),
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 24),
+                          padding: const EdgeInsets.only(left: 16),
                           child: IndexedStack(
                             index: selectedSection.value.index,
                             children: SettingsSection.values.map((e) {
@@ -849,191 +860,197 @@ class SettingsInterfaceColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CheckboxListTile(
-          title: const Text('Display mods as a list instead of grid'),
-          value: useModsListViewBox.value,
-          checkColor: Colors.black,
-          activeColor: Colors.white,
-          contentPadding: EdgeInsets.all(0),
-          onChanged: (value) {
-            useModsListViewBox.value = value ?? useModsListViewBox.value;
-          },
-        ),
-        CheckboxListTile(
-          title: const Text('Display backups as a list instead of grid'),
-          value: useBackupsListViewBox.value,
-          checkColor: Colors.black,
-          activeColor: Colors.white,
-          contentPadding: EdgeInsets.all(0),
-          onChanged: (value) {
-            useBackupsListViewBox.value = value ?? useBackupsListViewBox.value;
-          },
-        ),
-        CheckboxListTile(
-          title: const Text('Display mod names on grid cards'),
-          value: showTitleOnCardsBox.value,
-          checkColor: Colors.black,
-          activeColor: Colors.white,
-          contentPadding: EdgeInsets.all(0),
-          onChanged: (value) {
-            showTitleOnCardsBox.value = value ?? showTitleOnCardsBox.value;
-          },
-        ),
-        CheckboxListTile(
-          title: Row(
-            spacing: 4,
-            children: [
-              const Text('Show PDF thumbnails instead of URLs'),
-              CustomTooltip(
-                message:
-                    "Sets the default view for the PDF section when a mod is opened\nYou can still toggle between URLs and thumbnails",
-                child: Icon(Icons.info_outline),
-              ),
-            ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CheckboxListTile(
+            title: const Text('Display mods as a list instead of grid'),
+            value: useModsListViewBox.value,
+            checkColor: Colors.black,
+            activeColor: Colors.white,
+            contentPadding: EdgeInsets.all(0),
+            onChanged: (value) {
+              useModsListViewBox.value = value ?? useModsListViewBox.value;
+            },
           ),
-          value: showPdfThumbnails.value,
-          checkColor: Colors.black,
-          activeColor: Colors.white,
-          contentPadding: EdgeInsets.all(0),
-          onChanged: (value) {
-            showPdfThumbnails.value = value ?? showPdfThumbnails.value;
-          },
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Default mod sort',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-            DropdownButton<SortOptionEnum>(
-              value: defaultSortOption.value,
-              dropdownColor: Colors.white,
-              style: TextStyle(color: Colors.white),
-              underline: Container(
-                height: 2,
-                color: Colors.white,
-              ),
-              focusColor: Colors.transparent,
-              selectedItemBuilder: (BuildContext context) {
-                return SortOptionEnum.values.map<Widget>((item) {
-                  return Container(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      item.label,
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  );
-                }).toList();
-              },
-              items: SortOptionEnum.values.map((sortOption) {
-                return DropdownMenuItem<SortOptionEnum>(
-                  value: sortOption,
-                  child: Text(
-                    sortOption.label,
-                    style: TextStyle(color: Colors.black),
-                  ),
-                );
-              }).toList(),
-              onChanged: (SortOptionEnum? newValue) {
-                if (newValue != null) {
-                  defaultSortOption.value = newValue;
-                }
-              },
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Default backup sort',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-            DropdownButton<BackupSortOptionEnum>(
-              value: defaultBackupSortOption.value,
-              dropdownColor: Colors.white,
-              style: TextStyle(color: Colors.white),
-              underline: Container(
-                height: 2,
-                color: Colors.white,
-              ),
-              focusColor: Colors.transparent,
-              selectedItemBuilder: (BuildContext context) {
-                return BackupSortOptionEnum.values.map<Widget>((item) {
-                  return Container(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      item.label,
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  );
-                }).toList();
-              },
-              items: BackupSortOptionEnum.values.map((sortOption) {
-                return DropdownMenuItem<BackupSortOptionEnum>(
-                  value: sortOption,
-                  child: Text(
-                    sortOption.label,
-                    style: TextStyle(color: Colors.black),
-                  ),
-                );
-              }).toList(),
-              onChanged: (BackupSortOptionEnum? newValue) {
-                if (newValue != null) {
-                  defaultBackupSortOption.value = newValue;
-                }
-              },
-            ),
-          ],
-        ),
-        Row(
-          spacing: 4,
-          children: [
-            Text(
-              'Asset URL font size',
-              style: TextStyle(fontSize: 16),
-            ),
-            CustomTooltip(
-              message:
-                  "Range: 1-99 (up to 1 decimal place)\nDefault value: 12.0",
-              child: Icon(Icons.info_outline),
-            ),
-            Spacer(),
-            SizedBox(
-              width: 70,
-              child: TextField(
-                textAlign: TextAlign.center,
-                controller: assetUrlFontSizeController,
-                cursorColor: Colors.black,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d{0,2}\.?\d?$')),
-                ],
-                style:
-                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(),
+          CheckboxListTile(
+            title: const Text('Display backups as a list instead of grid'),
+            value: useBackupsListViewBox.value,
+            checkColor: Colors.black,
+            activeColor: Colors.white,
+            contentPadding: EdgeInsets.all(0),
+            onChanged: (value) {
+              useBackupsListViewBox.value =
+                  value ?? useBackupsListViewBox.value;
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Display mod names on grid cards'),
+            value: showTitleOnCardsBox.value,
+            checkColor: Colors.black,
+            activeColor: Colors.white,
+            contentPadding: EdgeInsets.all(0),
+            onChanged: (value) {
+              showTitleOnCardsBox.value = value ?? showTitleOnCardsBox.value;
+            },
+          ),
+          CheckboxListTile(
+            title: Row(
+              spacing: 4,
+              children: [
+                const Text('Show PDF thumbnails instead of URLs'),
+                CustomTooltip(
+                  message:
+                      "Sets the default view for the PDF section when a mod is opened\nYou can still toggle between URLs and thumbnails",
+                  child: Icon(Icons.info_outline),
                 ),
-                focusNode: assetUrlFontSizeFocusNode,
-                onChanged: (value) {
-                  final num = double.tryParse(value);
-                  if (num != null && num >= 1 && num <= 99) {
-                    assetUrlFontSize.value = num;
+              ],
+            ),
+            value: showPdfThumbnails.value,
+            checkColor: Colors.black,
+            activeColor: Colors.white,
+            contentPadding: EdgeInsets.all(0),
+            onChanged: (value) {
+              showPdfThumbnails.value = value ?? showPdfThumbnails.value;
+            },
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Default mod sort',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              DropdownButton<SortOptionEnum>(
+                mouseCursor: SystemMouseCursors.click,
+                value: defaultSortOption.value,
+                dropdownColor: Colors.white,
+                style: TextStyle(color: Colors.white),
+                underline: Container(
+                  height: 2,
+                  color: Colors.white,
+                ),
+                focusColor: Colors.transparent,
+                selectedItemBuilder: (BuildContext context) {
+                  return SortOptionEnum.values.map<Widget>((item) {
+                    return Container(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        item.label,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }).toList();
+                },
+                items: SortOptionEnum.values.map((sortOption) {
+                  return DropdownMenuItem<SortOptionEnum>(
+                    value: sortOption,
+                    child: Text(
+                      sortOption.label,
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (SortOptionEnum? newValue) {
+                  if (newValue != null) {
+                    defaultSortOption.value = newValue;
                   }
                 },
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Default backup sort',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              DropdownButton<BackupSortOptionEnum>(
+                mouseCursor: SystemMouseCursors.click,
+                value: defaultBackupSortOption.value,
+                dropdownColor: Colors.white,
+                style: TextStyle(color: Colors.white),
+                underline: Container(
+                  height: 2,
+                  color: Colors.white,
+                ),
+                focusColor: Colors.transparent,
+                selectedItemBuilder: (BuildContext context) {
+                  return BackupSortOptionEnum.values.map<Widget>((item) {
+                    return Container(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        item.label,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }).toList();
+                },
+                items: BackupSortOptionEnum.values.map((sortOption) {
+                  return DropdownMenuItem<BackupSortOptionEnum>(
+                    value: sortOption,
+                    child: Text(
+                      sortOption.label,
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (BackupSortOptionEnum? newValue) {
+                  if (newValue != null) {
+                    defaultBackupSortOption.value = newValue;
+                  }
+                },
+              ),
+            ],
+          ),
+          Row(
+            spacing: 4,
+            children: [
+              Text(
+                'Asset URL font size',
+                style: TextStyle(fontSize: 16),
+              ),
+              CustomTooltip(
+                message:
+                    "Range: 1-99 (up to 1 decimal place)\nDefault value: 12.0",
+                child: Icon(Icons.info_outline),
+              ),
+              Spacer(),
+              SizedBox(
+                width: 70,
+                child: TextField(
+                  textAlign: TextAlign.center,
+                  controller: assetUrlFontSizeController,
+                  cursorColor: Colors.black,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d{0,2}\.?\d?$')),
+                  ],
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
+                  ),
+                  focusNode: assetUrlFontSizeFocusNode,
+                  onChanged: (value) {
+                    final num = double.tryParse(value);
+                    if (num != null && num >= 1 && num <= 99) {
+                      assetUrlFontSize.value = num;
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

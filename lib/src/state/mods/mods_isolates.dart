@@ -1,4 +1,4 @@
-import 'dart:convert' show LineSplitter, utf8;
+import 'dart:convert' show LineSplitter, jsonEncode, utf8;
 import 'dart:io' show Directory, File;
 
 import 'package:flutter/material.dart' show debugPrint;
@@ -105,6 +105,43 @@ class UpdateUrlPrefixesResult {
     required this.updated,
     required this.jsonString,
   });
+}
+
+class RenameModParams {
+  final String jsonFilePath;
+  final String newSaveName;
+
+  RenameModParams(this.jsonFilePath, this.newSaveName);
+}
+
+/// Replaces the top-level "SaveName" value in the mod's JSON file with
+/// [params.newSaveName]. Only the captured value is replaced so the key,
+/// spacing and surrounding quotes are preserved. Returns `false` when the file
+/// has no "SaveName" property (e.g. saved objects).
+Future<bool> renameModSaveNameIsolate(RenameModParams params) async {
+  final file = File(params.jsonFilePath);
+  final jsonString = await file.readAsString();
+
+  final match = saveNameRegex.firstMatch(jsonString);
+  if (match == null) return false;
+
+  // jsonEncode returns a quoted, escaped string; strip the surrounding quotes
+  // to get the inner content that goes between the existing quotes.
+  final encoded = jsonEncode(params.newSaveName);
+  final escapedInner = encoded.substring(1, encoded.length - 1);
+
+  // The match always ends with `"<value>"`, so the captured value occupies the
+  // range just before the final closing quote. Replacing only that range keeps
+  // the key, spacing and quotes intact. (Dart's Match has no per-group offsets.)
+  final full = match.group(0)!;
+  final oldValue = match.group(1)!;
+  final innerStart = match.start + (full.length - 1 - oldValue.length);
+  final innerEnd = match.start + full.length - 1;
+
+  final newJson = jsonString.replaceRange(innerStart, innerEnd, escapedInner);
+
+  await file.writeAsString(newJson);
+  return true;
 }
 
 Future<IsolateWorkResult> processMultipleBatchesInIsolate(

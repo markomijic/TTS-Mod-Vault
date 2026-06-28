@@ -43,7 +43,8 @@ class HelpTooltip extends StatelessWidget {
           ),
           TextSpan(
             text: '''
-• Left/right-click a URL to see options 
+• Left/right-click a URL to see options
+• Double-click a PDF thumbnail to open the file 
 • Download button: Attempt to download all missing asset files
 • Backup button: Create a backup out of downloaded asset files
 • Menu button: additional options''',

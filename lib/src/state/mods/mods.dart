@@ -26,6 +26,7 @@ import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
         IsolateWorkData,
         IsolateWorkResult,
         ModStorageUpdate,
+        RenameModParams,
         UpdateUrlPrefixesParams,
         createAdaptiveBatchesInIsolate,
         extractUrlsFromJson,
@@ -34,6 +35,7 @@ import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
         processInitialModsInIsolate,
         processMultipleBatchesInIsolate,
         renameAssetFile,
+        renameModSaveNameIsolate,
         buildAssetListsFromUrls,
         updateUrlPrefixesFilesIsolate;
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart' show ModsState;
@@ -1301,6 +1303,53 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     } catch (e) {
       debugPrint('updateModAsset error: $e');
       state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  /// Renames the mod by replacing the top-level "SaveName" value in its JSON
+  /// file. Returns `false` when the file has no "SaveName" property (e.g. saved
+  /// objects), in which case nothing is changed.
+  Future<bool> renameMod(Mod mod, String newSaveName) async {
+    try {
+      final trimmedName = newSaveName.trim();
+
+      final renamed = await compute(
+        renameModSaveNameIsolate,
+        RenameModParams(mod.jsonFilePath, trimmedName),
+      );
+
+      if (!renamed) return false;
+
+      final fileStat = await File(mod.jsonFilePath).stat();
+
+      // Creating a new Mod object because copyWith returns the previous backup
+      // value when the new one is null.
+      final updatedMod = Mod(
+        modType: mod.modType,
+        jsonFilePath: mod.jsonFilePath,
+        jsonFileName: mod.jsonFileName,
+        parentFolderName: mod.parentFolderName,
+        saveName: trimmedName,
+        createdAtTimestamp: mod.createdAtTimestamp,
+        lastModifiedTimestamp:
+            fileStat.modified.microsecondsSinceEpoch ~/ 1000,
+        dateTimeStamp: mod.dateTimeStamp,
+        imageFilePath: mod.imageFilePath,
+        backup: mod.backup,
+        backupStatus: mod.backupStatus,
+        assetLists: mod.assetLists,
+        assetCount: mod.assetCount,
+        existingAssetCount: mod.existingAssetCount,
+        hasAudioAssets: mod.hasAudioAssets,
+        audioVisibility: mod.audioVisibility,
+        invalidUrls: mod.invalidUrls,
+      );
+
+      updateMod(updatedMod);
+      return true;
+    } catch (e) {
+      debugPrint('renameMod error: $e');
+      return false;
     }
   }
 

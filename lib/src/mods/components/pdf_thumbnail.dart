@@ -11,8 +11,8 @@ import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show pdfThumbnailCacheProvider;
+import 'package:tts_mod_vault/src/state/pdf_thumbnail_renderer.dart'
+    show renderPdfFirstPage;
 import 'package:tts_mod_vault/src/utils.dart' show getFileNameFromURL, openFile;
 
 /// Renders the first page of a downloaded PDF as a thumbnail.
@@ -34,16 +34,12 @@ class PdfThumbnail extends HookConsumerWidget {
         asset.filePath != null &&
         asset.filePath!.isNotEmpty;
 
-    final cache = ref.read(pdfThumbnailCacheProvider);
-    // Synchronous cache hit -> render instantly (no flash on scroll-back).
-    final cached = hasFile ? cache.peek(asset.filePath!) : null;
-
     // Delay kicking off the render so quickly scrolling past the PDF section
-    // doesn't start work for tiles the user never lingers on. Cached tiles load
-    // immediately.
-    final shouldLoad = useState(cached != null);
+    // doesn't start work (or allocate buffers) for tiles the user never lingers
+    // on. There is no cache, so each tile renders on demand when first shown.
+    final shouldLoad = useState(false);
     useEffect(() {
-      if (!hasFile || cached != null) return null;
+      if (!hasFile) return null;
       final timer = Timer(
         const Duration(milliseconds: 300),
         () => shouldLoad.value = true,
@@ -52,10 +48,28 @@ class PdfThumbnail extends HookConsumerWidget {
     }, [asset.filePath, hasFile]);
 
     final thumbnailFuture = useMemoized(
-      () => (hasFile && shouldLoad.value) ? cache.get(asset.filePath!) : null,
+      () => (hasFile && shouldLoad.value)
+          ? renderPdfFirstPage(asset.filePath!)
+          : null,
       [asset.filePath, hasFile, shouldLoad.value],
     );
-    final snapshot = useFuture(thumbnailFuture, initialData: cached);
+    final snapshot = useFuture(thumbnailFuture);
+
+    // Wrap the rendered bytes in a provider so we can drop the decoded bitmap
+    // from Flutter's image cache the moment this tile leaves the tree (e.g. its
+    // section scrolls out), instead of waiting for the global LRU to evict it.
+    final bytes = snapshot.data;
+    final cacheHeight =
+        (_thumbnailHeight * MediaQuery.of(context).devicePixelRatio).round();
+    final imageProvider = useMemoized(
+      // ResizeImage decodes at tile size, so the retained bitmap is tile-sized,
+      // not render-sized.
+      () => bytes == null
+          ? null
+          : ResizeImage(MemoryImage(bytes), height: cacheHeight),
+      [bytes, cacheHeight],
+    );
+    useEffect(() => () => imageProvider?.evict(), [imageProvider]);
 
     Widget content;
     if (!hasFile) {
@@ -65,13 +79,10 @@ class PdfThumbnail extends HookConsumerWidget {
         label: 'Not downloaded',
         iconColor: Colors.red,
       );
-    } else if (snapshot.hasData && snapshot.data != null) {
-      content = Image.memory(
-        snapshot.data!,
+    } else if (imageProvider != null) {
+      content = Image(
+        image: imageProvider,
         height: _thumbnailHeight,
-        cacheHeight:
-            (_thumbnailHeight * MediaQuery.of(context).devicePixelRatio)
-                .round(),
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => _PlaceholderTile(
           fileName: fileName,

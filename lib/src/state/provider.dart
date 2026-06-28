@@ -25,7 +25,6 @@ import 'package:tts_mod_vault/src/state/loader/loader.dart';
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart';
 import 'package:tts_mod_vault/src/state/mods/mods_state.dart';
 import 'package:tts_mod_vault/src/state/mods/mods.dart';
-import 'package:tts_mod_vault/src/state/pdf_thumbnail_cache.dart';
 import 'package:tts_mod_vault/src/state/settings/settings.dart';
 import 'package:tts_mod_vault/src/state/settings/settings_state.dart';
 import 'package:tts_mod_vault/src/state/sort_and_filter/backup_sort_and_filter.dart';
@@ -116,8 +115,6 @@ final selectedUrlProvider = StateProvider<String>((ref) => '');
 final storageProvider = Provider((ref) => Storage());
 
 final backupCacheProvider = Provider((ref) => BackupCache());
-
-final pdfThumbnailCacheProvider = Provider((ref) => PdfThumbnailCache());
 
 final directoriesProvider =
     StateNotifierProvider<DirectoriesNotifier, DirectoriesState>(

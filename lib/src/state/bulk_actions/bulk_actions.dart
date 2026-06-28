@@ -496,12 +496,12 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
       modsNotifier.setSelectedMod(mod);
 
-      final invalidUrls = await downloadNotifier.checkModUrlsLive(mod);
+      final r = await downloadNotifier.checkModUrlsLive(mod);
 
       results.add(ModUrlCheckResult(
         modName: mod.saveName,
-        invalidUrls: invalidUrls ?? const [],
-        cancelled: invalidUrls == null,
+        invalidUrls: r.cancelled ? const [] : r.invalidUrls,
+        cancelled: r.cancelled,
       ));
     }
 

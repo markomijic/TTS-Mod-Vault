@@ -13,6 +13,7 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         SelectedModActionButtons,
         AssetsUrl,
         DownloadProgressBar,
+        UrlCheckProgressBar,
         HelpTooltip,
         CustomTooltip,
         BackupProgressBar,
@@ -542,11 +543,13 @@ class _SelectedModViewComponent extends HookConsumerWidget {
             },
           ),
         ),
-        downloadState.isDownloading || downloadState.cancelledDownloads
-            ? DownloadProgressBar()
-            : backupStatus != BackupStatusEnum.idle
-                ? BackupProgressBar()
-                : SelectedModActionButtons(selectedMod: selectedMod)
+        downloadState.isCheckingUrls
+            ? const UrlCheckProgressBar()
+            : downloadState.isDownloading || downloadState.cancelledDownloads
+                ? DownloadProgressBar()
+                : backupStatus != BackupStatusEnum.idle
+                    ? BackupProgressBar()
+                    : SelectedModActionButtons(selectedMod: selectedMod)
       ],
     );
   }

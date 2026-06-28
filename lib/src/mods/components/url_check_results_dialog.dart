@@ -4,148 +4,154 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'dart:ui' show ImageFilter;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
-import 'package:tts_mod_vault/src/state/provider.dart'
-    show downloadProvider, selectedModProvider;
+import 'package:tts_mod_vault/src/state/provider.dart' show downloadProvider;
 import 'package:tts_mod_vault/src/utils.dart' show copyToClipboard;
+
+/// Entry point for the "Check for invalid URLs" action. If [mod] already has
+/// cached results from a previous check, shows them immediately; otherwise runs
+/// a fresh check first. Use the dialog's "Re-check" button (which calls
+/// [runUrlCheckThenShowResults] directly) to force a fresh check.
+void showUrlCheckResults(
+  NavigatorState navigator,
+  WidgetRef ref,
+  Mod mod,
+) {
+  final cached = mod.invalidUrls;
+  if (cached != null) {
+    showDialog(
+      context: navigator.context,
+      builder: (_) => UrlCheckResultsDialog(mod: mod, invalidUrls: cached),
+    );
+    return;
+  }
+
+  runUrlCheckThenShowResults(navigator, ref, mod);
+}
+
+/// Runs a live URL check for [mod] (progress shows in the selected-mod view via
+/// [UrlCheckProgressBar]) and then shows the results dialog — including when the
+/// check was cancelled, displaying whatever partial findings were collected.
+///
+/// Pass a [NavigatorState] captured before the await (e.g. via
+/// `Navigator.of(context, rootNavigator: true)`) so it stays valid across the
+/// async gap and after any dialog pop.
+Future<void> runUrlCheckThenShowResults(
+  NavigatorState navigator,
+  WidgetRef ref,
+  Mod mod,
+) async {
+  final r = await ref.read(downloadProvider.notifier).checkModUrlsLive(mod);
+
+  if (!navigator.mounted) return;
+
+  showDialog(
+    context: navigator.context,
+    builder: (_) => UrlCheckResultsDialog(
+      mod: mod,
+      invalidUrls: r.invalidUrls,
+      wasCancelled: r.cancelled,
+    ),
+  );
+}
 
 class UrlCheckResultsDialog extends HookConsumerWidget {
   final Mod mod;
+  final List<String> invalidUrls;
+  final bool wasCancelled;
 
-  const UrlCheckResultsDialog({super.key, required this.mod});
+  const UrlCheckResultsDialog({
+    super.key,
+    required this.mod,
+    required this.invalidUrls,
+    this.wasCancelled = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMod = ref.watch(selectedModProvider) ?? mod;
-    final downloadNotifier = ref.watch(downloadProvider.notifier);
-    final downloadState = ref.watch(downloadProvider);
+    final String headingText;
+    if (invalidUrls.isNotEmpty) {
+      headingText = 'Invalid URLs: ${invalidUrls.length}';
+    } else if (wasCancelled) {
+      headingText = 'No invalid URLs found before cancelling';
+    } else {
+      headingText = 'All URLs are valid';
+    }
 
-    final invalidUrls = useMemoized(
-        () => selectedMod.invalidUrls ?? [], [selectedMod.invalidUrls]);
-    final isChecking = useState(mod.invalidUrls == null);
-    final cancelRequested = useRef(false);
-
-    useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mod.invalidUrls == null) {
-          final navigator = Navigator.of(context);
-          ref.read(downloadProvider.notifier).checkModUrlsLive(mod).then((_) {
-            if (cancelRequested.value) {
-              navigator.pop();
-            } else {
-              isChecking.value = false;
-            }
-          });
-        }
-      });
-
-      return null;
-    }, []);
-
-    return PopScope(
-      canPop: !isChecking.value,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-        child: AlertDialog(
-          title: SizedBox(
-              width: 1000,
-              child:
-                  Text(selectedMod.saveName, style: TextStyle(fontSize: 18))),
-          content: SizedBox(
-            width: 1000,
-            child: isChecking.value
-                ? Column(
-                    spacing: 12,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        downloadState.statusMessage ?? 'Checking URLs...',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      LinearProgressIndicator(
-                        minHeight: 24,
-                        backgroundColor: Colors.grey.shade300,
-                        color: Colors.green,
-                        borderRadius: BorderRadius.all(Radius.circular(32)),
-                        value: downloadState.progress,
-                      ),
-                    ],
-                  )
-                : Column(
-                    spacing: 16,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        invalidUrls.isNotEmpty
-                            ? 'Invalid URLs: ${invalidUrls.length}'
-                            : 'All URLs are valid',
-                        style: TextStyle(
-                          color: invalidUrls.isNotEmpty
-                              ? Colors.red
-                              : Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                      if (invalidUrls.isNotEmpty)
-                        Flexible(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: invalidUrls.length,
-                            itemBuilder: (context, index) {
-                              final url = invalidUrls[index];
-                              return _InvalidUrlRow(url: url, index: index);
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                if (isChecking.value) {
-                  cancelRequested.value = true;
-                  downloadNotifier.cancelAllDownloads();
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Text(isChecking.value ? 'Cancel' : 'Close'),
-            ),
-            if (!isChecking.value) ...[
-              ElevatedButton.icon(
-                onPressed: () {
-                  cancelRequested.value = false;
-                  isChecking.value = true;
-                  final navigator = Navigator.of(context);
-                  ref
-                      .read(downloadProvider.notifier)
-                      .checkModUrlsLive(selectedMod)
-                      .then((_) {
-                    if (cancelRequested.value) {
-                      navigator.pop();
-                    } else {
-                      isChecking.value = false;
-                    }
-                  });
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Re-check'),
-              ),
-              if (invalidUrls.isNotEmpty)
-                ElevatedButton.icon(
-                  onPressed: () {
-                    final invalidUrlsText = invalidUrls.join('\n');
-                    copyToClipboard(context, invalidUrlsText,
-                        showSnackBarAfterCopying: false);
-                  },
-                  icon: const Icon(Icons.copy_all),
-                  label: const Text('Copy all invalid URLs'),
-                ),
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+      child: AlertDialog(
+        title: Row(
+          children: [
+            if (wasCancelled) ...[
+              const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              const SizedBox(width: 8),
             ],
+            Expanded(
+              child: Text(
+                wasCancelled ? 'URL Check Cancelled' : mod.saveName,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
           ],
         ),
+        content: SizedBox(
+          width: 1000,
+          child: Column(
+            spacing: 16,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (wasCancelled)
+                Text(
+                  mod.saveName,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              Text(
+                headingText,
+                style: TextStyle(
+                  color: invalidUrls.isNotEmpty ? Colors.red : Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+              if (invalidUrls.isNotEmpty)
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: invalidUrls.length,
+                    itemBuilder: (context, index) {
+                      final url = invalidUrls[index];
+                      return _InvalidUrlRow(url: url, index: index);
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              final navigator = Navigator.of(context, rootNavigator: true);
+              navigator.pop();
+              runUrlCheckThenShowResults(navigator, ref, mod);
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Re-check'),
+          ),
+          if (invalidUrls.isNotEmpty)
+            ElevatedButton.icon(
+              onPressed: () {
+                final invalidUrlsText = invalidUrls.join('\n');
+                copyToClipboard(context, invalidUrlsText,
+                    showSnackBarAfterCopying: false);
+              },
+              icon: const Icon(Icons.copy_all),
+              label: const Text('Copy all invalid URLs'),
+            ),
+        ],
       ),
     );
   }

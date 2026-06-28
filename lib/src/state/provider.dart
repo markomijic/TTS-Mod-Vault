@@ -182,6 +182,7 @@ final refreshingSharedAssetsProvider = StateProvider<bool>((ref) => false);
 final actionInProgressProvider = Provider<bool>((ref) {
   final modsAsyncValue = ref.watch(modsProvider);
   final isDownloading = ref.watch(downloadProvider).isDownloading;
+  final isCheckingUrls = ref.watch(downloadProvider).isCheckingUrls;
   final bulkActionStatus = ref.watch(bulkActionsProvider).status;
   final cleanUpStatus = ref.watch(cleanupProvider).status;
   final deleteAssetsStatus = ref.watch(deleteAssetsProvider).status;
@@ -194,6 +195,7 @@ final actionInProgressProvider = Provider<bool>((ref) {
       backupStatus != BackupStatusEnum.idle ||
       bulkActionStatus != BulkActionsStatusEnum.idle ||
       isDownloading ||
+      isCheckingUrls ||
       modsAsyncValue is AsyncLoading ||
       deletingBackup ||
       refreshingSharedAssets;

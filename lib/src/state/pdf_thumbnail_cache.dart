@@ -1,13 +1,15 @@
 import 'dart:async' show Completer;
 import 'dart:collection' show LinkedHashMap, Queue;
+import 'dart:io' show File;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:pdfx/pdfx.dart' show PdfDocument, PdfPageImageFormat;
+import 'package:printing/printing.dart' show Printing;
 
 /// In-memory cache for rendered first-page PDF thumbnails.
 ///
-/// Thumbnails are rendered lazily via pdfium, keyed by the PDF's local file
-/// path. Results are kept in an LRU map (capped at [_maxEntries]) so scrolling
+/// Thumbnails are rendered lazily via pdfium (through the `printing` package),
+/// keyed by the PDF's local file path. Results are kept in an LRU map (capped at
+/// [_maxEntries]) so scrolling
 /// the PDF section in and out of view, or re-selecting a mod, reuses the
 /// already-rendered bytes instead of re-rendering. Concurrent renders are
 /// limited by [_maxConcurrent] so a section with many PDFs doesn't fire every
@@ -20,8 +22,11 @@ class PdfThumbnailCache {
   static const int _maxEntries = 64;
   static const int _maxConcurrent = 3;
 
-  /// Target render height in pixels (2x the 192px tile for hi-dpi crispness).
-  static const double _targetHeight = 384;
+  /// Render resolution. The display tile is only 192px, so dpi 36 yields roughly
+  /// a 400px-tall page for US-letter/A4 (~2x the tile for hi-dpi crispness) while
+  /// keeping each cached PNG small. Raise it if thumbnails look soft, lower it to
+  /// trim cache memory.
+  static const double _renderDpi = 36;
 
   final LinkedHashMap<String, Uint8List> _cache = LinkedHashMap();
   final Map<String, Future<Uint8List?>> _inflight = {};
@@ -92,23 +97,13 @@ class PdfThumbnailCache {
   }
 
   static Future<Uint8List?> _renderFirstPage(String path) async {
-    final doc = await PdfDocument.openFile(path);
-    try {
-      final page = await doc.getPage(1);
-      try {
-        final targetWidth = page.width / page.height * _targetHeight;
-        final img = await page.render(
-          width: targetWidth,
-          height: _targetHeight,
-          format: PdfPageImageFormat.png,
-          backgroundColor: '#FFFFFF',
-        );
-        return img?.bytes;
-      } finally {
-        await page.close();
-      }
-    } finally {
-      await doc.close();
+    final bytes = await File(path).readAsBytes();
+    // raster() yields one PdfRaster per requested page; we only want page 0.
+    // It rasters onto a white background by default, so transparent PDFs don't
+    // render black.
+    await for (final page in Printing.raster(bytes, pages: [0], dpi: _renderDpi)) {
+      return await page.toPng();
     }
+    return null; // empty/invalid PDF -> caller falls back to placeholder tile
   }
 }

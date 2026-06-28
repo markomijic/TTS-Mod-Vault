@@ -518,9 +518,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   // MARK: Check all URLs
   /// Checks all of [mod]'s asset URLs and stores the invalid ones on the mod.
-  /// Returns the list of invalid URLs when the check completes, or null if the
-  /// check was cancelled.
-  Future<List<String>?> checkModUrlsLive(Mod mod) async {
+  /// Returns the invalid URLs found and whether the check was cancelled. When
+  /// cancelled, the (partial) results are returned but NOT persisted on the mod.
+  Future<({List<String> invalidUrls, bool cancelled})> checkModUrlsLive(
+      Mod mod) async {
     final invalidUrls = <String>[];
 
     final allAssets = mod.getAllAssets();
@@ -530,7 +531,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     try {
       state = state.copyWith(
-        //isDownloading: true, // Not setting this to true so that progress bar appears only in url check results dialog
+        isCheckingUrls: true,
+        // Clear any stale cancel flag so the in-view bar doesn't flash
+        // "Cancelling" at the start of a fresh check.
+        cancelledDownloads: false,
         progress: 0.0,
         statusMessage: 'Checked 0/${allAssets.length} URLs',
       );
@@ -570,17 +574,19 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       _cancelTokens.remove(checkToken);
       state = state.copyWith(
         isDownloading: false,
+        isCheckingUrls: false,
         progress: 0.0,
         statusMessage: null,
         cancelledDownloads: false,
       );
     }
     if (checkToken.isCancelled) {
-      return null;
+      // Return partial results without persisting them on the mod.
+      return (invalidUrls: invalidUrls, cancelled: true);
     }
 
     ref.read(modsProvider.notifier).updateModInvalidUrls(mod, invalidUrls);
-    return invalidUrls;
+    return (invalidUrls: invalidUrls, cancelled: false);
   }
 
   // MARK: DL MOD Updates

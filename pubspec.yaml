@@ -50,7 +50,7 @@ icons_launcher:
     macos:
       enable: true
     linux:
-      enable: true
+      enable: false
 
 flutter:
   uses-material-design: true

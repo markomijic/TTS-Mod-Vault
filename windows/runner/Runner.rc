@@ -93,7 +93,7 @@ BEGIN
             VALUE "FileDescription", "TTS Mod Vault" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "tts_mod_vault" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2024-2026 Marko Mijić. GPLv3." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025-2026 Marko Mijić. GPLv3." "\0"
             VALUE "OriginalFilename", "tts_mod_vault.exe" "\0"
             VALUE "ProductName", "TTS Mod Vault" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

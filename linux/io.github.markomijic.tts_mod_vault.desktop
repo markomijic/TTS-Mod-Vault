@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=TTS Mod Vault
+GenericName=Tabletop Simulator Mod Manager
+Comment=Download and back up assets for your Tabletop Simulator mods
+Exec=tts_mod_vault
+Icon=io.github.markomijic.tts_mod_vault
+Terminal=false
+Categories=Utility;
+Keywords=Tabletop;Simulator;TTS;mod;backup;assets;
+StartupWMClass=tts_mod_vault
+StartupNotify=true

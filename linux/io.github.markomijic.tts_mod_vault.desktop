@@ -9,5 +9,5 @@ Icon=io.github.markomijic.tts_mod_vault
 Terminal=false
 Categories=Utility;
 Keywords=Tabletop;Simulator;TTS;mod;backup;assets;
-StartupWMClass=tts_mod_vault
+StartupWMClass=io.github.markomijic.tts_mod_vault
 StartupNotify=true

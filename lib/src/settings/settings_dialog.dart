@@ -183,154 +183,149 @@ class SettingsDialog extends HookConsumerWidget {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
       child: Dialog(
-        child: SizedBox(
-          width: 900,
-          height: 520,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Settings',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
+        constraints: BoxConstraints(maxHeight: 550, maxWidth: 900),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Settings',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 250,
-                        child: ListView(
-                          children: SettingsSection.values.map((section) {
-                            final selected = section == selectedSection.value;
-                            return ListTile(
-                              leading: Icon(section.icon),
-                              title: Text(
-                                section.label,
-                                style: TextStyle(fontSize: 18),
-                              ),
-                              hoverColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                              selected: selected,
-                              selectedColor: Colors.black,
-                              selectedTileColor: Colors.white,
-                              mouseCursor: SystemMouseCursors.click,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              onTap: () => selectedSection.value = section,
-                            );
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 250,
+                      child: ListView(
+                        children: SettingsSection.values.map((section) {
+                          final selected = section == selectedSection.value;
+                          return ListTile(
+                            leading: Icon(section.icon),
+                            title: Text(
+                              section.label,
+                              style: TextStyle(fontSize: 18),
+                            ),
+                            hoverColor: Colors.transparent,
+                            splashColor: Colors.transparent,
+                            selected: selected,
+                            selectedColor: Colors.black,
+                            selectedTileColor: Colors.white,
+                            mouseCursor: SystemMouseCursors.click,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            onTap: () => selectedSection.value = section,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 16),
+                        child: IndexedStack(
+                          index: selectedSection.value.index,
+                          children: SettingsSection.values.map((e) {
+                            switch (e) {
+                              case SettingsSection.features:
+                                return SettingsFeaturesColumn(
+                                  checkForUpdatesOnStartBox:
+                                      checkForUpdatesOnStartBox,
+                                  showSavedObjects: showSavedObjects,
+                                  showBackupState: showBackupState,
+                                  forceBackupJsonFilename:
+                                      forceBackupJsonFilename,
+                                  ignoreAudioAssets: ignoreAudioAssets,
+                                );
+
+                              case SettingsSection.interface:
+                                return SettingsInterfaceColumn(
+                                  useModsListViewBox: useModsListViewBox,
+                                  useBackupsListViewBox: useBackupsListViewBox,
+                                  showTitleOnCardsBox: showTitleOnCardsBox,
+                                  showPdfThumbnails: showPdfThumbnails,
+                                  defaultSortOption: defaultSortOption,
+                                  defaultBackupSortOption:
+                                      defaultBackupSortOption,
+                                  assetUrlFontSize: assetUrlFontSize,
+                                  assetUrlFontSizeController:
+                                      assetUrlFontSizeController,
+                                  assetUrlFontSizeFocusNode:
+                                      assetUrlFontSizeFocusNode,
+                                );
+
+                              case SettingsSection.folders:
+                                return SettingsFoldersColumn(
+                                  modsDir: modsDir,
+                                  directoriesNotifier: directoriesNotifier,
+                                  savesDir: savesDir,
+                                  backupsDir: backupsDir,
+                                  ignoredSubfolders: ignoredSubfolders,
+                                  allowCustomSavesFolder:
+                                      allowCustomSavesFolder,
+                                );
+
+                              case SettingsSection.network:
+                                return SettingsNetworkColumn(
+                                  textFieldController: textFieldController,
+                                  textFieldFocusNode: textFieldFocusNode,
+                                  numberValue: concurrentDownloadsValue,
+                                  ignoredDomains: ignoredDomains,
+                                );
+
+                              case SettingsSection.updateUrlsPresets:
+                                return SettingsUpdateUrlsPresetsColumn(
+                                  urlPresets: urlPresets,
+                                );
+                            }
                           }).toList(),
                         ),
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 16),
-                          child: IndexedStack(
-                            index: selectedSection.value.index,
-                            children: SettingsSection.values.map((e) {
-                              switch (e) {
-                                case SettingsSection.features:
-                                  return SettingsFeaturesColumn(
-                                    checkForUpdatesOnStartBox:
-                                        checkForUpdatesOnStartBox,
-                                    showSavedObjects: showSavedObjects,
-                                    showBackupState: showBackupState,
-                                    forceBackupJsonFilename:
-                                        forceBackupJsonFilename,
-                                    ignoreAudioAssets: ignoreAudioAssets,
-                                  );
-
-                                case SettingsSection.interface:
-                                  return SettingsInterfaceColumn(
-                                    useModsListViewBox: useModsListViewBox,
-                                    useBackupsListViewBox:
-                                        useBackupsListViewBox,
-                                    showTitleOnCardsBox: showTitleOnCardsBox,
-                                    showPdfThumbnails: showPdfThumbnails,
-                                    defaultSortOption: defaultSortOption,
-                                    defaultBackupSortOption:
-                                        defaultBackupSortOption,
-                                    assetUrlFontSize: assetUrlFontSize,
-                                    assetUrlFontSizeController:
-                                        assetUrlFontSizeController,
-                                    assetUrlFontSizeFocusNode:
-                                        assetUrlFontSizeFocusNode,
-                                  );
-
-                                case SettingsSection.folders:
-                                  return SettingsFoldersColumn(
-                                    modsDir: modsDir,
-                                    directoriesNotifier: directoriesNotifier,
-                                    savesDir: savesDir,
-                                    backupsDir: backupsDir,
-                                    ignoredSubfolders: ignoredSubfolders,
-                                    allowCustomSavesFolder:
-                                        allowCustomSavesFolder,
-                                  );
-
-                                case SettingsSection.network:
-                                  return SettingsNetworkColumn(
-                                    textFieldController: textFieldController,
-                                    textFieldFocusNode: textFieldFocusNode,
-                                    numberValue: concurrentDownloadsValue,
-                                    ignoredDomains: ignoredDomains,
-                                  );
-
-                                case SettingsSection.updateUrlsPresets:
-                                  return SettingsUpdateUrlsPresetsColumn(
-                                    urlPresets: urlPresets,
-                                  );
-                              }
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  spacing: 8,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () async {
-                        await ref
-                            .read(settingsProvider.notifier)
-                            .resetToDefaultSettings();
-                        if (context.mounted) Navigator.pop(context);
-                      },
-                      child: const Text('Reset to defaults'),
-                    ),
-                    Spacer(),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        final inputValue =
-                            int.tryParse(textFieldController.text);
-                        if (inputValue == null ||
-                            inputValue < 1 ||
-                            inputValue > 99) {
-                          showSnackBar(context,
-                              'Please enter a number between 1 and 99');
-                          if (context.mounted) Navigator.pop(context);
-                          return;
-                        }
-                        await saveSettingsChanges();
-                      },
-                      icon: Icon(Icons.save),
-                      label: const Text('Save'),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                spacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      await ref
+                          .read(settingsProvider.notifier)
+                          .resetToDefaultSettings();
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    child: const Text('Reset to defaults'),
+                  ),
+                  Spacer(),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final inputValue = int.tryParse(textFieldController.text);
+                      if (inputValue == null ||
+                          inputValue < 1 ||
+                          inputValue > 99) {
+                        showSnackBar(
+                            context, 'Please enter a number between 1 and 99');
+                        if (context.mounted) Navigator.pop(context);
+                        return;
+                      }
+                      await saveSettingsChanges();
+                    },
+                    icon: Icon(Icons.save),
+                    label: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -747,89 +742,108 @@ class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 8,
-        children: [
-          ...urlPresets.value.asMap().entries.map((entry) {
-            final index = entry.key;
-            final preset = entry.value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.warning_amber_rounded),
+            Text(
+              'Presets are saved when you press the "Save" button',
+              style: TextStyle(fontSize: 16),
+            ),
+            Spacer(),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final result = await showDialog<UrlReplacementPreset>(
+                  context: context,
+                  builder: (context) => const _PresetEditorDialog(),
+                );
+                if (result != null) {
+                  urlPresets.value = [...urlPresets.value, result];
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add preset'),
+            ),
+          ],
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                ...urlPresets.value.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final preset = entry.value;
 
-            return Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.grey[850],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  return Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[850],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          preset.label,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 16),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                preset.label,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              Text(
+                                'Old prefix: ${preset.oldUrl}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'New prefix: ${preset.newUrl}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                        Text(
-                          'Old prefix: ${preset.oldUrl}',
-                          overflow: TextOverflow.ellipsis,
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          onPressed: () async {
+                            final result =
+                                await showDialog<UrlReplacementPreset>(
+                              context: context,
+                              builder: (context) =>
+                                  _PresetEditorDialog(preset: preset),
+                            );
+                            if (result != null) {
+                              final newList = List<UrlReplacementPreset>.from(
+                                  urlPresets.value);
+                              newList[index] = result;
+                              urlPresets.value = newList;
+                            }
+                          },
                         ),
-                        Text(
-                          'New prefix: ${preset.newUrl}',
-                          overflow: TextOverflow.ellipsis,
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          onPressed: () {
+                            final newList = List<UrlReplacementPreset>.from(
+                                urlPresets.value);
+                            newList.removeAt(index);
+                            urlPresets.value = newList;
+                          },
                         ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    onPressed: () async {
-                      final result = await showDialog<UrlReplacementPreset>(
-                        context: context,
-                        builder: (context) =>
-                            _PresetEditorDialog(preset: preset),
-                      );
-                      if (result != null) {
-                        final newList =
-                            List<UrlReplacementPreset>.from(urlPresets.value);
-                        newList[index] = result;
-                        urlPresets.value = newList;
-                      }
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () {
-                      final newList =
-                          List<UrlReplacementPreset>.from(urlPresets.value);
-                      newList.removeAt(index);
-                      urlPresets.value = newList;
-                    },
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final result = await showDialog<UrlReplacementPreset>(
-                context: context,
-                builder: (context) => const _PresetEditorDialog(),
-              );
-              if (result != null) {
-                urlPresets.value = [...urlPresets.value, result];
-              }
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Add preset'),
+                  );
+                }),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

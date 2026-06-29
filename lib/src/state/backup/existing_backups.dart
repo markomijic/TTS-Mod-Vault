@@ -260,6 +260,51 @@ class ExistingBackupsStateNotifier extends StateNotifier<ExistingBackupsState> {
     return backup;
   }
 
+  /// Renames a backup file on disk to [newFilename] (kept in the same folder)
+  /// and updates the matching entry in state. Returns the updated backup, or
+  /// `null` if the rename could not be performed (e.g. the source is missing or
+  /// a different file already occupies the target name).
+  Future<ExistingBackup?> renameBackupFile(
+    ExistingBackup backup,
+    String newFilename,
+  ) async {
+    try {
+      final oldFile = File(backup.filepath);
+      if (!oldFile.existsSync()) return null;
+
+      final newFilepath = path.normalize(
+        path.join(path.dirname(backup.filepath), newFilename),
+      );
+
+      // Nothing to do if the name already matches.
+      if (path.normalize(backup.filepath) == newFilepath) return backup;
+
+      // Don't clobber an unrelated existing backup.
+      if (File(newFilepath).existsSync()) return null;
+
+      await oldFile.rename(newFilepath);
+
+      final updatedBackup = backup.copyWith(
+        filename: newFilename,
+        filepath: newFilepath,
+        parentFolderName: path.basename(path.dirname(newFilepath)),
+      );
+
+      final backupIndex =
+          state.backups.indexWhere((b) => b.filepath == backup.filepath);
+      if (backupIndex >= 0) {
+        final updatedBackups = [...state.backups];
+        updatedBackups[backupIndex] = updatedBackup;
+        state = ExistingBackupsState(backups: updatedBackups);
+      }
+
+      return updatedBackup;
+    } catch (e) {
+      debugPrint('renameBackupFile error: $e');
+      return null;
+    }
+  }
+
   Future<void> deleteBackup(ExistingBackup backup) async {
     try {
       state = state.copyWith(deletingBackup: true);

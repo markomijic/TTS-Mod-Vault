@@ -4,7 +4,7 @@ description: "Download and backup assets for your Tabletop Simulator mods"
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 2.0.0+1
+version: 2.1.0+1
 
 environment:
   sdk: ^3.5.4
@@ -15,9 +15,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  path_provider: ^2.1.5
   path: ^1.9.0
-  flutter_archive: ^6.0.3
   hooks_riverpod: 2.6.1
   flutter_hooks: ^0.21.2
   http: ^1.2.2
@@ -30,7 +28,6 @@ dependencies:
   package_info_plus: ^9.0.0
   url_launcher: ^6.3.1
   intl: ^0.20.2
-  hive_ce: ^2.11.3
   hive_ce_flutter: ^2.3.1
   open_filex: ^4.7.0
   image: ^4.5.4
@@ -44,8 +41,6 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   icons_launcher: ^3.0.1
-  hive_ce_generator: ^1.9.2
-  build_runner: ^2.5.3
 
 icons_launcher:
   image_path: "assets/icon/tts_mod_vault_icon.png"

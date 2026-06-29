@@ -18,6 +18,8 @@ class RenameModDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nameController = useTextEditingController(text: mod.saveName);
     final isRenaming = useState(false);
+    final hasBackup = mod.backup != null;
+    final renameBackup = useState(true);
 
     Future<void> rename() async {
       final name = nameController.text.trim();
@@ -28,8 +30,11 @@ class RenameModDialog extends HookConsumerWidget {
 
       isRenaming.value = true;
 
-      final renamed =
-          await ref.read(modsProvider.notifier).renameMod(mod, name);
+      final renamed = await ref.read(modsProvider.notifier).renameMod(
+            mod,
+            name,
+            renameBackup: hasBackup && renameBackup.value,
+          );
 
       if (context.mounted) {
         Navigator.of(context).pop();
@@ -81,6 +86,23 @@ class RenameModDialog extends HookConsumerWidget {
                   ),
                 ],
               ),
+              if (hasBackup)
+                CheckboxListTile(
+                  value: renameBackup.value,
+                  checkColor: Colors.black,
+                  activeColor: Colors.white,
+                  visualDensity: VisualDensity.compact,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: isRenaming.value
+                      ? null
+                      : (value) => renameBackup.value = value ?? false,
+                  title: Text(
+                    'Rename the backup file to keep it matching this '
+                    '${mod.modType.label}',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
               Row(
                 spacing: 8,
                 mainAxisAlignment: MainAxisAlignment.end,

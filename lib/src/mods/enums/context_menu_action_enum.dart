@@ -19,4 +19,5 @@ enum ContextMenuActionEnum {
   checkShared,
   deleteMod,
   saveAsMod,
+  renameMod,
 }

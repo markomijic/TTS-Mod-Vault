@@ -53,7 +53,12 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         multiModsProvider;
 import 'package:tts_mod_vault/src/state/storage/storage.dart' show Storage;
 import 'package:tts_mod_vault/src/utils.dart'
-    show getFileNameFromURL, newSteamUserContentUrl, oldCloudUrl;
+    show
+        getBackupFilename,
+        getBackupFilenameByMod,
+        getFileNameFromURL,
+        newSteamUserContentUrl,
+        oldCloudUrl;
 
 class ModsStateNotifier extends AsyncNotifier<ModsState> {
   @override
@@ -1309,7 +1314,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   /// Renames the mod by replacing the top-level "SaveName" value in its JSON
   /// file. Returns `false` when the file has no "SaveName" property (e.g. saved
   /// objects), in which case nothing is changed.
-  Future<bool> renameMod(Mod mod, String newSaveName) async {
+  Future<bool> renameMod(
+    Mod mod,
+    String newSaveName, {
+    bool renameBackup = false,
+  }) async {
     try {
       final trimmedName = newSaveName.trim();
 
@@ -1321,6 +1330,31 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       if (!renamed) return false;
 
       final fileStat = await File(mod.jsonFilePath).stat();
+
+      // Rename the matching backup so it keeps matching the mod under its new
+      // name, preserving whichever filename form the existing backup used.
+      var updatedBackup = mod.backup;
+      if (renameBackup && mod.backup != null) {
+        final usedForce =
+            mod.backup!.filename == getBackupFilenameByMod(mod, true) &&
+                mod.backup!.filename != getBackupFilenameByMod(mod, false);
+
+        final newBackupFilename = getBackupFilename(
+          saveName: trimmedName,
+          jsonFileName: mod.jsonFileName,
+          modType: mod.modType,
+          forceIncludeJsonFilename: usedForce,
+        );
+
+        if (newBackupFilename != mod.backup!.filename) {
+          final renamedBackup = await ref
+              .read(existingBackupsProvider.notifier)
+              .renameBackupFile(mod.backup!, newBackupFilename);
+          if (renamedBackup != null) {
+            updatedBackup = renamedBackup;
+          }
+        }
+      }
 
       // Creating a new Mod object because copyWith returns the previous backup
       // value when the new one is null.
@@ -1335,7 +1369,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
             fileStat.modified.microsecondsSinceEpoch ~/ 1000,
         dateTimeStamp: mod.dateTimeStamp,
         imageFilePath: mod.imageFilePath,
-        backup: mod.backup,
+        backup: updatedBackup,
         backupStatus: mod.backupStatus,
         assetLists: mod.assetLists,
         assetCount: mod.assetCount,

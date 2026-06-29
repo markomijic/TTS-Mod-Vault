@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'dart:ui' show ImageFilter;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show RenameModDialog, showUpdateUrlsDialog;
+    show showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/mods/components/url_check_results_dialog.dart'
     show showUrlCheckResults;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
@@ -174,24 +174,6 @@ class SelectedModActionsMenu extends HookConsumerWidget {
                 deleteAssetsNotifier.resetState();
                 break;
             }
-          },
-        ),
-        MenuItemButton(
-          style: MenuItemButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-          ),
-          leadingIcon:
-              Icon(Icons.drive_file_rename_outline, color: Colors.black),
-          child: Text('Rename ${selectedMod.modType.label}',
-              style: TextStyle(color: Colors.black)),
-          onPressed: () {
-            if (actionInProgress) return;
-
-            showDialog(
-              context: context,
-              builder: (ctx) => RenameModDialog(mod: selectedMod),
-            );
           },
         ),
         MenuItemButton(

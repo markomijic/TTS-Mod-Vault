@@ -11,6 +11,8 @@ import 'package:open_filex/open_filex.dart' show OpenFilex;
 import 'package:tts_mod_vault/src/mods/components/clickable_popup_menu_item.dart'
     show ClickablePopupMenuItem;
 import 'package:tts_mod_vault/src/mods/components/custom_tooltip.dart';
+import 'package:tts_mod_vault/src/mods/components/rename_mod_dialog.dart'
+    show RenameModDialog;
 import 'package:tts_mod_vault/src/mods/components/save_as_mod_dialog.dart'
     show SaveAsModDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
@@ -603,21 +605,38 @@ String sanitizeFileName(String input) {
 }
 
 String getBackupFilenameByMod(Mod mod, bool forceIncludeJsonFilename) {
+  return getBackupFilename(
+    saveName: mod.saveName,
+    jsonFileName: mod.jsonFileName,
+    modType: mod.modType,
+    forceIncludeJsonFilename: forceIncludeJsonFilename,
+  );
+}
+
+/// Builds a backup filename from individual mod properties. Useful when the
+/// backup name needs to be computed for a not-yet-applied value (e.g. a new
+/// save name during a rename) without constructing a full [Mod].
+String getBackupFilename({
+  required String saveName,
+  required String jsonFileName,
+  required ModTypeEnum modType,
+  required bool forceIncludeJsonFilename,
+}) {
   // If json file name is not a number -> do not include it in backup filename unless modified by Setting
-  final nameAsNumber = int.tryParse(mod.jsonFileName);
+  final nameAsNumber = int.tryParse(jsonFileName);
 
   if (!forceIncludeJsonFilename &&
       nameAsNumber == null &&
-      mod.modType == ModTypeEnum.mod) {
-    return sanitizeFileName("${mod.saveName}.ttsmod");
+      modType == ModTypeEnum.mod) {
+    return sanitizeFileName("$saveName.ttsmod");
   }
 
-  switch (mod.modType) {
+  switch (modType) {
     case ModTypeEnum.savedObject:
-      return sanitizeFileName("${mod.saveName} (saved object).ttsmod");
+      return sanitizeFileName("$saveName (saved object).ttsmod");
 
     default:
-      return sanitizeFileName("${mod.saveName} (${mod.jsonFileName}).ttsmod");
+      return sanitizeFileName("$saveName ($jsonFileName).ttsmod");
   }
 }
 
@@ -824,6 +843,16 @@ void showModContextMenu(
         ),
       ),
       ClickablePopupMenuItem(
+        value: ContextMenuActionEnum.renameMod,
+        child: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.drive_file_rename_outline),
+            Text('Rename ${mod.modType.label}'),
+          ],
+        ),
+      ),
+      ClickablePopupMenuItem(
         value: ContextMenuActionEnum.deleteMod,
         child: Row(
           spacing: 8,
@@ -1016,6 +1045,19 @@ void showModContextMenu(
         case ContextMenuActionEnum.backupSubmenu:
           if (context.mounted && mod.backup != null) {
             _showBackupSubmenu(context, ref, position, mod);
+          }
+          break;
+
+        case ContextMenuActionEnum.renameMod:
+          if (context.mounted) {
+            if (ref.read(actionInProgressProvider)) {
+              return;
+            }
+
+            showDialog(
+              context: context,
+              builder: (ctx) => RenameModDialog(mod: mod),
+            );
           }
           break;
 

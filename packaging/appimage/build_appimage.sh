@@ -56,11 +56,14 @@ mkdir -p "$APPDIR/usr/share/applications"
 cp "$DESKTOP_SRC" "$APPDIR/usr/share/applications/${APP_ID}.desktop"
 cp "$DESKTOP_SRC" "$APPDIR/${APP_ID}.desktop"   # required at AppDir root too
 
-# AppStream metainfo (silences appimagetool's warning; enables Flathub/AppImageHub).
+# AppStream metainfo. Repo keeps the modern .metainfo.xml name, but appimagetool's
+# presence-check only recognizes the legacy .appdata.xml name, so install it under
+# that name inside the AppImage (still a valid AppStream filename). Only one copy,
+# to avoid duplicate-component warnings.
 METAINFO_SRC="linux/${APP_ID}.metainfo.xml"
 if [ -f "$METAINFO_SRC" ]; then
   mkdir -p "$APPDIR/usr/share/metainfo"
-  cp "$METAINFO_SRC" "$APPDIR/usr/share/metainfo/${APP_ID}.metainfo.xml"
+  cp "$METAINFO_SRC" "$APPDIR/usr/share/metainfo/${APP_ID}.appdata.xml"
 fi
 
 # AppRun: launches the bundled executable.

@@ -1,65 +1,15 @@
 PODS:
-  - file_picker (0.0.1):
-    - FlutterMacOS
-  - flutter_archive (0.0.1):
-    - FlutterMacOS
-    - ZIPFoundation (= 0.9.19)
   - FlutterMacOS (1.0.0)
-  - package_info_plus (0.0.1):
-    - FlutterMacOS
-  - path_provider_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
-  - screen_retriever_macos (0.0.1):
-    - FlutterMacOS
-  - url_launcher_macos (0.0.1):
-    - FlutterMacOS
-  - window_manager (0.5.0):
-    - FlutterMacOS
-  - ZIPFoundation (0.9.19)
 
 DEPENDENCIES:
-  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
-  - flutter_archive (from `Flutter/ephemeral/.symlinks/plugins/flutter_archive/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
-  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
-  - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
-  - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
-  - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
-
-SPEC REPOS:
-  trunk:
-    - ZIPFoundation
 
 EXTERNAL SOURCES:
-  file_picker:
-    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
-  flutter_archive:
-    :path: Flutter/ephemeral/.symlinks/plugins/flutter_archive/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
-  package_info_plus:
-    :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos
-  path_provider_foundation:
-    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
-  screen_retriever_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos
-  url_launcher_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
-  window_manager:
-    :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
-  flutter_archive: 07888d9aeb79da005e0ad8b9d347d17cdea07f68
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
-  package_info_plus: f0052d280d17aa382b932f399edf32507174e870
-  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
-  screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
-  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
-  window_manager: b729e31d38fb04905235df9ea896128991cad99e
-  ZIPFoundation: b8c29ea7ae353b309bc810586181fd073cb3312c
 
 PODFILE CHECKSUM: 9ebaf0ce3d369aaa26a9ea0e159195ed94724cf3
 

@@ -81,6 +81,18 @@ Download the latest `.zip` from [GitHub Releases](https://github.com/markomijic/
 
 Download the latest `.dmg` from [GitHub Releases](https://github.com/markomijic/TTS-Mod-Vault/releases), open it, and drag the application to your Applications folder.
 
+#### "Apple could not verify… free of malware" / the app won't open
+
+TTS Mod Vault is an open-source app that is **not** signed with a paid Apple Developer ID, so macOS quarantines it after download and Gatekeeper blocks it. You may see a message like _"'TTS Mod Vault' Not Opened — Apple could not verify…"_, or the icon may bounce and then quit with no window.
+
+After dragging the app to **Applications**, open the **Terminal** app and run this command to remove the quarantine flag, then launch the app normally:
+
+```sh
+xattr -dr com.apple.quarantine "/Applications/TTS Mod Vault.app"
+```
+
+This only needs to be done once (and again after each update). The app is otherwise fully functional — this step is purely Apple's Gatekeeper check for apps distributed outside the App Store without a paid developer certificate.
+
 ## Screenshots
 
 ![Mod options](https://staticdelivery.nexusmods.com/mods/461/images/426/426-1754210010-1826631811.png)
@@ -94,4 +106,4 @@ Download the latest `.dmg` from [GitHub Releases](https://github.com/markomijic/
 
 ## Building from Source
 
-Created using Flutter 3.38.10. To build the app, follow the official Flutter documentation to get started: https://docs.flutter.dev/get-started/install
+Created using Flutter 3.44.4. To build the app, follow the official Flutter documentation to get started: https://docs.flutter.dev/get-started/install

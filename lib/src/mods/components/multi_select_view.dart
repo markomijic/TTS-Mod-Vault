@@ -4,7 +4,11 @@ import 'package:flutter_hooks/flutter_hooks.dart'
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show showUpdateUrlsDialog, BulkBackupDialog, BulkDeleteDialog;
+    show
+        showUpdateUrlsDialog,
+        showDownloadValidationResultsDialog,
+        BulkBackupDialog,
+        BulkDeleteDialog;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show BulkBackupBehaviorEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
@@ -43,8 +47,9 @@ class MultiSelectView extends HookConsumerWidget {
       return null;
     }, [selectedMods.length]);
 
-    final allModsAreMod =
-        selectedMods.every((mod) => mod.modType == ModTypeEnum.mod);
+    final allModsAreMod = selectedMods.every(
+      (mod) => mod.modType == ModTypeEnum.mod,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,21 +57,13 @@ class MultiSelectView extends HookConsumerWidget {
         // Header with count
         Container(
           decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.white,
-                width: 2.0,
-              ),
-            ),
+            border: Border(bottom: BorderSide(color: Colors.white, width: 2.0)),
           ),
           alignment: Alignment.topLeft,
           padding: EdgeInsets.only(top: 8),
           child: Text(
             '${selectedMods.length} ${modType.label}s selected',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
         ),
 
@@ -99,12 +96,15 @@ class MultiSelectView extends HookConsumerWidget {
               ElevatedButton.icon(
                 icon: const Icon(Icons.download, size: 18),
                 label: const Text('Download'),
-                onPressed: () {
+                onPressed: () async {
                   if (actionInProgress) return;
 
-                  ref
+                  final results = await ref
                       .read(bulkActionsProvider.notifier)
                       .downloadAllMods(selectedMods.toList());
+                  if (context.mounted) {
+                    await showDownloadValidationResultsDialog(context, results);
+                  }
                 },
               ),
               ElevatedButton.icon(
@@ -121,14 +121,16 @@ class MultiSelectView extends HookConsumerWidget {
                           BulkBackupBehaviorEnum.replaceIfOutOfDate,
                       onConfirm:
                           (behavior, folder, postBackupAction, setAsDefault) {
-                        ref.read(bulkActionsProvider.notifier).backupAllMods(
-                              selectedMods.toList(),
-                              behavior,
-                              folder,
-                              postBackupAction,
-                              setAsDefault,
-                            );
-                      },
+                            ref
+                                .read(bulkActionsProvider.notifier)
+                                .backupAllMods(
+                                  selectedMods.toList(),
+                                  behavior,
+                                  folder,
+                                  postBackupAction,
+                                  setAsDefault,
+                                );
+                          },
                     ),
                   );
                 },
@@ -151,17 +153,28 @@ class MultiSelectView extends HookConsumerWidget {
                       initialBehavior:
                           BulkBackupBehaviorEnum.replaceIfOutOfDate,
                       onConfirm:
-                          (behavior, folder, postBackupAction, setAsDefault) {
-                        ref
-                            .read(bulkActionsProvider.notifier)
-                            .downloadAndBackupAllMods(
-                              selectedMods.toList(),
-                              behavior,
-                              folder,
-                              postBackupAction,
-                              setAsDefault,
-                            );
-                      },
+                          (
+                            behavior,
+                            folder,
+                            postBackupAction,
+                            setAsDefault,
+                          ) async {
+                            final results = await ref
+                                .read(bulkActionsProvider.notifier)
+                                .downloadAndBackupAllMods(
+                                  selectedMods.toList(),
+                                  behavior,
+                                  folder,
+                                  postBackupAction,
+                                  setAsDefault,
+                                );
+                            if (context.mounted) {
+                              await showDownloadValidationResultsDialog(
+                                context,
+                                results,
+                              );
+                            }
+                          },
                     ),
                   );
                 },
@@ -182,7 +195,9 @@ class MultiSelectView extends HookConsumerWidget {
                       checkboxInfoMessage:
                           'Re-download all mods even if already up to date',
                       onConfirm: (forceUpdate) {
-                        ref.read(bulkActionsProvider.notifier).updateModsAll(
+                        ref
+                            .read(bulkActionsProvider.notifier)
+                            .updateModsAll(
                               selectedMods.toList(),
                               forceUpdate,
                               context,
@@ -225,10 +240,9 @@ class MultiSelectView extends HookConsumerWidget {
                     'network request per asset, which may take a while.\n\n'
                     'Continue?',
                     () {
-                      ref.read(bulkActionsProvider.notifier).checkUrlsAllMods(
-                            selectedMods.toList(),
-                            context,
-                          );
+                      ref
+                          .read(bulkActionsProvider.notifier)
+                          .checkUrlsAllMods(selectedMods.toList(), context);
                     },
                   );
                 },

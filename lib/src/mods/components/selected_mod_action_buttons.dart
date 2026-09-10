@@ -3,10 +3,15 @@ import 'package:flutter_hooks/flutter_hooks.dart' show useMemoized;
 import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show SelectedModActionsMenu, SingleModBackupDialog;
+    show
+        SelectedModActionsMenu,
+        SingleModBackupDialog,
+        showDownloadValidationResultsDialog;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
     show PostBackupDeletionEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/download/download_validation_result.dart'
+    show DownloadValidationResult;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         actionInProgressProvider,
@@ -47,8 +52,13 @@ class SelectedModActionButtons extends HookConsumerWidget {
                       return;
                     }
 
-                    await downloadNotifier
+                    final result = await downloadNotifier
                         .downloadModFilesAndUpdateState(selectedMod);
+                    if (context.mounted) {
+                      await showDownloadValidationResultsDialog(context, [
+                        result,
+                      ]);
+                    }
                   }
                 : null,
             label: const Text('Download'),
@@ -64,65 +74,85 @@ class SelectedModActionButtons extends HookConsumerWidget {
                 context: context,
                 builder: (context) => SingleModBackupDialog(
                   mod: selectedMod,
-                  onConfirm: (backupFolder, downloadFirst, postBackupDeletion,
-                      setAsDefault) async {
-                    // Capture provider references before any async operations
-                    final modsRef = modsNotifier;
-                    final downloadRef = downloadNotifier;
-                    final backupRef = backupNotifier;
-                    final deleteRef = deleteAssetsNotifier;
-                    final directoriesRef =
-                        ref.read(directoriesProvider.notifier);
-
-                    // Use a mutable reference so we always have the fresh mod
-                    var currentMod = selectedMod;
-
-                    // 1. Download if requested
-                    Set<String> downloadedFilenames = {};
-                    if (downloadFirst) {
-                      downloadedFilenames =
-                          await downloadRef.downloadAllFiles(currentMod);
-                      currentMod = await modsRef.updateSelectedMod(currentMod);
-                    }
-
-                    // 2. Create backup
-                    await backupRef.createBackup(currentMod, backupFolder);
-                    currentMod = await modsRef.updateModBackup(currentMod);
-
-                    // 3. Delete assets if requested
-                    Set<String> deletedFilenames = {};
-                    if (postBackupDeletion != PostBackupDeletionEnum.none) {
-                      final deleted =
-                          await deleteRef.deleteModAssetsAfterBackup(
-                        currentMod,
+                  onConfirm:
+                      (
+                        backupFolder,
+                        downloadFirst,
                         postBackupDeletion,
-                      );
-                      deletedFilenames = deleted.toSet();
+                        setAsDefault,
+                      ) async {
+                        // Capture provider references before any async operations
+                        final modsRef = modsNotifier;
+                        final downloadRef = downloadNotifier;
+                        final backupRef = backupNotifier;
+                        final deleteRef = deleteAssetsNotifier;
+                        final directoriesRef = ref.read(
+                          directoriesProvider.notifier,
+                        );
 
-                      if (deleted.isNotEmpty) {
-                        await modsRef.updateSelectedMod(currentMod);
-                      }
-                    }
+                        // Use a mutable reference so we always have the fresh mod
+                        var currentMod = selectedMod;
+                        DownloadValidationResult? downloadCheckResult;
 
-                    // 4. Refresh other mods that share affected assets
-                    final allAffected = {
-                      ...downloadedFilenames,
-                      ...deletedFilenames
-                    };
-                    if (allAffected.isNotEmpty) {
-                      await modsRef.refreshModsWithSharedAssets(allAffected,
-                          excludeJsonFileName: currentMod.jsonFileName);
-                    }
+                        // 1. Download if requested
+                        Set<String> downloadedFilenames = {};
+                        if (downloadFirst) {
+                          downloadedFilenames = await downloadRef
+                              .downloadAllFiles(currentMod);
+                          currentMod = await modsRef.updateSelectedMod(
+                            currentMod,
+                          );
+                          downloadCheckResult = await downloadRef
+                              .validateModAfterDownload(currentMod);
+                        }
 
-                    // 5. Save the chosen folder as default and reload, only
-                    // after the backup is done so the reload doesn't disrupt it.
-                    if (setAsDefault &&
-                        backupFolder != null &&
-                        backupFolder.isNotEmpty) {
-                      await directoriesRef
-                          .setAsDefaultBackupDirAndReload(backupFolder);
-                    }
-                  },
+                        // 2. Create backup
+                        await backupRef.createBackup(currentMod, backupFolder);
+                        currentMod = await modsRef.updateModBackup(currentMod);
+
+                        // 3. Delete assets if requested
+                        Set<String> deletedFilenames = {};
+                        if (postBackupDeletion != PostBackupDeletionEnum.none) {
+                          final deleted = await deleteRef
+                              .deleteModAssetsAfterBackup(
+                                currentMod,
+                                postBackupDeletion,
+                              );
+                          deletedFilenames = deleted.toSet();
+
+                          if (deleted.isNotEmpty) {
+                            await modsRef.updateSelectedMod(currentMod);
+                          }
+                        }
+
+                        // 4. Refresh other mods that share affected assets
+                        final allAffected = {
+                          ...downloadedFilenames,
+                          ...deletedFilenames,
+                        };
+                        if (allAffected.isNotEmpty) {
+                          await modsRef.refreshModsWithSharedAssets(
+                            allAffected,
+                            excludeJsonFileName: currentMod.jsonFileName,
+                          );
+                        }
+
+                        // 5. Save the chosen folder as default and reload, only
+                        // after the backup is done so the reload doesn't disrupt it.
+                        if (setAsDefault &&
+                            backupFolder != null &&
+                            backupFolder.isNotEmpty) {
+                          await directoriesRef.setAsDefaultBackupDirAndReload(
+                            backupFolder,
+                          );
+                        }
+
+                        if (downloadCheckResult != null && context.mounted) {
+                          await showDownloadValidationResultsDialog(context, [
+                            downloadCheckResult,
+                          ]);
+                        }
+                      },
                 ),
               );
             },

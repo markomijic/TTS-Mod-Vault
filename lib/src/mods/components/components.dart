@@ -2,6 +2,7 @@ export 'asset_context_menu.dart';
 export 'assets_tooltip.dart';
 export 'assets_url.dart';
 export 'download_progress_bar.dart';
+export 'download_validation_dialog.dart';
 export 'url_check_progress_bar.dart';
 export 'error_message.dart';
 export 'mods_grid_card.dart';

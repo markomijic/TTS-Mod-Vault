@@ -15,6 +15,8 @@ import 'package:tts_mod_vault/src/mods/components/rename_mod_dialog.dart'
     show RenameModDialog;
 import 'package:tts_mod_vault/src/mods/components/save_as_mod_dialog.dart'
     show SaveAsModDialog;
+import 'package:tts_mod_vault/src/mods/components/download_validation_dialog.dart'
+    show showDownloadValidationResultsDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/backup/import_backup.dart'
@@ -126,22 +128,18 @@ final ThemeData darkTheme = ThemeData(
   navigationRailTheme: NavigationRailThemeData(
     selectedIconTheme: IconThemeData(color: Colors.black),
     unselectedIconTheme: IconThemeData(color: Colors.white),
-    selectedLabelTextStyle: TextStyle(
-      color: Colors.white,
-      fontSize: 16,
-    ),
-    unselectedLabelTextStyle: TextStyle(
-      color: Colors.white,
-      fontSize: 16,
-    ),
+    selectedLabelTextStyle: TextStyle(color: Colors.white, fontSize: 16),
+    unselectedLabelTextStyle: TextStyle(color: Colors.white, fontSize: 16),
   ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
     fillColor: Colors.black87,
-    focusedBorder:
-        OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-    enabledBorder:
-        OutlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+    focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.white70),
+    ),
     labelStyle: TextStyle(color: Colors.white),
     hintStyle: TextStyle(color: Colors.white60),
   ),
@@ -159,10 +157,7 @@ String getFileNameFromPath(String path) {
 
 void showSnackBar(BuildContext context, String message, {Duration? duration}) {
   final snackBar = SnackBar(
-    content: Text(
-      message,
-      style: TextStyle(fontSize: 20),
-    ),
+    content: Text(message, style: TextStyle(fontSize: 20)),
     showCloseIcon: false,
     duration: duration ?? const Duration(milliseconds: 4000),
   );
@@ -182,10 +177,7 @@ void showConfirmDialog(
       return BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
         child: AlertDialog(
-          content: Text(
-            contentMessage,
-            style: TextStyle(fontSize: 16),
-          ),
+          content: Text(contentMessage, style: TextStyle(fontSize: 16)),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop('cancel'),
@@ -373,15 +365,13 @@ Future<void> showConfirmDialogWithCheckbox(
                       Text(title, style: TextStyle(fontSize: 18)),
                       if (showWarning)
                         CustomTooltip(
-                            message: warningText,
-                            child: Icon(Icons.warning_amber_rounded, size: 32)),
+                          message: warningText,
+                          child: Icon(Icons.warning_amber_rounded, size: 32),
+                        ),
                     ],
                   ),
                   if (message.isNotEmpty)
-                    Text(
-                      message,
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    Text(message, style: TextStyle(fontSize: 16)),
                   Row(
                     spacing: 4,
                     children: [
@@ -396,34 +386,26 @@ Future<void> showConfirmDialogWithCheckbox(
                           });
                         },
                       ),
-                      Text(
-                        checkboxLabel,
-                        style: TextStyle(fontSize: 16),
-                      ),
+                      Text(checkboxLabel, style: TextStyle(fontSize: 16)),
                       CustomTooltip(
                         message: checkboxInfoMessage,
-                        child: Icon(
-                          Icons.info_outline,
-                          size: 26,
-                        ),
-                      )
+                        child: Icon(Icons.info_outline, size: 26),
+                      ),
                     ],
                   ),
                 ],
               ),
               actions: [
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop({
-                    'action': 'cancel',
-                    'checkboxValue': checkboxValue,
-                  }),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop({'action': 'cancel', 'checkboxValue': checkboxValue}),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop({
-                    'action': 'confirm',
-                    'checkboxValue': checkboxValue,
-                  }),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop({'action': 'confirm', 'checkboxValue': checkboxValue}),
                   child: const Text('Confirm'),
                 ),
               ],
@@ -592,7 +574,7 @@ String sanitizeFileName(String input) {
       .replaceAll('<', '_') // less than
       .replaceAll('>', '_') // greater than
       .replaceAll('|', '_'); // pipe
-/*       .replaceAll('\n', '_') // newline
+  /*       .replaceAll('\n', '_') // newline
       .replaceAll('\r', '_') // carriage return
       .replaceAll('\t', '_') // tab
       .replaceAll('\0', '_'); // null character */
@@ -698,7 +680,8 @@ Future<String> checkForUpdatesOnGitHub() async {
   try {
     final response = await http.get(
       Uri.parse(
-          'https://api.github.com/repos/markomijic/TTS-Mod-Vault/releases/latest'),
+        'https://api.github.com/repos/markomijic/TTS-Mod-Vault/releases/latest',
+      ),
     );
 
     // For private repository
@@ -733,13 +716,15 @@ Future<String> checkForUpdatesOnGitHub() async {
 
 bool _checkIfLatestVersionIsNewer(String current, String latest) {
   debugPrint(
-      "_checkIfLatestVersionIsNewer - current: $current, latest: $latest");
+    "_checkIfLatestVersionIsNewer - current: $current, latest: $latest",
+  );
 
   List<int> currentParts = current.split('.').map(int.parse).toList();
   List<int> latestParts = latest.split('.').map(int.parse).toList();
 
   debugPrint(
-      "_checkIfLatestVersionIsNewer - currentParts: $currentParts, latestParts: $latestParts");
+    "_checkIfLatestVersionIsNewer - currentParts: $currentParts, latestParts: $latestParts",
+  );
 
   for (int i = 0; i < 3; i++) {
     if (latestParts[i] > currentParts[i]) return true;
@@ -748,14 +733,14 @@ bool _checkIfLatestVersionIsNewer(String current, String latest) {
   return false;
 }
 
-Future<void> copyToClipboard(BuildContext context, String textToCopy,
-    {bool showSnackBarAfterCopying = true}) async {
+Future<void> copyToClipboard(
+  BuildContext context,
+  String textToCopy, {
+  bool showSnackBarAfterCopying = true,
+}) async {
   await Clipboard.setData(ClipboardData(text: textToCopy));
   if (context.mounted && showSnackBarAfterCopying) {
-    showSnackBar(
-      context,
-      '$textToCopy copied to clipboard',
-    );
+    showSnackBar(context, '$textToCopy copied to clipboard');
   }
 }
 
@@ -808,7 +793,7 @@ void showModContextMenu(
             spacing: 8,
             children: [
               Icon(Icons.open_in_browser),
-              Text('Open Steam Workshop page')
+              Text('Open Steam Workshop page'),
             ],
           ),
         ),
@@ -854,10 +839,7 @@ void showModContextMenu(
       ),
       ClickablePopupMenuItem(
         value: ContextMenuActionEnum.deleteMod,
-        child: Row(
-          spacing: 8,
-          children: [Icon(Icons.delete), Text('Delete')],
-        ),
+        child: Row(spacing: 8, children: [Icon(Icons.delete), Text('Delete')]),
       ),
       if (mod.backup != null) ...[
         const PopupMenuItem(
@@ -878,7 +860,7 @@ void showModContextMenu(
             spacing: 8,
             children: [
               Icon(Icons.folder_open),
-              Text('Open Backup in File Explorer')
+              Text('Open Backup in File Explorer'),
             ],
           ),
         ),
@@ -902,7 +884,9 @@ void showModContextMenu(
     if (value != null) {
       switch (value) {
         case 'importBackup':
-          await ref.read(bulkActionsProvider.notifier).importBackups(
+          await ref
+              .read(bulkActionsProvider.notifier)
+              .importBackups(
                 filePath: mod.backup!.filepath,
                 targetJsonDir: p.dirname(mod.jsonFilePath),
                 onJsonConflict: (c) async => context.mounted
@@ -956,9 +940,12 @@ void showModContextMenu(
               return;
             }
 
-            ref
+            final result = await ref
                 .read(downloadProvider.notifier)
                 .downloadModFilesAndUpdateState(mod);
+            if (context.mounted) {
+              await showDownloadValidationResultsDialog(context, [result]);
+            }
           }
           break;
 
@@ -966,7 +953,9 @@ void showModContextMenu(
           if (context.mounted) {
             if (ref.read(actionInProgressProvider)) {
               showSnackBar(
-                  context, "Finish your current action before viewing images");
+                context,
+                "Finish your current action before viewing images",
+              );
               return;
             }
 
@@ -980,7 +969,8 @@ void showModContextMenu(
 
         case ContextMenuActionEnum.openSteamWorkshopPage:
           openUrl(
-              "https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.jsonFileName}");
+            "https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.jsonFileName}",
+          );
           break;
 
         case ContextMenuActionEnum.openBackupInExplorer:
@@ -1032,7 +1022,8 @@ void showModContextMenu(
                     message = "Mod is not available on the Workshop";
                   }
                   if (message.contains(
-                      "type 'Null' is not a subtype of type 'int' in type cast")) {
+                    "type 'Null' is not a subtype of type 'int' in type cast",
+                  )) {
                     message = "Mod is unlisted on the Workshop - cannot update";
                   }
                   showSnackBar(context, message);
@@ -1071,7 +1062,9 @@ void showModContextMenu(
                   await ref.read(modsProvider.notifier).deleteMod(mod);
                   if (context.mounted) {
                     showSnackBar(
-                        context, '${mod.saveName} deleted successfully');
+                      context,
+                      '${mod.saveName} deleted successfully',
+                    );
                   }
                 } catch (e) {
                   if (context.mounted) {
@@ -1158,17 +1151,16 @@ void _showBackupSubmenu(
       ),
       ClickablePopupMenuItem(
         value: 'delete',
-        child: Row(
-          spacing: 8,
-          children: [Icon(Icons.delete), Text('Delete')],
-        ),
+        child: Row(spacing: 8, children: [Icon(Icons.delete), Text('Delete')]),
       ),
     ],
   ).then((value) async {
     if (value != null && mod.backup != null) {
       switch (value) {
         case 'import':
-          await ref.read(bulkActionsProvider.notifier).importBackups(
+          await ref
+              .read(bulkActionsProvider.notifier)
+              .importBackups(
                 filePath: mod.backup!.filepath,
                 targetJsonDir: p.dirname(mod.jsonFilePath),
                 onJsonConflict: (c) async => context.mounted
@@ -1267,17 +1259,16 @@ void showBackupContextMenu(
       ),
       ClickablePopupMenuItem(
         value: 'delete',
-        child: Row(
-          spacing: 8,
-          children: [Icon(Icons.delete), Text('Delete')],
-        ),
+        child: Row(spacing: 8, children: [Icon(Icons.delete), Text('Delete')]),
       ),
     ],
   ).then((value) async {
     if (value != null) {
       switch (value) {
         case 'import':
-          await ref.read(bulkActionsProvider.notifier).importBackups(
+          await ref
+              .read(bulkActionsProvider.notifier)
+              .importBackups(
                 filePath: backup.filepath,
                 targetJsonDir: backup.matchingModFilepath != null
                     ? p.dirname(backup.matchingModFilepath!)
@@ -1338,8 +1329,9 @@ String? formatTimestamp(String? timestamp) {
   if (timestamp == null) return null;
 
   try {
-    final dateTime =
-        DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp) * 1000);
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(
+      int.parse(timestamp) * 1000,
+    );
     return DateFormat("d MMMM y HH:mm").format(dateTime);
   } catch (e) {
     return null;

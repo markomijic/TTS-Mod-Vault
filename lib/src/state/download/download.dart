@@ -24,6 +24,8 @@ import 'package:tts_mod_vault/src/state/download/download_by_id_result.dart'
     show DownloadByIdResult, DownloadByIdSummary;
 import 'package:tts_mod_vault/src/state/download/download_state.dart'
     show DownloadState;
+import 'package:tts_mod_vault/src/state/download/download_validation_result.dart'
+    show DownloadValidationResult, DomainReachabilityResult;
 import 'package:tts_mod_vault/src/state/enums/asset_type_enum.dart'
     show AssetTypeEnum;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart'
@@ -36,7 +38,8 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         logProvider,
         modsProvider,
         selectedModProvider,
-        settingsProvider;
+        settingsProvider,
+        storageProvider;
 import 'package:tts_mod_vault/src/utils.dart'
     show
         getExtensionByType,
@@ -52,6 +55,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   // Active cancel tokens for in-flight downloads / URL checks
   final Set<CancelToken> _cancelTokens = {};
+  bool _lastDomainCheckWasCancelled = false;
+  final Map<String, ({bool isReachable, DateTime checkedAt})>
+      _domainReachabilityCache = {};
 
   DownloadNotifier(this.ref)
       : dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15))),
@@ -95,45 +101,55 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     final Set<String> allDownloaded = {};
 
-    allDownloaded.addAll(await downloadFiles(
-      modAssetListUrls: mod.assetLists.assetBundles
-          .where((e) => !e.fileExists)
-          .map((e) => e.url)
-          .toList(),
-      type: AssetTypeEnum.assetBundle,
-    ));
+    allDownloaded.addAll(
+      await downloadFiles(
+        modAssetListUrls: mod.assetLists.assetBundles
+            .where((e) => !e.fileExists)
+            .map((e) => e.url)
+            .toList(),
+        type: AssetTypeEnum.assetBundle,
+      ),
+    );
 
-    allDownloaded.addAll(await downloadFiles(
-      modAssetListUrls: mod.assetLists.audio
-          .where((e) => !e.fileExists)
-          .map((e) => e.url)
-          .toList(),
-      type: AssetTypeEnum.audio,
-    ));
+    allDownloaded.addAll(
+      await downloadFiles(
+        modAssetListUrls: mod.assetLists.audio
+            .where((e) => !e.fileExists)
+            .map((e) => e.url)
+            .toList(),
+        type: AssetTypeEnum.audio,
+      ),
+    );
 
-    allDownloaded.addAll(await downloadFiles(
-      modAssetListUrls: mod.assetLists.images
-          .where((e) => !e.fileExists)
-          .map((e) => e.url)
-          .toList(),
-      type: AssetTypeEnum.image,
-    ));
+    allDownloaded.addAll(
+      await downloadFiles(
+        modAssetListUrls: mod.assetLists.images
+            .where((e) => !e.fileExists)
+            .map((e) => e.url)
+            .toList(),
+        type: AssetTypeEnum.image,
+      ),
+    );
 
-    allDownloaded.addAll(await downloadFiles(
-      modAssetListUrls: mod.assetLists.models
-          .where((e) => !e.fileExists)
-          .map((e) => e.url)
-          .toList(),
-      type: AssetTypeEnum.model,
-    ));
+    allDownloaded.addAll(
+      await downloadFiles(
+        modAssetListUrls: mod.assetLists.models
+            .where((e) => !e.fileExists)
+            .map((e) => e.url)
+            .toList(),
+        type: AssetTypeEnum.model,
+      ),
+    );
 
-    allDownloaded.addAll(await downloadFiles(
-      modAssetListUrls: mod.assetLists.pdf
-          .where((e) => !e.fileExists)
-          .map((e) => e.url)
-          .toList(),
-      type: AssetTypeEnum.pdf,
-    ));
+    allDownloaded.addAll(
+      await downloadFiles(
+        modAssetListUrls: mod.assetLists.pdf
+            .where((e) => !e.fileExists)
+            .map((e) => e.url)
+            .toList(),
+        type: AssetTypeEnum.pdf,
+      ),
+    );
 
     ref
         .read(logProvider.notifier)
@@ -144,14 +160,19 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   // MARK: DL & Update
-  Future<void> downloadModFilesAndUpdateState(Mod mod) async {
+  Future<DownloadValidationResult> downloadModFilesAndUpdateState(
+    Mod mod,
+  ) async {
     final downloaded = await downloadAllFiles(mod);
-    await ref.read(modsProvider.notifier).updateSelectedMod(mod);
+    final updatedMod =
+        await ref.read(modsProvider.notifier).updateSelectedMod(mod);
     if (downloaded.isNotEmpty) {
       await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
-          downloaded,
-          excludeJsonFileName: mod.jsonFileName);
+            downloaded,
+            excludeJsonFileName: mod.jsonFileName,
+          );
     }
+    return validateModAfterDownload(updatedMod);
   }
 
   // MARK: Reset state
@@ -170,9 +191,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       url,
       tempPath,
       cancelToken: cancelToken,
-      options: Options(
-        receiveTimeout: const Duration(seconds: 60),
-      ),
+      options: Options(receiveTimeout: const Duration(seconds: 60)),
       onReceiveProgress: (received, total) {
         if (total <= 0) return;
         onProgress?.call(received / total);
@@ -204,8 +223,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           rethrow;
         }
         final delayMs = 500 * (1 << (attempt - 1)); // 500, 1000, 2000
-        debugPrint('Retrying download (attempt ${attempt + 1}/$maxAttempts) '
-            'after ${delayMs}ms for $url: ${e.type}');
+        debugPrint(
+          'Retrying download (attempt ${attempt + 1}/$maxAttempts) '
+          'after ${delayMs}ms for $url: ${e.type}',
+        );
         await Future.delayed(Duration(milliseconds: delayMs));
       }
     }
@@ -266,8 +287,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       final progressByJob = <int, double>{};
 
       void publishProgress() {
-        final fractional =
-            progressByJob.values.fold<double>(0, (acc, v) => acc + v);
+        final fractional = progressByJob.values.fold<double>(
+          0,
+          (acc, v) => acc + v,
+        );
         final p = ((completed + fractional) / urls.length).clamp(0.0, 1.0);
         state = state.copyWith(
           statusMessage: 'Downloading ${type.label} $completed/${urls.length}',
@@ -310,15 +333,23 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           }
 
           try {
-            await _downloadUrlWithRetry(url, tempPath, cancelToken,
-                onProgress: onProgress);
+            await _downloadUrlWithRetry(
+              url,
+              tempPath,
+              cancelToken,
+              onProgress: onProgress,
+            );
           } on DioException catch (e) {
             // Check is Steam CDN url missing a trailing '/'
             if (e.response?.statusCode == 404 &&
                 url.startsWith(newSteamUserContentUrl) &&
                 !url.endsWith('/')) {
-              await _downloadUrlWithRetry('$url/', tempPath, cancelToken,
-                  onProgress: onProgress);
+              await _downloadUrlWithRetry(
+                '$url/',
+                tempPath,
+                cancelToken,
+                onProgress: onProgress,
+              );
             } else {
               rethrow;
             }
@@ -341,8 +372,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
               await tempFile.delete();
             }
           } else {
-            final finalPath = p.join(directory,
-                fileName + getExtensionByType(type, tempPath, bytes));
+            final finalPath = p.join(
+              directory,
+              fileName + getExtensionByType(type, tempPath, bytes),
+            );
             await tempFile.rename(finalPath);
 
             // Track successful download
@@ -393,8 +426,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     } finally {
       // Add successful downloads to existing assets list
       if (successfulDownloads.isNotEmpty) {
-        final existingAssetsNotifier =
-            ref.read(existingAssetListsProvider.notifier);
+        final existingAssetsNotifier = ref.read(
+          existingAssetListsProvider.notifier,
+        );
         for (final (filename, filepath) in successfulDownloads) {
           existingAssetsNotifier.addExistingAsset(type, filename, filepath);
         }
@@ -409,8 +443,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   // MARK: Resolve URL
-  Future<String> resolveUrlWithScheme(String url,
-      {CancelToken? cancelToken}) async {
+  Future<String> resolveUrlWithScheme(
+    String url, {
+    CancelToken? cancelToken,
+  }) async {
     // If URL already starts with http/https, return it directly
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
@@ -507,8 +543,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<bool> isUrlLive(String url, {CancelToken? cancelToken}) async {
     try {
       // Resolve URL with scheme if needed
-      final resolvedUrl =
-          await resolveUrlWithScheme(url, cancelToken: cancelToken);
+      final resolvedUrl = await resolveUrlWithScheme(
+        url,
+        cancelToken: cancelToken,
+      );
       return await _checkUrl(resolvedUrl, cancelToken: cancelToken);
     } catch (e) {
       debugPrint('Error checking URL $url: $e');
@@ -516,15 +554,328 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
+  Uri? _parseHttpUri(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
+
+    final parsed = Uri.tryParse(trimmed);
+    if (parsed != null &&
+        (parsed.scheme == 'http' || parsed.scheme == 'https') &&
+        parsed.host.isNotEmpty) {
+      return parsed;
+    }
+    if (parsed?.hasScheme == true) return null;
+
+    final withHttps = Uri.tryParse('https://$trimmed');
+    if (withHttps != null && withHttps.host.isNotEmpty) return withHttps;
+    return null;
+  }
+
+  Future<bool> _domainCandidateResponds(
+    String url,
+    CancelToken cancelToken,
+  ) async {
+    Future<bool> request(String method) async {
+      try {
+        await dio.request(
+          url,
+          cancelToken: cancelToken,
+          options: Options(
+            method: method,
+            headers: method == 'GET' ? {'Range': 'bytes=0-0'} : null,
+            validateStatus: (_) => true,
+            followRedirects: false,
+            sendTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 10),
+          ),
+        );
+        return true;
+      } on DioException catch (e) {
+        if (e.type == DioExceptionType.cancel) rethrow;
+        // Any HTTP response proves that the domain is reachable, regardless
+        // of status code (including 403, 404 and 5xx).
+        return e.response != null;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (await request('HEAD')) return true;
+    return request('GET');
+  }
+
+  Future<bool> _isDomainReachable(
+    Uri representative,
+    CancelToken cancelToken,
+  ) async {
+    final schemes = <String>{representative.scheme, 'https', 'http'};
+    final candidates = <String>[
+      for (final scheme in schemes)
+        Uri(
+          scheme: scheme,
+          host: representative.host,
+          port: representative.hasPort ? representative.port : null,
+          path: '/',
+        ).toString(),
+      representative.toString(),
+    ];
+
+    for (final candidate in candidates) {
+      if (await _domainCandidateResponds(candidate, cancelToken)) return true;
+    }
+    return false;
+  }
+
+  Future<List<DomainReachabilityResult>> checkDomainsForUrls(
+    Iterable<String> urls, {
+    bool forceRefresh = false,
+  }) async {
+    _lastDomainCheckWasCancelled = false;
+    final representatives = <String, Uri>{};
+    for (final url in urls) {
+      final parsed = _parseHttpUri(url);
+      if (parsed != null) {
+        representatives.putIfAbsent(parsed.host.toLowerCase(), () => parsed);
+      }
+    }
+
+    if (representatives.isEmpty) return [];
+
+    final results = <DomainReachabilityResult>[];
+    final now = DateTime.now();
+    final entries = representatives.entries.where((entry) {
+      final cached = _domainReachabilityCache[entry.key];
+      if (!forceRefresh &&
+          cached != null &&
+          now.difference(cached.checkedAt) < const Duration(minutes: 1)) {
+        results.add(
+          DomainReachabilityResult(
+            domain: entry.key,
+            isReachable: cached.isReachable,
+          ),
+        );
+        return false;
+      }
+      return true;
+    }).toList();
+
+    if (entries.isEmpty) {
+      results.sort((a, b) => a.domain.compareTo(b.domain));
+      return results;
+    }
+
+    final configuredWorkers = ref.read(settingsProvider).concurrentDownloads;
+    final workerCount =
+        configuredWorkers < entries.length ? configuredWorkers : entries.length;
+    final checkToken = CancelToken();
+    _cancelTokens.add(checkToken);
+
+    try {
+      state = state.copyWith(
+        isCheckingUrls: true,
+        cancelledDownloads: false,
+        progress: 0.0,
+        statusMessage: 'Checked 0/${entries.length} domains',
+      );
+
+      var nextIndex = 0;
+      var completed = 0;
+      final workers = List.generate(workerCount, (_) async {
+        while (!checkToken.isCancelled && nextIndex < entries.length) {
+          final entry = entries[nextIndex++];
+          bool reachable;
+          try {
+            reachable = await _isDomainReachable(entry.value, checkToken);
+          } on DioException catch (e) {
+            if (e.type == DioExceptionType.cancel) return;
+            reachable = false;
+          }
+          if (checkToken.isCancelled) return;
+
+          results.add(
+            DomainReachabilityResult(domain: entry.key, isReachable: reachable),
+          );
+          _domainReachabilityCache[entry.key] = (
+            isReachable: reachable,
+            checkedAt: DateTime.now(),
+          );
+          completed++;
+          state = state.copyWith(
+            progress: completed / entries.length,
+            statusMessage: 'Checked $completed/${entries.length} domains',
+          );
+        }
+      });
+      await Future.wait(workers);
+    } finally {
+      _lastDomainCheckWasCancelled = checkToken.isCancelled;
+      _cancelTokens.remove(checkToken);
+      state = state.copyWith(
+        isCheckingUrls: false,
+        progress: 0.0,
+        statusMessage: null,
+        cancelledDownloads: false,
+      );
+    }
+
+    results.sort((a, b) => a.domain.compareTo(b.domain));
+    return results;
+  }
+
+  Future<List<DomainReachabilityResult>> checkAllModAndSaveDomains() async {
+    final modsValue = ref.read(modsProvider);
+    if (!modsValue.hasValue) return [];
+    final modsState = modsValue.value!;
+
+    final includedModNames = {
+      ...modsState.mods,
+      ...modsState.saves,
+    }.map((mod) => mod.jsonFileName).toSet();
+    final allCachedUrls = ref.read(storageProvider).getAllModUrls();
+    final urls = allCachedUrls.entries
+        .where((entry) => includedModNames.contains(entry.key))
+        .expand((entry) => entry.value?.keys ?? <String>[]);
+    return checkDomainsForUrls(urls, forceRefresh: true);
+  }
+
+  Future<DownloadValidationResult> validateModAfterDownload(Mod mod) async {
+    if (mod.modType == ModTypeEnum.savedObject) {
+      return DownloadValidationResult(modName: mod.saveName);
+    }
+
+    final missingAssets =
+        mod.getAllAssets().where((asset) => !asset.fileExists).toList();
+    if (missingAssets.isEmpty) {
+      await ref.read(modsProvider.notifier).updateModInvalidUrls(mod, []);
+      return DownloadValidationResult(modName: mod.saveName);
+    }
+
+    final domainResults = await checkDomainsForUrls(
+      missingAssets.map((asset) => asset.url),
+    );
+    if (_lastDomainCheckWasCancelled) {
+      return DownloadValidationResult(modName: mod.saveName);
+    }
+    final unreachableDomains = domainResults
+        .where((result) => !result.isReachable)
+        .map((result) => result.domain)
+        .toList();
+
+    final unreachableDomainSet = unreachableDomains.toSet();
+    final urls = missingAssets
+        .map((asset) => asset.url)
+        .where((url) {
+          final domain = _parseHttpUri(url)?.host.toLowerCase();
+          return domain == null || !unreachableDomainSet.contains(domain);
+        })
+        .toSet()
+        .toList();
+
+    // Do not classify URLs on inaccessible domains. Continue checking URLs on
+    // reachable domains so one blocked host does not hide unrelated invalid
+    // resources.
+    if (urls.isEmpty) {
+      return DownloadValidationResult(
+        modName: mod.saveName,
+        unreachableDomains: unreachableDomains,
+      );
+    }
+
+    final invalidUrls = <String>[];
+    final configuredWorkers = ref.read(settingsProvider).concurrentDownloads;
+    final workerCount =
+        configuredWorkers < urls.length ? configuredWorkers : urls.length;
+    final checkToken = CancelToken();
+    _cancelTokens.add(checkToken);
+
+    try {
+      state = state.copyWith(
+        isCheckingUrls: true,
+        cancelledDownloads: false,
+        progress: 0.0,
+        statusMessage: 'Checked 0/${urls.length} resources',
+      );
+
+      var nextIndex = 0;
+      var completed = 0;
+      final workers = List.generate(workerCount, (_) async {
+        while (!checkToken.isCancelled && nextIndex < urls.length) {
+          final url = urls[nextIndex++];
+          if (!await isUrlLive(url, cancelToken: checkToken)) {
+            invalidUrls.add(url);
+          }
+          if (checkToken.isCancelled) return;
+
+          completed++;
+          state = state.copyWith(
+            progress: completed / urls.length,
+            statusMessage: 'Checked $completed/${urls.length} resources',
+          );
+        }
+      });
+      await Future.wait(workers);
+    } finally {
+      _cancelTokens.remove(checkToken);
+      state = state.copyWith(
+        isCheckingUrls: false,
+        progress: 0.0,
+        statusMessage: null,
+        cancelledDownloads: false,
+      );
+    }
+
+    if (checkToken.isCancelled) {
+      return DownloadValidationResult(modName: mod.saveName);
+    }
+
+    if (unreachableDomains.isEmpty) {
+      await ref
+          .read(modsProvider.notifier)
+          .updateModInvalidUrls(mod, invalidUrls);
+    }
+
+    return DownloadValidationResult(
+      modName: mod.saveName,
+      unreachableDomains: unreachableDomains,
+      invalidUrls: invalidUrls,
+    );
+  }
+
   // MARK: Check all URLs
   /// Checks all of [mod]'s asset URLs and stores the invalid ones on the mod.
   /// Returns the invalid URLs found and whether the check was cancelled. When
   /// cancelled, the (partial) results are returned but NOT persisted on the mod.
-  Future<({List<String> invalidUrls, bool cancelled})> checkModUrlsLive(
-      Mod mod) async {
+  Future<
+      ({
+        List<String> invalidUrls,
+        List<String> unreachableDomains,
+        bool cancelled,
+      })> checkModUrlsLive(Mod mod, {bool forceDomainRefresh = true}) async {
     final invalidUrls = <String>[];
 
     final allAssets = mod.getAllAssets();
+    final domainResults = await checkDomainsForUrls(
+      allAssets.map((asset) => asset.url),
+      forceRefresh: forceDomainRefresh,
+    );
+    if (_lastDomainCheckWasCancelled) {
+      return (
+        invalidUrls: invalidUrls,
+        unreachableDomains: const <String>[],
+        cancelled: true,
+      );
+    }
+
+    final unreachableDomains = domainResults
+        .where((result) => !result.isReachable)
+        .map((result) => result.domain)
+        .toList();
+    final unreachableDomainSet = unreachableDomains.toSet();
+    final assetsToCheck = allAssets.where((asset) {
+      final domain = _parseHttpUri(asset.url)?.host.toLowerCase();
+      return domain == null || !unreachableDomainSet.contains(domain);
+    }).toList();
+
     final int workerCount = ref.read(settingsProvider).concurrentDownloads;
     final checkToken = CancelToken();
     _cancelTokens.add(checkToken);
@@ -536,7 +887,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         // "Cancelling" at the start of a fresh check.
         cancelledDownloads: false,
         progress: 0.0,
-        statusMessage: 'Checked 0/${allAssets.length} URLs',
+        statusMessage: 'Checked 0/${assetsToCheck.length} URLs',
       );
 
       // Worker-pool (same pattern as downloadFiles): each worker pulls the next
@@ -548,18 +899,20 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
       void publishProgress() {
         state = state.copyWith(
-          statusMessage: 'Checked $completed/${allAssets.length} URLs',
-          progress: (completed / allAssets.length).clamp(0.0, 1.0),
+          statusMessage: 'Checked $completed/${assetsToCheck.length} URLs',
+          progress: assetsToCheck.isEmpty
+              ? 1.0
+              : (completed / assetsToCheck.length).clamp(0.0, 1.0),
         );
       }
 
       final workers = List.generate(workerCount, (_) async {
         while (true) {
           if (checkToken.isCancelled) return;
-          if (nextIndex >= allAssets.length) return;
+          if (nextIndex >= assetsToCheck.length) return;
           final myIndex = nextIndex++;
 
-          final asset = allAssets[myIndex];
+          final asset = assetsToCheck[myIndex];
           final isLive = await isUrlLive(asset.url, cancelToken: checkToken);
           if (checkToken.isCancelled) return;
           if (!isLive) invalidUrls.add(asset.url);
@@ -582,11 +935,23 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
     if (checkToken.isCancelled) {
       // Return partial results without persisting them on the mod.
-      return (invalidUrls: invalidUrls, cancelled: true);
+      return (
+        invalidUrls: invalidUrls,
+        unreachableDomains: unreachableDomains,
+        cancelled: true,
+      );
     }
 
-    ref.read(modsProvider.notifier).updateModInvalidUrls(mod, invalidUrls);
-    return (invalidUrls: invalidUrls, cancelled: false);
+    if (unreachableDomains.isEmpty) {
+      await ref
+          .read(modsProvider.notifier)
+          .updateModInvalidUrls(mod, invalidUrls);
+    }
+    return (
+      invalidUrls: invalidUrls,
+      unreachableDomains: unreachableDomains,
+      cancelled: false,
+    );
   }
 
   // MARK: DL MOD Updates
@@ -617,7 +982,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         String modId,
         String directory,
         int currentEpoch,
-        Map<String, dynamic>? fileDetails
+        Map<String, dynamic>? fileDetails,
       })>[];
 
       for (final mod in mods) {
@@ -644,10 +1009,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
           final response = await http.post(
             url,
-            body: {
-              'itemcount': '1',
-              'publishedfileids[0]': modId,
-            },
+            body: {'itemcount': '1', 'publishedfileids[0]': modId},
           );
 
           final responseData = json.decode(response.body);
@@ -678,11 +1040,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
         // All mods are already up to date
         final upToDateResults = mods
-            .map((mod) => ModUpdateResult(
-                  modId: mod.jsonFileName.replaceAll('.json', ''),
-                  modName: mod.saveName,
-                  status: ModUpdateStatus.upToDate,
-                ))
+            .map(
+              (mod) => ModUpdateResult(
+                modId: mod.jsonFileName.replaceAll('.json', ''),
+                modName: mod.saveName,
+                status: ModUpdateStatus.upToDate,
+              ),
+            )
             .toList();
 
         final summaryMsg = mods.length == 1
@@ -707,7 +1071,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       for (int i = 0; i < modsToUpdate.length; i++) {
         final modInfo = modsToUpdate[i];
         final mod = mods.firstWhere(
-            (m) => m.jsonFileName.replaceAll('.json', '') == modInfo.modId);
+          (m) => m.jsonFileName.replaceAll('.json', '') == modInfo.modId,
+        );
 
         try {
           final result = await _downloadSingleMod(
@@ -720,30 +1085,36 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
           if (result.startsWith('Mod saved to:')) {
             successCount++;
-            results.add(ModUpdateResult(
-              modId: modInfo.modId,
-              modName: mod.saveName,
-              status: ModUpdateStatus.updated,
-            ));
+            results.add(
+              ModUpdateResult(
+                modId: modInfo.modId,
+                modName: mod.saveName,
+                status: ModUpdateStatus.updated,
+              ),
+            );
           } else {
             failCount++;
-            results.add(ModUpdateResult(
-              modId: modInfo.modId,
-              modName: mod.saveName,
-              status: ModUpdateStatus.failed,
-              errorMessage: result,
-            ));
+            results.add(
+              ModUpdateResult(
+                modId: modInfo.modId,
+                modName: mod.saveName,
+                status: ModUpdateStatus.failed,
+                errorMessage: result,
+              ),
+            );
             errorMessages.add('[${modInfo.modId}] $result');
           }
         } catch (e) {
           failCount++;
 
-          results.add(ModUpdateResult(
-            modId: modInfo.modId,
-            modName: mod.saveName,
-            status: ModUpdateStatus.failed,
-            errorMessage: e.toString(),
-          ));
+          results.add(
+            ModUpdateResult(
+              modId: modInfo.modId,
+              modName: mod.saveName,
+              status: ModUpdateStatus.failed,
+              errorMessage: e.toString(),
+            ),
+          );
           errorMessages.add('[${modInfo.modId}] Error: $e');
         }
 
@@ -767,11 +1138,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       for (final mod in mods) {
         final modId = mod.jsonFileName.replaceAll('.json', '');
         if (!results.any((r) => r.modId == modId)) {
-          results.add(ModUpdateResult(
-            modId: modId,
-            modName: mod.saveName,
-            status: ModUpdateStatus.upToDate,
-          ));
+          results.add(
+            ModUpdateResult(
+              modId: modId,
+              modName: mod.saveName,
+              status: ModUpdateStatus.upToDate,
+            ),
+          );
         }
       }
 
@@ -815,17 +1188,20 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         errorMessage = "Mod is not available on the Workshop";
       }
       if (eString.contains(
-          "type 'Null' is not a subtype of type 'int' in type cast")) {
+        "type 'Null' is not a subtype of type 'int' in type cast",
+      )) {
         errorMessage = "Mod is unlisted on the Workshop - cannot update";
       }
 
       final errorResults = mods
-          .map((mod) => ModUpdateResult(
-                modId: mod.jsonFileName.replaceAll('.json', ''),
-                modName: mod.saveName,
-                status: ModUpdateStatus.failed,
-                errorMessage: errorMessage,
-              ))
+          .map(
+            (mod) => ModUpdateResult(
+              modId: mod.jsonFileName.replaceAll('.json', ''),
+              modName: mod.saveName,
+              status: ModUpdateStatus.failed,
+              errorMessage: errorMessage,
+            ),
+          )
           .toList();
 
       return DownloadModUpdatesResult(
@@ -882,8 +1258,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
             // Try to get the mod name from the newly added mod
             final jsonFilePath = '$targetDirectory/$modId.json';
             final mods = ref.read(modsProvider.notifier).getAllMods();
-            final addedMod =
-                mods.firstWhereOrNull((m) => m.jsonFilePath == jsonFilePath);
+            final addedMod = mods.firstWhereOrNull(
+              (m) => m.jsonFilePath == jsonFilePath,
+            );
             modName = addedMod?.saveName;
           } else {
             errorMessage = result;
@@ -893,19 +1270,22 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           if (eString.contains("NoSuchMethod")) {
             errorMessage = "Mod is not available on the Workshop";
           } else if (eString.contains(
-              "type 'Null' is not a subtype of type 'int' in type cast")) {
+            "type 'Null' is not a subtype of type 'int' in type cast",
+          )) {
             errorMessage = "Mod is unlisted - cannot download";
           } else {
             errorMessage = 'Error: $e';
           }
         }
 
-        downloadResults.add(DownloadByIdResult(
-          modId: modId,
-          modName: modName,
-          success: success,
-          errorMessage: errorMessage,
-        ));
+        downloadResults.add(
+          DownloadByIdResult(
+            modId: modId,
+            modName: modName,
+            success: success,
+            errorMessage: errorMessage,
+          ),
+        );
 
         // Update progress after completing current mod
         state = state.copyWith(
@@ -932,10 +1312,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       } else {
         if (summary.failCount > 0) {
           ref.read(logProvider.notifier).addWarning(
-              'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully (${summary.failCount} failed)');
+                'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully (${summary.failCount} failed)',
+              );
         } else {
           ref.read(logProvider.notifier).addSuccess(
-              'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully');
+                'Downloaded ${summary.successCount} of ${summary.totalCount} mods successfully',
+              );
         }
       }
 
@@ -972,10 +1354,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
       final response = await http.post(
         url,
-        body: {
-          'itemcount': '1',
-          'publishedfileids[0]': modId,
-        },
+        body: {'itemcount': '1', 'publishedfileids[0]': modId},
       );
 
       final responseData = json.decode(response.body);
@@ -1020,10 +1399,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     // Add the newly downloaded mod to state
     final jsonFilePath = '$targetDirectory/$modId.json';
-    await ref.read(modsProvider.notifier).addSingleMod(
-          jsonFilePath,
-          ModTypeEnum.mod,
-        );
+    await ref
+        .read(modsProvider.notifier)
+        .addSingleMod(jsonFilePath, ModTypeEnum.mod);
 
     return bsonResult;
   }
@@ -1137,7 +1515,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     } else if (data is double) {
       if (data.isInfinite) {
         debugPrint(
-            '_findProblematicValues - Found Infinity at path: $path (value: $data)');
+          '_findProblematicValues - Found Infinity at path: $path (value: $data)',
+        );
       } else if (data.isNaN) {
         debugPrint('_findProblematicValues - Found NaN at path: $path');
       }
@@ -1172,10 +1551,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       // First save the original at maximum quality
       final tempPath = '$targetDirectory/${modId}_temp.png';
       final tempFile = File(tempPath);
-      await tempFile.writeAsBytes(img.encodePng(
-        originalImage,
-        level: 0,
-      ));
+      await tempFile.writeAsBytes(img.encodePng(originalImage, level: 0));
 
       // Read back the uncompressed image
       final uncompressedBytes = await tempFile.readAsBytes();
@@ -1196,10 +1572,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       final finalPath = '$targetDirectory/$modId.png';
       final finalFile = File(finalPath);
 
-      await finalFile.writeAsBytes(img.encodePng(
-        resizedImage,
-        level: 0, // Keep using no compression for best quality
-      ));
+      await finalFile.writeAsBytes(
+        img.encodePng(
+          resizedImage,
+          level: 0, // Keep using no compression for best quality
+        ),
+      );
 
       // Clean up temp file
       await tempFile.delete();

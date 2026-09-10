@@ -22,6 +22,8 @@ import 'package:tts_mod_vault/src/state/bulk_actions/mod_update_result.dart'
 import 'package:tts_mod_vault/src/state/bulk_actions/mod_url_check_result.dart'
     show ModUrlCheckResult;
 import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show Mod;
+import 'package:tts_mod_vault/src/state/download/download_validation_result.dart'
+    show DownloadValidationResult;
 import 'package:tts_mod_vault/src/state/mods/mods_isolates.dart'
     show
         updateUrlPrefixesFilesIsolate,
@@ -68,7 +70,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   }
 
   // MARK: Download
-  Future<void> downloadAllMods(List<Mod> mods) async {
+  Future<List<DownloadValidationResult>> downloadAllMods(List<Mod> mods) async {
     ref
         .read(logProvider.notifier)
         .addInfo('Starting bulk download for ${mods.length} mods');
@@ -81,6 +83,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     final modsNotifier = ref.read(modsProvider.notifier);
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final Set<String> allAffectedFilenames = {};
+    final validationResults = <DownloadValidationResult>[];
 
     for (int i = 0; i < mods.length; i++) {
       final mod = mods[i];
@@ -95,14 +98,20 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       debugPrint('Downloading: ${mod.saveName}');
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          statusMessage:
-              'Downloading "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+        currentModNumber: i + 1,
+        statusMessage:
+            'Downloading "${mod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
 
       modsNotifier.setSelectedMod(mod);
       final downloaded = await downloadNotifier.downloadAllFiles(mod);
       allAffectedFilenames.addAll(downloaded);
-      await modsNotifier.updateSelectedMod(mod);
+      final updatedMod = await modsNotifier.updateSelectedMod(mod);
+      if (!state.cancelledBulkAction) {
+        validationResults.add(
+          await downloadNotifier.validateModAfterDownload(updatedMod),
+        );
+      }
     }
 
     // Refresh other mods that share any of the downloaded assets
@@ -111,8 +120,11 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
 
     if (state.cancelledBulkAction) {
-      ref.read(logProvider.notifier).addWarning(
-          'Bulk download cancelled (${state.currentModNumber}/${mods.length} completed)');
+      ref
+          .read(logProvider.notifier)
+          .addWarning(
+            'Bulk download cancelled (${state.currentModNumber}/${mods.length} completed)',
+          );
     } else {
       ref
           .read(logProvider.notifier)
@@ -121,9 +133,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
     _resetState();
     downloadNotifier.resetState();
+    return validationResults;
   }
 
-// MARK: Backup
+  // MARK: Backup
   Future<void> backupAllMods(
     List<Mod> mods,
     BulkBackupBehaviorEnum backupBehavior,
@@ -142,8 +155,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           "Select a folder to backup all ${ref.read(selectedModTypeProvider).label}s",
     );
 
-    final selectedBackupFolder =
-        folder != null && folder.isNotEmpty ? folder : await _getBackupFolder();
+    final selectedBackupFolder = folder != null && folder.isNotEmpty
+        ? folder
+        : await _getBackupFolder();
     if (selectedBackupFolder == null) {
       ref
           .read(logProvider.notifier)
@@ -198,15 +212,18 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
         continue;
       }
 
-      debugPrint(performBackup
-          ? 'Backing up: ${currentMod.saveName}'
-          : 'Deleting assets for: ${currentMod.saveName}');
+      debugPrint(
+        performBackup
+            ? 'Backing up: ${currentMod.saveName}'
+            : 'Deleting assets for: ${currentMod.saveName}',
+      );
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          statusMessage: performBackup
-              ? 'Backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})'
-              : 'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
+        currentModNumber: i + 1,
+        statusMessage: performBackup
+            ? 'Backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})'
+            : 'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
 
       modsNotifier.setSelectedMod(currentMod);
       if (performBackup) {
@@ -221,8 +238,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
         }
 
         state = state.copyWith(
-            statusMessage:
-                'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
+          statusMessage:
+              'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})',
+        );
 
         final deletedFilenames = await ref
             .read(deleteAssetsProvider.notifier)
@@ -241,11 +259,17 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
 
     if (state.cancelledBulkAction) {
-      ref.read(logProvider.notifier).addWarning(
-          'Bulk backup cancelled (${state.currentModNumber}/${mods.length} completed)');
+      ref
+          .read(logProvider.notifier)
+          .addWarning(
+            'Bulk backup cancelled (${state.currentModNumber}/${mods.length} completed)',
+          );
     } else {
-      ref.read(logProvider.notifier).addSuccess(
-          'Bulk backup completed: ${state.currentModNumber} mods backed up');
+      ref
+          .read(logProvider.notifier)
+          .addSuccess(
+            'Bulk backup completed: ${state.currentModNumber} mods backed up',
+          );
     }
 
     final wasCancelled = state.cancelledBulkAction;
@@ -261,8 +285,8 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
   }
 
-// MARK: DL & Backup
-  Future<void> downloadAndBackupAllMods(
+  // MARK: DL & Backup
+  Future<List<DownloadValidationResult>> downloadAndBackupAllMods(
     List<Mod> mods,
     BulkBackupBehaviorEnum backupBehavior,
     String? folder,
@@ -276,17 +300,19 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           "Select a folder to backup all ${ref.read(selectedModTypeProvider).label}s",
     );
 
-    final selectedBackupFolder =
-        folder != null && folder.isNotEmpty ? folder : await _getBackupFolder();
+    final selectedBackupFolder = folder != null && folder.isNotEmpty
+        ? folder
+        : await _getBackupFolder();
     if (selectedBackupFolder == null) {
       _resetState();
-      return;
+      return [];
     }
 
     final modsNotifier = ref.read(modsProvider.notifier);
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final backupNotifier = ref.read(backupProvider.notifier);
     final Set<String> allAffectedFilenames = {};
+    final validationResults = <DownloadValidationResult>[];
 
     for (int i = 0; i < mods.length; i++) {
       Mod currentMod = mods[i];
@@ -301,14 +327,23 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       debugPrint('Downloading & backing up: ${currentMod.saveName}');
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          statusMessage:
-              'Downloading & backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
+        currentModNumber: i + 1,
+        statusMessage:
+            'Downloading & backing up "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
 
       modsNotifier.setSelectedMod(currentMod);
       final downloaded = await downloadNotifier.downloadAllFiles(currentMod);
       allAffectedFilenames.addAll(downloaded);
       currentMod = await modsNotifier.updateSelectedMod(currentMod);
+
+      if (state.cancelledBulkAction) {
+        break;
+      }
+
+      validationResults.add(
+        await downloadNotifier.validateModAfterDownload(currentMod),
+      );
 
       if (state.cancelledBulkAction) {
         break;
@@ -355,8 +390,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           }
 
           state = state.copyWith(
-              statusMessage:
-                  'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
+            statusMessage:
+                'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})',
+          );
 
           final deletedFilenames = await ref
               .read(deleteAssetsProvider.notifier)
@@ -387,9 +423,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
           .read(directoriesProvider.notifier)
           .setAsDefaultBackupDirAndReload(selectedBackupFolder);
     }
+    return validationResults;
   }
 
-// MARK: Delete Assets
+  // MARK: Delete Assets
   Future<void> deleteAssetsAllMods(
     List<Mod> mods,
     PostBackupDeletionEnum deletionOption,
@@ -422,9 +459,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       debugPrint('Deleting assets for: ${currentMod.saveName}');
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          statusMessage:
-              'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})');
+        currentModNumber: i + 1,
+        statusMessage:
+            'Deleting assets for "${currentMod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
 
       modsNotifier.setSelectedMod(currentMod);
 
@@ -444,17 +482,23 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
 
     if (state.cancelledBulkAction) {
-      ref.read(logProvider.notifier).addWarning(
-          'Bulk asset deletion cancelled (${state.currentModNumber}/${mods.length} completed)');
+      ref
+          .read(logProvider.notifier)
+          .addWarning(
+            'Bulk asset deletion cancelled (${state.currentModNumber}/${mods.length} completed)',
+          );
     } else {
-      ref.read(logProvider.notifier).addSuccess(
-          'Bulk asset deletion completed: ${mods.length} mods processed');
+      ref
+          .read(logProvider.notifier)
+          .addSuccess(
+            'Bulk asset deletion completed: ${mods.length} mods processed',
+          );
     }
 
     _resetState();
   }
 
-// MARK: Check URLs
+  // MARK: Check URLs
   Future<void> checkUrlsAllMods(List<Mod> mods, BuildContext context) async {
     if (mods.isEmpty) return;
 
@@ -490,26 +534,36 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       debugPrint('Checking URLs: ${mod.saveName}');
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          statusMessage:
-              'Checking URLs for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+        currentModNumber: i + 1,
+        statusMessage:
+            'Checking URLs for "${mod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
 
       modsNotifier.setSelectedMod(mod);
 
-      final r = await downloadNotifier.checkModUrlsLive(mod);
+      final r = await downloadNotifier.checkModUrlsLive(
+        mod,
+        forceDomainRefresh: false,
+      );
 
-      results.add(ModUrlCheckResult(
-        modName: mod.saveName,
-        invalidUrls: r.cancelled ? const [] : r.invalidUrls,
-        cancelled: r.cancelled,
-      ));
+      results.add(
+        ModUrlCheckResult(
+          modName: mod.saveName,
+          invalidUrls: r.cancelled ? const [] : r.invalidUrls,
+          unreachableDomains: r.cancelled ? const [] : r.unreachableDomains,
+          cancelled: r.cancelled,
+        ),
+      );
     }
 
     final wasCancelled = state.cancelledBulkAction;
 
     if (wasCancelled) {
-      ref.read(logProvider.notifier).addWarning(
-          'Bulk URL check cancelled (${state.currentModNumber}/${mods.length} completed)');
+      ref
+          .read(logProvider.notifier)
+          .addWarning(
+            'Bulk URL check cancelled (${state.currentModNumber}/${mods.length} completed)',
+          );
     } else {
       ref
           .read(logProvider.notifier)
@@ -530,7 +584,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     }
   }
 
-// MARK: Update URLs
+  // MARK: Update URLs
   Future<void> updateUrlPrefixesAllMods(
     List<Mod> mods,
     List<String> oldPrefixes,
@@ -557,12 +611,14 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       debugPrint('Updating URLs: ${mod.saveName}');
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          statusMessage:
-              'Updating URLs for "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+        currentModNumber: i + 1,
+        statusMessage:
+            'Updating URLs for "${mod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
 
       final assets = Map.fromEntries(
-          mod.getAllAssets().map((a) => MapEntry(a.url, a.filePath)));
+        mod.getAllAssets().map((a) => MapEntry(a.url, a.filePath)),
+      );
       final modJsonFilePath = mod.jsonFilePath;
 
       final result = await compute(
@@ -590,7 +646,7 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
     ref.read(loaderProvider).refreshAppData();
   }
 
-// MARK: Update mods
+  // MARK: Update mods
   Future<void> updateModsAll(
     List<Mod> mods,
     bool forceUpdate,
@@ -619,12 +675,14 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
         // Add cancelled status for remaining mods
         for (int j = i; j < mods.length; j++) {
           final remainingMod = mods[j];
-          allResults.add(ModUpdateResult(
-            modId: remainingMod.jsonFileName.replaceAll('.json', ''),
-            modName: remainingMod.saveName,
-            status: ModUpdateStatus.failed,
-            errorMessage: 'Cancelled by user',
-          ));
+          allResults.add(
+            ModUpdateResult(
+              modId: remainingMod.jsonFileName.replaceAll('.json', ''),
+              modName: remainingMod.saveName,
+              status: ModUpdateStatus.failed,
+              errorMessage: 'Cancelled by user',
+            ),
+          );
         }
         break;
       }
@@ -635,9 +693,10 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       debugPrint('Updating mod: ${mod.saveName}');
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          statusMessage:
-              'Updating "${mod.saveName}" (${i + 1}/${state.totalModNumber})');
+        currentModNumber: i + 1,
+        statusMessage:
+            'Updating "${mod.saveName}" (${i + 1}/${state.totalModNumber})',
+      );
 
       ref.read(modsProvider.notifier).setSelectedMod(mod);
 
@@ -671,12 +730,13 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
   Future<void> importBackups({
     String? filePath,
     Future<JsonConflictChoice> Function(JsonImportConflict conflict)?
-        onJsonConflict,
+    onJsonConflict,
     String? targetJsonDir,
   }) async {
     state = state.copyWith(
-        status: BulkActionsStatusEnum.importingBackups,
-        statusMessage: 'Select TTSMOD files to import');
+      status: BulkActionsStatusEnum.importingBackups,
+      statusMessage: 'Select TTSMOD files to import',
+    );
 
     final List<String> filePaths;
 
@@ -728,17 +788,18 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
       debugPrint('Importing: $fileName');
 
       state = state.copyWith(
-          currentModNumber: i + 1,
-          totalModNumber: filePaths.length,
-          statusMessage:
-              'Importing "$fileName" (${i + 1}/${filePaths.length})');
+        currentModNumber: i + 1,
+        totalModNumber: filePaths.length,
+        statusMessage: 'Importing "$fileName" (${i + 1}/${filePaths.length})',
+      );
 
-      final importedFilenames =
-          await ref.read(importBackupProvider.notifier).importBackupFromPath(
-                path,
-                onJsonConflict: onJsonConflict,
-                targetJsonDir: targetJsonDir,
-              );
+      final importedFilenames = await ref
+          .read(importBackupProvider.notifier)
+          .importBackupFromPath(
+            path,
+            onJsonConflict: onJsonConflict,
+            targetJsonDir: targetJsonDir,
+          );
       allImportedFilenames.addAll(importedFilenames);
     }
 
@@ -849,7 +910,9 @@ class BulkActionsNotifier extends StateNotifier<BulkActionsState> {
 
   Future<void> _cancelUpdateModsAll() async {
     state = state.copyWith(
-        cancelledBulkAction: true, statusMessage: "Cancelling updating mods");
+      cancelledBulkAction: true,
+      statusMessage: "Cancelling updating mods",
+    );
   }
 
   void _cancelDeleteAssetsAll() {

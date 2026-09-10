@@ -18,7 +18,8 @@ import 'package:tts_mod_vault/src/mods/components/components.dart'
         CustomTooltip,
         BackupProgressBar,
         MultiSelectView,
-        PdfThumbnail;
+        PdfThumbnail,
+        showDownloadValidationResultsDialog;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
     show Asset;
 import 'package:tts_mod_vault/src/state/backup/backup_state.dart'
@@ -66,10 +67,7 @@ class _AssetItem extends _ListItem {
   final Asset asset;
   final AssetTypeEnum type;
 
-  _AssetItem({
-    required this.asset,
-    required this.type,
-  });
+  _AssetItem({required this.asset, required this.type});
 }
 
 class SelectedModView extends HookConsumerWidget {
@@ -93,9 +91,7 @@ class SelectedModView extends HookConsumerWidget {
           Container(
             alignment: Alignment.topLeft,
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.white, width: 2),
-              ),
+              border: Border(bottom: BorderSide(color: Colors.white, width: 2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,8 +157,9 @@ class _SelectedModViewComponent extends HookConsumerWidget {
     final selectedAssetTypeFilter = useState<AssetTypeEnum?>(null);
     final downloadFilter = useState(ExistingAssetsFilter.all);
     final showInvalidOnly = useState(false);
-    final showPdfThumbnails =
-        useState(ref.read(settingsProvider).showPdfThumbnails);
+    final showPdfThumbnails = useState(
+      ref.read(settingsProvider).showPdfThumbnails,
+    );
     final isSearchActive = useState(false);
     final searchQuery = useState('');
     final searchController = useTextEditingController();
@@ -211,9 +208,11 @@ class _SelectedModViewComponent extends HookConsumerWidget {
       if (searchQuery.value.isEmpty) return null;
       return listItems
           .whereType<_AssetItem>()
-          .where((item) => item.asset.url
-              .toLowerCase()
-              .contains(searchQuery.value.toLowerCase()))
+          .where(
+            (item) => item.asset.url.toLowerCase().contains(
+              searchQuery.value.toLowerCase(),
+            ),
+          )
           .map((item) => item.type)
           .toSet();
     }, [listItems, searchQuery.value]);
@@ -243,9 +242,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
       children: [
         Container(
           decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Colors.white, width: 2),
-            ),
+            border: Border(bottom: BorderSide(color: Colors.white, width: 2)),
           ),
           alignment: Alignment.topLeft,
           child: Row(
@@ -339,10 +336,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                         ),
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.black,
-                          ),
+                          prefixIcon: Icon(Icons.search, color: Colors.black),
                           suffixIcon: IconButton(
                             icon: Icon(
                               Icons.clear,
@@ -387,14 +381,14 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                           searchFocusNode.requestFocus();
                         },
                         style: ButtonStyle(
-                          backgroundColor:
-                              WidgetStateProperty.all(Colors.white),
-                          foregroundColor:
-                              WidgetStateProperty.all(Colors.black),
-                          padding: WidgetStateProperty.all(EdgeInsets.zero),
-                          shape: WidgetStateProperty.all(
-                            CircleBorder(),
+                          backgroundColor: WidgetStateProperty.all(
+                            Colors.white,
                           ),
+                          foregroundColor: WidgetStateProperty.all(
+                            Colors.black,
+                          ),
+                          padding: WidgetStateProperty.all(EdgeInsets.zero),
+                          shape: WidgetStateProperty.all(CircleBorder()),
                         ),
                         child: Icon(Icons.search, size: 20),
                       ),
@@ -409,8 +403,10 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                   onSelected: (v) => showInvalidOnly.value = v,
                   selectedColor: Colors.red[500],
                   visualDensity: VisualDensity.compact,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 7,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -470,14 +466,21 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                   return true;
                 });
 
-                final header = _buildHeader(context, ref, item, selectedMod,
-                    isFirstHeader, showPdfThumbnails);
+                final header = _buildHeader(
+                  context,
+                  ref,
+                  item,
+                  selectedMod,
+                  isFirstHeader,
+                  showPdfThumbnails,
+                );
 
                 // For the PDF section in thumbnail mode, render all thumbnails
                 // in a wrapping grid directly under the header.
                 if (item.type == AssetTypeEnum.pdf && showPdfThumbnails.value) {
-                  final visiblePdfs =
-                      item.assets.where(assetPassesFilters).toList();
+                  final visiblePdfs = item.assets
+                      .where(assetPassesFilters)
+                      .toList();
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -529,9 +532,9 @@ class _SelectedModViewComponent extends HookConsumerWidget {
 
                 // Filter by search query
                 if (searchQuery.value.isNotEmpty &&
-                    !item.asset.url
-                        .toLowerCase()
-                        .contains(searchQuery.value.toLowerCase())) {
+                    !item.asset.url.toLowerCase().contains(
+                      searchQuery.value.toLowerCase(),
+                    )) {
                   return const SizedBox.shrink();
                 }
 
@@ -548,10 +551,10 @@ class _SelectedModViewComponent extends HookConsumerWidget {
         downloadState.isCheckingUrls
             ? const UrlCheckProgressBar()
             : downloadState.isDownloading || downloadState.cancelledDownloads
-                ? DownloadProgressBar()
-                : backupStatus != BackupStatusEnum.idle
-                    ? BackupProgressBar()
-                    : SelectedModActionButtons(selectedMod: selectedMod)
+            ? DownloadProgressBar()
+            : backupStatus != BackupStatusEnum.idle
+            ? BackupProgressBar()
+            : SelectedModActionButtons(selectedMod: selectedMod),
       ],
     );
   }
@@ -571,12 +574,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: Colors.white,
-              width: 2.0,
-            ),
-          ),
+          border: Border(bottom: BorderSide(color: Colors.white, width: 2.0)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -595,8 +593,9 @@ class _SelectedModViewComponent extends HookConsumerWidget {
               ),
             if (headerItem.type == AssetTypeEnum.pdf && !actionInProgress)
               CustomTooltip(
-                message:
-                    showPdfThumbnails.value ? 'Show URLs' : 'Show thumbnails',
+                message: showPdfThumbnails.value
+                    ? 'Show URLs'
+                    : 'Show thumbnails',
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
@@ -610,7 +609,7 @@ class _SelectedModViewComponent extends HookConsumerWidget {
                 ),
               ),
             if (headerItem.type == AssetTypeEnum.image && !actionInProgress)
-              _OpenImagesViewerButton()
+              _OpenImagesViewerButton(),
           ],
         ),
       ),
@@ -640,7 +639,8 @@ class _AudioAssetsButton extends ConsumerWidget {
           backgroundColor: WidgetStateProperty.all(Colors.white),
         ),
         builder: (context, controller, child) {
-          final hasOverride = selectedMod.audioVisibility !=
+          final hasOverride =
+              selectedMod.audioVisibility !=
               AudioAssetVisibility.useGlobalSetting;
 
           final showingAudio = switch (selectedMod.audioVisibility) {
@@ -670,13 +670,8 @@ class _AudioAssetsButton extends ConsumerWidget {
               ),
             ),
             padding: EdgeInsets.zero, // removes default padding
-            constraints: const BoxConstraints(
-              minWidth: 32,
-              minHeight: 32,
-            ),
-            icon: Icon(
-              showingAudio ? Icons.volume_up : Icons.volume_off,
-            ),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            icon: Icon(showingAudio ? Icons.volume_up : Icons.volume_off),
           );
         },
         menuChildren: [
@@ -723,7 +718,9 @@ class _AudioAssetsButton extends ConsumerWidget {
                   audioVisibility: AudioAssetVisibility.useGlobalSetting,
                 );
 
-                await ref.read(storageProvider).setModAudioPreference(
+                await ref
+                    .read(storageProvider)
+                    .setModAudioPreference(
                       selectedMod.jsonFileName,
                       AudioAssetVisibility.useGlobalSetting,
                     );
@@ -774,7 +771,9 @@ class _AudioAssetsButton extends ConsumerWidget {
                   // -----------------------------------------
                   audioVisibility: AudioAssetVisibility.alwaysShow,
                 );
-                await ref.read(storageProvider).setModAudioPreference(
+                await ref
+                    .read(storageProvider)
+                    .setModAudioPreference(
                       selectedMod.jsonFileName,
                       AudioAssetVisibility.alwaysShow,
                     );
@@ -826,7 +825,9 @@ class _AudioAssetsButton extends ConsumerWidget {
                   audioVisibility: AudioAssetVisibility.alwaysHide,
                 );
 
-                await ref.read(storageProvider).setModAudioPreference(
+                await ref
+                    .read(storageProvider)
+                    .setModAudioPreference(
                       selectedMod.jsonFileName,
                       AudioAssetVisibility.alwaysHide,
                     );
@@ -889,21 +890,31 @@ class _MissingFilesButton extends StatelessWidget {
                 .nonNulls
                 .toList();
 
-            final downloaded =
-                await ref.read(downloadProvider.notifier).downloadFiles(
-                      modAssetListUrls: urls,
-                      type: assetType,
-                      downloadingAllFiles: false,
-                    );
+            final downloaded = await ref
+                .read(downloadProvider.notifier)
+                .downloadFiles(
+                  modAssetListUrls: urls,
+                  type: assetType,
+                  downloadingAllFiles: false,
+                );
 
-            await ref
+            final updatedMod = await ref
                 .read(modsProvider.notifier)
                 .updateSelectedMod(selectedMod);
 
             if (downloaded.isNotEmpty) {
-              await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
-                  downloaded.toSet(),
-                  excludeJsonFileName: selectedMod.jsonFileName);
+              await ref
+                  .read(modsProvider.notifier)
+                  .refreshModsWithSharedAssets(
+                    downloaded.toSet(),
+                    excludeJsonFileName: selectedMod.jsonFileName,
+                  );
+            }
+            final result = await ref
+                .read(downloadProvider.notifier)
+                .validateModAfterDownload(updatedMod);
+            if (context.mounted) {
+              await showDownloadValidationResultsDialog(context, [result]);
             }
           },
           child: Icon(Icons.download, size: 20),

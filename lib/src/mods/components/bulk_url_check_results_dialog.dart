@@ -20,11 +20,24 @@ class BulkUrlCheckResultsDialog extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final modsWithInvalid =
-        results.where((r) => r.invalidUrls.isNotEmpty).toList();
-    final totalInvalid =
-        modsWithInvalid.fold<int>(0, (acc, r) => acc + r.invalidUrls.length);
+    final modsWithInvalid = results
+        .where((r) => r.invalidUrls.isNotEmpty)
+        .toList();
+    final modsWithIssues = results
+        .where(
+          (r) => r.invalidUrls.isNotEmpty || r.unreachableDomains.isNotEmpty,
+        )
+        .toList();
+    final totalInvalid = modsWithInvalid.fold<int>(
+      0,
+      (acc, r) => acc + r.invalidUrls.length,
+    );
+    final totalUnreachable = results.fold<int>(
+      0,
+      (acc, r) => acc + r.unreachableDomains.length,
+    );
     final checkedCount = results.where((r) => !r.cancelled).length;
+    final hasUnreachableDomains = totalUnreachable > 0;
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
@@ -32,11 +45,23 @@ class BulkUrlCheckResultsDialog extends HookConsumerWidget {
         title: Row(
           children: [
             Icon(
-              wasCancelled ? Icons.warning_amber_rounded : Icons.check_circle,
-              color: wasCancelled ? Colors.orange : Colors.green,
+              wasCancelled
+                  ? Icons.warning_amber_rounded
+                  : hasUnreachableDomains
+                  ? Icons.cloud_off
+                  : Icons.check_circle,
+              color: wasCancelled || hasUnreachableDomains
+                  ? Colors.orange
+                  : Colors.green,
             ),
             const SizedBox(width: 8),
-            Text(wasCancelled ? 'URL Check Cancelled' : 'URL Check Complete'),
+            Text(
+              wasCancelled
+                  ? 'URL Check Cancelled'
+                  : hasUnreachableDomains
+                  ? 'URL Check Complete with Unreachable Domains'
+                  : 'URL Check Complete',
+            ),
           ],
         ),
         content: SizedBox(
@@ -45,20 +70,22 @@ class BulkUrlCheckResultsDialog extends HookConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSummary(modsWithInvalid.length, totalInvalid, checkedCount),
+              _buildSummary(
+                modsWithInvalid.length,
+                totalInvalid,
+                totalUnreachable,
+                checkedCount,
+              ),
               const SizedBox(height: 16),
-              if (modsWithInvalid.isEmpty)
-                const Text(
-                  'All URLs are valid',
-                  style: TextStyle(fontSize: 16),
-                )
+              if (modsWithIssues.isEmpty)
+                const Text('All URLs are valid', style: TextStyle(fontSize: 16))
               else
                 Flexible(
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...modsWithInvalid.map((r) => _ModSection(result: r)),
+                        ...modsWithIssues.map((r) => _ModSection(result: r)),
                       ],
                     ),
                   ),
@@ -88,7 +115,11 @@ class BulkUrlCheckResultsDialog extends HookConsumerWidget {
   }
 
   Widget _buildSummary(
-      int modsWithInvalidCount, int totalInvalidCount, int checkedCount) {
+    int modsWithInvalidCount,
+    int totalInvalidCount,
+    int totalUnreachableCount,
+    int checkedCount,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -98,10 +129,21 @@ class BulkUrlCheckResultsDialog extends HookConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildSummaryItem('Mods with invalid URLs', modsWithInvalidCount,
-              totalInvalidCount > 0 ? Colors.red : Colors.green),
-          _buildSummaryItem('Invalid URLs', totalInvalidCount,
-              totalInvalidCount > 0 ? Colors.red : Colors.green),
+          _buildSummaryItem(
+            'Mods with invalid URLs',
+            modsWithInvalidCount,
+            totalInvalidCount > 0 ? Colors.red : Colors.green,
+          ),
+          _buildSummaryItem(
+            'Invalid URLs',
+            totalInvalidCount,
+            totalInvalidCount > 0 ? Colors.red : Colors.green,
+          ),
+          _buildSummaryItem(
+            'Unreachable domains',
+            totalUnreachableCount,
+            totalUnreachableCount > 0 ? Colors.orange : Colors.green,
+          ),
           _buildSummaryItem('Mods checked', checkedCount, Colors.blue),
         ],
       ),
@@ -133,6 +175,8 @@ class _ModSection extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isExpanded = useState(false);
+    final hasInvalid = result.invalidUrls.isNotEmpty;
+    final issueColor = hasInvalid ? Colors.red : Colors.orange;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,19 +193,23 @@ class _ModSection extends HookConsumerWidget {
                   isExpanded.value
                       ? Icons.keyboard_arrow_down
                       : Icons.keyboard_arrow_right,
-                  color: Colors.red,
+                  color: issueColor,
                   size: 22,
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.error, color: Colors.red, size: 20),
+                Icon(
+                  hasInvalid ? Icons.error : Icons.cloud_off,
+                  color: issueColor,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${result.modName} (${result.invalidUrls.length})',
-                    style: const TextStyle(
+                    '${result.modName} (${result.invalidUrls.length} invalid, ${result.unreachableDomains.length} unreachable)',
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.red,
+                      color: issueColor,
                     ),
                   ),
                 ),
@@ -171,9 +219,27 @@ class _ModSection extends HookConsumerWidget {
         ),
         if (isExpanded.value) ...[
           const SizedBox(height: 4),
-          ...result.invalidUrls.asMap().entries.map(
-                (e) => _InvalidUrlRow(url: e.value, index: e.key),
+          if (result.unreachableDomains.isNotEmpty) ...[
+            const Text(
+              'Unreachable domains',
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
               ),
+            ),
+            ...result.unreachableDomains.map(
+              (domain) => SelectableText(domain),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (result.invalidUrls.isNotEmpty)
+            const Text(
+              'Invalid URLs',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ...result.invalidUrls.asMap().entries.map(
+            (e) => _InvalidUrlRow(url: e.value, index: e.key),
+          ),
         ],
       ],
     );
@@ -198,18 +264,16 @@ class _InvalidUrlRow extends HookConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '${index + 1}. ',
-              style: const TextStyle(fontSize: 15),
-            ),
+            Text('${index + 1}. ', style: const TextStyle(fontSize: 15)),
             Expanded(
               child: Text(
                 url,
                 style: TextStyle(
-                    fontSize: 15,
-                    backgroundColor: isHovered.value
-                        ? Colors.grey[850]
-                        : Colors.transparent),
+                  fontSize: 15,
+                  backgroundColor: isHovered.value
+                      ? Colors.grey[850]
+                      : Colors.transparent,
+                ),
               ),
             ),
             IconButton(
@@ -221,9 +285,11 @@ class _InvalidUrlRow extends HookConsumerWidget {
                 url,
                 showSnackBarAfterCopying: false,
               ),
-              icon: Icon(Icons.copy,
-                  size: 16,
-                  color: !isHovered.value ? Colors.transparent : Colors.white),
+              icon: Icon(
+                Icons.copy,
+                size: 16,
+                color: !isHovered.value ? Colors.transparent : Colors.white,
+              ),
             ),
           ],
         ),

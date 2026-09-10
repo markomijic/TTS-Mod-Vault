@@ -10,7 +10,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart'
     show HookConsumerWidget, WidgetRef;
 import 'package:path/path.dart' as path;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show CustomTooltip;
+    show CustomTooltip, showDomainReachabilityResultsDialog;
 import 'package:tts_mod_vault/src/settings/editable_list.dart'
     show EditableStringList;
 import 'package:tts_mod_vault/src/state/directories/directories.dart'
@@ -19,6 +19,7 @@ import 'package:tts_mod_vault/src/state/mods/mod_model.dart' show ModTypeEnum;
 import 'package:tts_mod_vault/src/state/provider.dart'
     show
         directoriesProvider,
+        downloadProvider,
         modsProvider,
         multiModsProvider,
         selectedModTypeProvider,
@@ -91,17 +92,20 @@ class SettingsDialog extends HookConsumerWidget {
     final defaultSortOption = useState(settings.defaultSortOption);
     final defaultBackupSortOption = useState(settings.defaultBackupSortOption);
     final assetUrlFontSize = useState(settings.assetUrlFontSize);
-    final assetUrlFontSizeController =
-        useTextEditingController(text: settings.assetUrlFontSize.toString());
+    final assetUrlFontSizeController = useTextEditingController(
+      text: settings.assetUrlFontSize.toString(),
+    );
     final assetUrlFontSizeFocusNode = useFocusNode();
 
     // Network
     final concurrentDownloadsValue = useState(settings.concurrentDownloads);
     final textFieldController = useTextEditingController(
-        text: concurrentDownloadsValue.value.toString());
+      text: concurrentDownloadsValue.value.toString(),
+    );
     final textFieldFocusNode = useFocusNode();
-    final ignoredDomains =
-        useState<List<String>>(List.from(settings.ignoredDomains));
+    final ignoredDomains = useState<List<String>>(
+      List.from(settings.ignoredDomains),
+    );
 
     // Features
     final checkForUpdatesOnStartBox = useState(settings.checkForUpdatesOnStart);
@@ -118,8 +122,9 @@ class SettingsDialog extends HookConsumerWidget {
     final modsDir = useState(ref.read(directoriesProvider).modsDir);
     final savesDir = useState(ref.read(directoriesProvider).savesDir);
     final backupsDir = useState(ref.read(directoriesProvider).backupsDir);
-    final ignoredSubfolders =
-        useState<List<String>>(List.from(settings.ignoredSubfolders));
+    final ignoredSubfolders = useState<List<String>>(
+      List.from(settings.ignoredSubfolders),
+    );
 
     Future<void> saveSettingsChanges() async {
       int concurrentDownloads = int.tryParse(textFieldController.text) ?? 5;
@@ -139,10 +144,12 @@ class SettingsDialog extends HookConsumerWidget {
         ignoreAudioAssets: ignoreAudioAssets.value,
         allowCustomSavesFolder: allowCustomSavesFolder.value,
         urlReplacementPresets: urlPresets.value
-            .where((p) =>
-                p.label.trim().isNotEmpty ||
-                p.oldUrl.trim().isNotEmpty ||
-                p.newUrl.trim().isNotEmpty)
+            .where(
+              (p) =>
+                  p.label.trim().isNotEmpty ||
+                  p.oldUrl.trim().isNotEmpty ||
+                  p.newUrl.trim().isNotEmpty,
+            )
             .toList(),
         assetUrlFontSize: assetUrlFontSize.value,
         ignoredSubfolders: ignoredSubfolders.value,
@@ -165,7 +172,10 @@ class SettingsDialog extends HookConsumerWidget {
           ref.read(directoriesProvider).backupsDir != backupsDir.value) {
         if (await directoriesNotifier.isModsDirectoryValid(modsDir.value) &&
             await directoriesNotifier.isSavesDirectoryValid(
-                savesDir.value, true, allowCustomSavesFolder.value)) {
+              savesDir.value,
+              true,
+              allowCustomSavesFolder.value,
+            )) {
           if (ref.read(directoriesProvider).backupsDir != backupsDir.value) {
             directoriesNotifier.updateBackupsDirectory(backupsDir.value);
           }
@@ -314,7 +324,9 @@ class SettingsDialog extends HookConsumerWidget {
                           inputValue < 1 ||
                           inputValue > 99) {
                         showSnackBar(
-                            context, 'Please enter a number between 1 and 99');
+                          context,
+                          'Please enter a number between 1 and 99',
+                        );
                         if (context.mounted) Navigator.pop(context);
                         return;
                       }
@@ -335,10 +347,7 @@ class SettingsDialog extends HookConsumerWidget {
 
 class SectionHeader extends StatelessWidget {
   final String title;
-  const SectionHeader({
-    super.key,
-    required this.title,
-  });
+  const SectionHeader({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -346,10 +355,7 @@ class SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w500,
-        ),
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -426,7 +432,9 @@ class SettingsFoldersColumn extends StatelessWidget {
                   if (ttsDir == null) return;
 
                   if (!await directoriesNotifier.isModsDirectoryValid(
-                      ttsDir, false)) {
+                    ttsDir,
+                    false,
+                  )) {
                     if (context.mounted) {
                       showSnackBar(context, 'Invalid Mods folder');
                     }
@@ -490,7 +498,9 @@ class SettingsFoldersColumn extends StatelessWidget {
                   if (allowCustomSavesFolder.value) {
                     savesDir.value = ttsDir;
                   } else if (!await directoriesNotifier.isSavesDirectoryValid(
-                      ttsDir, false)) {
+                    ttsDir,
+                    false,
+                  )) {
                     if (context.mounted) {
                       showSnackBar(context, 'Invalid Saves folder');
                     }
@@ -733,10 +743,7 @@ the JSON filename (ExampleGame.ttsmod).""",
 }
 
 class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
-  const SettingsUpdateUrlsPresetsColumn({
-    super.key,
-    required this.urlPresets,
-  });
+  const SettingsUpdateUrlsPresetsColumn({super.key, required this.urlPresets});
 
   final ValueNotifier<List<UrlReplacementPreset>> urlPresets;
 
@@ -814,13 +821,14 @@ class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
                           onPressed: () async {
                             final result =
                                 await showDialog<UrlReplacementPreset>(
-                              context: context,
-                              builder: (context) =>
-                                  _PresetEditorDialog(preset: preset),
-                            );
+                                  context: context,
+                                  builder: (context) =>
+                                      _PresetEditorDialog(preset: preset),
+                                );
                             if (result != null) {
                               final newList = List<UrlReplacementPreset>.from(
-                                  urlPresets.value);
+                                urlPresets.value,
+                              );
                               newList[index] = result;
                               urlPresets.value = newList;
                             }
@@ -830,7 +838,8 @@ class SettingsUpdateUrlsPresetsColumn extends StatelessWidget {
                           icon: const Icon(Icons.delete_outline, size: 18),
                           onPressed: () {
                             final newList = List<UrlReplacementPreset>.from(
-                                urlPresets.value);
+                              urlPresets.value,
+                            );
                             newList.removeAt(index);
                             urlPresets.value = newList;
                           },
@@ -932,20 +941,14 @@ class SettingsInterfaceColumn extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  'Default mod sort',
-                  style: TextStyle(fontSize: 16),
-                ),
+                child: Text('Default mod sort', style: TextStyle(fontSize: 16)),
               ),
               DropdownButton<SortOptionEnum>(
                 mouseCursor: SystemMouseCursors.click,
                 value: defaultSortOption.value,
                 dropdownColor: Colors.white,
                 style: TextStyle(color: Colors.white),
-                underline: Container(
-                  height: 2,
-                  color: Colors.white,
-                ),
+                underline: Container(height: 2, color: Colors.white),
                 focusColor: Colors.transparent,
                 selectedItemBuilder: (BuildContext context) {
                   return SortOptionEnum.values.map<Widget>((item) {
@@ -988,10 +991,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
                 value: defaultBackupSortOption.value,
                 dropdownColor: Colors.white,
                 style: TextStyle(color: Colors.white),
-                underline: Container(
-                  height: 2,
-                  color: Colors.white,
-                ),
+                underline: Container(height: 2, color: Colors.white),
                 focusColor: Colors.transparent,
                 selectedItemBuilder: (BuildContext context) {
                   return BackupSortOptionEnum.values.map<Widget>((item) {
@@ -1024,10 +1024,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
           Row(
             spacing: 4,
             children: [
-              Text(
-                'Asset URL font size',
-                style: TextStyle(fontSize: 16),
-              ),
+              Text('Asset URL font size', style: TextStyle(fontSize: 16)),
               CustomTooltip(
                 message:
                     "Range: 1-99 (up to 1 decimal place)\nDefault value: 12.0",
@@ -1040,14 +1037,18 @@ class SettingsInterfaceColumn extends StatelessWidget {
                   textAlign: TextAlign.center,
                   controller: assetUrlFontSizeController,
                   cursorColor: Colors.black,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d{0,2}\.?\d?$')),
+                      RegExp(r'^\d{0,2}\.?\d?$'),
+                    ),
                   ],
                   style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold),
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
                   decoration: InputDecoration(
                     fillColor: Colors.white,
                     border: OutlineInputBorder(),
@@ -1069,7 +1070,7 @@ class SettingsInterfaceColumn extends StatelessWidget {
   }
 }
 
-class SettingsNetworkColumn extends StatelessWidget {
+class SettingsNetworkColumn extends HookConsumerWidget {
   const SettingsNetworkColumn({
     super.key,
     required this.textFieldController,
@@ -1084,7 +1085,9 @@ class SettingsNetworkColumn extends StatelessWidget {
   final ValueNotifier<List<String>> ignoredDomains;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCheckingDomains = useState(false);
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1119,7 +1122,9 @@ class SettingsNetworkColumn extends StatelessWidget {
                     LengthLimitingTextInputFormatter(2),
                   ],
                   style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold),
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
                   decoration: InputDecoration(
                     fillColor: Colors.white,
                     border: OutlineInputBorder(),
@@ -1129,8 +1134,8 @@ class SettingsNetworkColumn extends StatelessWidget {
                     final num = int.tryParse(value);
                     if (value.startsWith("0")) {
                       textFieldController.text = '1';
-                      textFieldController.selection =
-                          TextSelection.fromPosition(
+                      textFieldController
+                          .selection = TextSelection.fromPosition(
                         TextPosition(offset: textFieldController.text.length),
                       );
                       numberValue.value = 1;
@@ -1141,6 +1146,46 @@ class SettingsNetworkColumn extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isCheckingDomains.value
+                  ? null
+                  : () async {
+                      isCheckingDomains.value = true;
+                      try {
+                        final results = await ref
+                            .read(downloadProvider.notifier)
+                            .checkAllModAndSaveDomains();
+                        if (context.mounted) {
+                          await showDomainReachabilityResultsDialog(
+                            context,
+                            results,
+                          );
+                        }
+                      } finally {
+                        if (context.mounted) isCheckingDomains.value = false;
+                      }
+                    },
+              icon: isCheckingDomains.value
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.travel_explore),
+              label: Text(
+                isCheckingDomains.value
+                    ? 'Checking domains...'
+                    : 'Check all Mods and Saves domains',
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Checks every unique domain referenced by Mods and Saves, including excluded domains. Any HTTP response means the domain is reachable.',
           ),
           SizedBox(height: 16),
           EditableStringList(
@@ -1165,10 +1210,12 @@ class _PresetEditorDialog extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final labelController = useTextEditingController(text: preset?.label ?? '');
-    final oldUrlController =
-        useTextEditingController(text: preset?.oldUrl ?? '');
-    final newUrlController =
-        useTextEditingController(text: preset?.newUrl ?? '');
+    final oldUrlController = useTextEditingController(
+      text: preset?.oldUrl ?? '',
+    );
+    final newUrlController = useTextEditingController(
+      text: preset?.newUrl ?? '',
+    );
 
     return AlertDialog(
       title: Text(preset == null ? 'Add Preset' : 'Edit Preset'),
@@ -1190,8 +1237,10 @@ class _PresetEditorDialog extends HookWidget {
               decoration: const InputDecoration(
                 fillColor: Colors.white,
                 border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -1206,8 +1255,10 @@ class _PresetEditorDialog extends HookWidget {
               decoration: const InputDecoration(
                 fillColor: Colors.white,
                 border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -1222,8 +1273,10 @@ class _PresetEditorDialog extends HookWidget {
               decoration: const InputDecoration(
                 fillColor: Colors.white,
                 border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
               ),
             ),
           ],

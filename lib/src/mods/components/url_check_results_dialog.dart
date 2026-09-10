@@ -11,11 +11,7 @@ import 'package:tts_mod_vault/src/utils.dart' show copyToClipboard;
 /// cached results from a previous check, shows them immediately; otherwise runs
 /// a fresh check first. Use the dialog's "Re-check" button (which calls
 /// [runUrlCheckThenShowResults] directly) to force a fresh check.
-void showUrlCheckResults(
-  NavigatorState navigator,
-  WidgetRef ref,
-  Mod mod,
-) {
+void showUrlCheckResults(NavigatorState navigator, WidgetRef ref, Mod mod) {
   final cached = mod.invalidUrls;
   if (cached != null) {
     showDialog(
@@ -49,6 +45,7 @@ Future<void> runUrlCheckThenShowResults(
     builder: (_) => UrlCheckResultsDialog(
       mod: mod,
       invalidUrls: r.invalidUrls,
+      unreachableDomains: r.unreachableDomains,
       wasCancelled: r.cancelled,
     ),
   );
@@ -57,12 +54,14 @@ Future<void> runUrlCheckThenShowResults(
 class UrlCheckResultsDialog extends HookConsumerWidget {
   final Mod mod;
   final List<String> invalidUrls;
+  final List<String> unreachableDomains;
   final bool wasCancelled;
 
   const UrlCheckResultsDialog({
     super.key,
     required this.mod,
     required this.invalidUrls,
+    this.unreachableDomains = const [],
     this.wasCancelled = false,
   });
 
@@ -71,6 +70,8 @@ class UrlCheckResultsDialog extends HookConsumerWidget {
     final String headingText;
     if (invalidUrls.isNotEmpty) {
       headingText = 'Invalid URLs: ${invalidUrls.length}';
+    } else if (unreachableDomains.isNotEmpty) {
+      headingText = 'No invalid URLs found on reachable domains';
     } else if (wasCancelled) {
       headingText = 'No invalid URLs found before cancelling';
     } else {
@@ -102,10 +103,7 @@ class UrlCheckResultsDialog extends HookConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (wasCancelled)
-                Text(
-                  mod.saveName,
-                  style: const TextStyle(fontSize: 16),
-                ),
+                Text(mod.saveName, style: const TextStyle(fontSize: 16)),
               Text(
                 headingText,
                 style: TextStyle(
@@ -113,6 +111,13 @@ class UrlCheckResultsDialog extends HookConsumerWidget {
                   fontSize: 16,
                 ),
               ),
+              if (unreachableDomains.isNotEmpty) ...[
+                Text(
+                  'Domains unreachable: ${unreachableDomains.length}',
+                  style: const TextStyle(color: Colors.orange, fontSize: 16),
+                ),
+                SelectableText(unreachableDomains.join('\n')),
+              ],
               if (invalidUrls.isNotEmpty)
                 Flexible(
                   child: ListView.builder(
@@ -145,8 +150,11 @@ class UrlCheckResultsDialog extends HookConsumerWidget {
             ElevatedButton.icon(
               onPressed: () {
                 final invalidUrlsText = invalidUrls.join('\n');
-                copyToClipboard(context, invalidUrlsText,
-                    showSnackBarAfterCopying: false);
+                copyToClipboard(
+                  context,
+                  invalidUrlsText,
+                  showSnackBarAfterCopying: false,
+                );
               },
               icon: const Icon(Icons.copy_all),
               label: const Text('Copy all invalid URLs'),
@@ -175,18 +183,16 @@ class _InvalidUrlRow extends HookConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '${index + 1}. ',
-              style: TextStyle(fontSize: 16),
-            ),
+            Text('${index + 1}. ', style: TextStyle(fontSize: 16)),
             Expanded(
               child: Text(
                 url,
                 style: TextStyle(
-                    fontSize: 16,
-                    backgroundColor: isHovered.value
-                        ? Colors.grey[850]
-                        : Colors.transparent),
+                  fontSize: 16,
+                  backgroundColor: isHovered.value
+                      ? Colors.grey[850]
+                      : Colors.transparent,
+                ),
               ),
             ),
             IconButton(
@@ -197,9 +203,11 @@ class _InvalidUrlRow extends HookConsumerWidget {
                 url,
                 showSnackBarAfterCopying: false,
               ),
-              icon: Icon(Icons.copy,
-                  size: 16,
-                  color: !isHovered.value ? Colors.transparent : Colors.white),
+              icon: Icon(
+                Icons.copy,
+                size: 16,
+                color: !isHovered.value ? Colors.transparent : Colors.white,
+              ),
             ),
           ],
         ),

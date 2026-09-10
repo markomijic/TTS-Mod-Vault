@@ -21,6 +21,7 @@ class Storage {
   // Keys
   static const String dateTimeStampSuffix = 'DateTimeStamp';
   static const String showAudioAssetsSuffix = '_ShowAudioAssets';
+  static const String invalidUrlsSuffix = '_InvalidUrls';
   static const String modsDirKey = 'ModsDir';
   static const String savesDirKey = 'SavesDir';
   static const String backupsDirKey = 'BackupsDir';
@@ -102,7 +103,9 @@ class Storage {
   }
 
   Future<void> updateModUrls(
-      String jsonFileName, Map<String, String> newUrls) async {
+    String jsonFileName,
+    Map<String, String> newUrls,
+  ) async {
     await _urlsBox.put(jsonFileName, newUrls);
   }
 
@@ -136,24 +139,71 @@ class Storage {
       final value = switch (visibility) {
         AudioAssetVisibility.alwaysShow => 'alwaysShow',
         AudioAssetVisibility.alwaysHide => 'alwaysHide',
-        AudioAssetVisibility.useGlobalSetting =>
-          throw StateError('Should have been deleted'),
+        AudioAssetVisibility.useGlobalSetting => throw StateError(
+          'Should have been deleted',
+        ),
       };
       await _metadataBox.put('$modName$showAudioAssetsSuffix', value);
     }
+  }
+
+  Future<void> saveModInvalidUrls(
+    String modName,
+    int lastModifiedTimestamp,
+    List<String> invalidUrls,
+  ) async {
+    await _metadataBox.put(
+      '$modName$invalidUrlsSuffix',
+      json.encode({
+        'lastModifiedTimestamp': lastModifiedTimestamp,
+        'invalidUrls': invalidUrls,
+      }),
+    );
+  }
+
+  Map<String, ({int lastModifiedTimestamp, List<String> invalidUrls})>
+  getAllModInvalidUrlResults() {
+    final results =
+        <String, ({int lastModifiedTimestamp, List<String> invalidUrls})>{};
+
+    for (final entry in _metadataBox.toMap().entries) {
+      final key = entry.key.toString();
+      if (!key.endsWith(invalidUrlsSuffix)) continue;
+
+      try {
+        final decoded = jsonDecode(entry.value);
+        if (decoded is! Map) continue;
+
+        final timestamp = decoded['lastModifiedTimestamp'];
+        final urls = decoded['invalidUrls'];
+        if (timestamp is! int || urls is! List) continue;
+
+        final modName = key.substring(0, key.length - invalidUrlsSuffix.length);
+        results[modName] = (
+          lastModifiedTimestamp: timestamp,
+          invalidUrls: urls.map((url) => url.toString()).toList(),
+        );
+      } catch (e) {
+        debugPrint('Failed to read cached invalid URLs for $key: $e');
+      }
+    }
+
+    return results;
   }
 
   Future<void> deleteMod(String modName) async {
     await Future.wait([
       _metadataBox.delete('$modName$dateTimeStampSuffix'),
       _metadataBox.delete('$modName$showAudioAssetsSuffix'),
+      _metadataBox.delete('$modName$invalidUrlsSuffix'),
       _urlsBox.delete(modName),
     ]);
   }
 
   // Bulk operations for better performance with many mods
   Future<void> saveAllModUrlsData(
-      Map<String, Map<String, String>> allModData) async {
+    Map<String, Map<String, String>> allModData,
+  ) async {
     await _urlsBox.putAll(allModData);
   }
 
@@ -260,6 +310,8 @@ class Storage {
         baseName = k.substring(0, k.length - dateTimeStampSuffix.length);
       } else if (k.endsWith(showAudioAssetsSuffix)) {
         baseName = k.substring(0, k.length - showAudioAssetsSuffix.length);
+      } else if (k.endsWith(invalidUrlsSuffix)) {
+        baseName = k.substring(0, k.length - invalidUrlsSuffix.length);
       } else {
         baseName = k;
       }

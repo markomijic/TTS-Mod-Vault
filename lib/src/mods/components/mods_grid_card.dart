@@ -63,6 +63,10 @@ class ModsGridCard extends HookConsumerWidget {
       [mod.backupStatus],
     );
 
+    final completionMessage = mod.missingInvalidAssetCount > 0
+        ? 'All available assets downloaded\n${mod.missingInvalidAssetCount} invalid resource URL(s)'
+        : 'All assets downloaded';
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => isHovered.value = true,
@@ -73,7 +77,8 @@ class ModsGridCard extends HookConsumerWidget {
             return;
           }
 
-          final isCtrlPressed = event.kind == PointerDeviceKind.mouse &&
+          final isCtrlPressed =
+              event.kind == PointerDeviceKind.mouse &&
               (event.buttons == kPrimaryButton) &&
               (HardwareKeyboard.instance.isControlPressed ||
                   HardwareKeyboard.instance.isMetaPressed);
@@ -110,8 +115,8 @@ class ModsGridCard extends HookConsumerWidget {
               color: isSelected
                   ? Colors.white
                   : isHovered.value
-                      ? Colors.white70
-                      : Colors.transparent,
+                  ? Colors.white70
+                  : Colors.transparent,
             ),
           ),
           child: Stack(
@@ -132,9 +137,7 @@ class ModsGridCard extends HookConsumerWidget {
                     maxLines: 5,
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ),
               if (!imageExists && showTitleOnCards)
@@ -157,9 +160,33 @@ class ModsGridCard extends HookConsumerWidget {
                           mod.modType != ModTypeEnum.save
                               ? mod.saveName
                               : '${mod.jsonFileName}\n${mod.saveName}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (mod.modType != ModTypeEnum.savedObject &&
+                  mod.isDownloadComplete)
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: CustomTooltip(
+                      waitDuration: const Duration(milliseconds: 300),
+                      message: completionMessage,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(4),
                           ),
+                          color: Colors.black.withAlpha(180),
+                        ),
+                        padding: const EdgeInsets.all(2),
+                        child: const Icon(
+                          Icons.check_circle,
+                          size: 22,
+                          color: Colors.green,
                         ),
                       ),
                     ),
@@ -191,8 +218,8 @@ class ModsGridCard extends HookConsumerWidget {
                                   fontWeight: FontWeight.w500,
                                   color:
                                       mod.existingAssetCount == mod.assetCount
-                                          ? Colors.green
-                                          : Colors.white,
+                                      ? Colors.green
+                                      : Colors.white,
                                 ),
                               ),
                             ),
@@ -200,7 +227,8 @@ class ModsGridCard extends HookConsumerWidget {
                                 AudioAssetVisibility.useGlobalSetting)
                               CustomTooltip(
                                 waitDuration: Duration(milliseconds: 300),
-                                message: mod.audioVisibility ==
+                                message:
+                                    mod.audioVisibility ==
                                         AudioAssetVisibility.alwaysShow
                                     ? 'Override: Show audio assets'
                                     : 'Override: hide audio assets',

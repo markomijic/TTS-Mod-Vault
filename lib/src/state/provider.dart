@@ -39,8 +39,10 @@ final logProvider = StateNotifierProvider<LogNotifier, List<LogEntry>>((ref) {
   return LogNotifier();
 });
 
-final filteredLogProvider =
-    Provider.family<List<LogEntry>, String>((ref, searchQuery) {
+final filteredLogProvider = Provider.family<List<LogEntry>, String>((
+  ref,
+  searchQuery,
+) {
   final logs = ref.watch(logProvider);
 
   if (searchQuery.isEmpty) {
@@ -105,8 +107,9 @@ final selectedModsListProvider = Provider<List<Mod>>((ref) {
 final modsSearchQueryProvider = StateProvider<String>((ref) => '');
 final backupsSearchQueryProvider = StateProvider<String>((ref) => '');
 
-final selectedModTypeProvider =
-    StateProvider<ModTypeEnum>((ref) => ModTypeEnum.mod);
+final selectedModTypeProvider = StateProvider<ModTypeEnum>(
+  (ref) => ModTypeEnum.mod,
+);
 
 final loadingMessageProvider = StateProvider<String>((ref) => 'Loading');
 
@@ -118,25 +121,26 @@ final backupCacheProvider = Provider((ref) => BackupCache());
 
 final directoriesProvider =
     StateNotifierProvider<DirectoriesNotifier, DirectoriesState>(
-  (ref) => DirectoriesNotifier(ref),
-);
+      (ref) => DirectoriesNotifier(ref),
+    );
 
 final existingAssetListsProvider =
     StateNotifierProvider<ExistingAssetsNotifier, ExistingAssetsListsState>(
-  (ref) => ExistingAssetsNotifier(ref),
-);
+      (ref) => ExistingAssetsNotifier(ref),
+    );
 
 final existingBackupsProvider =
     StateNotifierProvider<ExistingBackupsStateNotifier, ExistingBackupsState>(
-  (ref) => ExistingBackupsStateNotifier(ref),
-);
+      (ref) => ExistingBackupsStateNotifier(ref),
+    );
 
 final loaderProvider = Provider<LoaderNotifier>((ref) {
   return LoaderNotifier(ref);
 });
 
 final modsProvider = AsyncNotifierProvider<ModsStateNotifier, ModsState>(
-    () => ModsStateNotifier());
+  () => ModsStateNotifier(),
+);
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),
@@ -148,8 +152,8 @@ final cleanupProvider = StateNotifierProvider<CleanupNotifier, CleanUpState>(
 
 final deleteAssetsProvider =
     NotifierProvider<DeleteAssetsNotifier, DeleteAssetsState>(
-  () => DeleteAssetsNotifier(),
-);
+      () => DeleteAssetsNotifier(),
+    );
 
 final backupProvider = StateNotifierProvider<BackupNotifier, BackupState>(
   (ref) => BackupNotifier(ref),
@@ -157,8 +161,8 @@ final backupProvider = StateNotifierProvider<BackupNotifier, BackupState>(
 
 final importBackupProvider =
     StateNotifierProvider<ImportBackupNotifier, ImportBackupState>(
-  (ref) => ImportBackupNotifier(ref),
-);
+      (ref) => ImportBackupNotifier(ref),
+    );
 
 final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
   (ref) => SettingsNotifier(ref),
@@ -166,13 +170,13 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
 
 final bulkActionsProvider =
     StateNotifierProvider<BulkActionsNotifier, BulkActionsState>(
-  (ref) => BulkActionsNotifier(ref),
-);
+      (ref) => BulkActionsNotifier(ref),
+    );
 
 final sortAndFilterProvider =
     StateNotifierProvider<SortAndFilterNotifier, SortAndFilterState>(
-  (ref) => SortAndFilterNotifier(ref),
-);
+      (ref) => SortAndFilterNotifier(ref),
+    );
 
 final refreshingSharedAssetsProvider = StateProvider<bool>((ref) => false);
 
@@ -198,10 +202,11 @@ final actionInProgressProvider = Provider<bool>((ref) {
       refreshingSharedAssets;
 });
 
-final backupSortAndFilterProvider = StateNotifierProvider<
-    BackupSortAndFilterNotifier, BackupSortAndFilterState>(
-  (ref) => BackupSortAndFilterNotifier(ref),
-);
+final backupSortAndFilterProvider =
+    StateNotifierProvider<
+      BackupSortAndFilterNotifier,
+      BackupSortAndFilterState
+    >((ref) => BackupSortAndFilterNotifier(ref));
 
 final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
   final existingBackups = ref.watch(existingBackupsProvider);
@@ -215,18 +220,22 @@ final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
     }
 
     if (backupSortAndFilter.filteredBackupFolders.isNotEmpty &&
-        !backupSortAndFilter.filteredBackupFolders
-            .contains(bk.parentFolderName)) {
+        !backupSortAndFilter.filteredBackupFolders.contains(
+          bk.parentFolderName,
+        )) {
       return false;
     }
 
     if (backupSortAndFilter.filteredMatchStatuses.isNotEmpty) {
       final hasMatch = bk.matchingModFilepath != null;
-      final matchesStatus = (backupSortAndFilter.filteredMatchStatuses
-                  .contains(BackupMatchStatusEnum.hasMatchingMod) &&
+      final matchesStatus =
+          (backupSortAndFilter.filteredMatchStatuses.contains(
+                BackupMatchStatusEnum.hasMatchingMod,
+              ) &&
               hasMatch) ||
-          (backupSortAndFilter.filteredMatchStatuses
-                  .contains(BackupMatchStatusEnum.noMatchingMod) &&
+          (backupSortAndFilter.filteredMatchStatuses.contains(
+                BackupMatchStatusEnum.noMatchingMod,
+              ) &&
               !hasMatch);
       if (!matchesStatus) return false;
     }
@@ -236,21 +245,25 @@ final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
 
   switch (backupSortAndFilter.sortOption) {
     case BackupSortOptionEnum.nameAsc:
-      filtered.sort((a, b) =>
-          a.filename.toLowerCase().compareTo(b.filename.toLowerCase()));
+      filtered.sort(
+        (a, b) => a.filename.toLowerCase().compareTo(b.filename.toLowerCase()),
+      );
     case BackupSortOptionEnum.nameDesc:
-      filtered.sort((a, b) =>
-          b.filename.toLowerCase().compareTo(a.filename.toLowerCase()));
+      filtered.sort(
+        (a, b) => b.filename.toLowerCase().compareTo(a.filename.toLowerCase()),
+      );
     case BackupSortOptionEnum.sizeDesc:
       filtered.sort((a, b) => b.fileSize.compareTo(a.fileSize));
     case BackupSortOptionEnum.sizeAsc:
       filtered.sort((a, b) => a.fileSize.compareTo(b.fileSize));
     case BackupSortOptionEnum.dateDesc:
       filtered.sort(
-          (a, b) => b.lastModifiedTimestamp.compareTo(a.lastModifiedTimestamp));
+        (a, b) => b.lastModifiedTimestamp.compareTo(a.lastModifiedTimestamp),
+      );
     case BackupSortOptionEnum.dateAsc:
       filtered.sort(
-          (a, b) => a.lastModifiedTimestamp.compareTo(b.lastModifiedTimestamp));
+        (a, b) => a.lastModifiedTimestamp.compareTo(b.lastModifiedTimestamp),
+      );
   }
 
   return filtered;
@@ -259,8 +272,9 @@ final filteredBackupsProvider = Provider<List<ExistingBackup>>((ref) {
 final filteredModsProvider = Provider<List<Mod>>((ref) {
   final searchQuery = ref.watch(modsSearchQueryProvider);
   final sortAndFilter = ref.watch(sortAndFilterProvider);
-  final selectedBackupStatuses =
-      ref.watch(sortAndFilterProvider).filteredBackupStatuses;
+  final selectedBackupStatuses = ref
+      .watch(sortAndFilterProvider)
+      .filteredBackupStatuses;
   final selectedModType = ref.watch(selectedModTypeProvider);
   final modsState = ref.watch(modsProvider).unwrapPrevious().valueOrNull;
 
@@ -302,12 +316,13 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
 
     if (sortAndFilter.filteredAssets.isNotEmpty) {
       final filters = sortAndFilter.filteredAssets;
-      if (filters.contains(FilterAssetsEnum.complete) &&
-          mod.assetCount != mod.existingAssetCount) {
+      final downloadComplete = mod.modType == ModTypeEnum.savedObject
+          ? mod.missingAssetCount == 0
+          : mod.isDownloadComplete;
+      if (filters.contains(FilterAssetsEnum.complete) && !downloadComplete) {
         return false;
       }
-      if (filters.contains(FilterAssetsEnum.missing) &&
-          mod.missingAssetCount == 0) {
+      if (filters.contains(FilterAssetsEnum.missing) && downloadComplete) {
         return false;
       }
       if (filters.contains(FilterAssetsEnum.audio) && !mod.hasAudioAssets) {
@@ -337,20 +352,24 @@ final filteredModsProvider = Provider<List<Mod>>((ref) {
   // Sort mods
   switch (sortAndFilter.sortOption) {
     case SortOptionEnum.alphabeticalAsc:
-      filteredMods.sort((a, b) =>
-          a.saveName.toLowerCase().compareTo(b.saveName.toLowerCase()));
+      filteredMods.sort(
+        (a, b) => a.saveName.toLowerCase().compareTo(b.saveName.toLowerCase()),
+      );
       break;
     case SortOptionEnum.dateCreatedDesc:
-      filteredMods
-          .sort((a, b) => b.createdAtTimestamp.compareTo(a.createdAtTimestamp));
+      filteredMods.sort(
+        (a, b) => b.createdAtTimestamp.compareTo(a.createdAtTimestamp),
+      );
       break;
     case SortOptionEnum.missingAssets:
-      filteredMods
-          .sort((a, b) => (b.missingAssetCount).compareTo(a.missingAssetCount));
+      filteredMods.sort(
+        (a, b) => (b.missingAssetCount).compareTo(a.missingAssetCount),
+      );
       break;
     case SortOptionEnum.lastModifiedDesc:
-      filteredMods.sort((a, b) =>
-          (b.lastModifiedTimestamp).compareTo(a.lastModifiedTimestamp));
+      filteredMods.sort(
+        (a, b) => (b.lastModifiedTimestamp).compareTo(a.lastModifiedTimestamp),
+      );
       break;
   }
 

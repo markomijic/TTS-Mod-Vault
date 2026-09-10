@@ -13,11 +13,7 @@ enum ModTypeEnum {
   const ModTypeEnum(this.label);
 }
 
-enum AudioAssetVisibility {
-  useGlobalSetting,
-  alwaysShow,
-  alwaysHide,
-}
+enum AudioAssetVisibility { useGlobalSetting, alwaysShow, alwaysHide }
 
 class Mod {
   final ModTypeEnum modType;
@@ -89,6 +85,26 @@ class Mod {
   }
 
   int get missingAssetCount => assetCount - existingAssetCount;
+
+  int get missingInvalidAssetCount {
+    if (invalidUrls == null) return 0;
+    final invalid = invalidUrls!.toSet();
+    return getAllAssets()
+        .where((asset) => !asset.fileExists && invalid.contains(asset.url))
+        .map((asset) => asset.url)
+        .toSet()
+        .length;
+  }
+
+  bool get isDownloadComplete {
+    if (missingAssetCount <= 0) return true;
+    if (invalidUrls == null) return false;
+
+    final invalid = invalidUrls!.toSet();
+    return getAllAssets()
+        .where((asset) => !asset.fileExists)
+        .every((asset) => invalid.contains(asset.url));
+  }
 
   List<Asset> getAllAssets() {
     return [

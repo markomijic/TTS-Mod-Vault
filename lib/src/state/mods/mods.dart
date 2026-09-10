@@ -112,27 +112,37 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       final workshopDir = ref.read(directoriesProvider).workshopDir.toString();
       final savesDir = ref.read(directoriesProvider).savesDir.toString();
-      final savedObjectsDir =
-          ref.read(directoriesProvider).savedObjectsDir.toString();
+      final savedObjectsDir = ref
+          .read(directoriesProvider)
+          .savedObjectsDir
+          .toString();
       final ignoredSubfolders = ref.read(settingsProvider).ignoredSubfolders;
 
       final jsonPathsFutures = [
-        Isolate.run(() => getJsonFilesInDirectory(
-              directoryPath: workshopDir,
-              ignoredSubfolders: ignoredSubfolders,
-            )),
-        Isolate.run(() => getJsonFilesInDirectory(
-              directoryPath: savesDir,
-              ignoredSubfolders: ["Saved Objects", ...ignoredSubfolders],
-            )),
+        Isolate.run(
+          () => getJsonFilesInDirectory(
+            directoryPath: workshopDir,
+            ignoredSubfolders: ignoredSubfolders,
+          ),
+        ),
+        Isolate.run(
+          () => getJsonFilesInDirectory(
+            directoryPath: savesDir,
+            ignoredSubfolders: ["Saved Objects", ...ignoredSubfolders],
+          ),
+        ),
       ];
 
       final showSavedObjects = ref.read(settingsProvider).showSavedObjects;
       if (showSavedObjects) {
-        jsonPathsFutures.add(Isolate.run(() => getJsonFilesInDirectory(
+        jsonPathsFutures.add(
+          Isolate.run(
+            () => getJsonFilesInDirectory(
               directoryPath: savedObjectsDir,
               ignoredSubfolders: ignoredSubfolders,
-            )));
+            ),
+          ),
+        );
       }
 
       final jsonPaths = await Future.wait(jsonPathsFutures);
@@ -156,11 +166,16 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       // Prepare cached data for all mods using bulk reads
       debugPrint('Loading cached data from storage');
-      final allCachedDateTimeStamps =
-          ref.read(storageProvider).getAllModDateTimeStamps();
+      final allCachedDateTimeStamps = ref
+          .read(storageProvider)
+          .getAllModDateTimeStamps();
       final allCachedUrls = ref.read(storageProvider).getAllModUrls();
-      final allAudioPreferences =
-          ref.read(storageProvider).getAllModAudioPreferences();
+      final allAudioPreferences = ref
+          .read(storageProvider)
+          .getAllModAudioPreferences();
+      final allInvalidUrlResults = ref
+          .read(storageProvider)
+          .getAllModInvalidUrlResults();
 
       // Filter to only the mods we need
       final Map<String, String?> cachedDateTimeStamps = {};
@@ -173,58 +188,71 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         cachedUrls[mod.jsonFileName] = allCachedUrls[mod.jsonFileName];
         audioPreferences[mod.jsonFileName] =
             allAudioPreferences[mod.jsonFileName] ??
-                AudioAssetVisibility.useGlobalSetting;
+            AudioAssetVisibility.useGlobalSetting;
       }
 
       // Create adaptive batches based on file sizes
       debugPrint('loadModsData - creating adaptive batches, ${DateTime.now()}');
-      final List<List<InitialMod>> adaptiveBatches =
-          await Isolate.run(() => createAdaptiveBatchesInIsolate(initialMods));
+      final List<List<InitialMod>> adaptiveBatches = await Isolate.run(
+        () => createAdaptiveBatchesInIsolate(initialMods),
+      );
       debugPrint(
-          'loadModsData - created ${adaptiveBatches.length} adaptive batches');
+        'loadModsData - created ${adaptiveBatches.length} adaptive batches',
+      );
 
       // Distribute batches across isolates
       final numberOfIsolates = max(Platform.numberOfProcessors - 2, 2);
       debugPrint(
-          'Using $numberOfIsolates isolates for ${adaptiveBatches.length} batches');
+        'Using $numberOfIsolates isolates for ${adaptiveBatches.length} batches',
+      );
 
-      final batchesPerIsolate =
-          _distributeBatchesAcrossIsolates(adaptiveBatches, numberOfIsolates);
+      final batchesPerIsolate = _distributeBatchesAcrossIsolates(
+        adaptiveBatches,
+        numberOfIsolates,
+      );
       debugPrint('Batch distribution:');
       for (int i = 0; i < batchesPerIsolate.length; i++) {
         final totalMods = batchesPerIsolate[i].expand((batch) => batch).length;
         debugPrint(
-            '  Isolate $i: ${batchesPerIsolate[i].length} batches, $totalMods mods');
+          '  Isolate $i: ${batchesPerIsolate[i].length} batches, $totalMods mods',
+        );
       }
 
       // Create work data for each isolate
       final ignoreAudio = ref.read(settingsProvider).ignoreAudioAssets;
       final existingAssets = ref.read(existingAssetListsProvider);
 
-      final List<IsolateWorkData> isolateWorkData =
-          batchesPerIsolate.map((batches) {
+      final List<IsolateWorkData> isolateWorkData = batchesPerIsolate.map((
+        batches,
+      ) {
         // Get all mods for this isolate to prepare relevant cached data
         final allModsForIsolate = batches.expand((batch) => batch).toList();
 
         return IsolateWorkData(
           batches: batches,
-          cachedDateTimeStamps:
-              Map.fromEntries(allModsForIsolate.map((mod) => MapEntry(
-                    mod.jsonFileName,
-                    cachedDateTimeStamps[mod.jsonFileName],
-                  ))),
-          cachedAssetLists:
-              Map.fromEntries(allModsForIsolate.map((mod) => MapEntry(
-                    mod.jsonFileName,
-                    cachedUrls[mod.jsonFileName],
-                  ))),
+          cachedDateTimeStamps: Map.fromEntries(
+            allModsForIsolate.map(
+              (mod) => MapEntry(
+                mod.jsonFileName,
+                cachedDateTimeStamps[mod.jsonFileName],
+              ),
+            ),
+          ),
+          cachedAssetLists: Map.fromEntries(
+            allModsForIsolate.map(
+              (mod) => MapEntry(mod.jsonFileName, cachedUrls[mod.jsonFileName]),
+            ),
+          ),
           ignoreAudioAssets: ignoreAudio,
-          modAudioPreferences:
-              Map.fromEntries(allModsForIsolate.map((mod) => MapEntry(
-                    mod.jsonFileName,
-                    audioPreferences[mod.jsonFileName] ??
-                        AudioAssetVisibility.useGlobalSetting,
-                  ))),
+          modAudioPreferences: Map.fromEntries(
+            allModsForIsolate.map(
+              (mod) => MapEntry(
+                mod.jsonFileName,
+                audioPreferences[mod.jsonFileName] ??
+                    AudioAssetVisibility.useGlobalSetting,
+              ),
+            ),
+          ),
           // Pass asset maps for O(1) existence checks in isolate
           existingAssetBundles: existingAssets.assetBundles,
           existingAudio: existingAssets.audio,
@@ -242,13 +270,16 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       final List<IsolateWorkResult> allResults = await Future.wait(
         isolateWorkData
-            .map((workData) =>
-                Isolate.run(() => processMultipleBatchesInIsolate(workData)))
+            .map(
+              (workData) =>
+                  Isolate.run(() => processMultipleBatchesInIsolate(workData)),
+            )
             .toList(),
       );
 
       debugPrint(
-          'All isolates completed at ${DateTime.now()}. Processing results...');
+        'All isolates completed at ${DateTime.now()}. Processing results...',
+      );
 
       final List<Mod> allProcessedMods = [];
       final List<ModStorageUpdate> allStorageUpdates = [];
@@ -287,6 +318,14 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final savedObjects = <Mod>[];
 
       for (final mod in allProcessedMods) {
+        final cachedInvalidResult = allInvalidUrlResults[mod.jsonFileName];
+        final cachedInvalidUrls =
+            cachedInvalidResult != null &&
+                cachedInvalidResult.lastModifiedTimestamp ==
+                    mod.lastModifiedTimestamp
+            ? cachedInvalidResult.invalidUrls
+            : null;
+
         // Apply audio preference to mod
         final modWithPreference = Mod(
           modType: mod.modType,
@@ -306,6 +345,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           hasAudioAssets: mod.hasAudioAssets,
           audioVisibility:
               audioPreferences[mod.jsonFileName] ?? mod.audioVisibility,
+          invalidUrls: cachedInvalidUrls,
         );
 
         switch (modWithPreference.modType) {
@@ -335,18 +375,17 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         await Future.delayed(remainingTime);
       }
 
-      state = AsyncValue.data(ModsState(
-        mods: mods,
-        saves: saves,
-        savedObjects: savedObjects,
-      ));
+      state = AsyncValue.data(
+        ModsState(mods: mods, saves: saves, savedObjects: savedObjects),
+      );
 
       final multiMods = ref.read(multiModsProvider);
 
       // If there was previously one mod selected - check if it still exists
       if (multiMods.length == 1) {
-        final mod = allProcessedMods
-            .firstWhereOrNull((m) => m.jsonFilePath == multiMods.first);
+        final mod = allProcessedMods.firstWhereOrNull(
+          (m) => m.jsonFilePath == multiMods.first,
+        );
 
         if (mod == null) {
           resetSelectedMod();
@@ -388,7 +427,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final totalChunks = (allPathsLength / chunkSize).ceil();
 
     debugPrint(
-        'getInitialMods - Processing $allPathsLength files in $totalChunks chunks using $numberOfIsolates isolates');
+      'getInitialMods - Processing $allPathsLength files in $totalChunks chunks using $numberOfIsolates isolates',
+    );
 
     // Process files in chunks across multiple isolates
     List<Future<List<InitialMod>>> futures = [];
@@ -402,8 +442,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           modType: paths.$1,
         );
 
-        futures
-            .add(Isolate.run(() => processInitialModsInIsolate(isolateData)));
+        futures.add(
+          Isolate.run(() => processInitialModsInIsolate(isolateData)),
+        );
 
         // Limit concurrent isolates to prevent overwhelming the system
         if (futures.length >= numberOfIsolates) {
@@ -430,7 +471,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
   /// Distributes batches evenly across the specified number of isolates
   List<List<List<InitialMod>>> _distributeBatchesAcrossIsolates(
-      List<List<InitialMod>> batches, int numberOfIsolates) {
+    List<List<InitialMod>> batches,
+    int numberOfIsolates,
+  ) {
     final List<List<List<InitialMod>>> batchesPerIsolate = [];
 
     // Initialize empty lists for each isolate
@@ -442,9 +485,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     final remainder = batches.length % numberOfIsolates;
 
     int batchIndex = 0;
-    for (int isolateIndex = 0;
-        isolateIndex < numberOfIsolates;
-        isolateIndex++) {
+    for (
+      int isolateIndex = 0;
+      isolateIndex < numberOfIsolates;
+      isolateIndex++
+    ) {
       final batchesForThisIsolate =
           baseBatchesPerIsolate + (isolateIndex < remainder ? 1 : 0);
 
@@ -459,8 +504,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     return batchesPerIsolate.where((batches) => batches.isNotEmpty).toList();
   }
 
-  Future<Map<String, String>> getUrlsByMod(Mod mod,
-      [bool forceExtraction = false]) async {
+  Future<Map<String, String>> getUrlsByMod(
+    Mod mod, [
+    bool forceExtraction = false,
+  ]) async {
     if (forceExtraction) {
       return await extractUrlsFromJson(mod.jsonFilePath);
     }
@@ -488,7 +535,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
       final urls =
           ref.read(storageProvider).getModUrls(selectedMod.jsonFileName) ??
-              await extractUrlsFromJson(selectedMod.jsonFilePath);
+          await extractUrlsFromJson(selectedMod.jsonFilePath);
 
       final updatedMod = await getCompleteMod(selectedMod, urls);
 
@@ -503,8 +550,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           state = AsyncValue.data(state.value!.copyWith(saves: updatedList));
           break;
         case ModTypeEnum.savedObject:
-          state =
-              AsyncValue.data(state.value!.copyWith(savedObjects: updatedList));
+          state = AsyncValue.data(
+            state.value!.copyWith(savedObjects: updatedList),
+          );
           break;
       }
 
@@ -545,8 +593,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           state = AsyncValue.data(state.value!.copyWith(saves: updatedList));
           break;
         case ModTypeEnum.savedObject:
-          state =
-              AsyncValue.data(state.value!.copyWith(savedObjects: updatedList));
+          state = AsyncValue.data(
+            state.value!.copyWith(savedObjects: updatedList),
+          );
           break;
       }
     } catch (e, stack) {
@@ -562,10 +611,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       if (!state.hasValue) return;
 
       final initialMod = await Isolate.run(
-          () => processInitialModsInIsolate(InitialModsIsolateData(
-                jsonsPaths: [p.normalize(jsonFilePath)],
-                modType: modType,
-              )));
+        () => processInitialModsInIsolate(
+          InitialModsIsolateData(
+            jsonsPaths: [p.normalize(jsonFilePath)],
+            modType: modType,
+          ),
+        ),
+      );
 
       if (initialMod.isEmpty) {
         debugPrint('addSingleMod - failed to create initial mod');
@@ -579,7 +631,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       final tempMod = Mod.fromInitial(
         newMod,
         assetLists: AssetLists(
-            assetBundles: [], audio: [], images: [], models: [], pdf: []),
+          assetBundles: [],
+          audio: [],
+          images: [],
+          models: [],
+          pdf: [],
+        ),
         assetCount: 0,
         existingAssetCount: 0,
         missingAssetCount: 0,
@@ -609,7 +666,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       switch (modType) {
         case ModTypeEnum.mod:
           final existingIndex = currentState.mods.indexWhere(
-              (mod) => p.normalize(mod.jsonFilePath) == normalizedPath);
+            (mod) => p.normalize(mod.jsonFilePath) == normalizedPath,
+          );
           final updatedList = existingIndex >= 0
               ? [
                   ...currentState.mods.sublist(0, existingIndex),
@@ -624,7 +682,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           break;
         case ModTypeEnum.save:
           final existingIndex = currentState.saves.indexWhere(
-              (mod) => p.normalize(mod.jsonFilePath) == normalizedPath);
+            (mod) => p.normalize(mod.jsonFilePath) == normalizedPath,
+          );
           final updatedList = existingIndex >= 0
               ? [
                   ...currentState.saves.sublist(0, existingIndex),
@@ -639,7 +698,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           break;
         case ModTypeEnum.savedObject:
           final existingIndex = currentState.savedObjects.indexWhere(
-              (mod) => p.normalize(mod.jsonFilePath) == normalizedPath);
+            (mod) => p.normalize(mod.jsonFilePath) == normalizedPath,
+          );
           final updatedList = existingIndex >= 0
               ? [
                   ...currentState.savedObjects.sublist(0, existingIndex),
@@ -647,8 +707,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
                   ...currentState.savedObjects.sublist(existingIndex + 1),
                 ]
               : [...currentState.savedObjects, completeMod];
-          state =
-              AsyncValue.data(currentState.copyWith(savedObjects: updatedList));
+          state = AsyncValue.data(
+            currentState.copyWith(savedObjects: updatedList),
+          );
           ref
               .read(sortAndFilterProvider.notifier)
               .addSavedObjectFolder(completeMod.parentFolderName);
@@ -718,8 +779,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
   Mod _getModWithBackup(Mod mod) {
     try {
-      final backup =
-          ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
+      final backup = ref
+          .read(existingBackupsProvider.notifier)
+          .getBackupByMod(mod);
 
       return Mod(
         modType: mod.modType,
@@ -754,8 +816,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     Map<String, String> jsonURLs, {
     bool refreshLastModified = false,
   }) async {
-    ExistingBackup? backup =
-        ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
+    ExistingBackup? backup = ref
+        .read(existingBackupsProvider.notifier)
+        .getBackupByMod(mod);
 
     final assetLists = _getAssetListsFromUrls(jsonURLs, mod);
 
@@ -787,6 +850,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       existingAssetCount: assetLists.$3,
       hasAudioAssets: assetLists.$4,
       audioVisibility: mod.audioVisibility,
+      invalidUrls: refreshLastModified ? null : mod.invalidUrls,
     );
   }
 
@@ -837,7 +901,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       // 2. Find affected mods in isolate
       final affectedModJsonFileNames = await Isolate.run(
         () => _findAffectedModsStatic(
-            allModUrls, affectedFilenames, excludeJsonFileName),
+          allModUrls,
+          affectedFilenames,
+          excludeJsonFileName,
+        ),
       );
 
       if (affectedModJsonFileNames.isEmpty) return;
@@ -868,29 +935,31 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         final recomputed = recomputedMap[mod.jsonFileName];
         if (recomputed == null) continue;
 
-        updatedMods.add(Mod(
-          modType: mod.modType,
-          jsonFilePath: mod.jsonFilePath,
-          jsonFileName: mod.jsonFileName,
-          parentFolderName: mod.parentFolderName,
-          saveName: mod.saveName,
-          createdAtTimestamp: mod.createdAtTimestamp,
-          lastModifiedTimestamp: mod.lastModifiedTimestamp,
-          dateTimeStamp: mod.dateTimeStamp,
-          imageFilePath: mod.imageFilePath,
-          backup: mod.backup,
-          backupStatus: getModBackupStatus(
-            mod.backup,
-            mod.dateTimeStamp,
-            recomputed.$3,
+        updatedMods.add(
+          Mod(
+            modType: mod.modType,
+            jsonFilePath: mod.jsonFilePath,
+            jsonFileName: mod.jsonFileName,
+            parentFolderName: mod.parentFolderName,
+            saveName: mod.saveName,
+            createdAtTimestamp: mod.createdAtTimestamp,
+            lastModifiedTimestamp: mod.lastModifiedTimestamp,
+            dateTimeStamp: mod.dateTimeStamp,
+            imageFilePath: mod.imageFilePath,
+            backup: mod.backup,
+            backupStatus: getModBackupStatus(
+              mod.backup,
+              mod.dateTimeStamp,
+              recomputed.$3,
+            ),
+            audioVisibility: mod.audioVisibility,
+            assetLists: recomputed.$1,
+            assetCount: recomputed.$2,
+            existingAssetCount: recomputed.$3,
+            hasAudioAssets: recomputed.$4,
+            invalidUrls: mod.invalidUrls,
           ),
-          audioVisibility: mod.audioVisibility,
-          assetLists: recomputed.$1,
-          assetCount: recomputed.$2,
-          existingAssetCount: recomputed.$3,
-          hasAudioAssets: recomputed.$4,
-          invalidUrls: mod.invalidUrls,
-        ));
+        );
       }
 
       updateModsBatch(updatedMods);
@@ -928,7 +997,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
   /// Recomputes asset lists for affected mods. Runs in an isolate.
   static List<(String, AssetLists, int, int, bool)>
-      _recomputeAffectedModAssetsStatic({
+  _recomputeAffectedModAssetsStatic({
     required Set<String> affectedModJsonFileNames,
     required Map<String, Map<String, String>?> allModUrls,
     required Map<String, String> assetBundles,
@@ -962,7 +1031,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         assetData.$1,
         assetData.$2,
         assetData.$3,
-        assetData.$4
+        assetData.$4,
       ));
     }
 
@@ -1010,11 +1079,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       if (newSaves != null) applyToList(newSaves);
       if (newSavedObjects != null) applyToList(newSavedObjects);
 
-      state = AsyncValue.data(state.value!.copyWith(
-        mods: newMods,
-        saves: newSaves,
-        savedObjects: newSavedObjects,
-      ));
+      state = AsyncValue.data(
+        state.value!.copyWith(
+          mods: newMods,
+          saves: newSaves,
+          savedObjects: newSavedObjects,
+        ),
+      );
     } catch (e, stack) {
       debugPrint('updateModsBatch error: $e');
       state = AsyncValue.error(e, stack);
@@ -1022,8 +1093,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
   }
 
   Future<Mod> updateModBackup(Mod mod) async {
-    ExistingBackup? backup =
-        ref.read(existingBackupsProvider.notifier).getBackupByMod(mod);
+    ExistingBackup? backup = ref
+        .read(existingBackupsProvider.notifier)
+        .getBackupByMod(mod);
 
     // Creating new Mod object because copyWith returns previous backup value if new one is null
     final updatedMod = Mod(
@@ -1055,7 +1127,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     return updatedMod;
   }
 
-  void updateModInvalidUrls(Mod mod, List<String> invalidUrls) {
+  Future<void> updateModInvalidUrls(Mod mod, List<String> invalidUrls) async {
     final updatedMod = Mod(
       modType: mod.modType,
       jsonFilePath: mod.jsonFilePath,
@@ -1076,6 +1148,13 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       invalidUrls: invalidUrls,
     );
     updateMod(updatedMod);
+    await ref
+        .read(storageProvider)
+        .saveModInvalidUrls(
+          mod.jsonFileName,
+          mod.lastModifiedTimestamp,
+          invalidUrls,
+        );
   }
 
   /// Re-processes a single mod's assets with updated audio preference
@@ -1084,7 +1163,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       if (!state.hasValue) return;
 
       // Get URLs from storage or extract fresh
-      final urls = ref.read(storageProvider).getModUrls(mod.jsonFileName) ??
+      final urls =
+          ref.read(storageProvider).getModUrls(mod.jsonFileName) ??
           await extractUrlsFromJson(mod.jsonFilePath);
 
       // Rebuild asset lists with current preference
@@ -1262,8 +1342,9 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           final updatedList = currentState.savedObjects
               .where((m) => p.normalize(m.jsonFilePath) != normalizedPath)
               .toList();
-          state =
-              AsyncValue.data(currentState.copyWith(savedObjects: updatedList));
+          state = AsyncValue.data(
+            currentState.copyWith(savedObjects: updatedList),
+          );
           break;
       }
 
@@ -1287,7 +1368,10 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       await _replaceUrlInJsonFile(
-          selectedMod.jsonFilePath, oldAsset.url, newAssetUrl);
+        selectedMod.jsonFilePath,
+        oldAsset.url,
+        newAssetUrl,
+      );
 
       if (renameFile && oldAsset.filePath != null) {
         await renameAssetFile(oldAsset.filePath!, newAssetUrl);
@@ -1297,8 +1381,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       }
 
       final jsonURLs = await getUrlsByMod(selectedMod, true);
-      final completeMod = await getCompleteMod(selectedMod, jsonURLs,
-          refreshLastModified: true);
+      final completeMod = await getCompleteMod(
+        selectedMod,
+        jsonURLs,
+        refreshLastModified: true,
+      );
 
       await ref
           .read(storageProvider)
@@ -1337,7 +1424,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
       if (renameBackup && mod.backup != null) {
         final usedForce =
             mod.backup!.filename == getBackupFilenameByMod(mod, true) &&
-                mod.backup!.filename != getBackupFilenameByMod(mod, false);
+            mod.backup!.filename != getBackupFilenameByMod(mod, false);
 
         final newBackupFilename = getBackupFilename(
           saveName: trimmedName,
@@ -1365,8 +1452,7 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
         parentFolderName: mod.parentFolderName,
         saveName: trimmedName,
         createdAtTimestamp: mod.createdAtTimestamp,
-        lastModifiedTimestamp:
-            fileStat.modified.microsecondsSinceEpoch ~/ 1000,
+        lastModifiedTimestamp: fileStat.modified.microsecondsSinceEpoch ~/ 1000,
         dateTimeStamp: mod.dateTimeStamp,
         imageFilePath: mod.imageFilePath,
         backup: updatedBackup,
@@ -1400,11 +1486,12 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
 
     final targetUrl =
         oldUrlAsCloudUrl.isNotEmpty && jsonString.contains(oldUrlAsCloudUrl)
-            ? oldUrlAsCloudUrl
-            : oldUrl;
+        ? oldUrlAsCloudUrl
+        : oldUrl;
 
-    await File(filePath)
-        .writeAsString(jsonString.replaceAll(targetUrl, newUrl));
+    await File(
+      filePath,
+    ).writeAsString(jsonString.replaceAll(targetUrl, newUrl));
   }
 
   Future<void> updateUrlPrefixes(
@@ -1414,7 +1501,8 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
     bool renameFile,
   ) async {
     final assets = Map.fromEntries(
-        mod.getAllAssets().map((a) => MapEntry(a.url, a.filePath)));
+      mod.getAllAssets().map((a) => MapEntry(a.url, a.filePath)),
+    );
     final modJsonFilePath = mod.jsonFilePath;
 
     final result = await compute(
@@ -1434,8 +1522,11 @@ class ModsStateNotifier extends AsyncNotifier<ModsState> {
           .loadExistingAssetsLists();
 
       final jsonURLs = extractUrlsFromJsonString(result.jsonString);
-      final completeMod =
-          await getCompleteMod(mod, jsonURLs, refreshLastModified: true);
+      final completeMod = await getCompleteMod(
+        mod,
+        jsonURLs,
+        refreshLastModified: true,
+      );
 
       await ref.read(storageProvider).updateModUrls(mod.jsonFileName, jsonURLs);
 

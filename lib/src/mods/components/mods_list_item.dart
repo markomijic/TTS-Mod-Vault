@@ -59,144 +59,175 @@ class ModsListItem extends HookConsumerWidget {
       [mod.backupStatus],
     );
 
+    final completionMessage = mod.missingInvalidAssetCount > 0
+        ? 'All available assets downloaded\n${mod.missingInvalidAssetCount} invalid resource URL(s)'
+        : 'All assets downloaded';
+
     return Listener(
-        onPointerDown: (event) {
-          if (ref.read(actionInProgressProvider)) {
-            return;
-          }
+      onPointerDown: (event) {
+        if (ref.read(actionInProgressProvider)) {
+          return;
+        }
 
-          final isCtrlPressed = event.kind == PointerDeviceKind.mouse &&
-              (event.buttons == kPrimaryButton) &&
-              (HardwareKeyboard.instance.isControlPressed ||
-                  HardwareKeyboard.instance.isMetaPressed);
+        final isCtrlPressed =
+            event.kind == PointerDeviceKind.mouse &&
+            (event.buttons == kPrimaryButton) &&
+            (HardwareKeyboard.instance.isControlPressed ||
+                HardwareKeyboard.instance.isMetaPressed);
 
-          if (event.buttons == kSecondaryButton) {
-            // Right-click
-            ref.read(modsProvider.notifier).setSelectedMod(mod);
-            showModContextMenu(context, ref, event.position, mod);
-          } else if (event.buttons == kPrimaryButton) {
-            // Left-click
-            if (isCtrlPressed) {
-              // Ctrl+Click: Toggle multi-selection
-              final currentSelected = ref.read(multiModsProvider);
-              final newSelected = Set<String>.from(currentSelected);
+        if (event.buttons == kSecondaryButton) {
+          // Right-click
+          ref.read(modsProvider.notifier).setSelectedMod(mod);
+          showModContextMenu(context, ref, event.position, mod);
+        } else if (event.buttons == kPrimaryButton) {
+          // Left-click
+          if (isCtrlPressed) {
+            // Ctrl+Click: Toggle multi-selection
+            final currentSelected = ref.read(multiModsProvider);
+            final newSelected = Set<String>.from(currentSelected);
 
-              if (newSelected.contains(mod.jsonFilePath)) {
-                newSelected.remove(mod.jsonFilePath);
-              } else {
-                newSelected.add(mod.jsonFilePath);
-              }
-
-              ref.read(multiModsProvider.notifier).state = newSelected;
+            if (newSelected.contains(mod.jsonFilePath)) {
+              newSelected.remove(mod.jsonFilePath);
             } else {
-              // Normal left-click: Single selection
-              ref.read(modsProvider.notifier).setSelectedMod(mod);
+              newSelected.add(mod.jsonFilePath);
             }
+
+            ref.read(multiModsProvider.notifier).state = newSelected;
+          } else {
+            // Normal left-click: Single selection
+            ref.read(modsProvider.notifier).setSelectedMod(mod);
           }
-        },
-        child: Card(
-          margin: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          color: Colors.grey[850],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(
-              color: isSelected ? Colors.white : Colors.transparent,
-              width: 2,
-            ),
+        }
+      },
+      child: Card(
+        margin: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        color: Colors.grey[850],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: 2,
           ),
-          child: Row(
-            spacing: 8,
-            children: [
-              if (imageExists)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.file(
-                    File(mod.imageFilePath!),
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.fitHeight,
-                    cacheHeight: 64,
-                    cacheWidth: 64,
-                  ),
-                )
-              else
-                Container(
-                  color: Colors.grey,
-                  width: 64,
-                  height: 64,
-                  child: Icon(Icons.image, size: 64),
-                ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      mod.modType != ModTypeEnum.save
-                          ? (mod.saveName.isNotEmpty
-                              ? mod.saveName
-                              : mod.jsonFileName)
-                          : "${mod.saveName} - ${mod.jsonFileName}",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: 4,
-                      children: [
-                        CustomTooltip(
-                          waitDuration: Duration(milliseconds: 300),
-                          message: filesMessage,
-                          child: Text(
-                            "${mod.existingAssetCount}/${mod.assetCount}",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: mod.existingAssetCount == mod.assetCount
-                                  ? Colors.green
-                                  : Colors.white,
+        ),
+        child: Row(
+          spacing: 8,
+          children: [
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: imageExists
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.file(
+                              File(mod.imageFilePath!),
+                              fit: BoxFit.fitHeight,
+                              cacheHeight: 64,
+                              cacheWidth: 64,
                             ),
+                          )
+                        : Container(
+                            color: Colors.grey,
+                            child: const Icon(Icons.image, size: 64),
+                          ),
+                  ),
+                  if (mod.modType != ModTypeEnum.savedObject &&
+                      mod.isDownloadComplete)
+                    Positioned(
+                      left: 3,
+                      top: 3,
+                      child: CustomTooltip(
+                        waitDuration: const Duration(milliseconds: 300),
+                        message: completionMessage,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: Colors.black.withAlpha(180),
+                          ),
+                          padding: const EdgeInsets.all(1),
+                          child: const Icon(
+                            Icons.check_circle,
+                            size: 20,
+                            color: Colors.green,
                           ),
                         ),
-                        if (mod.audioVisibility !=
-                            AudioAssetVisibility.useGlobalSetting)
-                          CustomTooltip(
-                            waitDuration: Duration(milliseconds: 300),
-                            message: mod.audioVisibility ==
-                                    AudioAssetVisibility.alwaysShow
-                                ? 'Override: Show audio assets'
-                                : 'Override: hide audio assets',
-                            child: Icon(
-                              mod.audioVisibility ==
-                                      AudioAssetVisibility.alwaysShow
-                                  ? Icons.volume_up
-                                  : Icons.volume_off,
-                              size: 28,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        if (mod.backup != null && showBackupState)
-                          CustomTooltip(
-                            waitDuration: Duration(milliseconds: 300),
-                            message:
-                                'Update: ${formatTimestamp(mod.dateTimeStamp) ?? 'N/A'}\n'
-                                'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}'
-                                '${mod.backupStatus == ExistingBackupStatusEnum.upToDate ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.existingAssetCount}'}',
-                            child: Icon(
-                              Icons.folder_zip_outlined,
-                              size: 28,
-                              color: backupStatusColor,
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
-                  ],
-                ),
+                ],
               ),
-            ],
-          ),
-        ));
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    mod.modType != ModTypeEnum.save
+                        ? (mod.saveName.isNotEmpty
+                              ? mod.saveName
+                              : mod.jsonFileName)
+                        : "${mod.saveName} - ${mod.jsonFileName}",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 4,
+                    children: [
+                      CustomTooltip(
+                        waitDuration: Duration(milliseconds: 300),
+                        message: filesMessage,
+                        child: Text(
+                          "${mod.existingAssetCount}/${mod.assetCount}",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                            color: mod.existingAssetCount == mod.assetCount
+                                ? Colors.green
+                                : Colors.white,
+                          ),
+                        ),
+                      ),
+                      if (mod.audioVisibility !=
+                          AudioAssetVisibility.useGlobalSetting)
+                        CustomTooltip(
+                          waitDuration: Duration(milliseconds: 300),
+                          message:
+                              mod.audioVisibility ==
+                                  AudioAssetVisibility.alwaysShow
+                              ? 'Override: Show audio assets'
+                              : 'Override: hide audio assets',
+                          child: Icon(
+                            mod.audioVisibility ==
+                                    AudioAssetVisibility.alwaysShow
+                                ? Icons.volume_up
+                                : Icons.volume_off,
+                            size: 28,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      if (mod.backup != null && showBackupState)
+                        CustomTooltip(
+                          waitDuration: Duration(milliseconds: 300),
+                          message:
+                              'Update: ${formatTimestamp(mod.dateTimeStamp) ?? 'N/A'}\n'
+                              'Backup: ${formatTimestamp(mod.backup!.lastModifiedTimestamp.toString())}'
+                              '${mod.backupStatus == ExistingBackupStatusEnum.upToDate ? '' : '\n\nBackup asset files count: ${mod.backup!.totalAssetCount}\nExisting asset files count: ${mod.existingAssetCount}'}',
+                          child: Icon(
+                            Icons.folder_zip_outlined,
+                            size: 28,
+                            color: backupStatusColor,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

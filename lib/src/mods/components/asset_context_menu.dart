@@ -8,6 +8,8 @@ import 'package:tts_mod_vault/src/mods/components/replace_url_dialog.dart'
     show showReplaceUrlDialog;
 import 'package:tts_mod_vault/src/mods/components/shared_asset_helpers.dart'
     show buildSharedAssetSummary, showSharedAssetDialog;
+import 'package:tts_mod_vault/src/mods/components/download_validation_dialog.dart'
+    show showDownloadValidationResultsDialog;
 import 'package:tts_mod_vault/src/mods/enums/context_menu_action_enum.dart'
     show ContextMenuActionEnum;
 import 'package:tts_mod_vault/src/state/asset/models/asset_model.dart'
@@ -57,16 +59,16 @@ void showAssetContextMenu(
     ),
     items: [
       if (asset.fileExists &&
-          [AssetTypeEnum.audio, AssetTypeEnum.image, AssetTypeEnum.pdf]
-              .contains(type))
+          [
+            AssetTypeEnum.audio,
+            AssetTypeEnum.image,
+            AssetTypeEnum.pdf,
+          ].contains(type))
         ClickablePopupMenuItem(
           value: ContextMenuActionEnum.openFile,
           child: Row(
             spacing: 8,
-            children: [
-              Icon(Icons.file_open),
-              Text('Open File'),
-            ],
+            children: [Icon(Icons.file_open), Text('Open File')],
           ),
         ),
       if (asset.fileExists)
@@ -74,60 +76,39 @@ void showAssetContextMenu(
           value: ContextMenuActionEnum.openInExplorer,
           child: Row(
             spacing: 8,
-            children: [
-              Icon(Icons.folder_open),
-              Text('Open in File Explorer'),
-            ],
+            children: [Icon(Icons.folder_open), Text('Open in File Explorer')],
           ),
         ),
       ClickablePopupMenuItem(
         value: ContextMenuActionEnum.openInBrowser,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.open_in_browser),
-            Text('Open URL in Browser'),
-          ],
+          children: [Icon(Icons.open_in_browser), Text('Open URL in Browser')],
         ),
       ),
       ClickablePopupMenuItem(
         value: ContextMenuActionEnum.checkUrl,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.link),
-            Text('Check if invalid'),
-          ],
+          children: [Icon(Icons.link), Text('Check if invalid')],
         ),
       ),
       ClickablePopupMenuItem(
         value: ContextMenuActionEnum.checkShared,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.share),
-            Text('Check if shared'),
-          ],
+          children: [Icon(Icons.share), Text('Check if shared')],
         ),
       ),
       ClickablePopupMenuItem(
         value: ContextMenuActionEnum.copyUrl,
-        child: Row(
-          spacing: 8,
-          children: [
-            Icon(Icons.copy),
-            Text('Copy URL'),
-          ],
-        ),
+        child: Row(spacing: 8, children: [Icon(Icons.copy), Text('Copy URL')]),
       ),
       ClickablePopupMenuItem(
         value: ContextMenuActionEnum.copyFilename,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.file_copy),
-            Text('Copy Filename'),
-          ],
+          children: [Icon(Icons.file_copy), Text('Copy Filename')],
         ),
       ),
       if (!asset.fileExists)
@@ -135,10 +116,7 @@ void showAssetContextMenu(
           value: ContextMenuActionEnum.download,
           child: Row(
             spacing: 8,
-            children: [
-              Icon(Icons.download),
-              Text('Download'),
-            ],
+            children: [Icon(Icons.download), Text('Download')],
           ),
         ),
       if (asset.fileExists)
@@ -146,20 +124,14 @@ void showAssetContextMenu(
           value: ContextMenuActionEnum.deleteAsset,
           child: Row(
             spacing: 8,
-            children: [
-              Icon(Icons.delete),
-              Text('Delete asset file'),
-            ],
+            children: [Icon(Icons.delete), Text('Delete asset file')],
           ),
         ),
       ClickablePopupMenuItem(
         value: ContextMenuActionEnum.replaceUrl,
         child: Row(
           spacing: 8,
-          children: [
-            Icon(Icons.find_replace),
-            Text('Replace URL'),
-          ],
+          children: [Icon(Icons.find_replace), Text('Replace URL')],
         ),
       ),
     ],
@@ -213,25 +185,38 @@ void showAssetContextMenu(
           final selectedMod = ref.read(selectedModProvider);
           if (selectedMod == null) break;
 
-          final downloaded =
-              await ref.read(downloadProvider.notifier).downloadFiles(
-            modAssetListUrls: [asset.url],
-            type: type,
-            downloadingAllFiles: false,
-          );
-          await ref.read(modsProvider.notifier).updateSelectedMod(selectedMod);
+          final downloaded = await ref
+              .read(downloadProvider.notifier)
+              .downloadFiles(
+                modAssetListUrls: [asset.url],
+                type: type,
+                downloadingAllFiles: false,
+              );
+          final updatedMod = await ref
+              .read(modsProvider.notifier)
+              .updateSelectedMod(selectedMod);
           if (downloaded.isNotEmpty) {
-            await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
-                downloaded.toSet(),
-                excludeJsonFileName: selectedMod.jsonFileName);
+            await ref
+                .read(modsProvider.notifier)
+                .refreshModsWithSharedAssets(
+                  downloaded.toSet(),
+                  excludeJsonFileName: selectedMod.jsonFileName,
+                );
+          }
+          final result = await ref
+              .read(downloadProvider.notifier)
+              .validateModAfterDownload(updatedMod);
+          if (context.mounted) {
+            await showDownloadValidationResultsDialog(context, [result]);
           }
           break;
 
         case ContextMenuActionEnum.checkUrl:
           if (!context.mounted) break;
 
-          final isLive =
-              await ref.read(downloadProvider.notifier).isUrlLive(asset.url);
+          final isLive = await ref
+              .read(downloadProvider.notifier)
+              .isUrlLive(asset.url);
 
           if (!context.mounted) break;
           showSnackBar(context, isLive ? 'URL is valid' : 'URL is not valid');
@@ -268,12 +253,14 @@ void showAssetContextMenu(
             builder: (dialogContext) => BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
               child: AlertDialog(
-                title: Text(isShared
-                    ? 'Delete shared asset file'
-                    : 'Delete asset file'),
-                content: Text(isShared
-                    ? '${buildSharedAssetSummary(sharingMods)}\n\nDelete anyway?'
-                    : 'Are you sure you want to delete this file?\n\n${getFileNameFromURL(asset.url)}'),
+                title: Text(
+                  isShared ? 'Delete shared asset file' : 'Delete asset file',
+                ),
+                content: Text(
+                  isShared
+                      ? '${buildSharedAssetSummary(sharingMods)}\n\nDelete anyway?'
+                      : 'Are you sure you want to delete this file?\n\n${getFileNameFromURL(asset.url)}',
+                ),
                 actions: [
                   if (isShared)
                     ElevatedButton(
@@ -302,11 +289,13 @@ void showAssetContextMenu(
 
           if (!context.mounted) break;
           if (deleted) {
-            await ref.read(modsProvider.notifier).updateSelectedMod(selectedMod);
+            await ref
+                .read(modsProvider.notifier)
+                .updateSelectedMod(selectedMod);
             final filename = getFileNameFromURL(asset.url);
-            await ref.read(modsProvider.notifier).refreshModsWithSharedAssets(
-                {filename},
-                excludeJsonFileName: selectedMod.jsonFileName);
+            await ref.read(modsProvider.notifier).refreshModsWithSharedAssets({
+              filename,
+            }, excludeJsonFileName: selectedMod.jsonFileName);
             if (context.mounted) showSnackBar(context, 'File deleted');
           } else {
             showSnackBar(context, 'Failed to delete file');

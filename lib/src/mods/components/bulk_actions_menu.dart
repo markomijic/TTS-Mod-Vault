@@ -14,7 +14,11 @@ import 'package:tts_mod_vault/src/state/provider.dart'
         sortAndFilterProvider,
         modsProvider;
 import 'package:tts_mod_vault/src/mods/components/components.dart'
-    show BulkBackupDialog, BulkDeleteDialog, showUpdateUrlsDialog;
+    show
+        BulkBackupDialog,
+        BulkDeleteDialog,
+        showDownloadValidationResultsDialog,
+        showUpdateUrlsDialog;
 import 'package:tts_mod_vault/src/utils.dart'
     show showConfirmDialog, showConfirmDialogWithCheckbox;
 import 'package:tts_mod_vault/src/state/bulk_actions/bulk_actions_state.dart'
@@ -77,30 +81,32 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
     final selectedModType = ref.watch(selectedModTypeProvider);
 
     final filteredMods = ref.watch(filteredModsProvider);
-    final filteredModsLength =
-        useMemoized(() => filteredMods.length.toString(), [filteredMods]);
+    final filteredModsLength = useMemoized(
+      () => filteredMods.length.toString(),
+      [filteredMods],
+    );
 
     final modsState = ref.watch(modsProvider).valueOrNull;
     final totalMods = useMemoized(
-        () => modsState == null
-            ? 0
-            : switch (selectedModType) {
-                ModTypeEnum.mod => modsState.mods.length,
-                ModTypeEnum.save => modsState.saves.length,
-                ModTypeEnum.savedObject => modsState.savedObjects.length,
-              },
-        [modsState, selectedModType]);
+      () => modsState == null
+          ? 0
+          : switch (selectedModType) {
+              ModTypeEnum.mod => modsState.mods.length,
+              ModTypeEnum.save => modsState.saves.length,
+              ModTypeEnum.savedObject => modsState.savedObjects.length,
+            },
+      [modsState, selectedModType],
+    );
 
     final bulkActionsButtonText = useMemoized(
-        () => bulkActionLimited
-            ? 'Bulk actions (${'$filteredModsLength/$totalMods'})'
-            : 'Bulk actions',
-        [bulkActionLimited, filteredModsLength, totalMods]);
+      () => bulkActionLimited
+          ? 'Bulk actions (${'$filteredModsLength/$totalMods'})'
+          : 'Bulk actions',
+      [bulkActionLimited, filteredModsLength, totalMods],
+    );
 
     return MenuAnchor(
-      style: MenuStyle(
-        backgroundColor: WidgetStateProperty.all(Colors.white),
-      ),
+      style: MenuStyle(backgroundColor: WidgetStateProperty.all(Colors.white)),
       menuChildren: <Widget>[
         MenuItemButton(
           style: MenuItemButton.styleFrom(
@@ -109,12 +115,15 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
           ),
           leadingIcon: Icon(Icons.download, color: Colors.black),
           child: Text('Download all', style: TextStyle(color: Colors.black)),
-          onPressed: () {
+          onPressed: () async {
             if (actionInProgress) return;
 
-            ref
+            final results = await ref
                 .read(bulkActionsProvider.notifier)
                 .downloadAllMods(ref.read(filteredModsProvider));
+            if (context.mounted) {
+              await showDownloadValidationResultsDialog(context, results);
+            }
           },
         ),
         MenuItemButton(
@@ -134,14 +143,16 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
                 initialBehavior: BulkBackupBehaviorEnum.replaceIfOutOfDate,
                 onConfirm:
                     (behavior, folder, postBackupDeletion, setAsDefault) {
-                  ref.read(bulkActionsProvider.notifier).backupAllMods(
-                        ref.read(filteredModsProvider),
-                        behavior,
-                        folder,
-                        postBackupDeletion,
-                        setAsDefault,
-                      );
-                },
+                      ref
+                          .read(bulkActionsProvider.notifier)
+                          .backupAllMods(
+                            ref.read(filteredModsProvider),
+                            behavior,
+                            folder,
+                            postBackupDeletion,
+                            setAsDefault,
+                          );
+                    },
               ),
             );
           },
@@ -153,8 +164,10 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
           ),
           leadingIcon: Icon(Icons.download, color: Colors.black),
           trailingIcon: Icon(Icons.archive, color: Colors.black),
-          child: Text('Download & backup all',
-              style: TextStyle(color: Colors.black)),
+          child: Text(
+            'Download & backup all',
+            style: TextStyle(color: Colors.black),
+          ),
           onPressed: () {
             if (actionInProgress) return;
 
@@ -164,17 +177,23 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
                 title: 'Download & backup all',
                 initialBehavior: BulkBackupBehaviorEnum.replaceIfOutOfDate,
                 onConfirm:
-                    (behavior, folder, postBackupDeletion, setAsDefault) {
-                  ref
-                      .read(bulkActionsProvider.notifier)
-                      .downloadAndBackupAllMods(
-                        ref.read(filteredModsProvider),
-                        behavior,
-                        folder,
-                        postBackupDeletion,
-                        setAsDefault,
-                      );
-                },
+                    (behavior, folder, postBackupDeletion, setAsDefault) async {
+                      final results = await ref
+                          .read(bulkActionsProvider.notifier)
+                          .downloadAndBackupAllMods(
+                            ref.read(filteredModsProvider),
+                            behavior,
+                            folder,
+                            postBackupDeletion,
+                            setAsDefault,
+                          );
+                      if (context.mounted) {
+                        await showDownloadValidationResultsDialog(
+                          context,
+                          results,
+                        );
+                      }
+                    },
               ),
             );
           },
@@ -186,8 +205,10 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               foregroundColor: Colors.black,
             ),
             leadingIcon: Icon(Icons.update, color: Colors.black),
-            child:
-                Text('Update all mods', style: TextStyle(color: Colors.black)),
+            child: Text(
+              'Update all mods',
+              style: TextStyle(color: Colors.black),
+            ),
             onPressed: () {
               if (actionInProgress) return;
 
@@ -203,7 +224,9 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
                 warningText:
                     "This feature has been tested with various mods, however it's recommended to let\nTabletop Simulator handle updates for subscribed mods to avoid unexpected issues.",
                 onConfirm: (forceUpdate) {
-                  ref.read(bulkActionsProvider.notifier).updateModsAll(
+                  ref
+                      .read(bulkActionsProvider.notifier)
+                      .updateModsAll(
                         ref.read(filteredModsProvider),
                         forceUpdate,
                         context,
@@ -218,8 +241,10 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             foregroundColor: Colors.black,
           ),
           leadingIcon: Icon(Icons.delete, color: Colors.black),
-          child:
-              Text('Delete all assets', style: TextStyle(color: Colors.black)),
+          child: Text(
+            'Delete all assets',
+            style: TextStyle(color: Colors.black),
+          ),
           onPressed: () {
             if (actionInProgress) return;
 
@@ -228,7 +253,9 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               builder: (context) => BulkDeleteDialog(
                 title: 'Delete all assets',
                 onConfirm: (deletionOption) {
-                  ref.read(bulkActionsProvider.notifier).deleteAssetsAllMods(
+                  ref
+                      .read(bulkActionsProvider.notifier)
+                      .deleteAssetsAllMods(
                         ref.read(filteredModsProvider),
                         deletionOption,
                       );
@@ -243,8 +270,10 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
             foregroundColor: Colors.black,
           ),
           leadingIcon: Icon(Icons.link, color: Colors.black),
-          child: Text('Check for all invalid URLs',
-              style: TextStyle(color: Colors.black)),
+          child: Text(
+            'Check for all invalid URLs',
+            style: TextStyle(color: Colors.black),
+          ),
           onPressed: () {
             if (actionInProgress) return;
 
@@ -253,10 +282,9 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               'This checks every asset URL across all listed mods with a network '
               'request per asset, which may take a while.\n\nContinue?',
               () {
-                ref.read(bulkActionsProvider.notifier).checkUrlsAllMods(
-                      ref.read(filteredModsProvider),
-                      context,
-                    );
+                ref
+                    .read(bulkActionsProvider.notifier)
+                    .checkUrlsAllMods(ref.read(filteredModsProvider), context);
               },
             );
           },
@@ -275,7 +303,9 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
               context,
               ref,
               onConfirm: (oldUrlPrefix, newUrlPrefix, renameFile) {
-                ref.read(bulkActionsProvider.notifier).updateUrlPrefixesAllMods(
+                ref
+                    .read(bulkActionsProvider.notifier)
+                    .updateUrlPrefixesAllMods(
                       ref.read(filteredModsProvider),
                       oldUrlPrefix.split('|'),
                       newUrlPrefix,
@@ -286,28 +316,22 @@ class _BulkActionsDropDownButton extends HookConsumerWidget {
           },
         ),
       ],
-      builder: (
-        BuildContext context,
-        MenuController controller,
-        Widget? child,
-      ) {
-        return ElevatedButton.icon(
-          onPressed: actionInProgress
-              ? null
-              : () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
-          label: Text(bulkActionsButtonText),
-          icon: Icon(
-            Icons.arrow_drop_down,
-            size: 26,
-          ),
-        );
-      },
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
+            return ElevatedButton.icon(
+              onPressed: actionInProgress
+                  ? null
+                  : () {
+                      if (controller.isOpen) {
+                        controller.close();
+                      } else {
+                        controller.open();
+                      }
+                    },
+              label: Text(bulkActionsButtonText),
+              icon: Icon(Icons.arrow_drop_down, size: 26),
+            );
+          },
     );
   }
 }

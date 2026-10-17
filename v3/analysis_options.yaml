@@ -1,0 +1,45 @@
+include: package:flutter_lints/flutter.yaml
+
+# riverpod_lint is an analysis_server_plugin (Dart 3.13+), installed here, not in pubspec.
+plugins:
+  riverpod_lint: ^3.1.9
+
+analyzer:
+  exclude:
+    - build/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - lib/l10n/generated/**
+    - windows/**
+    - macos/**
+    - linux/**
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    invalid_annotation_target: ignore # freezed + json_serializable
+
+linter:
+  rules:
+    always_use_package_imports: true
+    avoid_dynamic_calls: true
+    avoid_print: true
+    avoid_redundant_argument_values: true
+    avoid_slow_async_io: true
+    avoid_unused_constructor_parameters: true
+    cancel_subscriptions: true
+    close_sinks: true
+    directives_ordering: true
+    discarded_futures: false
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_in_for_each: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    sort_pub_dependencies: false
+    unawaited_futures: true
+    unnecessary_lambdas: true
+    unnecessary_parenthesis: true
+    use_super_parameters: true

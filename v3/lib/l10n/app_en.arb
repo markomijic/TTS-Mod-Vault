@@ -1,0 +1,57 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "TTS Mod Vault",
+  "@appTitle": {"description": "Application title shown in the window title bar"},
+
+  "navMods": "Mods",
+  "@navMods": {"description": "Sidebar destination: the mods library"},
+  "navBackups": "Backups",
+  "@navBackups": {"description": "Sidebar destination: the backups list"},
+
+  "actionRefresh": "Refresh",
+  "@actionRefresh": {"description": "Sidebar action: reload the mod library from disk"},
+  "actionCleanup": "Cleanup",
+  "@actionCleanup": {"description": "Sidebar action: find and delete asset files not used by any mod"},
+  "actionImportBackups": "Import backups",
+  "@actionImportBackups": {"description": "Sidebar action: import .ttsmod backup archives"},
+  "actionImportJson": "Import JSON",
+  "@actionImportJson": {"description": "Sidebar action: import a mod from a JSON save file"},
+  "actionDownloadWorkshopMods": "Download Workshop mods",
+  "@actionDownloadWorkshopMods": {"description": "Sidebar action: download mods from the Steam Workshop by id"},
+  "actionHelp": "Help",
+  "@actionHelp": {"description": "Sidebar action: open the help dialog"},
+  "actionSettings": "Settings",
+  "@actionSettings": {"description": "Sidebar action: open the settings dialog"},
+
+  "sidebarExpand": "Expand sidebar",
+  "@sidebarExpand": {"description": "Tooltip of the chevron that switches the sidebar to its wide, labelled form"},
+  "sidebarCollapse": "Collapse sidebar",
+  "@sidebarCollapse": {"description": "Tooltip of the chevron that switches the sidebar back to icons only"},
+
+  "modsPageTitle": "Mods",
+  "@modsPageTitle": {"description": "Title of the mods page placeholder"},
+  "backupsPageTitle": "Backups",
+  "@backupsPageTitle": {"description": "Title of the backups page placeholder"},
+
+  "notImplementedYet": "Not implemented yet",
+  "@notImplementedYet": {"description": "Snack bar shown for actions that are not wired up yet"},
+
+  "cancel": "Cancel",
+  "@cancel": {"description": "Generic dialog button that dismisses without acting"},
+  "confirm": "Confirm",
+  "@confirm": {"description": "Generic dialog button that accepts the proposed action"},
+
+  "themePresetVault": "Vault",
+  "@themePresetVault": {"description": "Theme preset: the default Material 3 purple seed palette"},
+  "themePresetClassic": "Classic",
+  "@themePresetClassic": {"description": "Theme preset: near-black monochrome look of TTS Mod Vault 2.x"},
+  "themePresetOcean": "Ocean",
+  "@themePresetOcean": {"description": "Theme preset: blue seed palette"},
+  "themePresetForest": "Forest",
+  "@themePresetForest": {"description": "Theme preset: green seed palette"},
+  "themePresetEmber": "Ember",
+  "@themePresetEmber": {"description": "Theme preset: orange seed palette"},
+  "themePresetRose": "Rose",
+  "@themePresetRose": {"description": "Theme preset: pink seed palette"}
+}

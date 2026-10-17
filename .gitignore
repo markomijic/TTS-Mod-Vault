@@ -51,3 +51,6 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+# v3 rewrite project (lives in v3/ until cut-over)
+v3/build/
+v3/.fvm/

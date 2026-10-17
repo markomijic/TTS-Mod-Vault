@@ -11,10 +11,19 @@ replacing one `.AppImage`.
 Run on **Linux** (Flutter cannot build Linux targets on Windows/macOS):
 
 ```bash
-bash packaging/appimage/build_appimage.sh
+bash packaging/appimage/build_appimage.sh                 # builds the project at the repo root
+PROJECT_DIR=v3 bash packaging/appimage/build_appimage.sh  # builds the v3 rewrite in v3/ (until cut-over)
 ```
 
-Output: `build/TTS_Mod_Vault-x86_64.AppImage`
+Output: `<project>/build/TTS_Mod_Vault-x86_64.AppImage` (so `v3/build/...` with
+`PROJECT_DIR=v3`). The artefact name never changes.
+
+The script runs, in order: `flutter pub get`, `dart run build_runner build`
+(drift / freezed / riverpod code generation; generated `*.g.dart` files are not
+committed), `flutter gen-l10n`, `flutter build linux --release`, then checks
+that both native assets (`lib/libpdfium.so`, `lib/libsqlite3.so`) made it into
+the bundle before packaging. It uses `fvm flutter` when FVM is installed
+(`.fvmrc` pins the Flutter version), otherwise plain `flutter`.
 
 Test it:
 
@@ -26,6 +35,10 @@ chmod +x build/TTS_Mod_Vault-x86_64.AppImage
 ### Prerequisites
 
 - Flutter with Linux desktop enabled (`flutter doctor` should be clean for Linux)
+- Dart native assets enabled, once per machine: `flutter config --enable-native-assets`.
+  pdfium (`pdfrx_engine`) and sqlite3 (`sqlite3` 3.x, used by drift) are both
+  shipped this way. The script refuses to build when the flag is off, because
+  the resulting app would start and immediately crash with a missing library.
 - Build toolchain: `sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev`
 - `curl` (the script downloads `appimagetool` automatically into `build/appimage/`)
 
@@ -53,8 +66,9 @@ docker run --rm -v "$PWD":/src -w /src ubuntu:22.04 bash -c '
   apt-get update &&
   apt-get install -y curl git unzip xz-utils clang cmake ninja-build \
     pkg-config libgtk-3-dev &&
-  # install Flutter inside the container, then:
-  bash packaging/appimage/build_appimage.sh
+  # install Flutter inside the container, enable native assets, then:
+  flutter config --enable-native-assets &&
+  PROJECT_DIR=v3 bash packaging/appimage/build_appimage.sh
 '
 ```
 
@@ -66,10 +80,12 @@ confuse the two.)
 
 | File | Role |
 | --- | --- |
-| `packaging/appimage/build_appimage.sh` | Builds the bundle, assembles the AppDir, runs appimagetool |
-| `linux/io.github.markomijic.tts_mod_vault.desktop` | Desktop entry (single source of truth) |
-| `linux/io.github.markomijic.tts_mod_vault.metainfo.xml` | AppStream metadata |
-| `assets/icon/tts_mod_vault_icon.png` | App icon (from `pubspec.yaml`) |
+| `packaging/appimage/build_appimage.sh` | Runs codegen + build, assembles the AppDir, runs appimagetool |
+| `<project>/linux/io.github.markomijic.tts_mod_vault.desktop` | Desktop entry (single source of truth) |
+| `<project>/linux/io.github.markomijic.tts_mod_vault.metainfo.xml` | AppStream metadata |
+| `<project>/assets/icon/tts_mod_vault_icon.png` | App icon (from `pubspec.yaml`) |
+
+`<project>` is the repo root, or `v3/` when `PROJECT_DIR=v3` is set.
 
 The app id is `io.github.markomijic.tts_mod_vault` — it must stay consistent
 across the desktop file name, the metainfo `<id>`, `APPLICATION_ID` in

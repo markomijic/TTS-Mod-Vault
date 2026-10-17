@@ -3,6 +3,11 @@
 # Build a TTS Mod Vault AppImage from a Flutter Linux release build.
 # Run this ON LINUX (e.g. your Ubuntu VM):  bash packaging/appimage/build_appimage.sh
 #
+# PROJECT_DIR selects which Flutter project in the repo is built. It defaults
+# to the repo root ("."). While the v3 rewrite lives in v3/, build it with:
+#   PROJECT_DIR=v3 bash packaging/appimage/build_appimage.sh
+# All paths below (icon, linux/, build/) are relative to that project.
+#
 # NOTE ON COMPATIBILITY: an AppImage bundles app libraries but NOT glibc, so the
 # resulting file's minimum glibc is whatever THIS build machine ships. Built on
 # Ubuntu 26.04 it will only run on similarly-new distros. For broad compatibility
@@ -10,6 +15,8 @@
 #
 # Prerequisites on the build machine:
 #   - Flutter with Linux desktop enabled (run `flutter doctor` to confirm)
+#   - Dart native assets enabled once per machine: flutter config --enable-native-assets
+#     (pdfium and sqlite3 are shipped as native assets; the script checks this)
 #   - Linux toolchain: sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev
 #   - curl (to fetch appimagetool)
 
@@ -20,17 +27,56 @@ BIN_NAME="tts_mod_vault"
 ICON_SRC="assets/icon/tts_mod_vault_icon.png"
 OUT_NAME="TTS_Mod_Vault-x86_64.AppImage"
 
-# Resolve repo root robustly, regardless of where this script is invoked from.
+# Resolve repo root robustly, regardless of where this script is invoked from,
+# then enter the Flutter project (repo root by default, v3/ during the rewrite).
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
-cd "$ROOT"
+PROJECT_DIR="${PROJECT_DIR:-.}"
+cd "$ROOT/$PROJECT_DIR"
+[ -f pubspec.yaml ] || { echo "ERROR: no pubspec.yaml in $PWD (PROJECT_DIR=$PROJECT_DIR)"; exit 1; }
+echo "==> project: $PWD"
+
+# Prefer fvm so the pinned Flutter version (.fvmrc) is used, like local dev.
+if command -v fvm >/dev/null 2>&1; then
+  FLUTTER="fvm flutter"; DART="fvm dart"
+else
+  FLUTTER="flutter"; DART="dart"
+fi
+
+# pdfium (pdfrx_engine) and sqlite3 are delivered as Dart native assets. Without
+# this flag the build silently omits them and the app crashes at startup.
+if ! $FLUTTER config --list 2>/dev/null | grep -q 'enable-native-assets: true'; then
+  echo "ERROR: Dart native assets are disabled for this Flutter install."
+  echo "       pdfium and sqlite3 ship as native assets. Run once on this machine:"
+  echo "         $FLUTTER config --enable-native-assets"
+  exit 1
+fi
 
 [ -f "$ICON_SRC" ] || { echo "ERROR: icon not found at $ICON_SRC"; exit 1; }
 
+echo "==> flutter pub get"
+$FLUTTER pub get
+
+echo "==> dart run build_runner build (drift / freezed / riverpod codegen)"
+$DART run build_runner build --delete-conflicting-outputs
+
+echo "==> flutter gen-l10n"
+$FLUTTER gen-l10n
+
 echo "==> flutter build linux --release"
-flutter build linux --release
+$FLUTTER build linux --release
 
 BUNDLE="build/linux/x64/release/bundle"
 [ -d "$BUNDLE" ] || { echo "ERROR: build bundle not found at $BUNDLE"; exit 1; }
+
+# Sanity: both native assets must be in lib/ next to the Flutter .so files, or
+# the app dies at startup ("Failed to lookup symbol" / "Failed to load dynamic library").
+for lib in libpdfium.so libsqlite3.so; do
+  [ -e "$BUNDLE/lib/$lib" ] || {
+    echo "ERROR: $lib missing from $BUNDLE/lib — release would crash at launch"
+    echo "       (is 'flutter config --enable-native-assets' set and the hook build succeeding?)"
+    exit 1; }
+done
+echo "    native assets OK: libpdfium.so, libsqlite3.so"
 
 echo "==> assembling AppDir"
 WORK="build/appimage"
@@ -67,12 +113,12 @@ if [ -f "$METAINFO_SRC" ]; then
 fi
 
 # AppRun: launches the bundled executable.
-cat > "$APPDIR/AppRun" <<'EOF'
+cat > "$APPDIR/AppRun" <<'APPRUN'
 #!/usr/bin/env bash
 HERE="$(dirname "$(readlink -f "${0}")")"
 export LD_LIBRARY_PATH="${HERE}/usr/bin/lib:${LD_LIBRARY_PATH:-}"
 exec "${HERE}/usr/bin/tts_mod_vault" "$@"
-EOF
+APPRUN
 chmod +x "$APPDIR/AppRun"
 
 # Fetch appimagetool if we don't already have it.
@@ -89,5 +135,5 @@ echo "==> packaging AppImage"
 ARCH=x86_64 "$TOOL" --appimage-extract-and-run "$APPDIR" "build/$OUT_NAME"
 
 echo ""
-echo "==> done:  build/$OUT_NAME"
+echo "==> done:  $PWD/build/$OUT_NAME"
 echo "    test it:  chmod +x build/$OUT_NAME && ./build/$OUT_NAME"

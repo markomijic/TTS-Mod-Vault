@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2025-2026 Marko Mijić -->
+<component type="desktop-application">
+  <id>io.github.markomijic.tts_mod_vault</id>
+
+  <name>TTS Mod Vault</name>
+  <summary>Download and back up assets for your Tabletop Simulator mods</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+
+  <developer id="io.github.markomijic">
+    <name>Marko Mijić</name>
+  </developer>
+
+  <description>
+    <p>
+      TTS Mod Vault downloads and backs up the assets used by your Tabletop
+      Simulator mods, so your saved games keep working even when the original
+      asset hosts go offline.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Download every asset referenced by a mod</li>
+      <li>Create local backups of mods and their assets</li>
+      <li>Browse and manage your installed mods</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.markomijic.tts_mod_vault.desktop</launchable>
+
+  <url type="homepage">https://github.com/markomijic/TTS-Mod-Vault</url>
+  <url type="bugtracker">https://github.com/markomijic/TTS-Mod-Vault/issues</url>
+
+  <content_rating type="oars-1.1" />
+</component>

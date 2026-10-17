@@ -11,10 +11,17 @@ Run on **macOS** (Apple Silicon — Flutter cannot build macOS targets on
 Windows/Linux):
 
 ```bash
-bash packaging/macos/build_dmg.sh
+bash packaging/macos/build_dmg.sh                 # builds the project at the repo root
+PROJECT_DIR=v3 bash packaging/macos/build_dmg.sh  # builds the v3 rewrite in v3/ (until cut-over)
 ```
 
-Output (in `build/`):
+The script runs, in order: `flutter clean` (unless `SKIP_CLEAN=1`), `flutter pub
+get`, `dart run build_runner build` (drift / freezed / riverpod code generation;
+generated `*.g.dart` files are not committed), `flutter gen-l10n`,
+`flutter build macos --release`, the native-asset and code-signature checks,
+then the DMG and zip steps. Artefact names never change.
+
+Output (in `<project>/build/`, so `v3/build/` with `PROJECT_DIR=v3`):
 
 | File | Use |
 | --- | --- |
@@ -27,6 +34,9 @@ The version is read automatically from `pubspec.yaml`.
 ### Prerequisites
 
 - Flutter with macOS desktop enabled (`flutter doctor` clean for macOS)
+- Dart native assets enabled, once per machine: `flutter config --enable-native-assets`.
+  pdfium (`pdfrx_engine`) and sqlite3 (`sqlite3` 3.x, used by drift) are both
+  shipped this way. The script refuses to build when the flag is off.
 - Xcode + command line tools
 - `hdiutil`, `codesign`, `zip` — all built into macOS, nothing to install
 - The script uses `fvm flutter` if [FVM](https://fvm.app/) is installed (this
@@ -39,9 +49,10 @@ seal stale** ("nested code is modified or invalid"). A locally-built app with a
 stale seal still runs on the build machine, but a **downloaded** copy fails to
 launch on another Mac. The script runs `flutter clean` first (override with
 `SKIP_CLEAN=1`) and then runs `codesign --verify --deep --strict` — a broken
-seal **fails the build** instead of shipping. It also checks that
-`pdfium.framework` is bundled, since a missing pdfium native asset crashes the
-app at startup.
+seal **fails the build** instead of shipping. It also checks that both native
+assets are bundled under `Contents/Frameworks/` (`pdfium.framework/pdfium` and
+`sqlite3.framework/sqlite3`), since a missing native library crashes the app at
+startup.
 
 It never modifies the `.app` after signing (it only copies it into a staging
 folder and adds an `Applications` symlink) — touching a signed bundle is exactly

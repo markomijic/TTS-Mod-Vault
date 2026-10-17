@@ -421,6 +421,10 @@ Resolved 2026-10-17 (evening, after trying the Phase 2 build):
 
 Nothing open.
 
+### Resume notes (keep current)
+
+- 2026-10-17 21:30: committed through `2b0ed4e` (Phases 0-2 plus the single-page/instant-startup restructure). **In progress, uncommitted:** the Phase 3 application layer agent (operations engine in `lib/features/operations`, `lib/data/net`, `lib/features/downloads`, `lib/features/workshop`, `lib/features/about`, plus `test/data/net`, `test/features/{operations,downloads,workshop,about}`). Its `asset_downloader_test.dart` was still hanging on "byte progress of a large file is monotonic" when last run; the agent may not have finished. Next steps on resume: check those folders analyze and test clean (fix or re-dispatch), commit as "Phase 3 application layer", then dispatch (a) Phase 3 UI wiring: operation progress bar in `OperationProgressSlot`/`bottomSlot`, Download/Check URLs/Download-missing buttons and asset-menu items, Download Workshop mods dialog, Update from Workshop, cancel button, OR `anyOperationRunningProvider` into `operationRunningProvider`, Settings-free network options; and (b) Phase 4 application layer (backup create/import streaming zip, delete-assets scan, cleanup) coding against `Operation`/`OperationContext` in `operation.dart`.
+
 ## 10. Benchmark protocol
 
 ### 10.1 Reference library (measured 2026-10-17)

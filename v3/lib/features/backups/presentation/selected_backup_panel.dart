@@ -4,6 +4,7 @@ import 'package:tts_mod_vault/app/shell/operation_running_provider.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/selected_mod_header.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_badges.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_context_menu.dart';
 import 'package:tts_mod_vault/features/library/application/backup_view_providers.dart';
@@ -208,8 +209,8 @@ class _MatchingModValue extends StatelessWidget {
   }
 }
 
-/// The action buttons at the bottom of the view: the four context-menu
-/// items. Import and delete are Phase 4 stubs.
+/// The action buttons at the bottom of the view: the context-menu items
+/// (import, open, copy, rename, delete).
 class _BackupActions extends ConsumerWidget {
   const _BackupActions({required this.backup});
 
@@ -235,9 +236,7 @@ class _BackupActions extends ConsumerWidget {
         runSpacing: Insets.sm,
         children: [
           FilledButton.tonalIcon(
-            onPressed: guard(
-              () => showNotImplemented(context, l10n.menuImportBackup),
-            ),
+            onPressed: guard(() => importBackup(context, ref, backup)),
             icon: const Icon(Icons.unarchive_outlined),
             label: Text(l10n.menuImportBackup),
           ),
@@ -254,8 +253,13 @@ class _BackupActions extends ConsumerWidget {
             label: Text(l10n.menuCopyFilename),
           ),
           FilledButton.tonalIcon(
+            onPressed: guard(() => renameBackupWithDialog(context, backup)),
+            icon: const Icon(Icons.drive_file_rename_outline),
+            label: Text(l10n.menuRenameBackup),
+          ),
+          FilledButton.tonalIcon(
             onPressed: guard(
-              () => showNotImplemented(context, l10n.menuDeleteBackup),
+              () => deleteBackupWithConfirm(context, ref, backup),
             ),
             style: FilledButton.styleFrom(
               backgroundColor: scheme.errorContainer,

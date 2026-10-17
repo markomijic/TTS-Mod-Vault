@@ -2,12 +2,14 @@ import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tts_mod_vault/features/backups/application/backup_service.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
 import 'package:tts_mod_vault/features/images_viewer/presentation/images_viewer_page.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/rename_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/save_as_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_grid_card.dart';
 
+import '../../../backups/presentation/fake_backup_service.dart';
 import '../../../downloads/presentation/fake_downloads_service.dart';
 import '../presentation_test_harness.dart';
 import 'dialog_test_harness.dart' show fieldText;
@@ -28,6 +30,7 @@ void main() {
           library: () => SpyLibraryController(library.state),
         ),
         fakeDownloadsServiceOverride(),
+        fakeBackupServiceOverride(),
       ],
     );
   });
@@ -108,11 +111,16 @@ void main() {
     expect(find.text('Downloaded 1 file'), findsOneWidget);
   });
 
-  testWidgets('Import backup is still stubbed', (tester) async {
+  testWidgets('Import backup imports the clicked mod\'s backup', (
+    tester,
+  ) async {
     await pumpLibraryPage(tester, container);
     await openMenu(tester, card('Beta Mod'));
     await tester.tap(find.text('Import backup'));
     await tester.pumpAndSettle();
-    expect(find.text('Import backup: not implemented yet'), findsOneWidget);
+
+    final service = container.read(backupServiceProvider) as FakeBackupService;
+    expect(service.importCalls.single.$1, [library.beta.backup!.path]);
+    expect(find.text('Imported 1 backup'), findsOneWidget);
   });
 }

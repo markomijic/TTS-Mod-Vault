@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:io' show File, Platform;
 
+import 'package:file/local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart'
+    show getApplicationDocumentsDirectory;
 import 'package:pdfrx_engine/pdfrx_engine.dart' show Pdfrx, pdfrxInitialize;
 import 'package:tts_mod_vault/bootstrap/app_paths.dart';
 import 'package:tts_mod_vault/bootstrap/startup_timeline.dart';
@@ -10,6 +13,7 @@ import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/data/db/app_database.dart';
 import 'package:tts_mod_vault/data/db/drift_key_value_store.dart';
+import 'package:tts_mod_vault/data/legacy/hive_settings_importer.dart';
 import 'package:window_manager/window_manager.dart'
     show WindowOptions, windowManager;
 
@@ -20,6 +24,7 @@ final class BootstrapResult {
     required this.kv,
     required this.log,
     required this.dataDir,
+    required this.legacyImporter,
   });
 
   final AppDatabase db;
@@ -30,6 +35,10 @@ final class BootstrapResult {
 
   /// Directory holding `vault.sqlite` and `vault.log` (see [AppPaths]).
   final String dataDir;
+
+  /// Reads (and later deletes) the 2.x Hive settings from the Documents
+  /// folder on first run; null when the folder could not be resolved.
+  final LegacySettingsImporter? legacyImporter;
 }
 
 /// Process-level start-up that must happen before `runApp`: bindings, window
@@ -98,7 +107,28 @@ Future<BootstrapResult> bootstrap({StartupTimeline? timeline}) async {
     'totalMs=${clock.elapsedMs - startMs} sinceMainMs=${clock.elapsedMs}',
   );
 
-  return BootstrapResult(db: db, kv: kv, log: log, dataDir: paths.dataDir);
+  LegacySettingsImporter? legacyImporter;
+  try {
+    final documents = await getApplicationDocumentsDirectory();
+    legacyImporter = HiveSettingsImporter(
+      fs: const LocalFileSystem(),
+      documentsDir: documents.path,
+    );
+  } on Object catch (error) {
+    log.warning(
+      LogSource.app,
+      'Could not resolve the Documents folder; skipping the 2.x settings import',
+      details: '$error',
+    );
+  }
+
+  return BootstrapResult(
+    db: db,
+    kv: kv,
+    log: log,
+    dataDir: paths.dataDir,
+    legacyImporter: legacyImporter,
+  );
 }
 
 /// Maximises the window once after the first frame (ported from v2's

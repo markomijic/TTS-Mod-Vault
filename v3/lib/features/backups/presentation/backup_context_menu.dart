@@ -3,15 +3,14 @@ import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/widgets/app_context_menu.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
 import 'package:tts_mod_vault/features/library/presentation/item_actions.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Shows the backup context menu at [globalPosition].
 ///
-/// The items are 2.x `showBackupContextMenu`: import backup, open in file
-/// explorer, copy filename, delete backup. Open and copy are live; import
-/// and delete show the "not implemented" snack bar until Phase 4 replaces
-/// their callbacks in [buildBackupContextMenu].
+/// The items are 2.x `showBackupContextMenu` (import backup, open in file
+/// explorer, copy filename, delete backup) plus "Rename backup…".
 Future<void> showBackupContextMenu(
   BuildContext context,
   WidgetRef ref,
@@ -20,17 +19,21 @@ Future<void> showBackupContextMenu(
 ) => showAppContextMenu(
   context,
   globalPosition,
-  buildBackupContextMenu(context, backup),
+  buildBackupContextMenu(context, ref, backup),
 );
 
 /// The entries of the backup context menu for [backup].
-List<MenuEntry> buildBackupContextMenu(BuildContext context, Backup backup) {
+List<MenuEntry> buildBackupContextMenu(
+  BuildContext context,
+  WidgetRef ref,
+  Backup backup,
+) {
   final l10n = AppLocalizations.of(context);
   return [
     MenuAction(
       label: l10n.menuImportBackup,
       icon: Icons.unarchive_outlined,
-      onPressed: () => showNotImplemented(context, l10n.menuImportBackup),
+      onPressed: () => importBackup(context, ref, backup),
     ),
     MenuAction(
       label: l10n.menuOpenInFileExplorer,
@@ -43,10 +46,15 @@ List<MenuEntry> buildBackupContextMenu(BuildContext context, Backup backup) {
       onPressed: () => copyTextToClipboard(context, backupCopyName(backup)),
     ),
     MenuAction(
+      label: l10n.menuRenameBackup,
+      icon: Icons.drive_file_rename_outline,
+      onPressed: () => renameBackupWithDialog(context, backup),
+    ),
+    MenuAction(
       label: l10n.menuDeleteBackup,
       icon: Icons.delete_outline,
       destructive: true,
-      onPressed: () => showNotImplemented(context, l10n.menuDeleteBackup),
+      onPressed: () => deleteBackupWithConfirm(context, ref, backup),
     ),
   ];
 }

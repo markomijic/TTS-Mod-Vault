@@ -4,11 +4,15 @@ import 'dart:io' show Directory;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
 import 'package:tts_mod_vault/app/providers/startup_timeline_provider.dart';
+import 'package:tts_mod_vault/app/theme/theme_controller.dart'
+    show keyValueStoreProvider;
 import 'package:tts_mod_vault/bootstrap/startup_timeline.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
+import 'package:tts_mod_vault/data/legacy/hive_settings_importer.dart';
 import 'package:tts_mod_vault/domain/models/directories.dart';
 import 'package:tts_mod_vault/domain/rules/tts_paths.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/startup_state.dart';
 
@@ -44,6 +48,12 @@ final startupControllerProvider =
 class StartupController extends AsyncNotifier<StartupState> {
   @override
   Future<StartupState> build() async {
+    // Phase 5: a 2.x install's settings and folders are taken over before
+    // the folders are checked, so the first start of 3.x lands in the
+    // user's library instead of on the folder picker.
+    await _importLegacySettings();
+    if (!ref.mounted) return const StartupChecking();
+
     final Directories directories;
     try {
       directories = await ref.read(directoriesProvider.future);
@@ -183,6 +193,47 @@ class StartupController extends AsyncNotifier<StartupState> {
       LogSource.app,
       'Startup complete, showing the shell: sinceMainMs=${timeline.elapsedMs}',
     );
+  }
+
+  /// Runs the legacy importer once: when the key-value store has no
+  /// settings record yet and [legacyImporterProvider] finds 2.x data, the
+  /// settings and folders are written to the new store and the 2.x folder
+  /// is deleted. Failures are logged and ignored; startup goes on with the
+  /// defaults.
+  Future<void> _importLegacySettings() async {
+    final importer = ref.read(legacyImporterProvider);
+    if (importer == null) return;
+    try {
+      final store = ref.read(keyValueStoreProvider);
+      if (await store.read(SettingsController.storageKey) != null) return;
+      if (!ref.mounted) return;
+      final legacy = await importer.read();
+      if (legacy == null || !ref.mounted) return;
+      await ref.read(settingsProvider.notifier).update(legacy.settings);
+      if (!ref.mounted) return;
+      final directories = legacy.directories;
+      if (directories != null) {
+        await ref.read(directoriesProvider.notifier).set(directories);
+        if (!ref.mounted) return;
+      }
+      _log.info(
+        LogSource.app,
+        'Imported settings from TTS Mod Vault 2.x',
+        details: directories == null
+            ? 'no folders were stored'
+            : 'mods: ${directories.modsDir}, saves: ${directories.savesDir}'
+                  '${directories.hasBackupsDir ? ', backups: ${directories.backupsDir}' : ''}',
+      );
+      await importer.deleteLegacyData();
+    } on Object catch (error, stackTrace) {
+      if (!ref.mounted) return;
+      _log.error(
+        LogSource.app,
+        'Could not import the TTS Mod Vault 2.x settings; using defaults',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   AppLog get _log => ref.read(appLogProvider);

@@ -880,5 +880,342 @@
   "updateNexusMods": "Nexus Mods",
   "@updateNexusMods": {"description": "Update dialog button that opens the Nexus Mods page"},
   "updateGitHub": "GitHub",
-  "@updateGitHub": {"description": "Update dialog button that opens the GitHub release page"}
+  "@updateGitHub": {"description": "Update dialog button that opens the GitHub release page"},
+  "notAvailable": "N/A",
+  "@notAvailable": {"description": "Placeholder for a value that is unknown, e.g. a missing date"},
+  "couldNotOpenFilePicker": "Could not open the file picker",
+  "@couldNotOpenFilePicker": {"description": "Snack bar shown when the OS file picker failed to open"},
+  "sizeMegabytes": "{size} MB",
+  "@sizeMegabytes": {
+    "description": "A byte size in mebibytes, one decimal",
+    "placeholders": {"size": {"type": "String"}}
+  },
+  "sizeGigabytes": "{size} GB",
+  "@sizeGigabytes": {
+    "description": "A byte size in gibibytes, two decimals",
+    "placeholders": {"size": {"type": "String"}}
+  },
+  "assetFilesCount": "{count, plural, =1{1 asset file} other{{count} asset files}}",
+  "@assetFilesCount": {
+    "description": "Number of asset files, used inside dialogs",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "backupPickFolderTitle": "Select a backups folder",
+  "@backupPickFolderTitle": {"description": "Title of the OS folder picker opened before a backup when no backups folder is set"},
+  "backupToFolderTitle": "Back up to this folder?",
+  "@backupToFolderTitle": {"description": "Title of the confirmation shown after picking a backup folder when no default is set"},
+  "backupToFolderMessage": "\"{name}\" will be backed up to\n{folder}",
+  "@backupToFolderMessage": {
+    "description": "Body of the back-up-to-folder confirmation",
+    "placeholders": {
+      "name": {"type": "String"},
+      "folder": {"type": "String"}
+    }
+  },
+  "backupSetDefaultFolder": "Use this folder as the default backups folder",
+  "@backupSetDefaultFolder": {"description": "Checkbox in the back-up-to-folder confirmation"},
+  "backupSetDefaultFolderInfo": "The Backups tab lists the archives in the default backups folder, and future backups are written there without asking.",
+  "@backupSetDefaultFolderInfo": {"description": "Tooltip of the info icon next to the default folder checkbox"},
+  "backupExistsTitle": "Backup already exists",
+  "@backupExistsTitle": {"description": "Title of the dialog shown when the backup file already exists at the target"},
+  "backupExistsMessage": "A backup named\n{fileName}\nalready exists in\n{folder}",
+  "@backupExistsMessage": {
+    "description": "Body of the backup-exists dialog",
+    "placeholders": {
+      "fileName": {"type": "String"},
+      "folder": {"type": "String"}
+    }
+  },
+  "backupElsewhereTitle": "Backup exists in another folder",
+  "@backupElsewhereTitle": {"description": "Title of the dialog shown when the mod's current backup lives in a different folder than the target"},
+  "backupElsewhereMessage": "The current backup of \"{name}\" is\n{path}\n\nReplace it, or select another folder for a new backup.",
+  "@backupElsewhereMessage": {
+    "description": "Body of the backup-elsewhere dialog",
+    "placeholders": {
+      "name": {"type": "String"},
+      "path": {"type": "String"}
+    }
+  },
+  "backupSelectNewFolder": "Select new folder",
+  "@backupSelectNewFolder": {"description": "Dialog button that opens the folder picker for another backup folder"},
+  "backupReplace": "Replace",
+  "@backupReplace": {"description": "Dialog button that overwrites the existing backup"},
+  "backupCreated": "Backup created: {fileName}",
+  "@backupCreated": {
+    "description": "Snack bar after a backup was written",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+  "backupFailed": "Backup failed: {error}",
+  "@backupFailed": {
+    "description": "Snack bar when writing a backup threw",
+    "placeholders": {"error": {"type": "String"}}
+  },
+
+  "importBackupsPickTitle": "Select backup archives",
+  "@importBackupsPickTitle": {"description": "Title of the OS file picker for .ttsmod archives"},
+  "importedBackupsCount": "{count, plural, =1{Imported 1 backup} other{Imported {count} backups}}",
+  "@importedBackupsCount": {
+    "description": "Snack bar after every selected archive was imported",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "importAllListedTitle": "Import all listed backups?",
+  "@importAllListedTitle": {"description": "Title of the confirmation before importing every backup that passes the filters"},
+  "importAllListedMessage": "{count, plural, =1{1 backup} other{{count} backups}} will be imported. When your current file is newer than the backup you are asked which JSON file to keep.",
+  "@importAllListedMessage": {
+    "description": "Body of the import-all confirmation",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "importAction": "Import",
+  "@importAction": {"description": "Confirm button of import dialogs"},
+  "importFailed": "Import failed: {error}",
+  "@importFailed": {
+    "description": "Snack bar when an import threw",
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "importResultsTitle": "Import results",
+  "@importResultsTitle": {"description": "Title of the dialog listing the outcome of each imported archive"},
+  "importResultsSummary": "Imported {imported} of {total} backups",
+  "@importResultsSummary": {
+    "description": "First line of the import results dialog",
+    "placeholders": {
+      "imported": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "importResultsFailed": "{count} failed",
+  "@importResultsFailed": {
+    "description": "Appended to the import summary when archives failed",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "importResultsSkipped": "{count} skipped",
+  "@importResultsSkipped": {
+    "description": "Appended to the import summary when archives were skipped",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "importResultsCancelledNote": "The import was cancelled before every archive was processed.",
+  "@importResultsCancelledNote": {"description": "Line in the import results dialog when the run stopped early"},
+  "importStatusImported": "Imported, {assets}",
+  "@importStatusImported": {
+    "description": "Per-archive status: imported; assets is the assetFilesCount text",
+    "placeholders": {"assets": {"type": "String"}}
+  },
+  "importStatusImportedKeptJson": "Imported, {assets}; current JSON file kept",
+  "@importStatusImportedKeptJson": {
+    "description": "Per-archive status: imported but the local JSON was kept on the user's request",
+    "placeholders": {"assets": {"type": "String"}}
+  },
+  "importStatusFilesFailed": "{count, plural, =1{1 file could not be written} other{{count} files could not be written}}",
+  "@importStatusFilesFailed": {
+    "description": "Appended to a per-archive status when some entries failed",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "importStatusSkipped": "Skipped",
+  "@importStatusSkipped": {"description": "Per-archive status: the user chose Cancel in the JSON conflict dialog"},
+  "importStatusNotProcessed": "Not processed (cancelled)",
+  "@importStatusNotProcessed": {"description": "Per-archive status: the run was cancelled before this archive"},
+  "importStatusFailed": "Failed: {error}",
+  "@importStatusFailed": {
+    "description": "Per-archive status: the import threw",
+    "placeholders": {"error": {"type": "String"}}
+  },
+
+  "jsonConflictTitle": "Backup is older than your current file",
+  "@jsonConflictTitle": {"description": "Title of the dialog asking which JSON to keep when the local file is newer than the backup's"},
+  "jsonConflictMessage": "The backup for \"{fileName}\" contains an older version of the file than the one you currently have.\n\nChoose which file to keep:",
+  "@jsonConflictMessage": {
+    "description": "Body of the JSON conflict dialog",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+  "jsonConflictCurrent": "Your current file: {date}\n{assets}",
+  "@jsonConflictCurrent": {
+    "description": "Date and asset count of the local JSON; assets is the assetFilesCount text",
+    "placeholders": {
+      "date": {"type": "String"},
+      "assets": {"type": "String"}
+    }
+  },
+  "jsonConflictBackup": "Backup file: {date}\n{assets}",
+  "@jsonConflictBackup": {
+    "description": "Date and asset count of the archive's JSON; assets is the assetFilesCount text",
+    "placeholders": {
+      "date": {"type": "String"},
+      "assets": {"type": "String"}
+    }
+  },
+  "jsonConflictNote": "Either way, the asset files from the backup are imported. Only the JSON file is affected by your choice.",
+  "@jsonConflictNote": {"description": "Note at the bottom of the JSON conflict dialog"},
+  "jsonConflictUseBackup": "Use backup JSON file",
+  "@jsonConflictUseBackup": {"description": "JSON conflict dialog button: overwrite the local JSON with the archive's"},
+  "jsonConflictKeepCurrent": "Keep current JSON file",
+  "@jsonConflictKeepCurrent": {"description": "JSON conflict dialog button: keep the local JSON, import only the assets"},
+
+  "importJsonTitle": "Import JSON",
+  "@importJsonTitle": {"description": "Title of the Import JSON dialog"},
+  "importJsonHint": "Copies a mod, save or saved object JSON file (and optionally its image) into your library.",
+  "@importJsonHint": {"description": "Explanation under the title of the Import JSON dialog"},
+  "importJsonFileLabel": "JSON file",
+  "@importJsonFileLabel": {"description": "Label of the JSON file row in the Import JSON dialog"},
+  "importJsonImageLabel": "Image (optional)",
+  "@importJsonImageLabel": {"description": "Label of the image row in the Import JSON dialog"},
+  "importJsonNoFile": "No file selected",
+  "@importJsonNoFile": {"description": "Value of a file row in the Import JSON dialog when nothing was picked"},
+  "importJsonSelectJson": "Select JSON",
+  "@importJsonSelectJson": {"description": "Button that opens the file picker for the JSON file"},
+  "importJsonSelectImage": "Select image",
+  "@importJsonSelectImage": {"description": "Button that opens the file picker for the optional PNG"},
+  "importJsonClearImage": "Clear image",
+  "@importJsonClearImage": {"description": "Tooltip of the icon button that drops the picked image"},
+  "importJsonImageSavedAs": "The image will be saved as {fileName}",
+  "@importJsonImageSavedAs": {
+    "description": "Note under the image row: the PNG is renamed after the JSON",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+  "importJsonTypeLabel": "Import as",
+  "@importJsonTypeLabel": {"description": "Label of the type selector in the Import JSON dialog"},
+  "importJsonDestination": "Import to: {folder}",
+  "@importJsonDestination": {
+    "description": "Destination folder line of the Import JSON dialog",
+    "placeholders": {"folder": {"type": "String"}}
+  },
+  "importJsonPickTitle": "Select a JSON file",
+  "@importJsonPickTitle": {"description": "Title of the OS file picker for the JSON file"},
+  "importJsonPickImageTitle": "Select an image",
+  "@importJsonPickImageTitle": {"description": "Title of the OS file picker for the PNG"},
+  "importJsonDone": "Imported {fileName}",
+  "@importJsonDone": {
+    "description": "Snack bar after a JSON file was imported",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+
+  "deleteBackupTitle": "Delete backup?",
+  "@deleteBackupTitle": {"description": "Title of the confirmation before deleting a backup archive"},
+  "deleteBackupMessage": "Are you sure you want to delete this backup?\n\n{fileName}\n\nThe file is deleted permanently.",
+  "@deleteBackupMessage": {
+    "description": "Body of the delete backup confirmation",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+  "deletedBackup": "{fileName} deleted",
+  "@deletedBackup": {
+    "description": "Snack bar after a backup archive was deleted",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+  "menuRenameBackup": "Rename backup…",
+  "@menuRenameBackup": {"description": "Backup context menu and panel button: rename the archive"},
+  "renameBackupTitle": "Rename backup",
+  "@renameBackupTitle": {"description": "Title of the rename backup dialog"},
+  "renameBackupHint": "Renames the archive on disk. The .ttsmod extension is kept, and the backup is matched to the mod whose backup name this is.",
+  "@renameBackupHint": {"description": "Explanation under the title of the rename backup dialog"},
+  "renameBackupNameLabel": "File name",
+  "@renameBackupNameLabel": {"description": "Label of the name field in the rename backup dialog"},
+
+  "deleteAssetsTitle": "Delete asset files of {name}?",
+  "@deleteAssetsTitle": {
+    "description": "Title of the delete mod assets dialog",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "deleteAssetsExclusive": "{count, plural, =0{No file is used only by this {type}.} =1{1 file is used only by this {type}.} other{{count} files are used only by this {type}.}}",
+  "@deleteAssetsExclusive": {
+    "description": "Line of the delete mod assets dialog: files no other mod references; type is the lower-case singular noun",
+    "placeholders": {
+      "count": {"type": "int"},
+      "type": {"type": "String"}
+    }
+  },
+  "deleteAssetsShared": "{count, plural, =1{1 file is shared with other mods, saves or saved objects.} other{{count} files are shared with other mods, saves or saved objects.}}",
+  "@deleteAssetsShared": {
+    "description": "Line of the delete mod assets dialog: files other mods reference too",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "deleteAssetsSharedList": "Shared files ({count})",
+  "@deleteAssetsSharedList": {
+    "description": "Heading of the expandable list of shared files",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "deleteAssetsSharedWith": "Shared with {names}",
+  "@deleteAssetsSharedWith": {
+    "description": "Under a shared URL: the other mods using it, e.g. 'Alpha, Beta (mods); My Save (saves)'",
+    "placeholders": {"names": {"type": "String"}}
+  },
+  "deleteAssetsSharedGroup": "{names} ({type})",
+  "@deleteAssetsSharedGroup": {
+    "description": "One group of sharing mods: comma-separated names and the lower-case plural type noun",
+    "placeholders": {
+      "names": {"type": "String"},
+      "type": {"type": "String"}
+    }
+  },
+  "deleteAssetsIncludeShared": "Also delete shared files ({count})",
+  "@deleteAssetsIncludeShared": {
+    "description": "Checkbox in the delete mod assets dialog",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "deleteAssetsNote": "The files are deleted permanently. The {type} JSON file is not changed.",
+  "@deleteAssetsNote": {
+    "description": "Note in the delete mod assets dialog; type is the lower-case singular noun",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "deleteAssetsNothing": "No asset files to delete",
+  "@deleteAssetsNothing": {"description": "Snack bar when the mod has no cached files"},
+  "deleteAssetsDone": "{count, plural, =1{Deleted 1 file} other{Deleted {count} files}}",
+  "@deleteAssetsDone": {
+    "description": "Snack bar after a mod's asset files were deleted",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "deleteFailedSuffix": "{summary}, {failed} failed",
+  "@deleteFailedSuffix": {
+    "description": "A delete summary with the failure count appended",
+    "placeholders": {
+      "summary": {"type": "String"},
+      "failed": {"type": "int"}
+    }
+  },
+
+  "cleanupScanning": "Scanning for unused files…",
+  "@cleanupScanning": {"description": "Text of the small modal shown while cleanup scans the asset folders"},
+  "cleanupNothing": "No unused files found",
+  "@cleanupNothing": {"description": "Snack bar when the cleanup scan found nothing to delete"},
+  "cleanupTitle": "Delete unused files?",
+  "@cleanupTitle": {"description": "Title of the cleanup confirmation dialog"},
+  "cleanupMessage": "{count, plural, =1{1 file ({size}) is not used by any mod, save or saved object.} other{{count} files ({size}) are not used by any mod, save or saved object.}}",
+  "@cleanupMessage": {
+    "description": "First line of the cleanup confirmation",
+    "placeholders": {
+      "count": {"type": "int"},
+      "size": {"type": "String"}
+    }
+  },
+  "cleanupPermanentNote": "The files are deleted permanently.",
+  "@cleanupPermanentNote": {"description": "Warning line of the cleanup confirmation"},
+  "cleanupPreviewAll": "Files ({count})",
+  "@cleanupPreviewAll": {
+    "description": "Heading of the expandable file list when every candidate is shown",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "cleanupPreviewFirst": "Files (first {shown} of {total})",
+  "@cleanupPreviewFirst": {
+    "description": "Heading of the expandable file list when it is truncated",
+    "placeholders": {
+      "shown": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "cleanupLegacyDuplicate": "legacy duplicate of {fileName}",
+  "@cleanupLegacyDuplicate": {
+    "description": "Marker after a file named for the old Steam Cloud host whose current-host twin exists",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+  "cleanupWarnings": "Warnings ({count})",
+  "@cleanupWarnings": {
+    "description": "Heading of the warnings list in the cleanup confirmation",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "cleanupDone": "{count, plural, =1{Deleted 1 file ({size})} other{Deleted {count} files ({size})}}",
+  "@cleanupDone": {
+    "description": "Snack bar after cleanup deleted files",
+    "placeholders": {
+      "count": {"type": "int"},
+      "size": {"type": "String"}
+    }
+  }
 }

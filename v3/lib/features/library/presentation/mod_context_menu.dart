@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/widgets/app_context_menu.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/images_viewer/presentation/images_viewer_page.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/delete_mod_dialog.dart';
@@ -28,9 +29,7 @@ bool hasWorkshopId(Mod mod) => int.tryParse(mod.id) != null;
 /// Phase 1: copy name/filename, open in file explorer, open the Workshop
 /// page, open the backup in file explorer. Live since Phase 2: view images,
 /// rename, delete, save as mod. Live since Phase 3: download, update from
-/// Workshop. Import backup and delete backup still show a "not
-/// implemented" snack bar until Phase 4 replaces their callbacks in
-/// [buildModContextMenu]; the list itself stays.
+/// Workshop. Live since Phase 4: import backup, delete backup.
 Future<void> showModContextMenu(
   BuildContext context,
   WidgetRef ref,
@@ -51,8 +50,6 @@ List<MenuEntry> buildModContextMenu(
   final l10n = AppLocalizations.of(context);
   final type = mod.ref.type;
   final backup = mod.backup;
-
-  void stub(String label) => showNotImplemented(context, label);
 
   return [
     if (mod.missingCount > 0)
@@ -117,7 +114,12 @@ List<MenuEntry> buildModContextMenu(
       MenuAction(
         label: l10n.menuImportBackup,
         icon: Icons.unarchive_outlined,
-        onPressed: () => stub(l10n.menuImportBackup),
+        onPressed: () => importBackup(
+          context,
+          ref,
+          backup,
+          targetJsonDir: p.dirname(mod.jsonPath),
+        ),
       ),
       MenuAction(
         label: l10n.menuOpenBackupInFileExplorer,
@@ -136,7 +138,7 @@ List<MenuEntry> buildModContextMenu(
         label: l10n.menuDeleteBackup,
         icon: Icons.delete_outline,
         destructive: true,
-        onPressed: () => stub(l10n.menuDeleteBackup),
+        onPressed: () => deleteBackupWithConfirm(context, ref, backup),
       ),
     ],
   ];

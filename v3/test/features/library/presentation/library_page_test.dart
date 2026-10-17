@@ -347,11 +347,9 @@ void main() {
     }
     expect(find.text('Save as Mod'), findsNothing);
 
-    // Stubbed actions show the not-implemented snack bar (Download is live;
-    // see test/features/downloads/presentation).
-    await tester.tap(find.text('Import backup'));
+    // The actions are covered by the wiring tests; close the menu.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    expect(find.text('Import backup: not implemented yet'), findsOneWidget);
 
     // Delta: complete, no backup.
     await tester.tap(card('Delta Mod'), buttons: kSecondaryButton);

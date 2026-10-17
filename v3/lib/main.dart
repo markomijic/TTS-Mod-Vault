@@ -8,6 +8,7 @@ import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/bootstrap/bootstrap.dart';
 import 'package:tts_mod_vault/bootstrap/startup_timeline.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
+import 'package:tts_mod_vault/data/legacy/hive_settings_importer.dart';
 
 Future<void> main() async {
   final timeline = StartupTimeline();
@@ -25,6 +26,7 @@ Future<void> main() async {
         keyValueStoreProvider.overrideWithValue(result.kv),
         appLogProvider.overrideWithValue(result.log),
         appDatabaseProvider.overrideWithValue(result.db),
+        legacyImporterProvider.overrideWithValue(result.legacyImporter),
         startupTimelineProvider.overrideWithValue(timeline),
       ],
       child: const App(),

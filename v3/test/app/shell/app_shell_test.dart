@@ -193,12 +193,12 @@ void main() {
     expect(inSidebar(find.text('Cleanup')), findsNothing);
   });
 
-  testWidgets('action items show the not-implemented snack bar', (
+  testWidgets('unwired footer items show the not-implemented snack bar', (
     tester,
   ) async {
     await pumpShell(tester);
 
-    await tester.tap(inSidebar(find.byTooltip('Cleanup')));
+    await tester.tap(inSidebar(find.byTooltip('Help')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 

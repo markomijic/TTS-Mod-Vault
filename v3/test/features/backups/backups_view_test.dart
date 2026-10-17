@@ -331,7 +331,7 @@ void main() {
     expect(container.read(selectionProvider), isEmpty);
   });
 
-  testWidgets('right-click selects and shows the four menu items', (
+  testWidgets('right-click selects and shows the five menu items', (
     tester,
   ) async {
     await pumpBackupsTab(tester);
@@ -344,22 +344,17 @@ void main() {
       'Import backup',
       'Open in file explorer',
       'Copy filename',
+      'Rename backup…',
       'Delete backup',
     ]) {
       expect(menuItem(label), findsOneWidget, reason: label);
     }
-    expect(find.byType(PopupMenuItem<MenuAction>), findsNWidgets(4));
+    expect(find.byType(PopupMenuItem<MenuAction>), findsNWidgets(5));
 
-    // Stubbed actions show the not-implemented snack bar.
-    await tester.tap(menuItem('Import backup'));
+    // The actions themselves are covered by the presentation wiring tests.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    expect(find.text('Import backup: not implemented yet'), findsOneWidget);
-
-    await tester.tap(card('Gamma Mod.ttsmod'), buttons: kSecondaryButton);
-    await tester.pumpAndSettle();
-    await tester.tap(menuItem('Delete backup'));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete backup: not implemented yet'), findsOneWidget);
+    expect(find.byType(PopupMenuItem<MenuAction>), findsNothing);
   });
 
   testWidgets('details panel lists the backup and its matching mod', (
@@ -390,6 +385,7 @@ void main() {
       'Import backup',
       'Open in file explorer',
       'Copy filename',
+      'Rename backup…',
       'Delete backup',
     ]) {
       expect(

@@ -585,9 +585,8 @@ void main() {
   });
 
   group('bottom bar', () {
-    testWidgets('Download all follows the missing count; Backup stubs', (
-      tester,
-    ) async {
+    testWidgets('Download all follows the missing count; the other buttons '
+        'are present', (tester) async {
       h.select(h.fixture.beta);
       await pumpPanel(tester, h);
       expect(
@@ -610,11 +609,8 @@ void main() {
         isNotNull,
       );
       // Download all and Check URLs are wired in
-      // test/features/downloads/presentation; Backup is still a stub.
-      await tester.tap(find.text('Backup'));
-      await tester.pumpAndSettle();
-      expect(find.text('Backup: not implemented yet'), findsOneWidget);
-
+      // test/features/downloads/presentation, Backup and Delete assets in
+      // test/features/backups and test/features/cleanup.
       for (final label in [
         'Backup',
         'Check URLs',

@@ -5,6 +5,8 @@ import 'package:tts_mod_vault/app/shell/operation_running_provider.dart'
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
+import 'package:tts_mod_vault/features/cleanup/presentation/delete_mod_assets_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_progress_bar.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
@@ -49,8 +51,8 @@ class OperationProgressSlot extends StatelessWidget {
 
 /// The per-mod action buttons (2.x `SelectedModActionButtons` plus the
 /// items of its overflow menu). "Download all" (disabled when nothing is
-/// missing) and "Check URLs" are live; Backup, Delete assets and Update
-/// URLs are Phase 4–5 stubs showing the "not implemented" snack bar.
+/// missing), "Check URLs", "Backup" and "Delete assets" are live; Update
+/// URLs is a Phase 5 stub showing the "not implemented" snack bar.
 class SelectedModActions extends ConsumerWidget {
   /// Creates the buttons for [mod].
   const SelectedModActions({super.key, required this.mod});
@@ -78,7 +80,7 @@ class SelectedModActions extends ConsumerWidget {
           label: Text(l10n.actionDownloadAll),
         ),
         FilledButton.tonalIcon(
-          onPressed: () => stub(l10n.actionBackup),
+          onPressed: running ? null : () => backupMod(context, ref, mod),
           icon: const Icon(Icons.archive_outlined),
           label: Text(l10n.actionBackup),
         ),
@@ -88,7 +90,9 @@ class SelectedModActions extends ConsumerWidget {
           label: Text(l10n.actionCheckUrls),
         ),
         FilledButton.tonalIcon(
-          onPressed: () => stub(l10n.actionDeleteAssets),
+          onPressed: running
+              ? null
+              : () => deleteModAssetsWithDialog(context, ref, mod),
           icon: const Icon(Icons.delete_outline),
           label: Text(l10n.actionDeleteAssets),
         ),

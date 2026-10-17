@@ -5,6 +5,9 @@ import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
 import 'package:tts_mod_vault/app/widgets/app_dialog.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/features/about/presentation/update_notice.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
+import 'package:tts_mod_vault/features/backups/presentation/import_json_dialog.dart';
+import 'package:tts_mod_vault/features/cleanup/presentation/cleanup_actions.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_page.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_progress_bar.dart';
@@ -60,7 +63,7 @@ class AppShell extends ConsumerWidget {
                     icon: Icons.cleaning_services_outlined,
                     label: l10n.actionCleanup,
                     enabled: enabled,
-                    onPressed: notImplemented,
+                    onPressed: () => runCleanup(context, ref),
                   ),
                 ],
                 [
@@ -68,13 +71,13 @@ class AppShell extends ConsumerWidget {
                     icon: Icons.unarchive_outlined,
                     label: l10n.actionImportBackups,
                     enabled: enabled,
-                    onPressed: notImplemented,
+                    onPressed: () => importBackupsFromPicker(context, ref),
                   ),
                   SidebarAction(
                     icon: Icons.upload_file_outlined,
                     label: l10n.actionImportJson,
                     enabled: enabled,
-                    onPressed: notImplemented,
+                    onPressed: () => showImportJsonDialog(context),
                   ),
                   SidebarAction(
                     icon: Icons.download_outlined,

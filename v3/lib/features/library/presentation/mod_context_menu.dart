@@ -4,12 +4,14 @@ import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/widgets/app_context_menu.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/images_viewer/presentation/images_viewer_page.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/delete_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/rename_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/save_as_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/item_actions.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
+import 'package:tts_mod_vault/features/workshop/presentation/update_from_workshop.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl;
 
@@ -25,10 +27,10 @@ bool hasWorkshopId(Mod mod) => int.tryParse(mod.id) != null;
 /// The item list and conditions are 2.x `showModContextMenu`. Live since
 /// Phase 1: copy name/filename, open in file explorer, open the Workshop
 /// page, open the backup in file explorer. Live since Phase 2: view images,
-/// rename, delete, save as mod. Download, update from Workshop, import
-/// backup and delete backup still show a "not implemented" snack bar until
-/// Phases 3 and 4 replace their callbacks in [buildModContextMenu]; the
-/// list itself stays.
+/// rename, delete, save as mod. Live since Phase 3: download, update from
+/// Workshop. Import backup and delete backup still show a "not
+/// implemented" snack bar until Phase 4 replaces their callbacks in
+/// [buildModContextMenu]; the list itself stays.
 Future<void> showModContextMenu(
   BuildContext context,
   WidgetRef ref,
@@ -57,7 +59,7 @@ List<MenuEntry> buildModContextMenu(
       MenuAction(
         label: l10n.menuDownload,
         icon: Icons.download_outlined,
-        onPressed: () => stub(l10n.menuDownload),
+        onPressed: () => downloadModAssets(context, ref, mod),
       ),
     MenuAction(
       label: l10n.menuViewImages,
@@ -79,7 +81,8 @@ List<MenuEntry> buildModContextMenu(
       MenuAction(
         label: l10n.menuUpdateFromWorkshop,
         icon: Icons.update,
-        onPressed: () => stub(l10n.menuUpdateFromWorkshop),
+        enabled: hasWorkshopId(mod),
+        onPressed: () => updateModsFromWorkshop(context, ref, [mod]),
       ),
     ],
     if (type == ModType.save)

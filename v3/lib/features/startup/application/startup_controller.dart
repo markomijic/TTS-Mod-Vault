@@ -62,9 +62,6 @@ class StartupController extends AsyncNotifier<StartupState> {
     final modsDirExists = exists(directories.modsDir);
     final savesDirExists = exists(directories.savesDir);
 
-    // TODO(v3): Phase 3 adds the GitHub release check here (v2 ran it in
-    // SplashPage between settings init and the folder check).
-
     if (!modsDirExists || !savesDirExists) {
       _log.warning(
         LogSource.app,

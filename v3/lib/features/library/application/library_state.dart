@@ -160,6 +160,34 @@ final class LibraryState {
     return copyWith(backups: patched);
   }
 
+  /// Copy in which [backup] replaces the stored backup with the same path
+  /// or, when none has that path, is appended. Returns `this` when the
+  /// stored backup is equal to [backup].
+  LibraryState withBackupUpserted(Backup backup) {
+    final index = backups.indexWhere((b) => b.path == backup.path);
+    if (index >= 0 && backups[index] == backup) return this;
+    final patched = List<Backup>.of(backups);
+    if (index >= 0) {
+      patched[index] = backup;
+    } else {
+      patched.add(backup);
+    }
+    return copyWith(backups: patched);
+  }
+
+  /// Copy without the backup at [path]. Mods that pointed at it keep their
+  /// stale `backup` until they are re-summarised. Returns `this` when the
+  /// path is unknown.
+  LibraryState withoutBackup(String path) {
+    if (!backups.any((b) => b.path == path)) return this;
+    return copyWith(
+      backups: [
+        for (final backup in backups)
+          if (backup.path != path) backup,
+      ],
+    );
+  }
+
   /// Index at which [mod] keeps [list] in the summary query's order.
   static int _insertionIndex(List<Mod> list, Mod mod) {
     final key = _orderKey(mod);

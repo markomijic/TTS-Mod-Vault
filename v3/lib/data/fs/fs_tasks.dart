@@ -42,6 +42,13 @@
 /// final counts = await pool.runAll(countBackupAssets, chunks);
 /// ```
 ///
+/// Phase 4 adds the zip writer / extractor (`zip/zip_writer.dart`,
+/// `zip/zip_extractor.dart`: `writeZipArchive`, `listZipEntries`,
+/// `readZipEntryBytes`, `extractZipEntries`) and the cleanup listings
+/// (`cleanup_directory_scanner.dart`: `scanCleanupDirectory`,
+/// `statFileSizes`); the zip tasks also have progress-reporting isolate
+/// variants for the operations that need a progress bar.
+///
 /// Each scanner also has a `...With(request, FileSystem)` variant that runs
 /// on any `package:file` file system; tests use `MemoryFileSystem`. Scanners
 /// never throw for a missing or unreadable directory: they return empty
@@ -50,6 +57,9 @@ library;
 
 export 'package:tts_mod_vault/data/fs/asset_directory_indexer.dart';
 export 'package:tts_mod_vault/data/fs/backup_file_scanner.dart';
+export 'package:tts_mod_vault/data/fs/cleanup_directory_scanner.dart';
 export 'package:tts_mod_vault/data/fs/mod_file_scanner.dart';
 export 'package:tts_mod_vault/data/fs/zip/zip_asset_counter.dart';
 export 'package:tts_mod_vault/data/fs/zip/zip_central_directory_reader.dart';
+export 'package:tts_mod_vault/data/fs/zip/zip_extractor.dart';
+export 'package:tts_mod_vault/data/fs/zip/zip_writer.dart';

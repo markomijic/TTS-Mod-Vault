@@ -10,6 +10,7 @@ import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/replace_url_dialog.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/library/application/mod_edit_service.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
@@ -32,7 +33,7 @@ Future<void> showAssetContextMenu(
 /// The entries of the asset context menu (2.x `showAssetContextMenu`).
 ///
 /// Live: open URL, copy URL, open file, open in file explorer, replace URL,
-/// shared with, delete file. Stubs until Phase 3: download, check URL.
+/// download (missing files only), check URL, shared with, delete file.
 /// Service errors surface as a snack bar with the failure message.
 List<MenuEntry> buildAssetContextMenu(
   BuildContext context,
@@ -44,9 +45,6 @@ List<MenuEntry> buildAssetContextMenu(
   // Read synchronously: the menu callbacks run after the row may be gone.
   final service = ref.read(modEditServiceProvider);
   final path = asset.path;
-
-  void stub(String label) =>
-      showAppSnackBar(context, l10n.notImplementedAction(label));
 
   return [
     MenuAction(
@@ -81,12 +79,12 @@ List<MenuEntry> buildAssetContextMenu(
       MenuAction(
         label: l10n.menuDownload,
         icon: Icons.download_outlined,
-        onPressed: () => stub(l10n.menuDownload),
+        onPressed: () => downloadSingleAsset(context, ref, mod, asset),
       ),
     MenuAction(
       label: l10n.assetMenuCheckUrl,
       icon: Icons.link,
-      onPressed: () => stub(l10n.assetMenuCheckUrl),
+      onPressed: () => checkSingleUrl(context, ref, asset.url),
     ),
     MenuAction(
       label: l10n.assetMenuSharedWith,

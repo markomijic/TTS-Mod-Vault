@@ -16,6 +16,7 @@ import 'package:drift/native.dart';
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hooks_riverpod/misc.dart' show Override;
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
@@ -223,8 +224,11 @@ final class AssetDetailHarness {
 
   /// Builds the container. The database holds a row for Alpha (so audio
   /// changes can be read back) and for Beta referencing Alpha's `img1`
-  /// file key (so "Shared with" has something to find).
-  static Future<AssetDetailHarness> create() async {
+  /// file key (so "Shared with" has something to find). [overrides] are
+  /// added after the harness's own (fake services, a running operation).
+  static Future<AssetDetailHarness> create({
+    List<Override> overrides = const [],
+  }) async {
     final fixture = AssetDetailFixture();
     final library = RecordingLibraryController(fixture.state);
     final store = InMemoryKeyValueStore();
@@ -252,6 +256,7 @@ final class AssetDetailHarness {
         modAssetsProvider.overrideWith(
           (ref, path) async => fixture.assetsByPath[path] ?? const <Asset>[],
         ),
+        ...overrides,
       ],
     );
     addTearDown(() async {

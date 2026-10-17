@@ -15,10 +15,12 @@ import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/about/presentation/update_notice.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_page.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
+import 'package:tts_mod_vault/features/workshop/presentation/download_workshop_mods_dialog.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Library double: an empty, already-refreshed library and a record of
@@ -66,6 +68,8 @@ Future<InMemoryKeyValueStore> pumpShell(
         keyValueStoreProvider.overrideWithValue(kv),
         libraryControllerProvider.overrideWith(() => spy),
         directoriesProvider.overrideWith(_FixedDirectoriesController.new),
+        // No GitHub release check in widget tests.
+        checkForUpdatesOnStartProvider.overrideWithValue(false),
       ],
       child: MaterialApp(
         theme: AppTheme.build(settings, Brightness.light),
@@ -199,6 +203,22 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Not implemented yet'), findsOneWidget);
+  });
+
+  testWidgets('Download Workshop mods opens its dialog', (tester) async {
+    await pumpShell(tester);
+
+    await tester.tap(inSidebar(find.byTooltip('Download Workshop mods')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DownloadWorkshopModsDialog), findsOneWidget);
+    expect(
+      find.text('Save to: ${shellDirectories.workshopDir}'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DownloadWorkshopModsDialog), findsNothing);
   });
 
   testWidgets('Refresh asks for confirmation and passes the checkbox', (

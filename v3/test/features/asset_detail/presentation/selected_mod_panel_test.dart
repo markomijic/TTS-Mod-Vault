@@ -296,9 +296,7 @@ void main() {
       expect(await h.store.read(AssetUrlFontSizeController.storageKey), '24.0');
     });
 
-    testWidgets('header stubs show the not-implemented snack bar', (
-      tester,
-    ) async {
+    testWidgets('header icons follow the group state', (tester) async {
       h.select(h.fixture.beta);
       await pumpPanel(tester, h);
 
@@ -308,12 +306,10 @@ void main() {
 
       h.select(h.fixture.alpha);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Download all missing images'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Download all missing images: not implemented yet'),
-        findsOneWidget,
-      );
+      // Alpha misses images, audio and a bundle; the download icons are
+      // wired in test/features/downloads/presentation.
+      expect(find.byTooltip('Download all missing images'), findsOneWidget);
+      expect(find.byTooltip('Download all missing audio'), findsOneWidget);
     });
 
     testWidgets('PDF header toggles thumbnails in the filter', (tester) async {
@@ -402,10 +398,7 @@ void main() {
       expect(find.text('Open file'), findsNothing);
       expect(find.text('Open in file explorer'), findsNothing);
       expect(find.text('Delete file'), findsNothing);
-
-      await tester.tap(find.text('Check URL'));
-      await tester.pumpAndSettle();
-      expect(find.text('Check URL: not implemented yet'), findsOneWidget);
+      await closeMenu(tester);
     });
 
     testWidgets('Delete file asks first, then deletes through the service', (
@@ -592,7 +585,7 @@ void main() {
   });
 
   group('bottom bar', () {
-    testWidgets('Download all follows the missing count; stubs snack', (
+    testWidgets('Download all follows the missing count; Backup stubs', (
       tester,
     ) async {
       h.select(h.fixture.beta);
@@ -608,9 +601,19 @@ void main() {
 
       h.select(h.fixture.alpha);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Download all'));
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Download all'),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      // Download all and Check URLs are wired in
+      // test/features/downloads/presentation; Backup is still a stub.
+      await tester.tap(find.text('Backup'));
       await tester.pumpAndSettle();
-      expect(find.text('Download all: not implemented yet'), findsOneWidget);
+      expect(find.text('Backup: not implemented yet'), findsOneWidget);
 
       for (final label in [
         'Backup',

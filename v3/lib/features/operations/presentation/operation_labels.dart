@@ -17,27 +17,26 @@ import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 /// Prefix of the per-type download labels (`downloading.images`, ...).
 const String downloadingLabelPrefix = 'downloading.';
 
-/// Label keys the Phase 4 operations are expected to report. They are
-/// mapped here so the bar reads well the moment those operations land; a
-/// key that is not listed falls back to [humanizeLabelKey].
+/// Label keys reported by the Phase 4 operations (`backup_operations.dart`,
+/// `cleanup_service.dart`, `delete_assets_service.dart`), mirrored here as
+/// literals so the bar does not depend on those libraries. A key that is
+/// not listed falls back to [humanizeLabelKey].
 abstract final class OperationLabelKeys {
-  /// Creating `.ttsmod` backups.
-  static const String backupCreating = 'backup.creating';
+  /// Writing a `.ttsmod` archive (`backupWritingLabel`; count = entries).
+  static const String backupWriting = 'backup.writing';
 
-  /// Importing `.ttsmod` backups.
-  static const String backupImporting = 'backup.importing';
+  /// Extracting a `.ttsmod` archive (`importExtractingLabel`; count =
+  /// entries).
+  static const String importExtracting = 'import.extracting';
 
-  /// Cleanup: scanning the asset folders for unused files.
-  static const String cleanupScanning = 'cleanup.scanning';
+  /// A multi-file import (`importFileLabel`; count = files).
+  static const String importFile = 'import.file';
 
-  /// Cleanup: deleting unused files.
+  /// Cleanup deleting orphaned files (`cleanupDeletingLabel`).
   static const String cleanupDeleting = 'cleanup.deleting';
 
-  /// Deleting the cached files of a mod.
-  static const String assetsDeleting = 'assets.deleting';
-
-  /// Rewriting asset URLs in mod files.
-  static const String urlsUpdating = 'urls.updating';
+  /// Deleting a mod's cached files (`deleteAssetsLabel`).
+  static const String deleteAssets = 'deleteAssets.deleting';
 }
 
 /// The text shown for [progress]: the label resolved from its key, with the
@@ -74,12 +73,11 @@ String _baseLabel(AppLocalizations l10n, String key) {
   return switch (key) {
     workshopDownloadProgressLabel => l10n.operationWorkshopDownloading,
     workshopUpdateProgressLabel => l10n.operationWorkshopUpdating,
-    OperationLabelKeys.backupCreating => l10n.operationBackupCreating,
-    OperationLabelKeys.backupImporting => l10n.operationBackupImporting,
-    OperationLabelKeys.cleanupScanning => l10n.operationCleanupScanning,
+    OperationLabelKeys.backupWriting => l10n.operationBackupWriting,
+    OperationLabelKeys.importExtracting => l10n.operationImportExtracting,
+    OperationLabelKeys.importFile => l10n.operationBackupImporting,
     OperationLabelKeys.cleanupDeleting => l10n.operationCleanupDeleting,
-    OperationLabelKeys.assetsDeleting => l10n.operationAssetsDeleting,
-    OperationLabelKeys.urlsUpdating => l10n.operationUrlsUpdating,
+    OperationLabelKeys.deleteAssets => l10n.operationAssetsDeleting,
     _ => humanizeLabelKey(key),
   };
 }

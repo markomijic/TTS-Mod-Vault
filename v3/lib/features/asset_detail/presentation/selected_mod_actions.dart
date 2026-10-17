@@ -5,6 +5,8 @@ import 'package:tts_mod_vault/app/shell/operation_running_provider.dart'
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
+import 'package:tts_mod_vault/features/operations/presentation/operation_progress_bar.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Bottom of the selected-mod view: the action buttons, or, while an
@@ -33,36 +35,23 @@ class SelectedModBottomBar extends ConsumerWidget {
   }
 }
 
-/// Placeholder shown in place of the buttons while an operation runs.
-///
-/// Phase 3 replaces this with the operation progress bar (status text,
-/// determinate progress and a Cancel button driven by the operations
-/// engine); keep the name so the swap is a one-line change in
-/// [SelectedModBottomBar].
+/// The bottom bar's progress slot: the [OperationProgressBar] bound to the
+/// operations engine (label, determinate progress, Cancel). While a library
+/// refresh runs (not a runner operation) the bar shows its idle placeholder.
 class OperationProgressSlot extends StatelessWidget {
-  /// Creates the placeholder.
+  /// Creates the slot.
   const OperationProgressSlot({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const LinearProgressIndicator(),
-        Gaps.h8,
-        Text(l10n.operationInProgress, style: theme.textTheme.bodySmall),
-      ],
-    );
-  }
+  Widget build(BuildContext context) =>
+      const OperationProgressBar(showWhenIdle: true);
 }
 
 /// The per-mod action buttons (2.x `SelectedModActionButtons` plus the
-/// items of its overflow menu). Every action is a Phase 3–5 stub showing
-/// the "not implemented" snack bar; "Download all" is disabled when
-/// nothing is missing.
-class SelectedModActions extends StatelessWidget {
+/// items of its overflow menu). "Download all" (disabled when nothing is
+/// missing) and "Check URLs" are live; Backup, Delete assets and Update
+/// URLs are Phase 4–5 stubs showing the "not implemented" snack bar.
+class SelectedModActions extends ConsumerWidget {
   /// Creates the buttons for [mod].
   const SelectedModActions({super.key, required this.mod});
 
@@ -70,8 +59,9 @@ class SelectedModActions extends StatelessWidget {
   final Mod mod;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final running = ref.watch(operationRunningProvider);
 
     void stub(String label) =>
         showAppSnackBar(context, l10n.notImplementedAction(label));
@@ -81,8 +71,8 @@ class SelectedModActions extends StatelessWidget {
       runSpacing: Insets.sm,
       children: [
         FilledButton.tonalIcon(
-          onPressed: mod.missingCount > 0
-              ? () => stub(l10n.actionDownloadAll)
+          onPressed: mod.missingCount > 0 && !running
+              ? () => downloadModAssets(context, ref, mod)
               : null,
           icon: const Icon(Icons.download_outlined),
           label: Text(l10n.actionDownloadAll),
@@ -93,7 +83,7 @@ class SelectedModActions extends StatelessWidget {
           label: Text(l10n.actionBackup),
         ),
         FilledButton.tonalIcon(
-          onPressed: () => stub(l10n.actionCheckUrls),
+          onPressed: running ? null : () => checkModUrls(context, ref, mod),
           icon: const Icon(Icons.link),
           label: Text(l10n.actionCheckUrls),
         ),

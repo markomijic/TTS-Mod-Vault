@@ -2,7 +2,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/shell/operation_running_provider.dart'
     show operationRunningProvider;
-import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/error_message.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/app/widgets/progress_message.dart';
@@ -10,6 +9,7 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/asset_detail_filter.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_url_row.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/pdf_thumbnail.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/images_viewer/presentation/images_viewer_page.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
@@ -187,7 +187,8 @@ class _EmptyHint extends ConsumerWidget {
 }
 
 /// Header of one asset group: the type label, a download icon when files
-/// are missing (Phase 3 wires it), the thumbnails/URLs toggle for PDFs and
+/// are missing (downloads the missing files of that type), the
+/// thumbnails/URLs toggle for PDFs and
 /// the images viewer button for images. The icons are disabled while an
 /// operation runs.
 class AssetGroupHeader extends ConsumerWidget {
@@ -233,12 +234,8 @@ class AssetGroupHeader extends ConsumerWidget {
                 tooltip: l10n.downloadMissingOfType(label.toLowerCase()),
                 onPressed: running
                     ? null
-                    : () => showAppSnackBar(
-                        context,
-                        l10n.notImplementedAction(
-                          l10n.downloadMissingOfType(label.toLowerCase()),
-                        ),
-                      ),
+                    : () =>
+                          downloadModAssetsOfType(context, ref, mod, row.type),
               ),
             if (row.type == AssetType.pdf)
               _HeaderIconButton(

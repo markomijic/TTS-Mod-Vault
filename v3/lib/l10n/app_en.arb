@@ -670,5 +670,215 @@
   "backupDetailMatchingMod": "Matching mod",
   "@backupDetailMatchingMod": {"description": "Backup detail row label: the mod that produces this backup's file name"},
   "showMod": "Show mod",
-  "@showMod": {"description": "Button in the backup details that switches to the matching mod's tab and selects it"}
+  "@showMod": {"description": "Button in the backup details that switches to the matching mod's tab and selects it"},
+
+  "copy": "Copy",
+  "@copy": {"description": "Generic dialog button that copies the dialog's text to the clipboard"},
+
+  "operationProgressCount": "{label} {done}/{total}",
+  "@operationProgressCount": {
+    "description": "Progress bar text with the item count appended, e.g. 'Downloading Images 3/12'",
+    "placeholders": {
+      "label": {"type": "String"},
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "operationDownloading": "Downloading {type}",
+  "@operationDownloading": {
+    "description": "Progress bar text while asset files of one type download; type is the plural asset type label",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "operationCheckedUrls": "Checked {done}/{total} URLs",
+  "@operationCheckedUrls": {
+    "description": "Progress bar text while a URL check runs",
+    "placeholders": {
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "operationCheckingUrls": "Checking URLs…",
+  "@operationCheckingUrls": {"description": "Progress bar text of a URL check before the URL count is known"},
+  "operationWorkshopDownloading": "Downloading Workshop items",
+  "@operationWorkshopDownloading": {"description": "Progress bar text while Workshop items download by id (count appended)"},
+  "operationWorkshopUpdating": "Updating Workshop mods",
+  "@operationWorkshopUpdating": {"description": "Progress bar text while mods update from the Steam Workshop (count appended)"},
+  "operationWorkshopFetchingDetails": "Fetching Workshop item details…",
+  "@operationWorkshopFetchingDetails": {"description": "Progress bar text while Steam is asked for item details"},
+  "operationBackupWriting": "Writing backup",
+  "@operationBackupWriting": {"description": "Progress bar text while a .ttsmod archive is written; the count is archive entries"},
+  "operationImportExtracting": "Extracting backup",
+  "@operationImportExtracting": {"description": "Progress bar text while a .ttsmod archive is extracted; the count is archive entries"},
+  "operationBackupImporting": "Importing backups",
+  "@operationBackupImporting": {"description": "Progress bar text of a multi-file backup import; the count is files"},
+  "operationCleanupDeleting": "Deleting unused files",
+  "@operationCleanupDeleting": {"description": "Progress bar text while cleanup deletes orphaned files (count appended)"},
+  "operationAssetsDeleting": "Deleting asset files",
+  "@operationAssetsDeleting": {"description": "Progress bar text while a mod's cached files are deleted (count appended)"},
+  "operationCancelling": "Cancelling…",
+  "@operationCancelling": {"description": "Disabled Cancel button text once cancellation of the running operation was requested"},
+  "operationAlreadyRunning": "An operation is already running",
+  "@operationAlreadyRunning": {"description": "Snack bar shown when an action is started while another operation runs"},
+
+  "downloadedFilesCount": "{count, plural, =0{Nothing to download} =1{Downloaded 1 file} other{Downloaded {count} files}}",
+  "@downloadedFilesCount": {
+    "description": "Snack bar shown after a download finished without failures",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "downloadResultsTitle": "Download results",
+  "@downloadResultsTitle": {"description": "Title of the dialog shown after a download with failures or a cancellation"},
+  "downloadResultsSummary": "Downloaded {downloaded} of {total} files",
+  "@downloadResultsSummary": {
+    "description": "First part of the download results summary line",
+    "placeholders": {
+      "downloaded": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "downloadResultsFailed": "{count, plural, =1{1 failed} other{{count} failed}}",
+  "@downloadResultsFailed": {
+    "description": "Failed count appended to the download results summary",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "downloadResultsSkipped": "{count, plural, =1{1 skipped} other{{count} skipped}}",
+  "@downloadResultsSkipped": {
+    "description": "Skipped count (ignored domain or duplicate) appended to the download results summary",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "downloadResultsCancelled": "{count, plural, =1{1 cancelled} other{{count} cancelled}}",
+  "@downloadResultsCancelled": {
+    "description": "Cancelled count appended to the download results summary",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "downloadResultsCancelledNote": "The download was cancelled before every file was tried.",
+  "@downloadResultsCancelledNote": {"description": "Note in the download results dialog when the operation was cancelled"},
+  "downloadResultsFailedHeading": "Failed downloads",
+  "@downloadResultsFailedHeading": {"description": "Heading above the failed URLs in the download results dialog"},
+  "downloadStatusHtmlErrorPage": "The server returned an HTML page instead of the file",
+  "@downloadStatusHtmlErrorPage": {"description": "Failure reason shown for a download that got an HTML error page"},
+  "downloadStatusFailed": "Download failed",
+  "@downloadStatusFailed": {"description": "Failure reason shown when no HTTP status or error text is known"},
+  "httpStatusLabel": "HTTP {status}",
+  "@httpStatusLabel": {
+    "description": "HTTP status code of a failed request",
+    "placeholders": {"status": {"type": "int"}}
+  },
+
+  "urlCheckCancelledTitle": "URL check cancelled",
+  "@urlCheckCancelledTitle": {"description": "Title of the URL check results dialog when the check was cancelled"},
+  "urlCheckInvalidCount": "Invalid URLs: {count}",
+  "@urlCheckInvalidCount": {
+    "description": "Heading of the URL check results when dead URLs were found",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "urlCheckAllValid": "All URLs are valid",
+  "@urlCheckAllValid": {"description": "Heading of the URL check results when every URL answered"},
+  "urlCheckNoneBeforeCancel": "No invalid URLs found before cancelling",
+  "@urlCheckNoneBeforeCancel": {"description": "Heading of the URL check results when the check was cancelled with no dead URLs so far"},
+  "urlCheckCheckedCount": "Checked {checked} of {total} URLs",
+  "@urlCheckCheckedCount": {
+    "description": "Partial count line of a cancelled URL check",
+    "placeholders": {
+      "checked": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "urlCheckCopyAll": "Copy all invalid URLs",
+  "@urlCheckCopyAll": {"description": "Button that copies every invalid URL to the clipboard"},
+  "urlCheckRecheck": "Re-check",
+  "@urlCheckRecheck": {"description": "Button that closes the URL check results and runs the check again"},
+  "urlCheckSingleValid": "URL is valid",
+  "@urlCheckSingleValid": {"description": "Snack bar after the asset menu's Check URL found the URL reachable"},
+  "urlCheckSingleInvalid": "URL is not reachable",
+  "@urlCheckSingleInvalid": {"description": "Snack bar after the asset menu's Check URL found the URL dead"},
+
+  "workshopDownloadTitle": "Download Workshop mods",
+  "@workshopDownloadTitle": {"description": "Title of the dialog that downloads Workshop mods by id"},
+  "workshopDownloadHint": "Enter Workshop ids or item URLs, one per line or separated by commas",
+  "@workshopDownloadHint": {"description": "Hint of the id field in the Download Workshop mods dialog"},
+  "workshopIdsRecognised": "{count, plural, =0{No ids recognised} =1{1 id recognised} other{{count} ids recognised}}",
+  "@workshopIdsRecognised": {
+    "description": "Count of Workshop ids parsed from the field",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "workshopSaveTo": "Save to: {folder}",
+  "@workshopSaveTo": {
+    "description": "Target folder line of the Download Workshop mods dialog",
+    "placeholders": {"folder": {"type": "String"}}
+  },
+  "workshopSelectFolder": "Select folder",
+  "@workshopSelectFolder": {"description": "Button that opens the folder picker for the download target"},
+  "couldNotOpenFolderPicker": "Could not open the folder picker",
+  "@couldNotOpenFolderPicker": {"description": "Snack bar shown when the OS folder picker failed to open"},
+  "workshopDownloadResultsTitle": "Workshop download complete",
+  "@workshopDownloadResultsTitle": {"description": "Title of the results dialog after downloading Workshop items"},
+  "workshopDownloadCancelledTitle": "Workshop download cancelled",
+  "@workshopDownloadCancelledTitle": {"description": "Title of the results dialog when the Workshop download was cancelled"},
+  "workshopUpdateResultsTitle": "Update complete",
+  "@workshopUpdateResultsTitle": {"description": "Title of the results dialog after updating mods from the Workshop"},
+  "workshopUpdateCancelledTitle": "Update cancelled",
+  "@workshopUpdateCancelledTitle": {"description": "Title of the results dialog when the Workshop update was cancelled"},
+  "workshopResultsCompleteNote": "The operation finished.",
+  "@workshopResultsCompleteNote": {"description": "Line under the title of a Workshop results dialog when the operation ran to the end"},
+  "workshopResultsCancelledNote": "The operation was cancelled; the items below were processed before that.",
+  "@workshopResultsCancelledNote": {"description": "Line under the title of a Workshop results dialog when the operation was cancelled"},
+  "workshopSectionDownloaded": "Downloaded",
+  "@workshopSectionDownloaded": {"description": "Results section: Workshop items that were downloaded"},
+  "workshopSectionUpdated": "Updated",
+  "@workshopSectionUpdated": {"description": "Results section: mods that were updated"},
+  "workshopSectionUpToDate": "Already up to date",
+  "@workshopSectionUpToDate": {"description": "Results section: mods whose Steam version was not newer"},
+  "workshopSectionFailed": "Failed",
+  "@workshopSectionFailed": {"description": "Results section: items that failed"},
+  "workshopSectionCancelled": "Cancelled",
+  "@workshopSectionCancelled": {"description": "Results section: items not processed because of cancellation"},
+  "workshopSectionCount": "{title} ({count})",
+  "@workshopSectionCount": {
+    "description": "Results section heading with its item count",
+    "placeholders": {
+      "title": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "workshopStatusNotFound": "The item is not on the Workshop",
+  "@workshopStatusNotFound": {"description": "Failure reason: Steam does not know the id"},
+  "workshopStatusUnlisted": "The item is unlisted or private",
+  "@workshopStatusUnlisted": {"description": "Failure reason: Steam exposes no file for the item"},
+  "workshopStatusWrongApp": "The item does not belong to Tabletop Simulator",
+  "@workshopStatusWrongApp": {"description": "Failure reason: the item is for another game"},
+  "workshopStatusInvalid": "Steam returned no usable details",
+  "@workshopStatusInvalid": {"description": "Failure reason: the Steam response could not be parsed"},
+  "workshopUpdateConfirmTitle": "Update from Steam Workshop?",
+  "@workshopUpdateConfirmTitle": {"description": "Title of the confirmation before updating mods from the Workshop"},
+  "workshopUpdateConfirmOne": "\"{name}\" will be downloaded again if the Steam Workshop has a newer version.",
+  "@workshopUpdateConfirmOne": {
+    "description": "Body of the update confirmation for one mod",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "workshopUpdateConfirmMany": "{count} mods will be downloaded again if the Steam Workshop has a newer version.",
+  "@workshopUpdateConfirmMany": {
+    "description": "Body of the update confirmation for several mods",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "workshopForceUpdate": "Force update",
+  "@workshopForceUpdate": {"description": "Checkbox in the update confirmation: download even when Steam is not newer"},
+  "workshopForceUpdateInfo": "Download the mod again even when the Steam Workshop version is not newer.",
+  "@workshopForceUpdateInfo": {"description": "Tooltip of the info icon next to the Force update checkbox"},
+  "workshopUpdateAction": "Update",
+  "@workshopUpdateAction": {"description": "Confirm button of the update-from-Workshop dialog"},
+
+  "updateAvailableTitle": "Update available",
+  "@updateAvailableTitle": {"description": "Title of the dialog shown when a newer app version is on GitHub"},
+  "updateAvailableMessage": "Your version: {current}\nLatest version: {latest}\n\nA new application version is available.\nWould you like to open the download page?",
+  "@updateAvailableMessage": {
+    "description": "Body of the update available dialog",
+    "placeholders": {
+      "current": {"type": "String"},
+      "latest": {"type": "String"}
+    }
+  },
+  "updateNexusMods": "Nexus Mods",
+  "@updateNexusMods": {"description": "Update dialog button that opens the Nexus Mods page"},
+  "updateGitHub": "GitHub",
+  "@updateGitHub": {"description": "Update dialog button that opens the GitHub release page"}
 }

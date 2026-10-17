@@ -174,6 +174,28 @@ class LibraryController extends AsyncNotifier<LibraryState> {
     if (!identical(next, current)) state = AsyncData(next);
   }
 
+  /// Adds [backup] to the state or replaces the stored backup at its path
+  /// (after a backup was written; the `backups` row must already be
+  /// upserted by the caller). The matching mod is not re-attached here; a
+  /// following [resummarizeMod] of it does that.
+  void upsertBackup(Backup backup) {
+    final current = state.value;
+    if (current == null) return;
+    final next = current.withBackupUpserted(backup);
+    if (!identical(next, current)) state = AsyncData(next);
+  }
+
+  /// Drops the backup at [path] from the state (after it was deleted on
+  /// disk; the `backups` row must already be removed by the caller). The
+  /// mod that pointed at it keeps its stale `backup` until it is
+  /// re-summarised with [resummarizeMod].
+  void removeBackup(String path) {
+    final current = state.value;
+    if (current == null) return;
+    final next = current.withoutBackup(path);
+    if (!identical(next, current)) state = AsyncData(next);
+  }
+
   /// Re-queries the summaries of every mod referencing any of [fileKeys]
   /// (after files were downloaded or deleted) and patches them into the
   /// state. The `existing_files` rows must already be updated by the caller.

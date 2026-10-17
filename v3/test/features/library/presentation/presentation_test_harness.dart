@@ -1,4 +1,4 @@
-// Shared fixtures for the Mods page widget tests: a fixed library of six
+// Shared fixtures for the library page widget tests: a fixed library of six
 // mods and one save (no IO beyond one tiny PNG for the "image present"
 // case), a spy library controller and a pump helper that renders the page
 // inside a themed, localised MaterialApp at desktop size.
@@ -22,7 +22,7 @@ import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/mod_assets_provider.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
-import 'package:tts_mod_vault/features/library/presentation/mods_page.dart';
+import 'package:tts_mod_vault/features/library/presentation/library_page.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
@@ -234,28 +234,39 @@ final class SpyLibraryController extends LibraryController {
   }
 }
 
-/// A [DirectoriesController] that answers with [fixtureDirectories].
+/// A [DirectoriesController] that answers with [directories], by default
+/// [fixtureDirectories].
 final class FixtureDirectoriesController extends DirectoriesController {
+  FixtureDirectoriesController([Directories? directories])
+    : directories = directories ?? fixtureDirectories;
+
+  /// The folders served by `build`.
+  final Directories directories;
+
   @override
-  Future<Directories> build() async => fixtureDirectories;
+  Future<Directories> build() async => directories;
 }
 
-/// The overrides every Mods page test needs.
-List<Override> modsPageOverrides({
+/// The overrides every library page test needs. [directories] replaces
+/// [fixtureDirectories] (for example to drop the backups folder).
+List<Override> libraryPageOverrides({
   required LibraryController Function() library,
   InMemoryKeyValueStore? store,
+  Directories? directories,
 }) => [
   keyValueStoreProvider.overrideWithValue(store ?? InMemoryKeyValueStore()),
   libraryControllerProvider.overrideWith(library),
-  directoriesProvider.overrideWith(FixtureDirectoriesController.new),
+  directoriesProvider.overrideWith(
+    () => FixtureDirectoriesController(directories),
+  ),
   // The selected-mod panel reads the store for the asset list; serve none.
   modAssetsProvider.overrideWith((ref, path) async => const <Asset>[]),
 ];
 
-/// Pumps [ModsPage] inside a themed, localised `MaterialApp` with the
+/// Pumps [LibraryPage] inside a themed, localised `MaterialApp` with the
 /// providers of [container], at a window wide enough for the two-column
 /// layout, and lets the first frame settle.
-Future<void> pumpModsPage(
+Future<void> pumpLibraryPage(
   WidgetTester tester,
   ProviderContainer container,
 ) async {
@@ -275,7 +286,7 @@ Future<void> pumpModsPage(
           ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(body: ModsPage()),
+        home: const Scaffold(body: LibraryPage()),
       ),
     ),
   );

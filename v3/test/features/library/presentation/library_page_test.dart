@@ -4,11 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backups_view.dart';
+import 'package:tts_mod_vault/features/backups/presentation/selected_backup_panel.dart';
+import 'package:tts_mod_vault/features/library/application/library_settings.dart';
+import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_grid_card.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_list_item.dart';
+import 'package:tts_mod_vault/features/library/presentation/mods_view.dart';
+import 'package:tts_mod_vault/features/library/presentation/selected_mod_panel.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/library_search_field.dart';
+import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 
 import 'presentation_test_harness.dart';
 
@@ -25,17 +32,110 @@ void main() {
     controller = SpyLibraryController(library.state);
     store = InMemoryKeyValueStore();
     container = ProviderContainer.test(
-      overrides: modsPageOverrides(library: () => controller, store: store),
+      overrides: libraryPageOverrides(library: () => controller, store: store),
     );
   });
 
   Finder card(String name) =>
       find.ancestor(of: find.text(name), matching: find.byType(ModsGridCard));
 
+  Finder segment(String label) => find.descendant(
+    of: find.byType(SegmentedButton<LibraryTab>),
+    matching: find.text(label),
+  );
+
+  testWidgets('tabs follow includeSavedObjects and the backups folder', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+
+    expect(segment('Mods'), findsOneWidget);
+    expect(segment('Saves'), findsOneWidget);
+    expect(segment('Backups'), findsOneWidget);
+    expect(segment('Saved Objects'), findsNothing);
+
+    await container
+        .read(libraryOptionsProvider.notifier)
+        .setIncludeSavedObjects(true);
+    await tester.pumpAndSettle();
+    expect(segment('Saved Objects'), findsOneWidget);
+
+    await container
+        .read(libraryOptionsProvider.notifier)
+        .setIncludeSavedObjects(false);
+    await tester.pumpAndSettle();
+    expect(segment('Saved Objects'), findsNothing);
+  });
+
+  testWidgets('no Backups tab without a backups folder', (tester) async {
+    final noBackups = ProviderContainer.test(
+      overrides: libraryPageOverrides(
+        library: () => SpyLibraryController(library.state),
+        store: store,
+        directories: fixtureDirectories.copyWith(backupsDir: ''),
+      ),
+    );
+    await pumpLibraryPage(tester, noBackups);
+
+    expect(segment('Mods'), findsOneWidget);
+    expect(segment('Saves'), findsOneWidget);
+    expect(segment('Backups'), findsNothing);
+  });
+
+  testWidgets('switching to Backups swaps the toolbar, view and panel', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+    expect(find.byType(ModsView), findsOneWidget);
+    expect(find.byType(SelectedModPanel), findsOneWidget);
+
+    await tester.tap(segment('Backups'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(libraryTabProvider), LibraryTab.backups);
+    expect(find.byType(BackupsView), findsOneWidget);
+    expect(find.byType(ModsView), findsNothing);
+    expect(find.byType(SelectedBackupPanel), findsOneWidget);
+    expect(find.byType(SelectedModPanel), findsNothing);
+    // Backups toolbar instead of the mods one.
+    expect(find.text('Name A-Z'), findsOneWidget);
+    expect(find.text('Import selected (0)'), findsOneWidget);
+    expect(find.textContaining('Bulk actions'), findsNothing);
+    expect(find.text('Select a backup'), findsOneWidget);
+    // The fixture has no backups.
+    expect(
+      find.text('No backups found in ${fixtureDirectories.backupsDir}'),
+      findsOneWidget,
+    );
+
+    await tester.tap(segment('Mods'));
+    await tester.pumpAndSettle();
+    expect(container.read(libraryTabProvider), LibraryTab.mods);
+    expect(find.byType(ModsGridCard), findsNWidgets(5));
+  });
+
+  testWidgets('Backups tab falls back to Mods when the folder is removed', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+    await tester.tap(segment('Backups'));
+    await tester.pumpAndSettle();
+    expect(container.read(libraryTabProvider), LibraryTab.backups);
+
+    await container
+        .read(directoriesProvider.notifier)
+        .set(fixtureDirectories.copyWith(backupsDir: ''));
+    await tester.pumpAndSettle();
+
+    expect(container.read(libraryTabProvider), LibraryTab.mods);
+    expect(segment('Backups'), findsNothing);
+    expect(find.byType(ModsGridCard), findsNWidgets(5));
+  });
+
   testWidgets('grid renders one card per mod of the selected type', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     expect(find.byType(ModsGridCard), findsNWidgets(5));
     expect(cardNamesOf(tester), [
@@ -61,7 +161,7 @@ void main() {
   });
 
   testWidgets('search filters after the debounce', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     await tester.enterText(find.byType(TextField), 'beta');
     await tester.pump(searchDebounce + const Duration(milliseconds: 20));
@@ -77,7 +177,7 @@ void main() {
   });
 
   testWidgets('no match shows the filters hint', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     await tester.enterText(find.byType(TextField), 'zzz');
     await tester.pump(searchDebounce + const Duration(milliseconds: 20));
@@ -88,7 +188,7 @@ void main() {
   });
 
   testWidgets('sort menu changes the order', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     await tester.tap(find.text('A-Z'));
     await tester.pumpAndSettle();
@@ -109,7 +209,7 @@ void main() {
   testWidgets('folder filter narrows the grid and shows a badge', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     await tester.tap(find.text('Filters'));
     await tester.pumpAndSettle();
@@ -132,7 +232,7 @@ void main() {
   testWidgets('list/grid toggle switches the view and persists', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     await tester.tap(find.byTooltip('Show as list'));
     await tester.pumpAndSettle();
@@ -151,7 +251,7 @@ void main() {
   });
 
   testWidgets('click selects, Ctrl-click toggles, Esc clears', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     final scheme = Theme.of(tester.element(find.byType(ModsGridCard).first))
         .colorScheme;
 
@@ -206,7 +306,7 @@ void main() {
   });
 
   testWidgets('Ctrl+F focuses the search field', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.focusNode!.hasFocus, isFalse);
 
@@ -221,7 +321,7 @@ void main() {
   testWidgets('right-click shows the mod menu with the expected items', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     // Beta: missing assets and a backup.
     await tester.tap(card('Beta Mod'), buttons: kSecondaryButton);
@@ -265,7 +365,7 @@ void main() {
   testWidgets('right-click on a save offers Save as Mod, no Workshop items', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     await tester.tap(find.text('Saves'));
     await tester.pumpAndSettle();
@@ -284,7 +384,7 @@ void main() {
   testWidgets('Copy name puts the display name on the clipboard', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     final clipboardCalls = <Object?>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
@@ -314,7 +414,7 @@ void main() {
   });
 
   testWidgets('missing and audio badges follow the summary', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     expect(find.text('2 missing'), findsOneWidget);
     expect(find.text('1 missing'), findsOneWidget);
@@ -333,7 +433,7 @@ void main() {
   testWidgets('backup badge is coloured by status and hides with the option', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     // Alpha, Beta and Gamma have backups; Delta and Epsilon do not.
     expect(find.byIcon(Icons.folder_zip_outlined), findsNWidgets(3));
@@ -368,7 +468,7 @@ void main() {
   testWidgets('switching the type clears the selection and search', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
 
     await tester.tap(find.byType(ModsGridCard).first); // Alpha (A-Z)
     await tester.enterText(find.byType(TextField), 'alp');

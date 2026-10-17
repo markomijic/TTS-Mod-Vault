@@ -174,8 +174,8 @@ Future<void> pumpStartupApp(
     ),
   );
   // Not pumpAndSettle: an indeterminate progress indicator never settles.
-  // A few timed frames let the async store reads, the startup controller's
-  // scheduled load, the AnimatedSwitcher and the sidebar animation finish.
+  // A few timed frames let the async store reads, the Checking state's
+  // indicator delay, the AnimatedSwitcher and the sidebar animation finish.
   await tester.pump();
   for (var i = 0; i < 4; i++) {
     await tester.pump(const Duration(milliseconds: 400));

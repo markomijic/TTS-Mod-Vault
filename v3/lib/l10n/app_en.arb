@@ -601,5 +601,74 @@
   "@savedAsMod": {
     "description": "Snack bar after a save was copied into the Workshop folder",
     "placeholders": {"name": {"type": "String"}}
-  }
+  },
+
+  "libraryTabBackups": "Backups",
+  "@libraryTabBackups": {"description": "Fourth segment of the library type selector; shown only when a backups folder is set"},
+  "backupsCount": "{count, plural, =1{1 backup} other{{count} backups}}",
+  "@backupsCount": {
+    "description": "Part of the type selector tooltip: how many backups the library holds",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "backupSortNameAsc": "Name A-Z",
+  "@backupSortNameAsc": {"description": "Backups sort option: file name ascending"},
+  "backupSortNameDesc": "Name Z-A",
+  "@backupSortNameDesc": {"description": "Backups sort option: file name descending"},
+  "backupSortSizeDesc": "Largest first",
+  "@backupSortSizeDesc": {"description": "Backups sort option: file size descending"},
+  "backupSortSizeAsc": "Smallest first",
+  "@backupSortSizeAsc": {"description": "Backups sort option: file size ascending"},
+  "backupSortDateDesc": "Newest first",
+  "@backupSortDateDesc": {"description": "Backups sort option: modification date descending"},
+  "backupSortDateAsc": "Oldest first",
+  "@backupSortDateAsc": {"description": "Backups sort option: modification date ascending"},
+
+  "filterSectionMatchingMod": "Matching mod",
+  "@filterSectionMatchingMod": {"description": "Heading of the backups filter menu section with the has/no matching mod items"},
+  "backupMatchHasMod": "Has matching mod",
+  "@backupMatchHasMod": {"description": "Backups filter item and badge tooltip: a mod in the library produces this backup's file name"},
+  "backupMatchNoMod": "No matching mod",
+  "@backupMatchNoMod": {"description": "Backups filter item, badge tooltip and detail value: no mod in the library produces this backup's file name"},
+
+  "importSelectedBackups": "Import selected ({count})",
+  "@importSelectedBackups": {
+    "description": "Backups toolbar button; count is the number of backups the import would apply to",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "backupsHelp": "• Left-click a backup to see its details and actions\n• Right-click a backup for more actions\n• {modifier}-click to select several backups\n• Hover the badge on a backup to see whether it has a matching mod\n• Hover the Backups tab to see how many there are\n• Import selected respects the search text and filters",
+  "@backupsHelp": {
+    "description": "Bullet help shown by the info icon of the backups toolbar",
+    "placeholders": {"modifier": {"type": "String"}}
+  },
+
+  "noBackupsMatchFilters": "No backups match the current filters",
+  "@noBackupsMatchFilters": {"description": "Centred hint when a search text or filter hides every backup"},
+  "noBackupsFound": "No backups found in {folder}",
+  "@noBackupsFound": {
+    "description": "Centred hint when the backups folder holds no .ttsmod archives",
+    "placeholders": {"folder": {"type": "String"}}
+  },
+
+  "selectABackup": "Select a backup",
+  "@selectABackup": {"description": "Header of the right panel on the Backups tab when nothing is selected"},
+  "selectedBackupsCount": "{count, plural, =1{1 backup selected} other{{count} backups selected}}",
+  "@selectedBackupsCount": {
+    "description": "Header of the right panel while several backups are selected",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "backupDetailFolder": "Folder",
+  "@backupDetailFolder": {"description": "Backup detail row label: the archive's parent folder name"},
+  "backupDetailPath": "Path",
+  "@backupDetailPath": {"description": "Backup detail row label: the archive's full path"},
+  "backupDetailSize": "Size",
+  "@backupDetailSize": {"description": "Backup detail row label: the archive's file size"},
+  "backupDetailModified": "Modified",
+  "@backupDetailModified": {"description": "Backup detail row label: the archive's modification date"},
+  "backupDetailAssets": "Assets in backup",
+  "@backupDetailAssets": {"description": "Backup detail row label: number of asset files inside the archive"},
+  "backupDetailMatchingMod": "Matching mod",
+  "@backupDetailMatchingMod": {"description": "Backup detail row label: the mod that produces this backup's file name"},
+  "showMod": "Show mod",
+  "@showMod": {"description": "Button in the backup details that switches to the matching mod's tab and selects it"}
 }

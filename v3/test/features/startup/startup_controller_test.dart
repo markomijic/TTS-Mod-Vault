@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
+import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/directories.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
@@ -15,41 +19,117 @@ void main() {
     required Set<String> existing,
     InMemoryKeyValueStore? store,
     int libraryFailures = 0,
+    int directoriesFailures = 0,
   }) {
     library = FakeLibraryController(failures: libraryFailures);
     final container = ProviderContainer(
       retry: (retryCount, error) => null,
-      overrides: startupOverrides(
-        existing: existing,
-        store: store,
-        library: () => library,
-      ),
+      overrides: [
+        ...startupOverrides(
+          existing: existing,
+          store: store,
+          library: () => library,
+        ),
+        if (directoriesFailures > 0)
+          directoriesProvider.overrideWith(
+            () => _FailingDirectoriesController(directoriesFailures),
+          ),
+      ],
     );
     addTearDown(container.dispose);
     return container;
   }
 
-  test(
-    'both default folders exist: Loading, then Ready after refresh',
-    () async {
-      final container = createContainer(
+  List<LogEntry> logEntries(ProviderContainer container) =>
+      container.read(appLogProvider).store.entries;
+
+  test('both default folders exist: Ready right away, refresh started '
+      'once', () async {
+    final container = createContainer(
+      existing: {testDefaults.modsDir, testDefaults.savesDir},
+    );
+
+    final seen = <StartupState>[];
+    container.listen<AsyncValue<StartupState>>(startupControllerProvider, (
+      previous,
+      next,
+    ) {
+      final value = next.value;
+      if (value != null) seen.add(value);
+    }, fireImmediately: true);
+
+    final state = await container.read(startupControllerProvider.future);
+
+    expect(state, const StartupReady());
+    expect(seen, [const StartupReady()]);
+    expect(library.refreshCalls, 1);
+    expect(
+      logEntries(container).map((entry) => entry.message),
+      containsAllInOrder([
+        'Using TTS folders',
+        startsWith('Refreshing library: sinceMainMs='),
+        startsWith('Startup complete, showing the shell: sinceMainMs='),
+      ]),
+    );
+  });
+
+  test('Ready does not wait for the refresh to finish', () async {
+    final container = ProviderContainer(
+      retry: (retryCount, error) => null,
+      overrides: startupOverrides(
         existing: {testDefaults.modsDir, testDefaults.savesDir},
+        library: _NeverFinishingLibraryController.new,
+      ),
+    );
+    addTearDown(container.dispose);
+
+    final state = await container
+        .read(startupControllerProvider.future)
+        .timeout(const Duration(seconds: 1));
+
+    expect(state, const StartupReady());
+  });
+
+  test('a throwing refresh is logged and startup still ends Ready', () async {
+    final container = createContainer(
+      existing: {testDefaults.modsDir, testDefaults.savesDir},
+      libraryFailures: 1,
+    );
+
+    final state = await container.read(startupControllerProvider.future);
+    // Let the failed refresh future settle.
+    await Future<void>.delayed(Duration.zero);
+
+    expect(state, const StartupReady());
+    expect(
+      container.read(startupControllerProvider).value,
+      isA<StartupReady>(),
+    );
+    expect(container.read(startupControllerProvider).hasError, isFalse);
+    expect(library.refreshCalls, 1);
+    final failure = logEntries(container).singleWhere(
+      (entry) => entry.message == 'Library refresh failed during startup',
+    );
+    expect(failure.level, LogLevel.error);
+    expect(failure.details, contains('boom'));
+  });
+
+  test(
+    'a library controller that fails in build does not fail startup',
+    () async {
+      final container = ProviderContainer(
+        retry: (retryCount, error) => null,
+        overrides: startupOverrides(
+          existing: {testDefaults.modsDir, testDefaults.savesDir},
+          library: _BuildFailingLibraryController.new,
+        ),
       );
+      addTearDown(container.dispose);
 
-      final seen = <StartupState>[];
-      container.listen<AsyncValue<StartupState>>(startupControllerProvider, (
-        previous,
-        next,
-      ) {
-        final value = next.value;
-        if (value != null) seen.add(value);
-      }, fireImmediately: true);
+      final state = await container.read(startupControllerProvider.future);
 
-      await waitForStartupState(container, (state) => state is StartupReady);
-
-      expect(seen.first, const StartupLoading());
-      expect(seen.last, const StartupReady());
-      expect(library.refreshCalls, 1);
+      expect(state, const StartupReady());
+      expect(container.read(libraryControllerProvider).hasError, isTrue);
     },
   );
 
@@ -74,6 +154,7 @@ void main() {
       state,
       const StartupNeedsDirectories(modsDirExists: false, savesDirExists: true),
     );
+    expect(library.refreshCalls, 0);
   });
 
   test('stored directories are used instead of the defaults', () async {
@@ -87,17 +168,16 @@ void main() {
       store: store,
     );
 
-    final state = await waitForStartupState(
-      container,
-      (state) => state is StartupReady,
-    );
+    final state = await container.read(startupControllerProvider.future);
 
     expect(state, const StartupReady());
+    expect(library.refreshCalls, 1);
   });
 
   group('continueWithDirectories', () {
-    test('a parent folder containing Mods and Saves resolves to the children '
-        'and is persisted', () async {
+    test('a parent folder containing Mods and Saves resolves to the children, '
+        'is persisted, and startup ends Ready with the refresh '
+        'started', () async {
       final store = InMemoryKeyValueStore();
       final container = createContainer(
         existing: {pickedTts, pickedMods, pickedSaves, pickedBackups},
@@ -246,28 +326,29 @@ void main() {
   });
 
   group('failure and retry', () {
-    test('a throwing refresh ends in Failed with the error', () async {
+    test('a failing folder lookup ends in Failed, not AsyncError', () async {
       final container = createContainer(
         existing: {testDefaults.modsDir, testDefaults.savesDir},
-        libraryFailures: 1,
+        directoriesFailures: 1,
       );
 
-      final state = await waitForStartupState(
-        container,
-        (state) => state is StartupFailed,
-      );
+      final state = await container.read(startupControllerProvider.future);
 
       expect(state, isA<StartupFailed>());
-      expect((state as StartupFailed).error.toString(), contains('boom'));
+      expect((state as StartupFailed).error.toString(), contains('store'));
       expect(container.read(startupControllerProvider).hasError, isFalse);
+      expect(library.refreshCalls, 0);
     });
 
-    test('retry re-runs the sequence and recovers', () async {
+    test('retry re-reads the folders and recovers', () async {
       final container = createContainer(
         existing: {testDefaults.modsDir, testDefaults.savesDir},
-        libraryFailures: 1,
+        directoriesFailures: 1,
       );
-      await waitForStartupState(container, (state) => state is StartupFailed);
+      expect(
+        await container.read(startupControllerProvider.future),
+        isA<StartupFailed>(),
+      );
 
       container.read(startupControllerProvider.notifier).retry();
       final state = await waitForStartupState(
@@ -276,31 +357,21 @@ void main() {
       );
 
       expect(state, const StartupReady());
-      expect(library.refreshCalls, 2);
+      expect(library.refreshCalls, 1);
     });
 
-    test(
-      'a library controller that fails in build also ends in Failed',
-      () async {
-        final container = ProviderContainer(
-          retry: (retryCount, error) => null,
-          overrides: [
-            ...startupOverrides(
-              existing: {testDefaults.modsDir, testDefaults.savesDir},
-              library: _BuildFailingLibraryController.new,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+    test('retry from Ready runs the check and the refresh again', () async {
+      final container = createContainer(
+        existing: {testDefaults.modsDir, testDefaults.savesDir},
+      );
+      await container.read(startupControllerProvider.future);
 
-        final state = await waitForStartupState(
-          container,
-          (state) => state is StartupFailed,
-        );
+      container.read(startupControllerProvider.notifier).retry();
+      final state = await container.read(startupControllerProvider.future);
 
-        expect((state as StartupFailed).error.toString(), contains('scan'));
-      },
-    );
+      expect(state, const StartupReady());
+      expect(library.refreshCalls, 2);
+    });
   });
 }
 
@@ -313,4 +384,29 @@ class _BuildFailingLibraryController extends LibraryController {
 
   @override
   Future<void> refresh({bool clearCache = false}) async {}
+}
+
+class _NeverFinishingLibraryController extends LibraryController {
+  @override
+  Future<LibraryState> build() async => LibraryState.empty;
+
+  @override
+  Future<void> refresh({bool clearCache = false}) => Completer<void>().future;
+}
+
+/// Directories controller whose `build` throws for the first `failures`
+/// builds, then behaves like the real one.
+class _FailingDirectoriesController extends DirectoriesController {
+  _FailingDirectoriesController(this._failures);
+
+  int _failures;
+
+  @override
+  Future<Directories> build() {
+    if (_failures > 0) {
+      _failures--;
+      throw StateError('store unavailable');
+    }
+    return super.build();
+  }
 }

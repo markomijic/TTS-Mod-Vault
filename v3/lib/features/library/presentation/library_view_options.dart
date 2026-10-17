@@ -6,7 +6,7 @@ import 'package:tts_mod_vault/app/theme/theme_controller.dart'
     show keyValueStoreProvider;
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 
-/// How the Mods page shows its items.
+/// How the library page shows its items.
 ///
 /// Defaults match 2.x: grid, no titles on cards, backup state shown. Phase 5
 /// folds these into the Settings dialog; until then they are persisted on
@@ -16,6 +16,7 @@ final class LibraryViewOptions {
   /// Creates the options.
   const LibraryViewOptions({
     this.useListView = false,
+    this.useBackupsListView = false,
     this.showTitleOnCards = false,
     this.showBackupState = true,
   });
@@ -27,6 +28,10 @@ final class LibraryViewOptions {
       useListView: switch (json['useListView']) {
         final bool v => v,
         _ => d.useListView,
+      },
+      useBackupsListView: switch (json['useBackupsListView']) {
+        final bool v => v,
+        _ => d.useBackupsListView,
       },
       showTitleOnCards: switch (json['showTitleOnCards']) {
         final bool v => v,
@@ -42,8 +47,11 @@ final class LibraryViewOptions {
   /// The 2.x defaults.
   static const LibraryViewOptions defaults = LibraryViewOptions();
 
-  /// Rows instead of cards.
+  /// Rows instead of cards on the mod tabs.
   final bool useListView;
+
+  /// Rows instead of cards on the Backups tab (2.x `useBackupsListView`).
+  final bool useBackupsListView;
 
   /// Show the name band at the bottom of every grid card.
   final bool showTitleOnCards;
@@ -54,6 +62,7 @@ final class LibraryViewOptions {
   /// JSON form for the key-value store.
   Map<String, Object?> toJson() => {
     'useListView': useListView,
+    'useBackupsListView': useBackupsListView,
     'showTitleOnCards': showTitleOnCards,
     'showBackupState': showBackupState,
   };
@@ -61,10 +70,12 @@ final class LibraryViewOptions {
   /// Copy with some fields replaced.
   LibraryViewOptions copyWith({
     bool? useListView,
+    bool? useBackupsListView,
     bool? showTitleOnCards,
     bool? showBackupState,
   }) => LibraryViewOptions(
     useListView: useListView ?? this.useListView,
+    useBackupsListView: useBackupsListView ?? this.useBackupsListView,
     showTitleOnCards: showTitleOnCards ?? this.showTitleOnCards,
     showBackupState: showBackupState ?? this.showBackupState,
   );
@@ -73,16 +84,22 @@ final class LibraryViewOptions {
   bool operator ==(Object other) =>
       other is LibraryViewOptions &&
       other.useListView == useListView &&
+      other.useBackupsListView == useBackupsListView &&
       other.showTitleOnCards == showTitleOnCards &&
       other.showBackupState == showBackupState;
 
   @override
-  int get hashCode =>
-      Object.hash(useListView, showTitleOnCards, showBackupState);
+  int get hashCode => Object.hash(
+    useListView,
+    useBackupsListView,
+    showTitleOnCards,
+    showBackupState,
+  );
 
   @override
   String toString() =>
       'LibraryViewOptions(useListView: $useListView, '
+      'useBackupsListView: $useBackupsListView, '
       'showTitleOnCards: $showTitleOnCards, showBackupState: $showBackupState)';
 }
 
@@ -132,6 +149,14 @@ final class LibraryViewOptionsController extends Notifier<LibraryViewOptions> {
 
   /// Flips between grid and list.
   Future<void> toggleListView() => setUseListView(!state.useListView);
+
+  /// Switches the Backups tab between grid and list.
+  Future<void> setUseBackupsListView(bool value) =>
+      set(state.copyWith(useBackupsListView: value));
+
+  /// Flips the Backups tab between grid and list.
+  Future<void> toggleBackupsListView() =>
+      setUseBackupsListView(!state.useBackupsListView);
 
   /// Shows or hides the title band on grid cards.
   Future<void> setShowTitleOnCards(bool value) =>

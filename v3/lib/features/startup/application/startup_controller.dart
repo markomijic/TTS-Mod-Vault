@@ -32,17 +32,32 @@ final startupControllerProvider =
       StartupController.new,
     );
 
-/// Port of 2.x `SplashPage`: check the stored Mods and Saves folders, let the
-/// user pick them when missing, refresh the library, hand over to the shell.
+/// Checks the stored Mods and Saves folders, lets the user pick them when
+/// missing, then hands over to the shell and starts the first library
+/// refresh behind it (plan section 9, "No splash in the common case").
 ///
 /// The provider's `AsyncLoading` phase is the [StartupChecking] state; every
 /// later state is an `AsyncData`. Errors never surface as `AsyncError`: a
-/// failed library refresh becomes [StartupFailed] so the page can offer a
-/// Retry button.
+/// failed folder lookup becomes [StartupFailed] so the page can offer a
+/// Retry button. A failed library refresh is not a startup failure: the
+/// library provider ends as `AsyncError` and the library page shows it.
 class StartupController extends AsyncNotifier<StartupState> {
   @override
   Future<StartupState> build() async {
-    final directories = await ref.read(directoriesProvider.future);
+    final Directories directories;
+    try {
+      directories = await ref.read(directoriesProvider.future);
+    } on Object catch (error, stackTrace) {
+      if (!ref.mounted) return const StartupChecking();
+      _log.error(
+        LogSource.app,
+        'Could not read the stored TTS folders',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return StartupFailed(error, stackTrace);
+    }
+    if (!ref.mounted) return const StartupChecking();
     final exists = ref.read(directoryExistsProvider);
     final modsDirExists = exists(directories.modsDir);
     final savesDirExists = exists(directories.savesDir);
@@ -69,13 +84,12 @@ class StartupController extends AsyncNotifier<StartupState> {
       'Using TTS folders',
       details: 'mods: ${directories.modsDir}, saves: ${directories.savesDir}',
     );
-    // The refresh runs after build has settled so the Loading state is
-    // observable before Ready/Failed replace it.
-    unawaited(Future<void>(_load));
-    return const StartupLoading();
+    _startRefresh();
+    return const StartupReady();
   }
 
-  /// Validates [picked], persists the resolved folders and loads the library.
+  /// Validates [picked], persists the resolved folders, shows the shell and
+  /// starts the library refresh.
   ///
   /// The Mods and Saves paths may be the folders themselves or a parent that
   /// contains them (the TTS data folder); see `resolveModsDir` and
@@ -118,7 +132,6 @@ class StartupController extends AsyncNotifier<StartupState> {
       savesDir: savesDir,
       backupsDir: picked.backupsDir,
     );
-    state = const AsyncData(StartupLoading());
     await ref.read(directoriesProvider.notifier).set(resolved);
     if (!ref.mounted) return;
     _log.info(
@@ -128,40 +141,51 @@ class StartupController extends AsyncNotifier<StartupState> {
           'mods: ${resolved.modsDir}, saves: ${resolved.savesDir}'
           '${resolved.hasBackupsDir ? ', backups: ${resolved.backupsDir}' : ''}',
     );
-    await _load();
+    // The refresh starts first so the shell's first frame already sees the
+    // library provider loading.
+    _startRefresh();
+    state = const AsyncData(StartupReady());
   }
 
-  /// Runs the whole sequence again from the folder check.
+  /// Runs the whole sequence again from the folder check. After a
+  /// [StartupFailed] the stored folders are read again too, since that read
+  /// is what failed.
   void retry() {
     _log.info(LogSource.app, 'Retrying startup');
+    if (state.value is StartupFailed) ref.invalidate(directoriesProvider);
     ref.invalidateSelf();
   }
 
-  Future<void> _load() async {
-    if (!ref.mounted) return;
-    state = const AsyncData(StartupLoading());
+  /// Logs the hand-over to the shell and kicks off the first library refresh
+  /// without waiting for it. The library provider reports progress and
+  /// failures itself; a refresh that throws is only logged here.
+  void _startRefresh() {
+    final log = _log;
     final timeline = ref.read(startupTimelineProvider)
       ..mark(StartupTimeline.refreshRequested);
-    _log.info(
+    log.info(
       LogSource.app,
       'Refreshing library: sinceMainMs=${timeline.elapsedMs}',
     );
-    try {
-      await ref.read(libraryControllerProvider.notifier).refresh();
-      await ref.read(libraryControllerProvider.future);
-      if (!ref.mounted) return;
-      _log.success(LogSource.app, 'Startup complete');
-      state = const AsyncData(StartupReady());
-    } on Object catch (error, stackTrace) {
-      if (!ref.mounted) return;
-      _log.error(
-        LogSource.app,
-        'Library refresh failed during startup',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      state = AsyncData(StartupFailed(error, stackTrace));
-    }
+    final library = ref.read(libraryControllerProvider.notifier);
+    // `Future.sync` runs `refresh` right away (the library provider is
+    // loading before the shell's first frame) and turns a synchronous throw
+    // into a failed future.
+    unawaited(
+      Future<void>.sync(library.refresh)
+          .catchError((Object error, StackTrace stackTrace) {
+            log.error(
+              LogSource.app,
+              'Library refresh failed during startup',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }),
+    );
+    log.success(
+      LogSource.app,
+      'Startup complete, showing the shell: sinceMainMs=${timeline.elapsedMs}',
+    );
   }
 
   AppLog get _log => ref.read(appLogProvider);

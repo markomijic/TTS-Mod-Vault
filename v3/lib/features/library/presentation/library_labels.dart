@@ -1,4 +1,5 @@
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Localised names of [ModType].
@@ -74,5 +75,16 @@ extension AssetTypeLabels on AssetType {
     AssetType.image => l10n.assetTypeImages,
     AssetType.model => l10n.assetTypeModels,
     AssetType.pdf => l10n.assetTypePdfs,
+  };
+}
+
+/// Localised names of [LibraryTab].
+extension LibraryTabLabels on LibraryTab {
+  /// Segment label ("Mods", "Backups").
+  String title(AppLocalizations l10n) => switch (this) {
+    LibraryTab.mods => ModType.mod.title(l10n),
+    LibraryTab.saves => ModType.save.title(l10n),
+    LibraryTab.savedObjects => ModType.savedObject.title(l10n),
+    LibraryTab.backups => l10n.libraryTabBackups,
   };
 }

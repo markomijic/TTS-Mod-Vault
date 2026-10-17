@@ -216,7 +216,7 @@ Riverpod 3 specifics applied here: `retry` disabled on the root `ProviderScope` 
 
 - One `AppTheme` built from `ThemeSettings` (4.7). No literal `Colors.*` or `TextStyle(fontSize:)` in features; spacing via a small `Gaps`/`Insets` constant set. Semantic colours (asset present / missing / invalid, backup up-to-date / out-of-date / mismatch) come from a `VaultColors` `ThemeExtension`, so they follow the scheme and can be themed too.
 - Shell: a custom `VaultSidebar` keeps every v2 sidebar item in the sidebar (decided: no move to page toolbars). It is not a Material `NavigationRail`, because rails are destination-only; it is a themed column built from M3 parts (`IconButton`/`FilledTonalButton`, `Tooltip`, `Divider`) so it still follows the colour scheme and typography. No hover behaviour at all: collapsed by default (icons with tooltips), a chevron at the top toggles the labelled wide form, and that choice is persisted. Users with a left-side OS taskbar can mouse across it freely.
-  - Section 1 (destinations, highlighted when active): Mods, Backups.
+  - ~~Section 1 (destinations, highlighted when active): Mods, Backups.~~ Superseded 2026-10-17 (see decisions log): there is one library page; Backups is a tab in the type selector (Mods | Saves | Saved Objects | Backups), shown only when a backups folder is set. The sidebar carries actions only.
   - Section 2: Refresh, Cleanup.
   - Section 3: Import backups, Import JSON, Download Workshop mods.
   - Bottom: Help, Settings.
@@ -414,7 +414,12 @@ Resolved 2026-10-17:
 - Sidebar: all v2 sidebar items stay in the sidebar; custom `VaultSidebar`, no hover, persisted toggle (4.6).
 - Benchmark: the real library at `C:\Users\Marko\Documents\My Games\Tabletop Simulator` plus a generated stress library; protocol and safety rules in section 10.
 
-Nothing open. Phase 0 can start.
+Resolved 2026-10-17 (evening, after trying the Phase 2 build):
+
+- **One library page, no Mods/Backups destinations.** The type selector becomes Mods | Saves | Saved Objects (setting) | Backups (only when a backups folder is set). The toolbar adapts per tab: backups get their own sort (name/size/date), filters (folder, has matching mod), search and view toggle; the right panel shows backup details and actions. Sidebar = actions only (Refresh, Cleanup | Import backups, Import JSON, Download Workshop mods | Help, Settings). Phase 4's "Backups page" becomes the Backups tab.
+- **No splash in the common case.** The library loads in well under a second, so when the folders are valid the shell renders immediately and the refresh runs behind it; a loading indicator appears only if the first refresh is still running after ~400 ms. Directory selection and failure screens stay.
+
+Nothing open.
 
 ## 10. Benchmark protocol
 

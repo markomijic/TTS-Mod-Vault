@@ -2,11 +2,20 @@ import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_hooks/flutter_hooks.dart' show useFocusNode;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tts_mod_vault/app/widgets/delayed_progress.dart';
 import 'package:tts_mod_vault/app/widgets/error_message.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
-import 'package:tts_mod_vault/app/widgets/progress_message.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backups_view.dart';
+import 'package:tts_mod_vault/features/backups/presentation/selected_backup_panel.dart';
+import 'package:tts_mod_vault/features/backups/presentation/toolbar/backup_filter_menu_button.dart';
+import 'package:tts_mod_vault/features/backups/presentation/toolbar/backup_search_field.dart';
+import 'package:tts_mod_vault/features/backups/presentation/toolbar/backup_sort_menu_button.dart';
+import 'package:tts_mod_vault/features/backups/presentation/toolbar/backups_help_tooltip.dart';
+import 'package:tts_mod_vault/features/backups/presentation/toolbar/import_selected_backups_button.dart';
+import 'package:tts_mod_vault/features/library/application/backup_view_providers.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
+import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
 import 'package:tts_mod_vault/features/library/application/refresh_progress.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
@@ -16,48 +25,59 @@ import 'package:tts_mod_vault/features/library/presentation/toolbar/bulk_actions
 import 'package:tts_mod_vault/features/library/presentation/toolbar/filter_menu_button.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/library_help_tooltip.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/library_search_field.dart';
-import 'package:tts_mod_vault/features/library/presentation/toolbar/mod_type_selector.dart';
+import 'package:tts_mod_vault/features/library/presentation/toolbar/library_tab_selector.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/sort_menu_button.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/view_toggle_button.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
+export 'package:tts_mod_vault/app/widgets/delayed_progress.dart'
+    show libraryLoadingIndicatorDelay;
+
 /// Height of the thin refresh indicator above the toolbar.
 const double _refreshBarHeight = 3;
 
-/// The Mods page: toolbar, grid or list, and the selected-mod panel.
+/// The one library page: tab selector and toolbar, grid or list, and the
+/// detail panel. The Mods, Saves and Saved Objects tabs show mods; the
+/// Backups tab (only when a backups folder is set) shows backup archives
+/// with its own search, sort, filters, view toggle and panel.
 ///
 /// Layout (2.x proportions):
 /// ```
 /// Row
-/// ├─ Expanded(flex: 2) ModsColumn
+/// ├─ Expanded(flex: 2) LibraryColumn
 /// │   ├─ thin LinearProgressIndicator while a refresh runs
-/// │   ├─ Wrap toolbar (type selector, search, sort, filters, view toggle,
-/// │   │  bulk actions, help)
-/// │   ├─ Expanded(ModsView | ProgressMessage | ErrorMessage)
+/// │   ├─ Wrap toolbar (tab selector + tab-dependent controls)
+/// │   ├─ Expanded(ModsView | BackupsView | progress | error)
 /// │   └─ bottomSlot (log panel and progress bar dock here later)
-/// └─ Expanded(flex: 1) SelectedModPanel
+/// └─ Expanded(flex: 1) SelectedModPanel | SelectedBackupPanel
 /// ```
 ///
-/// Keyboard: Ctrl/Cmd+F focuses the search field; Esc clears the selection,
-/// or unfocuses the search field when it has focus.
-class ModsPage extends HookConsumerWidget {
+/// Keyboard: Ctrl/Cmd+F focuses the search field of the current tab; Esc
+/// clears the current tab's selection, or unfocuses the search field when
+/// it has focus.
+class LibraryPage extends HookConsumerWidget {
   /// Creates the page.
-  const ModsPage({super.key, this.bottomSlot = const SizedBox.shrink()});
+  const LibraryPage({super.key, this.bottomSlot = const SizedBox.shrink()});
 
   /// Docked under the list; the log panel and progress bar go here.
   final Widget bottomSlot;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pageFocus = useFocusNode(debugLabel: 'ModsPage');
+    final pageFocus = useFocusNode(debugLabel: 'LibraryPage');
     final searchFocus = useFocusNode(debugLabel: 'LibrarySearch');
+    final isBackups = ref.watch(
+      libraryTabProvider.select((tab) => tab == LibraryTab.backups),
+    );
 
     void focusSearch() => searchFocus.requestFocus();
 
     void escape() {
       if (searchFocus.hasFocus) {
         pageFocus.requestFocus();
+      } else if (ref.read(libraryTabProvider) == LibraryTab.backups) {
+        ref.read(backupSelectionProvider.notifier).clear();
       } else {
         ref.read(selectionProvider.notifier).clear();
       }
@@ -77,12 +97,16 @@ class ModsPage extends HookConsumerWidget {
           children: [
             Expanded(
               flex: 2,
-              child: ModsColumn(
+              child: LibraryColumn(
                 searchFocusNode: searchFocus,
                 bottomSlot: bottomSlot,
               ),
             ),
-            const Expanded(child: SelectedModPanel()),
+            Expanded(
+              child: isBackups
+                  ? const SelectedBackupPanel()
+                  : const SelectedModPanel(),
+            ),
           ],
         ),
       ),
@@ -90,16 +114,16 @@ class ModsPage extends HookConsumerWidget {
   }
 }
 
-/// Toolbar, list and bottom slot of the Mods page.
-class ModsColumn extends ConsumerWidget {
+/// Toolbar, list and bottom slot of the library page.
+class LibraryColumn extends ConsumerWidget {
   /// Creates the column.
-  const ModsColumn({
+  const LibraryColumn({
     super.key,
     required this.searchFocusNode,
     required this.bottomSlot,
   });
 
-  /// Focus node handed to the search field.
+  /// Focus node handed to the search field of the current tab.
   final FocusNode searchFocusNode;
 
   /// Docked under the list.
@@ -107,6 +131,9 @@ class ModsColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isBackups = ref.watch(
+      libraryTabProvider.select((tab) => tab == LibraryTab.backups),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -123,20 +150,29 @@ class ModsColumn extends ConsumerWidget {
             runSpacing: Insets.sm,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const ModTypeSelector(),
-              LibrarySearchField(focusNode: searchFocusNode),
-              const SortMenuButton(),
-              const FilterMenuButton(),
-              const ViewToggleButton(),
-              const BulkActionsButton(),
-              const LibraryHelpTooltip(),
+              const LibraryTabSelector(),
+              if (isBackups) ...[
+                BackupSearchField(focusNode: searchFocusNode),
+                const BackupSortMenuButton(),
+                const BackupFilterMenuButton(),
+                const ViewToggleButton(backups: true),
+                const ImportSelectedBackupsButton(),
+                const BackupsHelpTooltip(),
+              ] else ...[
+                LibrarySearchField(focusNode: searchFocusNode),
+                const SortMenuButton(),
+                const FilterMenuButton(),
+                const ViewToggleButton(),
+                const BulkActionsButton(),
+                const LibraryHelpTooltip(),
+              ],
             ],
           ),
         ),
-        const Expanded(
+        Expanded(
           child: Padding(
-            padding: EdgeInsets.only(left: Insets.sm),
-            child: _LibraryBody(),
+            padding: const EdgeInsets.only(left: Insets.sm),
+            child: _LibraryBody(isBackups: isBackups),
           ),
         ),
         bottomSlot,
@@ -164,10 +200,12 @@ class _RefreshBar extends ConsumerWidget {
   }
 }
 
-/// Picks between the progress message (first load), the error message and
-/// the mods view.
+/// Picks between the (delayed) progress message of the first load, the
+/// error message and the current tab's view.
 class _LibraryBody extends ConsumerWidget {
-  const _LibraryBody();
+  const _LibraryBody({required this.isBackups});
+
+  final bool isBackups;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -188,10 +226,14 @@ class _LibraryBody extends ConsumerWidget {
         ),
       );
     }
+    if (isBackups) return const BackupsView();
     return ModsView(emptyHintBuilder: (context) => const _EmptyHint());
   }
 }
 
+/// The first-load indicator: invisible for [libraryLoadingIndicatorDelay],
+/// then the refresh phase and count (plan: no splash when the library loads
+/// in well under a second).
 class _RefreshProgressMessage extends ConsumerWidget {
   const _RefreshProgressMessage();
 
@@ -200,10 +242,10 @@ class _RefreshProgressMessage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final progress = ref.watch(refreshProgressProvider);
     if (progress == null) {
-      return ProgressMessage(message: l10n.startupLoading);
+      return DelayedProgressMessage(message: l10n.startupLoading);
     }
     final fraction = progress.fraction;
-    return ProgressMessage(
+    return DelayedProgressMessage(
       message: progress.phase.label(l10n),
       value: fraction,
       detail: fraction == null

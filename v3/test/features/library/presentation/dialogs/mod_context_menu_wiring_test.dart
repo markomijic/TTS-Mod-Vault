@@ -22,7 +22,7 @@ void main() {
   setUp(() {
     container = ProviderContainer.test(
       overrides: [
-        ...modsPageOverrides(
+        ...libraryPageOverrides(
           library: () => SpyLibraryController(library.state),
         ),
       ],
@@ -40,7 +40,7 @@ void main() {
   testWidgets('Rename opens the rename dialog for the clicked mod', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     await openMenu(tester, card('Beta Mod'));
     await tester.tap(find.text('Rename mod'));
     await tester.pumpAndSettle();
@@ -54,7 +54,7 @@ void main() {
   testWidgets('Delete opens the confirmation for the clicked mod', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     await openMenu(tester, card('Delta Mod'));
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
@@ -69,7 +69,7 @@ void main() {
   testWidgets('Save as Mod opens the save-as dialog for a save', (
     tester,
   ) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     await tester.tap(find.text('Saves'));
     await tester.pumpAndSettle();
     await openMenu(tester, find.byType(ModsGridCard));
@@ -81,7 +81,7 @@ void main() {
   });
 
   testWidgets('View images pushes the images viewer', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     await openMenu(tester, card('Beta Mod'));
     await tester.tap(find.text('View images'));
     await tester.pumpAndSettle();
@@ -92,7 +92,7 @@ void main() {
   });
 
   testWidgets('Download is still stubbed', (tester) async {
-    await pumpModsPage(tester, container);
+    await pumpLibraryPage(tester, container);
     await openMenu(tester, card('Beta Mod'));
     await tester.tap(find.text('Download'));
     await tester.pumpAndSettle();

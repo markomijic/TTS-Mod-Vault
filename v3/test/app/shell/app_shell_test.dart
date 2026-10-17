@@ -7,21 +7,19 @@ import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:tts_mod_vault/app/app.dart';
-import 'package:tts_mod_vault/app/shell/placeholders.dart';
+import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/app/shell/app_shell.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
+import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
+import 'package:tts_mod_vault/app/theme/theme_settings.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
+import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
-import 'package:tts_mod_vault/features/library/presentation/mods_page.dart';
-import 'package:tts_mod_vault/features/startup/application/startup_controller.dart';
-
-/// Startup double that skips the folder check and library refresh so the
-/// shell renders immediately.
-class _ReadyStartupController extends StartupController {
-  @override
-  Future<StartupState> build() async => const StartupReady();
-}
+import 'package:tts_mod_vault/features/library/application/library_tab.dart';
+import 'package:tts_mod_vault/features/library/presentation/library_page.dart';
+import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
+import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Library double: an empty, already-refreshed library and a record of
 /// `refresh` calls (no IO).
@@ -37,7 +35,21 @@ class SpyLibraryController extends LibraryController {
   }
 }
 
-Future<InMemoryKeyValueStore> pumpApp(
+/// Folders of a library that has a backups folder set.
+final Directories shellDirectories = Directories(
+  modsDir: p.join('C:', 'TTS', 'Mods'),
+  savesDir: p.join('C:', 'TTS', 'Saves'),
+  backupsDir: p.join('C:', 'TTS', 'Backups'),
+);
+
+class _FixedDirectoriesController extends DirectoriesController {
+  @override
+  Future<Directories> build() async => shellDirectories;
+}
+
+/// Pumps [AppShell] on its own (no startup flow) inside a themed, localised
+/// `MaterialApp` at desktop size.
+Future<InMemoryKeyValueStore> pumpShell(
   WidgetTester tester, {
   InMemoryKeyValueStore? store,
   SpyLibraryController? library,
@@ -47,14 +59,25 @@ Future<InMemoryKeyValueStore> pumpApp(
   tester.view.physicalSize = const Size(1280, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+  final settings = ThemeSettings.defaults();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         keyValueStoreProvider.overrideWithValue(kv),
-        startupControllerProvider.overrideWith(_ReadyStartupController.new),
         libraryControllerProvider.overrideWith(() => spy),
+        directoriesProvider.overrideWith(_FixedDirectoriesController.new),
       ],
-      child: const App(),
+      child: MaterialApp(
+        theme: AppTheme.build(settings, Brightness.light),
+        darkTheme: AppTheme.build(settings, Brightness.dark),
+        themeMode: ThemeMode.dark,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const AppShell(),
+      ),
     ),
   );
   // Let the async store reads complete and the width animation settle.
@@ -68,58 +91,63 @@ Finder inSidebar(Finder matching) =>
 double sidebarWidth(WidgetTester tester) =>
     tester.getSize(find.byType(VaultSidebar)).width;
 
+const List<String> sidebarLabels = [
+  'Refresh',
+  'Cleanup',
+  'Import backups',
+  'Import JSON',
+  'Download Workshop mods',
+  'Help',
+  'Settings',
+];
+
 void main() {
-  testWidgets('renders both destinations collapsed with tooltips', (
-    tester,
-  ) async {
-    await pumpApp(tester);
+  testWidgets('renders the action groups collapsed with tooltips and the '
+      'library page', (tester) async {
+    await pumpShell(tester);
 
     expect(find.byType(VaultSidebar), findsOneWidget);
     expect(sidebarWidth(tester), VaultSidebar.collapsedWidth);
-    expect(inSidebar(find.byTooltip('Mods')), findsOneWidget);
-    expect(inSidebar(find.byTooltip('Backups')), findsOneWidget);
-    expect(inSidebar(find.byTooltip('Refresh')), findsOneWidget);
-    expect(inSidebar(find.byTooltip('Settings')), findsOneWidget);
-    // Collapsed form shows no labels.
-    expect(inSidebar(find.text('Backups')), findsNothing);
-    expect(find.byType(ModsPage), findsOneWidget);
-  });
+    for (final label in sidebarLabels) {
+      expect(inSidebar(find.byTooltip(label)), findsOneWidget, reason: label);
+      // Collapsed form shows no labels.
+      expect(inSidebar(find.text(label)), findsNothing, reason: label);
+    }
+    // No destinations: the tabs live in the page's type selector.
+    expect(inSidebar(find.byTooltip('Mods')), findsNothing);
+    expect(inSidebar(find.byTooltip('Backups')), findsNothing);
+    // One divider between the two action groups, one before the footer.
+    expect(inSidebar(find.byType(Divider)), findsNWidgets(2));
 
-  testWidgets('switching to Backups shows the Backups placeholder', (
-    tester,
-  ) async {
-    await pumpApp(tester);
-
-    await tester.tap(inSidebar(find.byTooltip('Backups')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(BackupsPage), findsOneWidget);
-    expect(find.byType(ModsPage), findsNothing);
-    expect(find.text('Backups'), findsOneWidget);
-
-    await tester.tap(inSidebar(find.byTooltip('Mods')));
-    await tester.pumpAndSettle();
-    expect(find.byType(ModsPage), findsOneWidget);
+    expect(find.byType(LibraryPage), findsOneWidget);
+    final selector = find.byType(SegmentedButton<LibraryTab>);
+    expect(selector, findsOneWidget);
+    for (final tab in ['Mods', 'Saves', 'Backups']) {
+      expect(
+        find.descendant(of: selector, matching: find.text(tab)),
+        findsOneWidget,
+        reason: tab,
+      );
+    }
   });
 
   testWidgets('chevron toggles labels and persists the flag', (tester) async {
-    final store = await pumpApp(tester);
+    final store = await pumpShell(tester);
 
     await tester.tap(find.byTooltip('Expand sidebar'));
     await tester.pumpAndSettle();
 
     expect(sidebarWidth(tester), VaultSidebar.extendedWidth);
-    expect(inSidebar(find.text('Mods')), findsOneWidget);
-    expect(inSidebar(find.text('Backups')), findsOneWidget);
-    expect(inSidebar(find.text('Download Workshop mods')), findsOneWidget);
-    expect(inSidebar(find.text('Help')), findsOneWidget);
+    for (final label in sidebarLabels) {
+      expect(inSidebar(find.text(label)), findsOneWidget, reason: label);
+    }
     expect(await store.read(SidebarController.storageKey), 'true');
 
     await tester.tap(find.byTooltip('Collapse sidebar'));
     await tester.pumpAndSettle();
 
     expect(sidebarWidth(tester), VaultSidebar.collapsedWidth);
-    expect(inSidebar(find.text('Backups')), findsNothing);
+    expect(inSidebar(find.text('Refresh')), findsNothing);
     expect(await store.read(SidebarController.storageKey), 'false');
   });
 
@@ -127,14 +155,14 @@ void main() {
     final store = InMemoryKeyValueStore();
     await store.write(SidebarController.storageKey, 'true');
 
-    await pumpApp(tester, store: store);
+    await pumpShell(tester, store: store);
 
     expect(sidebarWidth(tester), VaultSidebar.extendedWidth);
-    expect(inSidebar(find.text('Mods')), findsOneWidget);
+    expect(inSidebar(find.text('Refresh')), findsOneWidget);
   });
 
   testWidgets('hovering the sidebar does not change its width', (tester) async {
-    await pumpApp(tester);
+    await pumpShell(tester);
     expect(sidebarWidth(tester), VaultSidebar.collapsedWidth);
 
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
@@ -151,17 +179,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(sidebarWidth(tester), VaultSidebar.collapsedWidth);
 
-    await gesture.moveTo(tester.getCenter(inSidebar(find.byTooltip('Mods'))));
+    await gesture.moveTo(
+      tester.getCenter(inSidebar(find.byTooltip('Refresh'))),
+    );
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
     expect(sidebarWidth(tester), VaultSidebar.collapsedWidth);
-    expect(inSidebar(find.text('Backups')), findsNothing);
+    // Still no labels (the hovered item's tooltip is not a label).
+    expect(inSidebar(find.text('Cleanup')), findsNothing);
   });
 
   testWidgets('action items show the not-implemented snack bar', (
     tester,
   ) async {
-    await pumpApp(tester);
+    await pumpShell(tester);
 
     await tester.tap(inSidebar(find.byTooltip('Cleanup')));
     await tester.pump();
@@ -174,7 +205,7 @@ void main() {
     tester,
   ) async {
     final library = SpyLibraryController();
-    await pumpApp(tester, library: library);
+    await pumpShell(tester, library: library);
 
     await tester.tap(inSidebar(find.byTooltip('Refresh')));
     await tester.pumpAndSettle();

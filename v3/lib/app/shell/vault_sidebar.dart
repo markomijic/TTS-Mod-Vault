@@ -1,6 +1,5 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:tts_mod_vault/app/shell/app_destination.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
@@ -69,22 +68,19 @@ final class SidebarAction {
 
 /// The application sidebar.
 ///
-/// A themed column of M3 parts, not a `NavigationRail`, so it can hold
-/// actions as well as destinations. It has no hover behaviour: the chevron at
-/// the top toggles between the icon-only form ([collapsedWidth]) and the
-/// labelled form ([extendedWidth]), and that choice is persisted by
-/// [SidebarController].
+/// A themed column of M3 parts, not a `NavigationRail`: it holds actions
+/// only (there is one library page, with the type selector carrying the
+/// Mods / Saves / Saved Objects / Backups tabs), so nothing in it is ever
+/// highlighted. It has no hover behaviour: the chevron at the top toggles
+/// between the icon-only form ([collapsedWidth]) and the labelled form
+/// ([extendedWidth]), and that choice is persisted by [SidebarController].
 ///
-/// Layout, top to bottom: the toggle, the destinations, one divider-separated
-/// group per entry of [actionGroups], then [footerActions] pinned to the
-/// bottom.
+/// Layout, top to bottom: the toggle, one divider-separated group per entry
+/// of [actionGroups], then [footerActions] pinned to the bottom.
 class VaultSidebar extends ConsumerWidget {
   /// Creates the sidebar.
   const VaultSidebar({
     super.key,
-    required this.selected,
-    required this.onDestinationSelected,
-    this.destinationsEnabled = true,
     this.actionGroups = const [],
     this.footerActions = const [],
   });
@@ -98,16 +94,7 @@ class VaultSidebar extends ConsumerWidget {
   /// Duration of the width animation.
   static const Duration animationDuration = Duration(milliseconds: 200);
 
-  /// The destination to highlight.
-  final AppDestination selected;
-
-  /// Called when a destination is pressed.
-  final ValueChanged<AppDestination> onDestinationSelected;
-
-  /// Whether the destination items can be pressed.
-  final bool destinationsEnabled;
-
-  /// Groups of actions shown under the destinations, separated by dividers.
+  /// Groups of actions, separated by dividers.
   final List<List<SidebarAction>> actionGroups;
 
   /// Actions pinned to the bottom of the sidebar.
@@ -146,19 +133,10 @@ class VaultSidebar extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final destination in AppDestination.values)
-                    _SidebarItem(
-                      icon: _destinationIcon(destination),
-                      label: _destinationLabel(destination, l10n),
-                      extended: extended,
-                      enabled: destinationsEnabled,
-                      selected: destination == selected,
-                      onPressed: () => onDestinationSelected(destination),
-                    ),
-                  for (final group in actionGroups) ...[
-                    const _SidebarDivider(),
+                  for (final (index, group) in actionGroups.indexed) ...[
+                    if (index > 0) const _SidebarDivider(),
                     for (final action in group)
-                      _SidebarItem.action(action, extended: extended),
+                      _SidebarItem(action, extended: extended),
                   ],
                 ],
               ),
@@ -167,44 +145,19 @@ class VaultSidebar extends ConsumerWidget {
           if (footerActions.isNotEmpty) ...[
             const _SidebarDivider(),
             for (final action in footerActions)
-              _SidebarItem.action(action, extended: extended),
+              _SidebarItem(action, extended: extended),
           ],
         ],
       ),
     );
   }
-
-  static IconData _destinationIcon(AppDestination destination) =>
-      switch (destination) {
-        AppDestination.mods => Icons.extension_outlined,
-        AppDestination.backups => Icons.folder_zip_outlined,
-      };
-
-  static String _destinationLabel(
-    AppDestination destination,
-    AppLocalizations l10n,
-  ) => switch (destination) {
-    AppDestination.mods => l10n.navMods,
-    AppDestination.backups => l10n.navBackups,
-  };
 }
 
 class _SidebarItem extends StatelessWidget {
-  const _SidebarItem({
-    required this.icon,
-    required this.label,
-    required this.extended,
-    required this.enabled,
-    required this.onPressed,
-    this.selected = false,
-  });
+  const _SidebarItem(this.action, {required this.extended});
 
-  _SidebarItem.action(SidebarAction action, {required this.extended})
-    : icon = action.icon,
-      label = action.label,
-      enabled = action.enabled,
-      onPressed = action.onPressed,
-      selected = false;
+  final SidebarAction action;
+  final bool extended;
 
   static const double _height = 40;
   static const double _iconSize = 24;
@@ -214,27 +167,20 @@ class _SidebarItem extends StatelessWidget {
   static const double _extendedContentWidth =
       VaultSidebar.extendedWidth - 4 * Insets.sm;
 
-  final IconData icon;
-  final String label;
-  final bool extended;
-  final bool enabled;
-  final bool selected;
-  final VoidCallback onPressed;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final foreground = !enabled
-        ? scheme.onSurface.withValues(alpha: 0.38)
-        : selected
-        ? scheme.onSecondaryContainer
-        : scheme.onSurfaceVariant;
+    final enabled = action.enabled;
+    final label = action.label;
+    final foreground = enabled
+        ? scheme.onSurfaceVariant
+        : scheme.onSurface.withValues(alpha: 0.38);
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(_height / 2),
     );
 
-    final iconWidget = Icon(icon, size: _iconSize, color: foreground);
+    final iconWidget = Icon(action.icon, size: _iconSize, color: foreground);
 
     // While the sidebar animates from collapsed to extended the item is
     // narrower than its final size, so the labelled row is laid out at its
@@ -278,11 +224,11 @@ class _SidebarItem extends StatelessWidget {
         vertical: Insets.xs / 2,
       ),
       child: Material(
-        color: selected ? scheme.secondaryContainer : Colors.transparent,
+        color: Colors.transparent,
         shape: shape,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: enabled ? onPressed : null,
+          onTap: enabled ? action.onPressed : null,
           mouseCursor: enabled
               ? SystemMouseCursors.click
               : SystemMouseCursors.basic,

@@ -16,10 +16,13 @@ enum StartupDirectoriesError {
 /// Where the app is in its start-up sequence; see `StartupController`.
 ///
 /// ```text
-/// Checking -> NeedsDirectories -> (continueWithDirectories) -> Loading
-/// Checking -> Loading -> Ready
-///             Loading -> Failed -> (retry) -> Checking
+/// Checking -> Ready                                  (folders exist)
+/// Checking -> NeedsDirectories -> (continueWithDirectories) -> Ready
+/// Checking -> Failed -> (retry) -> Checking           (folder lookup threw)
 /// ```
+///
+/// Ready means the shell can be shown; the first library refresh runs behind
+/// it and reports its own progress and errors through the library provider.
 @immutable
 sealed class StartupState {
   const StartupState();
@@ -74,22 +77,7 @@ final class StartupNeedsDirectories extends StartupState {
       'error: $error)';
 }
 
-/// Folders are valid; the library index is being refreshed.
-final class StartupLoading extends StartupState {
-  /// Creates the state.
-  const StartupLoading();
-
-  @override
-  bool operator ==(Object other) => other is StartupLoading;
-
-  @override
-  int get hashCode => (StartupLoading).hashCode;
-
-  @override
-  String toString() => 'StartupLoading()';
-}
-
-/// The library is loaded; the shell can be shown.
+/// The folders are valid; the shell can be shown while the library loads.
 final class StartupReady extends StartupState {
   /// Creates the state.
   const StartupReady();
@@ -104,7 +92,7 @@ final class StartupReady extends StartupState {
   String toString() => 'StartupReady()';
 }
 
-/// Loading the library threw.
+/// Reading the stored folders threw before the shell could be shown.
 final class StartupFailed extends StartupState {
   /// Creates the state.
   const StartupFailed(this.error, this.stackTrace);

@@ -1,8 +1,6 @@
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
-import 'package:tts_mod_vault/app/platform/file_explorer.dart';
 import 'package:tts_mod_vault/app/widgets/app_context_menu.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
@@ -10,6 +8,7 @@ import 'package:tts_mod_vault/features/images_viewer/presentation/images_viewer_
 import 'package:tts_mod_vault/features/library/presentation/dialogs/delete_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/rename_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/dialogs/save_as_mod_dialog.dart';
+import 'package:tts_mod_vault/features/library/presentation/item_actions.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl;
@@ -51,7 +50,7 @@ List<MenuEntry> buildModContextMenu(
   final type = mod.ref.type;
   final backup = mod.backup;
 
-  void stub(String label) => _notImplemented(context, label);
+  void stub(String label) => showNotImplemented(context, label);
 
   return [
     if (mod.missingCount > 0)
@@ -68,7 +67,7 @@ List<MenuEntry> buildModContextMenu(
     MenuAction(
       label: l10n.menuOpenInFileExplorer,
       icon: Icons.folder_open_outlined,
-      onPressed: () => _openInFileExplorer(context, mod.jsonPath),
+      onPressed: () => revealInFileExplorer(context, mod.jsonPath),
     ),
     if (type == ModType.mod) ...[
       MenuAction(
@@ -92,12 +91,12 @@ List<MenuEntry> buildModContextMenu(
     MenuAction(
       label: l10n.menuCopyName,
       icon: Icons.content_copy,
-      onPressed: () => _copy(context, mod.displayName),
+      onPressed: () => copyTextToClipboard(context, mod.displayName),
     ),
     MenuAction(
       label: l10n.menuCopyFilename,
       icon: Icons.file_copy_outlined,
-      onPressed: () => _copy(context, mod.ref.fileName),
+      onPressed: () => copyTextToClipboard(context, mod.ref.fileName),
     ),
     MenuAction(
       label: l10n.menuRename(type.singular(l10n)),
@@ -120,13 +119,15 @@ List<MenuEntry> buildModContextMenu(
       MenuAction(
         label: l10n.menuOpenBackupInFileExplorer,
         icon: Icons.folder_open_outlined,
-        onPressed: () => _openInFileExplorer(context, backup.path),
+        onPressed: () => revealInFileExplorer(context, backup.path),
       ),
       MenuAction(
         label: l10n.menuCopyBackupFilename,
         icon: Icons.file_copy_outlined,
-        onPressed: () =>
-            _copy(context, p.basenameWithoutExtension(backup.fileName)),
+        onPressed: () => copyTextToClipboard(
+          context,
+          p.basenameWithoutExtension(backup.fileName),
+        ),
       ),
       MenuAction(
         label: l10n.menuDeleteBackup,
@@ -136,29 +137,6 @@ List<MenuEntry> buildModContextMenu(
       ),
     ],
   ];
-}
-
-void _notImplemented(BuildContext context, String label) {
-  if (!context.mounted) return;
-  showAppSnackBar(
-    context,
-    AppLocalizations.of(context).notImplementedAction(label),
-  );
-}
-
-Future<void> _copy(BuildContext context, String text) async {
-  await Clipboard.setData(ClipboardData(text: text));
-  if (!context.mounted) return;
-  showAppSnackBar(context, AppLocalizations.of(context).copiedToClipboard);
-}
-
-Future<void> _openInFileExplorer(BuildContext context, String path) async {
-  final ok = await openInFileExplorer(path);
-  if (ok || !context.mounted) return;
-  showAppSnackBar(
-    context,
-    AppLocalizations.of(context).couldNotOpenFileExplorer,
-  );
 }
 
 Future<void> _openUrl(BuildContext context, Uri uri) async {

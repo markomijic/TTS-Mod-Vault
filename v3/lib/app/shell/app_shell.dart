@@ -1,23 +1,22 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:tts_mod_vault/app/shell/app_destination.dart';
-import 'package:tts_mod_vault/app/shell/placeholders.dart';
+import 'package:tts_mod_vault/app/shell/operation_running_provider.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
 import 'package:tts_mod_vault/app/widgets/app_dialog.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
-import 'package:tts_mod_vault/features/library/presentation/mods_page.dart';
+import 'package:tts_mod_vault/features/library/presentation/library_page.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
-/// Root layout: the [VaultSidebar] on the left and the current destination's
-/// page filling the rest.
+/// Root layout: the [VaultSidebar] (actions only) on the left and the one
+/// [LibraryPage] filling the rest. Mods, saves, saved objects and backups
+/// are tabs of the page, not destinations.
 class AppShell extends ConsumerWidget {
   /// Creates the shell.
   const AppShell({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final destination = ref.watch(appDestinationProvider);
     final operationRunning = ref.watch(operationRunningProvider);
     final l10n = AppLocalizations.of(context);
     final enabled = !operationRunning;
@@ -42,11 +41,6 @@ class AppShell extends ConsumerWidget {
       body: Row(
         children: [
           VaultSidebar(
-            selected: destination,
-            destinationsEnabled: enabled,
-            onDestinationSelected: ref
-                .read(appDestinationProvider.notifier)
-                .select,
             actionGroups: [
               [
                 SidebarAction(
@@ -98,12 +92,7 @@ class AppShell extends ConsumerWidget {
               ),
             ],
           ),
-          Expanded(
-            child: switch (destination) {
-              AppDestination.mods => const ModsPage(),
-              AppDestination.backups => const BackupsPage(),
-            },
-          ),
+          const Expanded(child: LibraryPage()),
         ],
       ),
     );

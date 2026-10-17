@@ -7,6 +7,14 @@ import 'package:tts_mod_vault/app/shell/placeholders.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
+import 'package:tts_mod_vault/features/startup/application/startup_controller.dart';
+
+/// Startup double that skips the folder check and library refresh so the
+/// shell renders immediately.
+class _ReadyStartupController extends StartupController {
+  @override
+  Future<StartupState> build() async => const StartupReady();
+}
 
 Future<InMemoryKeyValueStore> pumpApp(
   WidgetTester tester, {
@@ -18,7 +26,10 @@ Future<InMemoryKeyValueStore> pumpApp(
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [keyValueStoreProvider.overrideWithValue(kv)],
+      overrides: [
+        keyValueStoreProvider.overrideWithValue(kv),
+        startupControllerProvider.overrideWith(_ReadyStartupController.new),
+      ],
       child: const App(),
     ),
   );

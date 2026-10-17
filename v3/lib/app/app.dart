@@ -1,12 +1,12 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:tts_mod_vault/app/shell/app_shell.dart';
 import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
+import 'package:tts_mod_vault/features/startup/presentation/startup_page.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// The root widget: a [MaterialApp] themed from [themeControllerProvider]
-/// with [AppShell] as its home.
+/// with [StartupPage] as its home (which becomes the shell once loaded).
 ///
 /// Must sit inside a `ProviderScope` that overrides [keyValueStoreProvider].
 class App extends ConsumerWidget {
@@ -30,7 +30,7 @@ class App extends ConsumerWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
-      home: const AppShell(),
+      home: const StartupPage(),
     );
   }
 }

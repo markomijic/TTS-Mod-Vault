@@ -452,6 +452,13 @@ Each number is the median of 3 runs, v2 (2.1.0 release build) vs v3 (release bui
 | Cleanup scan | sandbox | sandbox only | Sandbox seeded with ~500 orphaned placeholder files; time to candidate list, then time to delete |
 | Bulk URL check | real | cache only | Check all 99 mods with concurrency 5; time and number of requests; run twice on the same day and only compare runs with equal result counts |
 
+**Results** (median of 3, harness `v3/tool/bench/bench.ps1`, details in `v3/tool/bench/results.md`). v2 = 2.1.0 at commit `ba4f677`, release build with Flutter 3.47.7 (the release used 3.44.4; `pdfrx_engine` bumped 0.4.3 -> 0.4.7 to compile), measured 2026-10-17. Wall = process start to the app's "library loaded" line; in-app = the load duration the app reports itself.
+
+| Metric | v2 wall | v2 in-app | v3 |
+| --- | --- | --- | --- |
+| Cold start | 2261 ms | 889 ms | pending |
+| Warm start | 1845 ms | 502 ms (v2 pads the load to a 500 ms minimum; real work ~115 ms) | pending |
+
 ### 10.4 Stress library
 
 99 mods is small for the architecture questions in section 4.4. A script (`v3/tool/stress_library.dart`) generates `D:\tmp\ttsmv-bench\stress\` with N copies of the real Workshop JSONs (default N gives ~2,000 mods), each copy with rewritten URLs so asset filenames are unique, and 1 KB placeholder asset files for a configurable fraction of them (so "missing" and "present" paths both exist). File count is what stresses the index, not bytes: 2,000 mods x ~150 assets x 4 KB clusters is roughly 1.2 GB. Cold start, warm start, select large mod and cleanup scan are repeated on this library.

@@ -2,6 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/app.dart';
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
+import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/bootstrap/bootstrap.dart';
 
@@ -15,6 +16,7 @@ Future<void> main() async {
       overrides: [
         keyValueStoreProvider.overrideWithValue(result.kv),
         appLogProvider.overrideWithValue(result.log),
+        appDatabaseProvider.overrideWithValue(result.db),
       ],
       child: const App(),
     ),

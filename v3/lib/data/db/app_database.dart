@@ -2,27 +2,29 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:tts_mod_vault/data/db/converters.dart';
+import 'package:tts_mod_vault/data/db/daos/backups_dao.dart';
+import 'package:tts_mod_vault/data/db/daos/existing_files_dao.dart';
+import 'package:tts_mod_vault/data/db/daos/library_queries.dart';
+import 'package:tts_mod_vault/data/db/daos/mods_dao.dart';
+import 'package:tts_mod_vault/data/db/tables.dart';
+import 'package:tts_mod_vault/domain/enums/asset_type.dart';
+import 'package:tts_mod_vault/domain/enums/audio_visibility.dart';
+import 'package:tts_mod_vault/domain/enums/mod_type.dart';
 
 part 'app_database.g.dart';
 
-/// Small string key-value table: settings JSON, chosen directories, theme and
-/// shell state. This is the `kv` row of the schema in
-/// `docs/v3-rewrite-plan.md`, section 4.3.
-@DataClassName('KvEntry')
-class Kv extends Table {
-  TextColumn get key => text()();
-  TextColumn get value => text()();
-
-  @override
-  Set<Column<Object>> get primaryKey => {key};
-}
-
-/// The app's SQLite database.
+/// The app's SQLite database (schema in `docs/v3-rewrite-plan.md`, 4.3).
 ///
-/// Schema version 1 holds only [Kv]. The mod index tables (`mods`,
-/// `mod_assets`, `existing_files`, `backups`) arrive in Phase 1 as schema
-/// version 2; see the TODO in [migration].
-@DriftDatabase(tables: [Kv])
+/// Schema version 1 holds every table: `kv`, `mods`, `mod_assets` (with the
+/// `file_key` and `asset_type` indexes), `existing_files` and `backups`.
+/// The app has not shipped yet, so there are no upgrade steps; once it has,
+/// migrate step-wise (`for (var v = from; v < to; v++)`) and never edit a
+/// shipped step.
+@DriftDatabase(
+  tables: [Kv, Mods, ModAssets, ExistingFiles, Backups],
+  daos: [ModsDao, ExistingFilesDao, BackupsDao, LibraryQueries],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
@@ -39,16 +41,15 @@ class AppDatabase extends _$AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
-    onUpgrade: (m, from, to) async {
-      // TODO(phase-1): schema version 2 adds `mods`, `mod_assets` (with the
-      // `file_key` and `asset_type` indexes), `existing_files` and `backups`.
-      // Migrate step-wise (`for (var v = from; v < to; v++)`) and keep every
-      // step forever; never edit a shipped step.
-    },
     beforeOpen: (details) async {
-      // Needed for ON DELETE CASCADE on `mod_assets` from Phase 1 on. SQLite
-      // disables foreign keys per connection by default.
+      // SQLite disables foreign keys per connection by default; needed for
+      // ON DELETE CASCADE on `mod_assets`.
       await customStatement('PRAGMA foreign_keys = ON');
+      // WAL lets reads proceed while the refresh pipeline writes, and NORMAL
+      // sync is durable enough for a rebuildable index. Both are no-ops on
+      // an in-memory database.
+      await customStatement('PRAGMA journal_mode = WAL');
+      await customStatement('PRAGMA synchronous = NORMAL');
     },
   );
 }

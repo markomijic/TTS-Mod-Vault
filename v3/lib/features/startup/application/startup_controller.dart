@@ -197,9 +197,10 @@ class StartupController extends AsyncNotifier<StartupState> {
 
   /// Runs the legacy importer once: when the key-value store has no
   /// settings record yet and [legacyImporterProvider] finds 2.x data, the
-  /// settings and folders are written to the new store and the 2.x folder
-  /// is deleted. Failures are logged and ignored; startup goes on with the
-  /// defaults.
+  /// settings and folders are written to the new store. The 2.x folder is
+  /// deliberately left in place: 2.x keeps working next to 3.x and the user
+  /// decides when to remove it (plan D4). Failures are logged and ignored;
+  /// startup goes on with the defaults.
   Future<void> _importLegacySettings() async {
     final importer = ref.read(legacyImporterProvider);
     if (importer == null) return;
@@ -224,7 +225,6 @@ class StartupController extends AsyncNotifier<StartupState> {
             : 'mods: ${directories.modsDir}, saves: ${directories.savesDir}'
                   '${directories.hasBackupsDir ? ', backups: ${directories.backupsDir}' : ''}',
       );
-      await importer.deleteLegacyData();
     } on Object catch (error, stackTrace) {
       if (!ref.mounted) return;
       _log.error(

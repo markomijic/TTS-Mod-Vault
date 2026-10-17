@@ -1,5 +1,5 @@
 // The one-shot 2.x import at startup: runs only when the store has no
-// settings yet, writes settings and folders, logs one line, deletes the
+// settings yet, writes settings and folders, logs one line, keeps the
 // legacy data, and never fails startup.
 
 import 'package:flutter_test/flutter_test.dart';
@@ -66,7 +66,7 @@ void main() {
 
   setUp(() => store = InMemoryKeyValueStore());
 
-  test('imports settings and folders on the first start, then deletes the '
+  test('imports settings and folders on the first start and keeps the '
       '2.x data', () async {
     final importer = _FakeImporter(
       LegacySettings(
@@ -91,7 +91,7 @@ void main() {
 
     expect(state, const StartupReady(), reason: 'the imported folders exist');
     expect(importer.reads, 1);
-    expect(importer.deletes, 1);
+    expect(importer.deletes, 0);
     expect(await store.read(SettingsController.storageKey), isNotNull);
     final settings = container.read(settingsProvider);
     expect(settings.ignoreAudioAssets, isFalse);
@@ -171,7 +171,7 @@ void main() {
 
     expect(container.read(settingsProvider).useModsListView, isTrue);
     expect(container.read(directoriesProvider).value, testDefaults);
-    expect(importer.deletes, 1);
+    expect(importer.deletes, 0);
   });
 
   test('an importer failure is logged and startup goes on', () async {

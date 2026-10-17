@@ -321,6 +321,8 @@ Milestone: v3 lists your mods/saves/saved objects with correct asset counts and 
 
 Milestone: everything you can do to one mod in v2 without network works in v3.
 
+**Status: done 2026-10-17** (`df23fb3`). Selected-mod panel with filters, audio override, asset context menu, Replace URL, Shared with, Delete file, PDF thumbnails, images viewer, rename/delete/save-as dialogs. v2 bug fixed: escaped quotes in SaveName.
+
 ### Phase 3: Operations, downloads, Workshop (medium)
 
 - `OperationRunner`, progress model, single progress bar, cancellation.
@@ -331,6 +333,8 @@ Milestone: everything you can do to one mod in v2 without network works in v3.
 
 Milestone: download/URL-check/Workshop flows at parity, cancel works mid-flight everywhere.
 
+**Status: done 2026-10-18** (`57a05b3`, `f9fe695`). One `OperationRunner`, one progress bar with cancel, streaming downloader tested against a loopback server, typed Workshop statuses, update notice. Deliberate change: URL checks skip audio URLs hidden by the audio setting, matching the asset list.
+
 ### Phase 4: Backups, import, deletion, cleanup (medium)
 
 - Create backup: streaming zip in a worker, same entry layout (`Mods/...`, `Saves/...`), progress, "replace / select folder" behaviour, optional set-as-default folder, `forceBackupJsonFilename` setting.
@@ -339,6 +343,8 @@ Milestone: download/URL-check/Workshop flows at parity, cancel works mid-flight 
 - Delete mod, delete mod assets (non-shared / all) with shared-asset report from the index, cleanup of orphaned files (incl. `Images Raw`, `Models Raw`, old-host duplicate detection, `file*` raw exclusions).
 
 Milestone: backups and imports interoperate with v2 and TTS Mod Backup files; memory stays flat while importing a multi-GB `.ttsmod`.
+
+**Status: application layer done 2026-10-18** (`f9fe695`): progress-reporting zip isolates (write to `.part` then rename; streamed extraction with zip-slip guard), backup creation with v2 entry layout, import with target resolution and date-conflict callback, JSON import, delete/rename backup, delete-assets scan with shared details, cleanup incl. raw folders and legacy duplicates. UI wiring in progress. Import now also indexes save/saved-object backups (v2 extracted them without registering the mod).
 
 ### Phase 5: Bulk, URL updates, settings, logs, legacy import (medium)
 
@@ -423,7 +429,7 @@ Nothing open.
 
 ### Resume notes (keep current)
 
-- 2026-10-17 21:30: committed through `2b0ed4e` (Phases 0-2 plus the single-page/instant-startup restructure). **In progress, uncommitted:** the Phase 3 application layer agent (operations engine in `lib/features/operations`, `lib/data/net`, `lib/features/downloads`, `lib/features/workshop`, `lib/features/about`, plus `test/data/net`, `test/features/{operations,downloads,workshop,about}`). Its `asset_downloader_test.dart` was still hanging on "byte progress of a large file is monotonic" when last run; the agent may not have finished. Next steps on resume: check those folders analyze and test clean (fix or re-dispatch), commit as "Phase 3 application layer", then dispatch (a) Phase 3 UI wiring: operation progress bar in `OperationProgressSlot`/`bottomSlot`, Download/Check URLs/Download-missing buttons and asset-menu items, Download Workshop mods dialog, Update from Workshop, cancel button, OR `anyOperationRunningProvider` into `operationRunningProvider`, Settings-free network options; and (b) Phase 4 application layer (backup create/import streaming zip, delete-assets scan, cleanup) coding against `Operation`/`OperationContext` in `operation.dart`.
+- 2026-10-18 01:30: committed through `f9fe695` (Phases 0-3 complete, Phase 4 application layer). **In progress, uncommitted:** (a) Phase 4 UI wiring agent (`lib/features/backups/presentation`, `lib/features/cleanup/presentation`, stub call sites in `mod_context_menu.dart`, `selected_mod_actions.dart`, `app_shell.dart`); (b) Phase 5 application agent (`lib/features/bulk`, `lib/features/url_updates`, `lib/features/settings`, `lib/features/logs` application folders, `lib/data/legacy`, one call added to `startup_controller.dart`). On resume: analyze + test those folders, fix or re-dispatch, commit, then dispatch Phase 5 UI (settings dialog with Appearance section, collapsible log panel in `bottomSlot`, bulk actions menu + multi-select view buttons, Update URLs dialog with presets, help/changelog dialogs from `assets/text/`), then Phase 6 polish (parity checklist audit, benchmarks incl. backup/import memory, Linux/macOS builds, README, cut-over).
 
 ## 10. Benchmark protocol
 

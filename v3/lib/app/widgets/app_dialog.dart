@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:material_ui/material_ui.dart';
+import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Blur strength applied behind dialogs, matching 2.x.
@@ -128,6 +129,81 @@ Future<T?> showChoiceDialog<T>(
               onPressed: () => Navigator.of(context).pop(choice.value),
             ),
         ],
+      );
+    },
+  );
+}
+
+/// Asks the user to confirm an action that has one boolean option.
+///
+/// Returns null when cancelled or dismissed, otherwise the checkbox value at
+/// the time Confirm was pressed. [checkboxInfo], when given, is shown as the
+/// tooltip of an info icon next to the checkbox. Port of 2.x
+/// `showConfirmDialogWithCheckbox`.
+Future<bool?> showConfirmDialogWithCheckbox(
+  BuildContext context, {
+  required String title,
+  required String checkboxLabel,
+  String? message,
+  String? checkboxInfo,
+  String? confirmLabel,
+  bool initialValue = false,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) {
+      final l10n = AppLocalizations.of(context);
+      var checked = initialValue;
+      return StatefulBuilder(
+        builder: (context, setState) => AppDialog(
+          title: title,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message != null) ...[Text(message), Gaps.h16],
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
+                    value: checked,
+                    onChanged: (value) =>
+                        setState(() => checked = value ?? false),
+                  ),
+                  Gaps.w4,
+                  Flexible(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(() => checked = !checked),
+                      child: Text(checkboxLabel),
+                    ),
+                  ),
+                  if (checkboxInfo != null) ...[
+                    Gaps.w8,
+                    Tooltip(
+                      message: checkboxInfo,
+                      child: Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.cancel),
+            ),
+            _ChoiceButton(
+              label: confirmLabel ?? l10n.confirm,
+              destructive: false,
+              onPressed: () => Navigator.of(context).pop(checked),
+            ),
+          ],
+        ),
       );
     },
   );

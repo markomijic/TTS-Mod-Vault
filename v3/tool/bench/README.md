@@ -70,14 +70,23 @@ Cache: `%USERPROFILE%\Documents\TTS Mod Vault\`. Cold mode deletes only
 
 ### v3 detection
 
-Watches `%APPDATA%\io.github.markomijic\TTS Mod Vault\vault.log` for a line
-appended after launch that contains `Library refresh finished`. Wall = the
-line's leading `yyyy-MM-dd HH:mm:ss.SSS` timestamp minus process start; in-app
-= the first `<n>ms` / `<n> ms` / `duration=<n>` / `elapsed=<n>` / `took <n>` token on
-that line (reported as n/a when absent). A `Library refresh failed` line marks
-the run as failed. Cold mode deletes `vault.sqlite` only (a warning is printed if
-`-wal`/`-shm` sidecars exist). v3 does not emit the line yet; the branch is in
-place so Phase 1 only has to add the log line.
+Watches `%APPDATA%\io.github.markomijic\TTS Mod Vault\vault.log` for lines
+appended after launch. Lines have the shape
+`[yyyy-MM-dd HH:mm:ss.SSS] [LEVEL] [source] message key=value ...`.
+
+- **wall** = the `Library refresh finished` line's leading timestamp minus
+  process start (the file sink flushes on a 500 ms timer, so the timestamp,
+  not the moment the harness sees the line, is what counts).
+- **in-app** = that line's `durationMs=<n>` token (fallbacks: `<n> ms`,
+  `duration=`/`elapsed=`/`took`).
+- Also printed per run and as medians: `Bootstrap finished: ... totalMs=`
+  (the `bootstrap()` duration with its per-step splits), `First frame
+  rendered: sinceMainMs=` and `Refreshing library: sinceMainMs=` (both
+  measured from `main()` entry), and the refresh's per-phase `<phase>Ms=`
+  splits from the finished line.
+
+A `Library refresh failed` line marks the run as failed. Cold mode deletes
+`vault.sqlite` only (a warning is printed if `-wal`/`-shm` sidecars exist).
 
 ## Safety rules (short form of plan section 10.2, binding)
 
@@ -95,6 +104,24 @@ place so Phase 1 only has to add the log line.
   sandbox plus scratch stays under 20 GB, and the scratch is deleted after each
   session. No symlinks or junctions into the real folders.
 - Release builds only; a debug-build number is never recorded.
+
+## Diagnostic probes
+
+Two stand-alone programs attribute the start-up cost to its parts; they only
+read the paths they are given.
+
+- `parse_probe.dart` times the pieces of `JsonModReader.readFull` on one mod
+  JSON (read bytes, UTF-8 decode, regex extraction, byte-scanner extraction,
+  full `readFull`). Compile it to measure AOT numbers:
+  `dart compile exe tool/bench/parse_probe.dart -o <scratch>\parse_probe.exe`
+  then `parse_probe.exe "<library>\Mods\Workshop\3781830124.json" 3`.
+- `db_probe.dart` times the pipeline's bulk writes (`upsertMods`,
+  `replaceAll`), the summary query shapes and several insert variants
+  (sync off, sorted, fewer indexes, WAL auto-checkpoint off, in-memory) on a
+  file database on drift's background isolate with synthetic data shaped like
+  the reference library. It needs the `sqlite3` native asset, so run it with
+  the JIT: `dart run tool/bench/db_probe.dart <scratch dir> 3` (numbers are
+  relative, not release numbers).
 
 ## Recording results
 

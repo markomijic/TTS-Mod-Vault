@@ -59,11 +59,8 @@ String? extractNickname(String text) {
 /// downloads get injected). `Date` is parsed with `M/d/yyyy h:mm:ss a` when it
 /// contains AM/PM, otherwise with `MM/dd/yyyy HH:mm:ss`, as local time.
 int? extractEpochTime(String text) {
-  final epochValue = _epochRegex.firstMatch(text)?.group(1);
-  if (epochValue != null && epochValue.isNotEmpty) {
-    final parsed = int.tryParse(epochValue);
-    if (parsed != null) return parsed;
-  }
+  final epochValue = extractEpochTimeValue(text);
+  if (epochValue != null) return epochValue;
 
   final dateValue = _dateRegex.firstMatch(text)?.group(1);
   if (dateValue != null && dateValue.isNotEmpty) {
@@ -71,6 +68,16 @@ int? extractEpochTime(String text) {
   }
 
   return null;
+}
+
+/// The first numeric `"EpochTime"` in [text], or null when the key is absent
+/// or its value does not parse. Unlike [extractEpochTime] this never falls
+/// back to `"Date"`, so a caller that only has the head of a file can tell
+/// "found" from "not in this part".
+int? extractEpochTimeValue(String text) {
+  final epochValue = _epochRegex.firstMatch(text)?.group(1);
+  if (epochValue == null || epochValue.isEmpty) return null;
+  return int.tryParse(epochValue);
 }
 
 int? _dateToUnixSeconds(String dateValue) {

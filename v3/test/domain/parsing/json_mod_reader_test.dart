@@ -248,6 +248,108 @@ void main() {
       expect(result.header.epochTime, isNull);
       expect(result.assets, isEmpty);
     });
+
+    group('header beyond the decoded prefix', () {
+      // A first value longer than the prefix pushes every header key past
+      // the prefix's last line break; the reader must fall back to the
+      // whole file and find the same header as readHeader.
+      final filler = 'x' * (JsonModReader.headerPrefixBytes + 1000);
+
+      test('SaveName and EpochTime after a very long first line', () async {
+        final path = await write(
+          '/Mods/Workshop/late.json',
+          '{\n  "Note": "$filler",\n  "SaveName": "Late",\n'
+              '  "EpochTime": 1700000001,\n  "MeshURL": "https://x/m.obj"\n}',
+        );
+        final result = await reader.readFull(path, ModType.mod);
+        expect(
+          result.header,
+          const ModHeader(saveName: 'Late', epochTime: 1700000001),
+        );
+        expect(result.header, await reader.readHeader(path, ModType.mod));
+        expect(result.assets.single.url, 'https://x/m.obj');
+      });
+
+      test('EpochTime cut by the prefix is not truncated', () async {
+        // The prefix ends at the last line break before 64 KB; put the
+        // EpochTime digits exactly across that boundary with no line break
+        // in between so a naive prefix match would see fewer digits.
+        const head = '{"SaveName": "Cut", "EpochTime": ';
+        final pad = 'y' * (JsonModReader.headerPrefixBytes - head.length - 5);
+        final path = await write(
+          '/Mods/Workshop/cut.json',
+          '$head'
+              '1700000002, "Note": "$pad", "MeshURL": "https://x/m.obj"}',
+        );
+        final result = await reader.readFull(path, ModType.mod);
+        expect(result.header.epochTime, 1700000002);
+        expect(result.header.saveName, 'Cut');
+      });
+
+      test('Date fallback is only used when no EpochTime exists', () async {
+        final path = await write(
+          '/Mods/Workshop/date.json',
+          '{\n  "Date": "1/1/2000 1:00:00 AM",\n  "Note": "$filler",\n'
+              '  "SaveName": "Dated",\n  "EpochTime": 1700000003\n}',
+        );
+        final result = await reader.readFull(path, ModType.mod);
+        expect(result.header.epochTime, 1700000003);
+        expect(result.header, await reader.readHeader(path, ModType.mod));
+      });
+
+      test('minified JSON without line breaks', () async {
+        final path = await write(
+          '/Mods/Workshop/min.json',
+          '{"Note":"$filler","SaveName":"Min","EpochTime":5,'
+              '"MeshURL":"https://x/m.obj"}',
+        );
+        final result = await reader.readFull(path, ModType.mod);
+        expect(result.header, const ModHeader(saveName: 'Min', epochTime: 5));
+        expect(result.assets.single.url, 'https://x/m.obj');
+      });
+
+      test('saved object Nickname after a very long first line', () async {
+        final path = await write(
+          '/Saves/Saved Objects/late.json',
+          '{\n  "SaveName": "",\n  "Note": "$filler",\n  "EpochTime": 7,\n'
+              '  "ObjectStates": [{"Nickname": "Late Dragon"}]\n}',
+        );
+        final result = await reader.readFull(path, ModType.savedObject);
+        expect(result.header.saveName, 'late');
+        expect(result.header.nickname, 'Late Dragon');
+        expect(result.header.epochTime, 7);
+      });
+    });
+
+    test('malformed UTF-8 fails the file as readAsString did', () async {
+      final file = fs.file('/Mods/Workshop/bad.json');
+      await file.create(recursive: true);
+      await file.writeAsBytes([
+        ...utf8.encode('{"SaveName": "Bad '),
+        0xFF,
+        ...utf8.encode('", "EpochTime": 9, "MeshURL": "https://x/m.obj"}'),
+      ]);
+      await expectLater(
+        reader.readFull(file.path, ModType.mod),
+        throwsA(
+          isA<FileSystemException>()
+              .having((e) => e.message, 'message', contains('utf-8'))
+              .having((e) => e.path, 'path', file.path),
+        ),
+      );
+      // The same bytes fail readAsString the same way.
+      await expectLater(
+        file.readAsString(),
+        throwsA(isA<FileSystemException>()),
+      );
+    });
+
+    test('a leading BOM is ignored', () async {
+      final path = await write('/Mods/Workshop/bom.json', '﻿$_modJson');
+      final result = await reader.readFull(path, ModType.mod);
+      expect(result.header.saveName, 'My Mod');
+      expect(result.assets, hasLength(4));
+    });
   });
 
   test('ModHeader has value equality', () {

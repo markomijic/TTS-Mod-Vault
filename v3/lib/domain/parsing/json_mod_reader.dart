@@ -9,6 +9,7 @@
 library;
 
 import 'dart:convert' show LineSplitter, utf8;
+import 'dart:typed_data';
 
 import 'package:file/file.dart';
 import 'package:file/local.dart';
@@ -134,31 +135,83 @@ final class JsonModReader {
     );
   }
 
+  /// Bytes of the file head decoded for the header regexes in [readFull].
+  static const int headerPrefixBytes = 64 * 1024;
+
   /// Reads the whole file at [path] once: header, asset URLs and file stat.
+  ///
+  /// The file is read as bytes and never decoded as a whole: the URLs come
+  /// from [extractAssetUrlsFromBytes] and the header regexes run on a decoded
+  /// prefix of [headerPrefixBytes] (cut at a line break, so a match found
+  /// there is complete and is the first in the file). Only when the prefix
+  /// lacks the name or `EpochTime` is the whole file decoded, which is what
+  /// v2 and the earlier `readAsString` implementation always did. Malformed
+  /// UTF-8 anywhere in the file still fails it with the same
+  /// [FileSystemException] `readAsString` threw.
   Future<ModParseResult> readFull(String path, ModType type) async {
     final file = fileSystem.file(path);
     final baseName = p.basenameWithoutExtension(path);
 
-    final text = await file.readAsString();
+    final bytes = await file.readAsBytes();
     // Sync on purpose: this runs on a worker isolate and `avoid_slow_async_io`
     // flags the async variant.
     final stat = file.statSync();
 
     final isSavedObject = type == ModType.savedObject;
+    final List<AssetUrl> assets;
+    String? saveName;
+    String? nickname;
+    int? epochTime;
+    try {
+      assets = extractAssetUrlsTypedFromBytes(bytes);
+      final prefix = _decodeHeaderPrefix(bytes);
+      saveName = isSavedObject ? null : extractSaveName(prefix);
+      nickname = isSavedObject ? extractNickname(prefix) : null;
+      epochTime = extractEpochTimeValue(prefix);
+      final nameFound = isSavedObject ? nickname != null : saveName != null;
+      if (!nameFound || epochTime == null) {
+        final text = utf8.decode(bytes);
+        if (isSavedObject) {
+          nickname ??= extractNickname(text);
+        } else {
+          saveName ??= extractSaveName(text);
+        }
+        epochTime ??= extractEpochTime(text);
+      }
+    } on FormatException {
+      // Same exception `File.readAsString` raises for undecodable bytes.
+      throw FileSystemException(
+        "Failed to decode data using encoding '${utf8.name}'",
+        path,
+      );
+    }
     final header = _header(
       type: type,
       baseName: baseName,
-      saveName: isSavedObject ? baseName : extractSaveName(text),
-      nickname: isSavedObject ? extractNickname(text) : null,
-      epochTime: extractEpochTime(text),
+      saveName: isSavedObject ? baseName : saveName,
+      nickname: nickname,
+      epochTime: epochTime,
     );
 
     return ModParseResult(
       header: header,
-      assets: extractAssetUrlsTyped(text),
+      assets: assets,
       sizeBytes: stat.size,
       modified: stat.modified,
     );
+  }
+
+  /// The decoded head of [bytes]: the whole content when it is short, else
+  /// everything before the last line break within [headerPrefixBytes].
+  /// Ending at a line break guarantees that a header match inside the prefix
+  /// is not cut short (`"EpochTime": 17` for `170000`). A long first line
+  /// without any break (minified JSON) yields an empty prefix, which sends
+  /// the caller to the full decode.
+  static String _decodeHeaderPrefix(Uint8List bytes) {
+    if (bytes.length <= headerPrefixBytes) return utf8.decode(bytes);
+    final end = bytes.lastIndexOf(0x0A, headerPrefixBytes);
+    if (end <= 0) return '';
+    return utf8.decoder.convert(bytes, 0, end);
   }
 
   static ModHeader _header({

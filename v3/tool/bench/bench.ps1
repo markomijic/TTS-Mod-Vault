@@ -194,16 +194,38 @@ function Wait-V3Loaded([System.Diagnostics.Process] $p, [long] $startLength) {
                     $sr = New-Object System.IO.StreamReader($fs)
                     $new = $sr.ReadToEnd()
                     $sr.Dispose(); $fs = $null
+                    # Lines look like: [yyyy-MM-dd HH:mm:ss.SSS] [INFO] [library] message key=value ...
+                    $bootstrapMs = $null
+                    $bootstrapSplits = ''
+                    $firstFrameMs = $null
+                    $refreshRequestedMs = $null
                     foreach ($line in ($new -split "`r?`n")) {
+                        if ($line -match 'Bootstrap finished: (.*)$') {
+                            $bootstrapSplits = $Matches[1]
+                            if ($bootstrapSplits -match 'totalMs=(\d+)') { $bootstrapMs = [int]$Matches[1] }
+                        }
+                        elseif ($line -match 'First frame rendered: sinceMainMs=(\d+)') { $firstFrameMs = [int]$Matches[1] }
+                        elseif ($line -match 'Refreshing library: sinceMainMs=(\d+)') { $refreshRequestedMs = [int]$Matches[1] }
                         if ($line -match 'Library refresh finished') {
                             $endTs = $null
-                            if ($line -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)') {
+                            if ($line -match '^\[?(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)\]?') {
                                 $endTs = Parse-DartDateTime $Matches[1]
                             }
                             $inApp = [double]::NaN
-                            if ($line -match '(\d+(?:\.\d+)?)\s*ms\b') { $inApp = [double]::Parse($Matches[1], $inv) }
+                            if ($line -match 'durationMs=(\d+(?:\.\d+)?)') { $inApp = [double]::Parse($Matches[1], $inv) }
+                            elseif ($line -match '(\d+(?:\.\d+)?)\s*ms\b') { $inApp = [double]::Parse($Matches[1], $inv) }
                             elseif ($line -match '(?:duration|elapsed|took)\s*[=:]\s*(\d+(?:\.\d+)?)') { $inApp = [double]::Parse($Matches[1], $inv) }
-                            return @{ Ok = $true; EndTime = $endTs; InAppMs = $inApp; Error = ''; Line = $line }
+                            # Per-phase splits: every <name>Ms=<n> token except durationMs itself.
+                            $phases = @()
+                            foreach ($m in [regex]::Matches($line, '(\w+Ms)=(\d+)')) {
+                                if ($m.Groups[1].Value -ne 'durationMs') { $phases += "$($m.Groups[1].Value)=$($m.Groups[2].Value)" }
+                            }
+                            return @{
+                                Ok = $true; EndTime = $endTs; InAppMs = $inApp; Error = ''; Line = $line
+                                BootstrapMs = $bootstrapMs; BootstrapSplits = $bootstrapSplits
+                                FirstFrameMs = $firstFrameMs; RefreshRequestedMs = $refreshRequestedMs
+                                Phases = ($phases -join ' ')
+                            }
                         }
                         if ($line -match 'Library refresh failed') {
                             return @{ Ok = $false; Error = $line }
@@ -276,6 +298,13 @@ for ($i = 1; $i -le $Runs; $i++) {
         Ok        = $r.Ok
         WallMs    = if ($r.Ok) { [math]::Round($wallMs) } else { $null }
         InAppMs   = if ($r.Ok -and -not [double]::IsNaN($r.InAppMs)) { [math]::Round($r.InAppMs) } else { $null }
+        # v3 only (null for v2): bootstrap() duration, main()->first frame,
+        # main()->refresh requested, and the refresh's per-phase splits.
+        BootstrapMs        = if ($r.Ok) { $r.BootstrapMs } else { $null }
+        FirstFrameMs       = if ($r.Ok) { $r.FirstFrameMs } else { $null }
+        RefreshRequestedMs = if ($r.Ok) { $r.RefreshRequestedMs } else { $null }
+        Phases             = if ($r.Ok) { $r.Phases } else { $null }
+        BootstrapSplits    = if ($r.Ok) { $r.BootstrapSplits } else { $null }
         CpuBefore = $cpu
         Error     = $r.Error
         Timestamp = $procStart.ToString('yyyy-MM-dd HH:mm:ss', $inv)
@@ -286,6 +315,11 @@ for ($i = 1; $i -le $Runs; $i++) {
     if ($r.Ok) {
         $inAppText = if ($null -ne $row.InAppMs) { "$($row.InAppMs) ms" } else { 'n/a' }
         Write-Host "  wall $($row.WallMs) ms   in-app $inAppText"
+        if ($null -ne $row.BootstrapMs) {
+            Write-Host "  bootstrap $($row.BootstrapMs) ms   first frame $($row.FirstFrameMs) ms   refresh requested $($row.RefreshRequestedMs) ms  (since main)"
+            Write-Host "  bootstrap splits: $($row.BootstrapSplits)"
+        }
+        if ($row.Phases) { Write-Host "  phases: $($row.Phases)" }
     }
     else {
         Write-Host "  FAILED: $($r.Error)"
@@ -314,6 +348,15 @@ if ($ok.Count -gt 0) {
     }
     else {
         Write-Host "  in-app : n/a"
+    }
+    foreach ($extra in @(
+            @{ Name = 'BootstrapMs'; Label = 'bootstrap' },
+            @{ Name = 'FirstFrameMs'; Label = 'first frame (since main)' },
+            @{ Name = 'RefreshRequestedMs'; Label = 'refresh requested (since main)' })) {
+        $vals = @($ok | Where-Object { $null -ne $_.($extra.Name) } | ForEach-Object { [double]$_.($extra.Name) })
+        if ($vals.Count -gt 0) {
+            Write-Host ("  {0,-31}: runs = {1}   median = {2} ms" -f $extra.Label, ($vals -join ', '), [math]::Round((Get-Median $vals)))
+        }
     }
 }
 if ($ok.Count -lt $results.Count) {

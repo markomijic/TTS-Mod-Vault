@@ -188,6 +188,15 @@ kv             (key TEXT PK, value TEXT)          settings json, directories, sc
 
 Expected effect: first run is comparable to v2 (one full read), every later start reads only changed JSONs and does no per-mod file reads. UI shows a determinate progress (files scanned / files parsed) instead of free-text messages.
 
+Phase 1 implementation notes (measured against the reference library, section 10.3):
+
+- Steps 3 and 4 run concurrently with steps 1 and 2: the asset-folder listings and the backups scan are dispatched right after the mod-folder scan and collected after parsing, so on a cold start the whole `existing_files` rebuild is hidden behind the parse phase. Progress is still reported in pipeline order through a gate that publishes each phase's latest snapshot when its turn comes.
+- Step 2 reads each JSON as bytes and extracts URLs with a byte scanner that reproduces the regex exactly (same keys, whitespace set and match semantics, including failing the file on malformed UTF-8); only the file head is decoded for `SaveName`/`EpochTime`, the whole file only when they are not there. The 68 MB mod drops from ~650 ms to ~100 ms on its worker.
+- Step 2 writes parsed batches to the store while the remaining batches still parse (one write at a time, batches that finish meanwhile are coalesced into the next transaction), and batches are dispatched largest first so the biggest file bounds the phase; the batch byte target is 16 MB so the reference library yields about as many batches as workers.
+- Bulk writes use multi-row `INSERT ... VALUES` statements (995/999 bound parameters each); on ~19k asset rows that is ~25 % faster than both drift's per-row batch and a `json_each` expansion of one JSON array, because the cost is SQLite's row and index writes.
+- Step 3 syncs `existing_files` as a diff inside SQLite (delete stale keys, insert new, update changed paths) instead of delete-and-reinsert, so an unchanged cache folder costs index lookups only and does not grow the WAL.
+- WAL auto-checkpoints are deferred for the duration of a refresh and one passive checkpoint runs after the result is published, keeping the checkpoint's file copy and fsync off the critical path.
+
 ### 4.5 Operations engine
 
 A single `OperationRunner` (AsyncNotifier) owns "is anything running" (today's `actionInProgressProvider` plus 6 status enums), the current `OperationProgress`, and one `CancellationToken`. An operation is a plain class:
@@ -301,6 +310,8 @@ Milestone: empty shell runs on Windows with M3 theme, native assets bundle (pdfi
 - `features/startup`: splash, directory detection/validation/selection, "loading x of y" progress.
 
 Milestone: v3 lists your mods/saves/saved objects with correct asset counts and backup status. Measure cold and warm start against v2 on the same library and record the numbers in this document.
+
+**Status: done 2026-10-17** on `v3-rewrite`. 470 tests green, analyzer clean. Delivered: freezed models and enums with stable db values; parsing rules ported verbatim plus a byte-level URL scanner equivalent to the regex (68 MB mod parses in ~100 ms instead of 650); SQLite schema keyed by json path with multi-row inserts, SQL diff sync for `existing_files`, and deferred WAL checkpoints; worker-pool scanners and zip central-directory reader; refresh pipeline with stat-based change detection, largest-first parse batches, concurrent asset/backup indexing and streaming upserts; startup flow with directory selection; Mods page with grid/list, badges, toolbar, context menu (copy, open in explorer, Workshop page live; the rest stubbed for Phases 2-5) and Refresh dialog. Fixes found along the way: escaped quotes in SaveName no longer truncate or corrupt on rename; `.wav`/`.ogg` extension detection corrected; same-basename JSONs in different folders no longer collide. Numbers in section 10.3.
 
 ### Phase 2: Selected mod and assets (medium)
 
@@ -454,10 +465,12 @@ Each number is the median of 3 runs, v2 (2.1.0 release build) vs v3 (release bui
 
 **Results** (median of 3, harness `v3/tool/bench/bench.ps1`, details in `v3/tool/bench/results.md`). v2 = 2.1.0 at commit `ba4f677`, release build with Flutter 3.47.7 (the release used 3.44.4; `pdfrx_engine` bumped 0.4.3 -> 0.4.7 to compile), measured 2026-10-17. Wall = process start to the app's "library loaded" line; in-app = the load duration the app reports itself.
 
-| Metric | v2 wall | v2 in-app | v3 |
-| --- | --- | --- | --- |
-| Cold start | 2261 ms | 889 ms | pending |
-| Warm start | 1845 ms | 502 ms (v2 pads the load to a 500 ms minimum; real work ~115 ms) | pending |
+| Metric | v2 wall | v2 in-app | v3 wall | v3 in-app |
+| --- | --- | --- | --- | --- |
+| Cold start | 2261 ms | 889 ms | 1722 ms | 437 ms |
+| Warm start | 1845 ms | 502 ms (v2 pads the load to a 500 ms minimum; real work ~115 ms) | 1354 ms | 95 ms |
+
+v3 measured 2026-10-17 after the Phase 1 optimisations (v3 working tree on `v3-rewrite` after commit `ad127db`, Flutter 3.47.7, same machine and library). In both apps roughly 1.2 s of the wall time passes before `main()` runs (engine and VM start); v3's own bootstrap takes 8 ms and its first library refresh is requested ~70 ms (cold) / ~48 ms (warm) after `main()`. Before the optimisations the same v3 code measured 2446 ms / 1178 ms cold and 1387 ms / 154 ms warm (an earlier 2979 ms figure was a harness artefact: it timed the log file's 500 ms flush instead of the line's timestamp).
 
 ### 10.4 Stress library
 

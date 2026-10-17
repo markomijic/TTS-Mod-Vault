@@ -3,11 +3,19 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/app.dart';
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
+import 'package:tts_mod_vault/app/providers/startup_timeline_provider.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/bootstrap/bootstrap.dart';
+import 'package:tts_mod_vault/bootstrap/startup_timeline.dart';
+import 'package:tts_mod_vault/core/logging/app_log.dart';
 
 Future<void> main() async {
-  final result = await bootstrap();
+  final timeline = StartupTimeline();
+  final result = await bootstrap(timeline: timeline);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final ms = timeline.mark(StartupTimeline.firstFrame);
+    result.log.info(LogSource.app, 'First frame rendered: sinceMainMs=$ms');
+  });
   runApp(
     ProviderScope(
       // Riverpod 3 retries failed providers by default; a failed file scan or
@@ -17,6 +25,7 @@ Future<void> main() async {
         keyValueStoreProvider.overrideWithValue(result.kv),
         appLogProvider.overrideWithValue(result.log),
         appDatabaseProvider.overrideWithValue(result.db),
+        startupTimelineProvider.overrideWithValue(timeline),
       ],
       child: const App(),
     ),

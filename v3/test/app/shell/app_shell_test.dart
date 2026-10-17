@@ -1,3 +1,8 @@
+// Test doubles expose recorded calls on purpose.
+// ignore_for_file: avoid_public_notifier_properties
+
+import 'dart:async';
+
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -7,6 +12,8 @@ import 'package:tts_mod_vault/app/shell/placeholders.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
+import 'package:tts_mod_vault/features/library/application/library_controller.dart';
+import 'package:tts_mod_vault/features/library/presentation/mods_page.dart';
 import 'package:tts_mod_vault/features/startup/application/startup_controller.dart';
 
 /// Startup double that skips the folder check and library refresh so the
@@ -16,11 +23,27 @@ class _ReadyStartupController extends StartupController {
   Future<StartupState> build() async => const StartupReady();
 }
 
+/// Library double: an empty, already-refreshed library and a record of
+/// `refresh` calls (no IO).
+class SpyLibraryController extends LibraryController {
+  final List<bool> refreshCalls = [];
+
+  @override
+  FutureOr<LibraryState> build() => LibraryState(lastRefresh: DateTime(2024));
+
+  @override
+  Future<void> refresh({bool clearCache = false}) async {
+    refreshCalls.add(clearCache);
+  }
+}
+
 Future<InMemoryKeyValueStore> pumpApp(
   WidgetTester tester, {
   InMemoryKeyValueStore? store,
+  SpyLibraryController? library,
 }) async {
   final kv = store ?? InMemoryKeyValueStore();
+  final spy = library ?? SpyLibraryController();
   tester.view.physicalSize = const Size(1280, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -29,6 +52,7 @@ Future<InMemoryKeyValueStore> pumpApp(
       overrides: [
         keyValueStoreProvider.overrideWithValue(kv),
         startupControllerProvider.overrideWith(_ReadyStartupController.new),
+        libraryControllerProvider.overrideWith(() => spy),
       ],
       child: const App(),
     ),
@@ -139,10 +163,43 @@ void main() {
   ) async {
     await pumpApp(tester);
 
-    await tester.tap(inSidebar(find.byTooltip('Refresh')));
+    await tester.tap(inSidebar(find.byTooltip('Cleanup')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Not implemented yet'), findsOneWidget);
+  });
+
+  testWidgets('Refresh asks for confirmation and passes the checkbox', (
+    tester,
+  ) async {
+    final library = SpyLibraryController();
+    await pumpApp(tester, library: library);
+
+    await tester.tap(inSidebar(find.byTooltip('Refresh')));
+    await tester.pumpAndSettle();
+    expect(find.text('Refresh all data?'), findsOneWidget);
+    expect(find.text('Clear Vault cache'), findsOneWidget);
+
+    // Cancel does nothing.
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(library.refreshCalls, isEmpty);
+
+    // Confirm without the checkbox: a plain refresh.
+    await tester.tap(inSidebar(find.byTooltip('Refresh')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Refresh'));
+    await tester.pumpAndSettle();
+    expect(library.refreshCalls, [false]);
+
+    // Confirm with the checkbox: clear the cache.
+    await tester.tap(inSidebar(find.byTooltip('Refresh')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Refresh'));
+    await tester.pumpAndSettle();
+    expect(library.refreshCalls, [false, true]);
   });
 }

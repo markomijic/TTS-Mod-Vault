@@ -77,6 +77,13 @@ final class ModFilterController extends Notifier<ModFilter> {
     _foldersByType.clear();
     state = ModFilter(sort: state.sort);
   }
+
+  /// Clears every filter but keeps the search text and the sort order, which
+  /// is what "Clear all filters" in the toolbar does (2.x behaviour).
+  void clearFilters() {
+    _foldersByType.clear();
+    state = ModFilter(query: state.query, sort: state.sort);
+  }
 }
 
 /// The current [ModFilter] of the Mods page.

@@ -48,7 +48,12 @@ class LibraryController extends AsyncNotifier<LibraryState> {
 
   /// Bytes per parse batch the batching aims for; a batch closes before it
   /// would exceed this (a single larger file still forms its own batch).
-  static const int targetBatchBytes = 50 * 1024 * 1024;
+  ///
+  /// Small enough that the reference library (272 MB in 99 files) yields
+  /// about as many batches as the pool has workers, so the parse phase ends
+  /// when the largest single file does rather than when one worker finishes
+  /// a 50 MB pile of small ones.
+  static const int targetBatchBytes = 16 * 1024 * 1024;
 
   /// Archives per `countBackupAssets` task, at most.
   static const int maxBackupsPerChunk = 50;
@@ -134,12 +139,31 @@ class LibraryController extends AsyncNotifier<LibraryState> {
 
   // --- refresh pipeline ----------------------------------------------------
 
+  /// The pipeline of plan section 4.4. Steps b (scan), e (asset index) and
+  /// f (backups) only read disjoint folders and write disjoint tables, so e
+  /// and f are started right after b is dispatched and run while b-d do
+  /// their work; the main flow collects their results after d. Step d
+  /// upserts each parse batch as soon as it returns, so the database writes
+  /// overlap the parsing of the remaining batches. Phases are still
+  /// *reported* in pipeline order (see [_ProgressGate]).
   Future<void> _refresh({required bool clearCache}) async {
     final stopwatch = Stopwatch()..start();
     final progress = ref.read(refreshProgressControllerProvider.notifier);
+    final gate = _ProgressGate(progress, () => ref.mounted);
     final pool = ref.read(workerPoolProvider);
     final db = _db;
     final warnings = <String>[];
+    // Per-phase durations for the `Library refresh finished` line. Each
+    // phase's number is the time the main flow spent waiting on it, so
+    // concurrent work shows up only where it was not hidden.
+    final phases = <String, int>{};
+    var phaseStart = 0;
+    void endPhase(String name) {
+      final now = stopwatch.elapsedMilliseconds;
+      phases[name] = (phases[name] ?? 0) + (now - phaseStart);
+      phaseStart = now;
+    }
+
     // Riverpod 3 copies the previous value into the loading state, so the UI
     // keeps the old list visible while this runs.
     state = const AsyncLoading();
@@ -149,10 +173,18 @@ class LibraryController extends AsyncNotifier<LibraryState> {
       final options = await ref
           .read(libraryOptionsProvider.notifier)
           .ensureLoaded();
+      endPhase('options');
 
       if (clearCache) {
         await _clearCache(db);
       }
+      // Spawning the isolates is the first `run`'s hidden cost; measure it
+      // on its own so the scan phase is just the scan.
+      await pool.start();
+      // Checkpoint the WAL once after the refresh instead of on every bulk
+      // commit below (resumed in `finally`).
+      await db.deferWalCheckpoints();
+      endPhase('poolStart');
 
       // b. Scan the mod roots.
       final scanRequests = [
@@ -176,13 +208,27 @@ class LibraryController extends AsyncNotifier<LibraryState> {
             ignoredSubfolders: options.ignoredSubfolders,
           ),
       ];
-      final scans = await _runEach(
+      gate.advance(const RefreshProgress(phase: LibraryRefreshPhase.scanning));
+      final scanFuture = _runEach(
         pool,
         scanModFiles,
         scanRequests,
-        progress,
+        gate,
         LibraryRefreshPhase.scanning,
       );
+      // e. and f. start now and run alongside the scan and the parse; they
+      // are awaited (and their phases shown) after d. `ignore()` only stops
+      // an early failure from being reported as unhandled before the await.
+      final indexFuture = _indexAssets(pool, db, directories, gate)..ignore();
+      final backupsFuture = directories.hasBackupsDir
+          ? (_indexBackups(pool, db, directories.backupsDir, gate)..ignore())
+          : Future.value((
+              backups: const <Backup>[],
+              counted: 0,
+              warnings: const <String>[],
+            ));
+
+      final scans = await scanFuture;
       final entries = <String, ModFileEntry>{};
       for (final scan in scans) {
         warnings.addAll(scan.warnings);
@@ -190,6 +236,7 @@ class LibraryController extends AsyncNotifier<LibraryState> {
           entries[entry.jsonPath] = entry;
         }
       }
+      endPhase('scan');
 
       // c. Diff against the store.
       final stored = await db.modsDao.fingerprints();
@@ -207,23 +254,37 @@ class LibraryController extends AsyncNotifier<LibraryState> {
           if (!entries.containsKey(path)) path,
       ];
       await db.modsDao.deleteByPaths(vanished);
+      endPhase('diff');
       // TODO(v3): `fingerprints()` does not expose `image_path`, so an image
       // added or removed next to an unchanged JSON is not written back to
       // the store. The state is still right: `_finishMod` below takes folder
       // and image path from the scan entry for every mod.
 
-      // d. Parse the new and changed files.
+      // d. Parse the new and changed files, largest batches first (LPT: the
+      //    biggest file bounds the phase, so it must start immediately), and
+      //    write parsed batches to the store while the rest still parse.
       var parsedOk = 0;
+      var upsertWorkMs = 0;
+      var upsertTransactions = 0;
       if (toParse.isNotEmpty) {
-        final batches = createParseBatches(toParse);
+        final batches = createParseBatches(toParse)
+          ..sort((a, b) => _batchBytes(b).compareTo(_batchBytes(a)));
         var done = 0;
-        progress.set(
+        gate.advance(
           RefreshProgress(
             phase: LibraryRefreshPhase.parsing,
             total: toParse.length,
           ),
         );
-        final results = await Future.wait([
+        // One upsert runs at a time (the database is one isolate anyway);
+        // batches that finish while it runs are written together next.
+        final upserts = _UpsertQueue((items) async {
+          final started = stopwatch.elapsedMilliseconds;
+          await db.modsDao.upsertMods(items);
+          upsertWorkMs += stopwatch.elapsedMilliseconds - started;
+          upsertTransactions++;
+        });
+        await Future.wait([
           for (final batch in batches)
             pool
                 .run(
@@ -235,90 +296,42 @@ class LibraryController extends AsyncNotifier<LibraryState> {
                     ],
                   ),
                 )
-                .then((result) {
+                .then((results) {
                   done += batch.length;
-                  if (ref.mounted) {
-                    progress.set(
-                      RefreshProgress(
-                        phase: LibraryRefreshPhase.parsing,
-                        done: done,
-                        total: toParse.length,
-                      ),
-                    );
-                  }
-                  return result;
+                  gate.report(
+                    RefreshProgress(
+                      phase: LibraryRefreshPhase.parsing,
+                      done: done,
+                      total: toParse.length,
+                    ),
+                  );
+                  final items = _upsertsFor(results, entries, warnings);
+                  parsedOk += items.length;
+                  upserts.add(items);
                 }),
         ]);
-        final upserts = <ModUpsert>[];
-        for (final parsed in results.expand((list) => list)) {
-          if (!parsed.isOk) {
-            final message =
-                'Could not read ${parsed.jsonPath}: ${parsed.error}';
-            warnings.add(message);
-            _log.warning(
-              LogSource.library,
-              'Could not read mod file',
-              details: parsed.error,
-              modPath: parsed.jsonPath,
-            );
-            continue;
-          }
-          final entry = entries[parsed.jsonPath]!;
-          upserts.add(
-            _upsertFor(
-              parsed,
-              folder: entry.folder,
-              imagePath: entry.imagePath,
-            ),
-          );
-        }
-        parsedOk = upserts.length;
-        await db.modsDao.upsertMods(upserts);
+        endPhase('parse');
+        await upserts.drain();
+        endPhase('upsert');
       }
 
-      // e. Rebuild the existing-files index.
-      final indexes = await _runEach(
-        pool,
-        indexAssetDirectory,
-        [
-          for (final type in AssetType.values)
-            AssetIndexRequest(
-              type: type,
-              directory: directories.assetDir(type),
-            ),
-        ],
-        progress,
-        LibraryRefreshPhase.indexingFiles,
+      // e. Collect the existing-files index (running since b).
+      gate.advance(
+        const RefreshProgress(phase: LibraryRefreshPhase.indexingFiles),
       );
-      final duplicateKeys = <String>[];
-      for (final index in indexes) {
-        for (final warning in index.warnings) {
-          // Two files for one key (`x.png` and `x.jpg`) are routine in a TTS
-          // cache; keep them out of the user-facing warnings.
-          if (warning.startsWith('Duplicate asset key')) {
-            duplicateKeys.add(warning);
-          } else {
-            warnings.add(warning);
-          }
-        }
-        await db.existingFilesDao.replaceAll(index.type, index.files);
-      }
-      if (duplicateKeys.isNotEmpty) {
-        _log.debugLog(
-          LogSource.library,
-          '${duplicateKeys.length} duplicate asset keys ignored',
-          details: duplicateKeys.join('\n'),
-        );
-      }
+      warnings.addAll(await indexFuture);
+      endPhase('indexFiles');
 
-      // f. Backups.
-      final backupResult = directories.hasBackupsDir
-          ? await _indexBackups(pool, db, directories.backupsDir, progress)
-          : (backups: const <Backup>[], counted: 0, warnings: const <String>[]);
+      // f. Collect the backups (running since b).
+      gate.advance(
+        const RefreshProgress(phase: LibraryRefreshPhase.indexingBackups),
+      );
+      final backupResult = await backupsFuture;
       warnings.addAll(backupResult.warnings);
+      endPhase('backups');
 
       // g. Summaries and backup matching.
-      progress.set(
+      gate.advance(
         const RefreshProgress(phase: LibraryRefreshPhase.summarizing),
       );
       final ignoreAudio = options.ignoreAudioGlobally;
@@ -344,6 +357,7 @@ class LibraryController extends AsyncNotifier<LibraryState> {
       final finishedMods = finish(mods);
       final finishedSaves = finish(saves);
       final finishedSavedObjects = finish(savedObjects);
+      endPhase('summary');
 
       if (!ref.mounted) return;
       state = AsyncData(
@@ -371,7 +385,10 @@ class LibraryController extends AsyncNotifier<LibraryState> {
         'scanned=${entries.length} parsed=$parsedOk '
         'removed=${vanished.length} backupsCounted=${backupResult.counted} '
         'warnings=${warnings.length} '
-        'durationMs=${stopwatch.elapsedMilliseconds}',
+        'durationMs=${stopwatch.elapsedMilliseconds} '
+        '${[for (final e in phases.entries) '${e.key}Ms=${e.value}'].join(' ')}'
+        '${upsertWorkMs == 0 ? '' : ' upsertWorkMs=$upsertWorkMs '
+                  'upsertTransactions=$upsertTransactions'}',
       );
     } catch (error, stackTrace) {
       if (!ref.mounted) return;
@@ -384,6 +401,10 @@ class LibraryController extends AsyncNotifier<LibraryState> {
       state = AsyncError(error, stackTrace);
     } finally {
       if (ref.mounted) progress.clear();
+      // The result is published; now fold the WAL back into the database
+      // file off the critical path. Errors here must not surface as a
+      // failed refresh.
+      unawaited(_checkpoint(db));
     }
   }
 
@@ -421,26 +442,127 @@ class LibraryController extends AsyncNotifier<LibraryState> {
     await db.delete(db.backups).go();
   });
 
+  /// Re-enables automatic WAL checkpoints and runs one now (see
+  /// `AppDatabase.deferWalCheckpoints`).
+  Future<void> _checkpoint(AppDatabase db) async {
+    try {
+      final started = DateTime.now();
+      await db.resumeWalCheckpoints();
+      await db.checkpointWal();
+      _log.debugLog(
+        LogSource.library,
+        'WAL checkpoint after refresh: '
+        '${DateTime.now().difference(started).inMilliseconds} ms',
+      );
+    } on Object catch (error, stackTrace) {
+      _log.debugLog(
+        LogSource.library,
+        'WAL checkpoint after refresh failed',
+        details: '$error\n$stackTrace',
+      );
+    }
+  }
+
+  /// Total bytes of the files in [batch].
+  static int _batchBytes(List<ModFileEntry> batch) =>
+      batch.fold(0, (sum, entry) => sum + entry.sizeBytes);
+
+  /// Turns one batch's parse results into store upserts; files that could
+  /// not be read become warnings (list and log) instead.
+  List<ModUpsert> _upsertsFor(
+    List<ParsedMod> results,
+    Map<String, ModFileEntry> entries,
+    List<String> warnings,
+  ) {
+    final upserts = <ModUpsert>[];
+    for (final parsed in results) {
+      if (!parsed.isOk) {
+        warnings.add('Could not read ${parsed.jsonPath}: ${parsed.error}');
+        _log.warning(
+          LogSource.library,
+          'Could not read mod file',
+          details: parsed.error,
+          modPath: parsed.jsonPath,
+        );
+        continue;
+      }
+      final entry = entries[parsed.jsonPath]!;
+      upserts.add(
+        _upsertFor(parsed, folder: entry.folder, imagePath: entry.imagePath),
+      );
+    }
+    return upserts;
+  }
+
+  /// Step e: lists every asset cache folder on the pool and syncs each
+  /// listing into `existing_files` as soon as it arrives. Returns the
+  /// user-facing warnings; duplicate-key notes go to the debug log.
+  Future<List<String>> _indexAssets(
+    WorkerPool pool,
+    AppDatabase db,
+    Directories directories,
+    _ProgressGate gate,
+  ) async {
+    const phase = LibraryRefreshPhase.indexingFiles;
+    final requests = [
+      for (final type in AssetType.values)
+        AssetIndexRequest(type: type, directory: directories.assetDir(type)),
+    ];
+    final warnings = <String>[];
+    final duplicateKeys = <String>[];
+    var done = 0;
+    var writes = Future<void>.value();
+    gate.report(RefreshProgress(phase: phase, total: requests.length));
+    await Future.wait([
+      for (final request in requests)
+        pool.run(indexAssetDirectory, request).then((index) {
+          for (final warning in index.warnings) {
+            // Two files for one key (`x.png` and `x.jpg`) are routine in a
+            // TTS cache; keep them out of the user-facing warnings.
+            if (warning.startsWith('Duplicate asset key')) {
+              duplicateKeys.add(warning);
+            } else {
+              warnings.add(warning);
+            }
+          }
+          writes = writes.then(
+            (_) => db.existingFilesDao.replaceAll(index.type, index.files),
+          );
+          done++;
+          gate.report(
+            RefreshProgress(phase: phase, done: done, total: requests.length),
+          );
+        }),
+    ]);
+    await writes;
+    if (duplicateKeys.isNotEmpty) {
+      _log.debugLog(
+        LogSource.library,
+        '${duplicateKeys.length} duplicate asset keys ignored',
+        details: duplicateKeys.join('\n'),
+      );
+    }
+    return warnings;
+  }
+
   /// Runs [task] for each of [args] on the pool, reporting per-item
   /// completion as [phase] progress. Results come back in argument order.
   Future<List<R>> _runEach<A, R>(
     WorkerPool pool,
     FutureOr<R> Function(A arg) task,
     List<A> args,
-    RefreshProgressController progress,
+    _ProgressGate gate,
     LibraryRefreshPhase phase,
   ) async {
     var done = 0;
-    progress.set(RefreshProgress(phase: phase, total: args.length));
+    gate.report(RefreshProgress(phase: phase, total: args.length));
     return Future.wait([
       for (final arg in args)
         pool.run(task, arg).then((result) {
           done++;
-          if (ref.mounted) {
-            progress.set(
-              RefreshProgress(phase: phase, done: done, total: args.length),
-            );
-          }
+          gate.report(
+            RefreshProgress(phase: phase, done: done, total: args.length),
+          );
           return result;
         }),
     ]);
@@ -451,9 +573,9 @@ class LibraryController extends AsyncNotifier<LibraryState> {
     WorkerPool pool,
     AppDatabase db,
     String backupsDir,
-    RefreshProgressController progress,
+    _ProgressGate gate,
   ) async {
-    progress.set(
+    gate.report(
       const RefreshProgress(phase: LibraryRefreshPhase.indexingBackups),
     );
     final scan = await pool.run(
@@ -484,7 +606,7 @@ class LibraryController extends AsyncNotifier<LibraryState> {
         pool,
         countBackupAssets,
         chunks,
-        progress,
+        gate,
         LibraryRefreshPhase.indexingBackups,
       );
       final upserts = <BackupUpsert>[];
@@ -604,6 +726,82 @@ class LibraryController extends AsyncNotifier<LibraryState> {
   AppDatabase get _db => ref.read(appDatabaseProvider);
 
   AppLog get _log => ref.read(appLogProvider);
+}
+
+/// Serialises store writes behind the parse phase: [add] queues a batch's
+/// upserts; one write runs at a time and takes everything queued since the
+/// previous one, so a dozen parse batches become a few transactions without
+/// anyone waiting for the parsing to finish first.
+final class _UpsertQueue {
+  _UpsertQueue(this._write);
+
+  final Future<void> Function(List<ModUpsert> items) _write;
+  final List<ModUpsert> _pending = [];
+  Future<void>? _inFlight;
+  Object? _error;
+  StackTrace? _stackTrace;
+
+  /// Queues [items] and starts a write if none is running.
+  void add(List<ModUpsert> items) {
+    _pending.addAll(items);
+    _flush();
+  }
+
+  /// Completes when everything queued so far is written; rethrows the first
+  /// write error.
+  Future<void> drain() async {
+    _flush();
+    while (_inFlight != null) {
+      await _inFlight;
+    }
+    if (_error != null) Error.throwWithStackTrace(_error!, _stackTrace!);
+  }
+
+  void _flush() {
+    if (_inFlight != null || _pending.isEmpty || _error != null) return;
+    final items = List<ModUpsert>.of(_pending);
+    _pending.clear();
+    _inFlight = _write(items)
+        .catchError((Object error, StackTrace stackTrace) {
+          _error ??= error;
+          _stackTrace ??= stackTrace;
+        })
+        .whenComplete(() {
+          _inFlight = null;
+          _flush();
+        });
+  }
+}
+
+/// Publishes [RefreshProgress] in pipeline order while the phases themselves
+/// overlap. [report] records a phase's latest snapshot and publishes it only
+/// when that phase is the active one; [advance] makes a phase active and
+/// publishes its latest snapshot (or the given initial one), so a phase that
+/// already finished in the background still appears, complete, in its turn.
+final class _ProgressGate {
+  _ProgressGate(this._controller, this._mounted);
+
+  final RefreshProgressController _controller;
+  final bool Function() _mounted;
+  final Map<LibraryRefreshPhase, RefreshProgress> _latest = {};
+  LibraryRefreshPhase? _active;
+
+  /// Records [progress] and shows it if its phase is active.
+  void report(RefreshProgress progress) {
+    _latest[progress.phase] = progress;
+    if (progress.phase == _active) _publish(progress);
+  }
+
+  /// Makes [initial]'s phase the active one and shows the latest snapshot
+  /// recorded for it, or [initial] when there is none yet.
+  void advance(RefreshProgress initial) {
+    _active = initial.phase;
+    _publish(_latest[initial.phase] ?? initial);
+  }
+
+  void _publish(RefreshProgress progress) {
+    if (_mounted()) _controller.set(progress);
+  }
 }
 
 /// Matches mods to backups by file name (v2 `getBackupByMod`): the first

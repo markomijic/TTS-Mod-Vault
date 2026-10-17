@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' show min;
 
 import 'package:drift/drift.dart';
 import 'package:tts_mod_vault/data/db/app_database.dart';
@@ -63,27 +64,68 @@ class ModsDao extends DatabaseAccessor<AppDatabase> with _$ModsDaoMixin {
     };
   }
 
+  /// Asset rows per multi-row `INSERT ... VALUES` statement in
+  /// [upsertMods]: 5 columns x 199 rows = 995 bound parameters, under the
+  /// 999 limit of older SQLite builds.
+  static const int assetRowsPerStatement = 199;
+
   /// Inserts or updates each mod (by `json_path`) and replaces its asset
   /// rows, all in one transaction. `file_key` is computed with
   /// [fileKeyFromUrl]; a URL that appears twice in one mod is stored once
-  /// (first occurrence wins).
+  /// (first occurrence wins). The user-owned columns of an existing row
+  /// (`audio_visibility`, `invalid_urls_json`) are left alone.
+  ///
+  /// The asset rows go in as multi-row `INSERT ... VALUES` statements of
+  /// [assetRowsPerStatement] rows. Measured on the reference library's ~19k
+  /// rows (`tool/bench/db_probe.dart`): one bound insert per row through
+  /// drift's `batch` and a `json_each` expansion of one JSON array both land
+  /// around 235 ms, the multi-row form around 180 ms, because the cost is
+  /// SQLite's row and index writes plus, for JSON, parsing ~5 MB of text;
+  /// the number of statements hardly matters.
   Future<void> upsertMods(List<ModUpsert> items) async {
     if (items.isEmpty) return;
-    await batch((b) {
-      for (final item in items) {
-        b.insert(
-          mods,
-          _insertCompanion(item),
-          onConflict: DoUpdate(
-            (_) => _updateCompanion(item),
-            target: [mods.jsonPath],
+    await transaction(() async {
+      await batch((b) {
+        for (final item in items) {
+          b.insert(
+            mods,
+            _insertCompanion(item),
+            onConflict: DoUpdate(
+              (_) => _updateCompanion(item),
+              target: [mods.jsonPath],
+            ),
+          );
+        }
+      });
+      await customUpdate(
+        'DELETE FROM mod_assets '
+        'WHERE mod_path IN (SELECT value FROM json_each(?))',
+        variables: [
+          Variable.withString(
+            jsonEncode([for (final item in items) item.ref.jsonPath]),
           ),
-        );
-        b.deleteWhere(modAssets, (t) => t.modPath.equals(item.ref.jsonPath));
-        b.insertAll(
-          modAssets,
-          _assetCompanions(item),
-          mode: InsertMode.insertOrIgnore,
+        ],
+        updates: {modAssets},
+        updateKind: UpdateKind.delete,
+      );
+      final rows = _assetRows(items);
+      for (var start = 0; start < rows.length; start += assetRowsPerStatement) {
+        final end = min(start + assetRowsPerStatement, rows.length);
+        await customUpdate(
+          'INSERT OR IGNORE INTO mod_assets '
+          '(mod_path, url, asset_key, asset_type, file_key) VALUES '
+          '${List.filled(end - start, '(?, ?, ?, ?, ?)').join(', ')}',
+          variables: [
+            for (var i = start; i < end; i++) ...[
+              Variable.withString(rows[i].modPath),
+              Variable.withString(rows[i].url),
+              Variable.withString(rows[i].assetKey),
+              Variable.withInt(rows[i].assetType),
+              Variable.withString(rows[i].fileKey),
+            ],
+          ],
+          updates: {modAssets},
+          updateKind: UpdateKind.insert,
         );
       }
     });
@@ -155,18 +197,30 @@ class ModsDao extends DatabaseAccessor<AppDatabase> with _$ModsDaoMixin {
     imagePath: Value(item.imagePath),
   );
 
-  List<ModAssetsCompanion> _assetCompanions(ModUpsert item) {
-    final seen = <String>{};
-    return [
-      for (final asset in item.assets)
-        if (seen.add(asset.url))
-          ModAssetsCompanion.insert(
-            modPath: item.ref.jsonPath,
-            url: asset.url,
-            assetKey: asset.assetKey,
-            assetType: asset.type,
-            fileKey: fileKeyFromUrl(asset.url),
-          ),
-    ];
+  /// One `mod_assets` row per asset, URLs de-duplicated per mod.
+  static List<_AssetRow> _assetRows(List<ModUpsert> items) {
+    final rows = <_AssetRow>[];
+    for (final item in items) {
+      final seen = <String>{};
+      for (final asset in item.assets) {
+        if (!seen.add(asset.url)) continue;
+        rows.add((
+          modPath: item.ref.jsonPath,
+          url: asset.url,
+          assetKey: asset.assetKey,
+          assetType: asset.type.dbValue,
+          fileKey: fileKeyFromUrl(asset.url),
+        ));
+      }
+    }
+    return rows;
   }
 }
+
+typedef _AssetRow = ({
+  String modPath,
+  String url,
+  String assetKey,
+  int assetType,
+  String fileKey,
+});

@@ -3,6 +3,8 @@ import 'dart:io' show Directory;
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
+import 'package:tts_mod_vault/app/providers/startup_timeline_provider.dart';
+import 'package:tts_mod_vault/bootstrap/startup_timeline.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/domain/models/directories.dart';
 import 'package:tts_mod_vault/domain/rules/tts_paths.dart';
@@ -138,7 +140,12 @@ class StartupController extends AsyncNotifier<StartupState> {
   Future<void> _load() async {
     if (!ref.mounted) return;
     state = const AsyncData(StartupLoading());
-    _log.info(LogSource.app, 'Refreshing library');
+    final timeline = ref.read(startupTimelineProvider)
+      ..mark(StartupTimeline.refreshRequested);
+    _log.info(
+      LogSource.app,
+      'Refreshing library: sinceMainMs=${timeline.elapsedMs}',
+    );
     try {
       await ref.read(libraryControllerProvider.notifier).refresh();
       await ref.read(libraryControllerProvider.future);

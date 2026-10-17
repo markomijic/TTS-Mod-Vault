@@ -3,7 +3,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/shell/app_destination.dart';
 import 'package:tts_mod_vault/app/shell/placeholders.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
+import 'package:tts_mod_vault/app/widgets/app_dialog.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
+import 'package:tts_mod_vault/features/library/application/library_controller.dart';
+import 'package:tts_mod_vault/features/library/presentation/mods_page.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Root layout: the [VaultSidebar] on the left and the current destination's
@@ -21,6 +24,20 @@ class AppShell extends ConsumerWidget {
 
     void notImplemented() => showAppSnackBar(context, l10n.notImplementedYet);
 
+    Future<void> refresh() async {
+      final clearCache = await showConfirmDialogWithCheckbox(
+        context,
+        title: l10n.refreshDialogTitle,
+        checkboxLabel: l10n.refreshClearCacheLabel,
+        checkboxInfo: l10n.refreshClearCacheInfo,
+        confirmLabel: l10n.actionRefresh,
+      );
+      if (clearCache == null) return;
+      await ref
+          .read(libraryControllerProvider.notifier)
+          .refresh(clearCache: clearCache);
+    }
+
     return Scaffold(
       body: Row(
         children: [
@@ -36,7 +53,7 @@ class AppShell extends ConsumerWidget {
                   icon: Icons.refresh,
                   label: l10n.actionRefresh,
                   enabled: enabled,
-                  onPressed: notImplemented,
+                  onPressed: refresh,
                 ),
                 SidebarAction(
                   icon: Icons.cleaning_services_outlined,

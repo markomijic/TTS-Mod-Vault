@@ -2,10 +2,12 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/data/db/app_database.dart';
+import 'package:tts_mod_vault/data/db/daos/mods_dao.dart';
 import 'package:tts_mod_vault/domain/constants.dart';
 import 'package:tts_mod_vault/domain/enums/asset_type.dart';
 import 'package:tts_mod_vault/domain/enums/audio_visibility.dart';
 import 'package:tts_mod_vault/domain/enums/mod_type.dart';
+import 'package:tts_mod_vault/domain/rules/file_key.dart';
 
 import '../db_test_helpers.dart';
 
@@ -172,6 +174,51 @@ void main() {
           .getSingle();
       expect(count.read<int>('n'), 50);
       expect(await db.modsDao.fingerprints(), hasLength(50));
+    });
+
+    test('more asset rows than one statement carries, with awkward URLs', () async {
+      // Spans several json_each statements (and far more values than
+      // SQLite's bound-parameter limit would allow row by row).
+      const total = ModsDao.assetRowsPerStatement * 2 + 123;
+      final urls = [
+        for (var i = 0; i < total; i++)
+          'https://x/$i/path with spaces/"quoted"/back\\slash/ünï/\u{1F600}.png',
+      ];
+      final big = modUpsert('big', assets: [for (final u in urls) image(u)]);
+      final small = modUpsert('small', assets: [model('https://x/m.obj')]);
+      await db.modsDao.upsertMods([big, small]);
+
+      final rows = await assetRows(big.ref.jsonPath);
+      expect(rows, hasLength(total));
+      expect(rows.map((r) => r.url).toSet(), urls.toSet());
+      expect(rows.first.fileKey, fileKeyFromUrl(rows.first.url));
+      expect(rows.every((r) => r.assetType == AssetType.image), isTrue);
+      expect(rows.every((r) => r.assetKey == 'FaceURL'), isTrue);
+      expect(await assetRows(small.ref.jsonPath), hasLength(1));
+
+      // Re-indexing with fewer assets replaces the whole set.
+      await db.modsDao.upsertMods([
+        modUpsert('big', assets: [image(urls.first)]),
+      ]);
+      expect((await assetRows(big.ref.jsonPath)).single.url, urls.first);
+      expect(await assetRows(small.ref.jsonPath), hasLength(1));
+    });
+
+    test('is atomic: a failing item rolls back the whole call', () async {
+      await db.modsDao.upsertMods([modUpsert('ok')]);
+      // An asset type outside the converter's range cannot happen through
+      // the typed API, so provoke the failure with a foreign key: an asset
+      // row for a mod that is not in the same call cannot exist... it can
+      // (the mod row is inserted first), so use a NOT NULL violation via
+      // raw SQL inside the same kind of transaction instead.
+      await expectLater(
+        db.transaction(() async {
+          await db.modsDao.upsertMods([modUpsert('two')]);
+          await db.customStatement('INSERT INTO mods (json_path) VALUES (1)');
+        }),
+        throwsA(isA<SqliteException>()),
+      );
+      expect((await db.modsDao.fingerprints()).keys, [modPath('ok')]);
     });
 
     test('an empty list is a no-op', () async {

@@ -10,6 +10,32 @@ import 'package:tts_mod_vault/domain/enums/audio_visibility.dart';
 import 'package:tts_mod_vault/domain/enums/mod_type.dart';
 
 void main() {
+  test('WAL checkpoint control round-trips', () async {
+    final dir = Directory.systemTemp.createTempSync('ttsmv_db_');
+    final db = AppDatabase.open(File(p.join(dir.path, 'wal.sqlite')));
+    addTearDown(() async {
+      await db.close();
+      dir.deleteSync(recursive: true);
+    });
+    Future<int> autoCheckpoint() async =>
+        (await db.customSelect('PRAGMA wal_autocheckpoint').getSingle())
+            .read<int>('wal_autocheckpoint');
+
+    expect(await autoCheckpoint(), AppDatabase.defaultWalAutoCheckpointPages);
+    await db.deferWalCheckpoints();
+    expect(await autoCheckpoint(), 0);
+    await db.into(db.kv).insert(KvCompanion.insert(key: 'k', value: 'v'));
+    await db.resumeWalCheckpoints();
+    expect(await autoCheckpoint(), AppDatabase.defaultWalAutoCheckpointPages);
+    await db.checkpointWal();
+    // Pragmas are harmless on an in-memory database too.
+    final memory = AppDatabase(NativeDatabase.memory());
+    addTearDown(memory.close);
+    await memory.deferWalCheckpoints();
+    await memory.resumeWalCheckpoints();
+    await memory.checkpointWal();
+  });
+
   late AppDatabase db;
 
   setUp(() => db = AppDatabase(NativeDatabase.memory()));

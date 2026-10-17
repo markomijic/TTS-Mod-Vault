@@ -124,5 +124,241 @@
   "refreshPhaseIndexingBackups": "Indexing backups…",
   "@refreshPhaseIndexingBackups": {"description": "Library refresh phase: listing .ttsmod archives and counting their assets"},
   "refreshPhaseSummarizing": "Building library…",
-  "@refreshPhaseSummarizing": {"description": "Library refresh phase: running the summary query and matching backups"}
+  "@refreshPhaseSummarizing": {"description": "Library refresh phase: running the summary query and matching backups"},
+
+  "notImplementedAction": "{action}: not implemented yet",
+  "@notImplementedAction": {
+    "description": "Snack bar shown for a named action that is not wired up yet",
+    "placeholders": {"action": {"type": "String"}}
+  },
+
+  "refreshDialogTitle": "Refresh all data?",
+  "@refreshDialogTitle": {"description": "Title of the dialog shown by the Refresh sidebar action"},
+  "refreshClearCacheLabel": "Clear Vault cache",
+  "@refreshClearCacheLabel": {"description": "Checkbox in the refresh dialog that drops every cached row before re-indexing"},
+  "refreshClearCacheInfo": "This option reloads everything from your files instead of using saved information from cache.\n\nIt will take longer depending on the number of items to load.\n\nYour asset files won't be affected.",
+  "@refreshClearCacheInfo": {"description": "Tooltip of the info icon next to the Clear Vault cache checkbox"},
+
+  "modTypeMods": "Mods",
+  "@modTypeMods": {"description": "Segment label: Workshop mods"},
+  "modTypeSaves": "Saves",
+  "@modTypeSaves": {"description": "Segment label: save games"},
+  "modTypeSavedObjects": "Saved Objects",
+  "@modTypeSavedObjects": {"description": "Segment label: saved objects"},
+  "modTypeModSingular": "mod",
+  "@modTypeModSingular": {"description": "Lower-case singular noun for a Workshop mod, used inside sentences"},
+  "modTypeSaveSingular": "save",
+  "@modTypeSaveSingular": {"description": "Lower-case singular noun for a save game, used inside sentences"},
+  "modTypeSavedObjectSingular": "saved object",
+  "@modTypeSavedObjectSingular": {"description": "Lower-case singular noun for a saved object, used inside sentences"},
+  "modTypeModPlural": "mods",
+  "@modTypeModPlural": {"description": "Lower-case plural noun for Workshop mods, used inside sentences"},
+  "modTypeSavePlural": "saves",
+  "@modTypeSavePlural": {"description": "Lower-case plural noun for save games, used inside sentences"},
+  "modTypeSavedObjectPlural": "saved objects",
+  "@modTypeSavedObjectPlural": {"description": "Lower-case plural noun for saved objects, used inside sentences"},
+  "countOfType": "{count} {typeLabel}",
+  "@countOfType": {
+    "description": "A count followed by a type noun, e.g. '12 mods' or '1 save'",
+    "placeholders": {
+      "count": {"type": "int"},
+      "typeLabel": {"type": "String"}
+    }
+  },
+  "listSeparator": ", ",
+  "@listSeparator": {"description": "Separator used when joining short items into one line, e.g. '12 mods, 3 saves'"},
+
+  "searchHint": "Search",
+  "@searchHint": {"description": "Placeholder of the library search field"},
+  "searchClear": "Clear search",
+  "@searchClear": {"description": "Tooltip of the clear button inside the search field"},
+
+  "sortTooltip": "Sort",
+  "@sortTooltip": {"description": "Tooltip of the sort menu button"},
+  "sortNameAsc": "A-Z",
+  "@sortNameAsc": {"description": "Sort option: alphabetical by name"},
+  "sortNewest": "Newest",
+  "@sortNewest": {"description": "Sort option: most recently saved first"},
+  "sortRecentlyUpdated": "Recently updated",
+  "@sortRecentlyUpdated": {"description": "Sort option: most recently modified file first"},
+  "sortMissingAssets": "Missing assets",
+  "@sortMissingAssets": {"description": "Sort option: most missing assets first"},
+
+  "filters": "Filters",
+  "@filters": {"description": "Label of the filter menu button"},
+  "filterSectionFolders": "Folders",
+  "@filterSectionFolders": {"description": "Heading of the folder section in the filter menu"},
+  "filterSectionBackupState": "Backup state",
+  "@filterSectionBackupState": {"description": "Heading of the backup state section in the filter menu"},
+  "filterSectionAssets": "Assets",
+  "@filterSectionAssets": {"description": "Heading of the assets section in the filter menu"},
+  "filterClearFolders": "Clear folders",
+  "@filterClearFolders": {"description": "Menu item that unchecks every folder filter"},
+  "filterClearAll": "Clear all filters",
+  "@filterClearAll": {"description": "Menu item that removes every filter and the search text"},
+  "filterNoFolders": "No folders",
+  "@filterNoFolders": {"description": "Shown in the folder section when the selected type has no mods"},
+  "assetFilterComplete": "Complete",
+  "@assetFilterComplete": {"description": "Asset filter: every asset is on disk"},
+  "assetFilterMissing": "Missing",
+  "@assetFilterMissing": {"description": "Asset filter: at least one asset is missing"},
+  "assetFilterAudio": "Audio",
+  "@assetFilterAudio": {"description": "Asset filter: references audio"},
+  "assetFilterImage": "Images",
+  "@assetFilterImage": {"description": "Asset filter: references images"},
+  "assetFilterModel": "Models",
+  "@assetFilterModel": {"description": "Asset filter: references models"},
+  "assetFilterPdf": "PDF",
+  "@assetFilterPdf": {"description": "Asset filter: references PDFs"},
+  "assetFilterAssetBundle": "AssetBundles",
+  "@assetFilterAssetBundle": {"description": "Asset filter: references asset bundles"},
+
+  "backupStatusNone": "No backup",
+  "@backupStatusNone": {"description": "Backup status: no matching backup archive"},
+  "backupStatusUpToDate": "Up to date",
+  "@backupStatusUpToDate": {"description": "Backup status: backup is newer than the mod"},
+  "backupStatusOutOfDate": "Out of date",
+  "@backupStatusOutOfDate": {"description": "Backup status: mod changed since the backup"},
+  "backupStatusAssetCountMismatch": "Asset count mismatch",
+  "@backupStatusAssetCountMismatch": {"description": "Backup status: backup is newer but holds a different number of assets"},
+  "backupTooltipModified": "Backup: {date}",
+  "@backupTooltipModified": {
+    "description": "Line of the backup badge tooltip with the archive's modification date",
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "backupTooltipAssets": "{count, plural, =1{1 asset in backup} other{{count} assets in backup}}",
+  "@backupTooltipAssets": {
+    "description": "Line of the backup badge tooltip with the number of asset files inside the archive",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "backupTooltipMismatch": "The mod has {count} asset files on disk",
+  "@backupTooltipMismatch": {
+    "description": "Extra line of the backup badge tooltip when the backup's asset count differs from the mod's",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "missingCount": "{count} missing",
+  "@missingCount": {
+    "description": "Badge on a card: number of asset files not on disk",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "hasAudioTooltip": "References audio assets",
+  "@hasAudioTooltip": {"description": "Tooltip of the audio icon on a card"},
+
+  "viewAsList": "Show as list",
+  "@viewAsList": {"description": "Tooltip of the view toggle while the grid is shown"},
+  "viewAsGrid": "Show as grid",
+  "@viewAsGrid": {"description": "Tooltip of the view toggle while the list is shown"},
+
+  "bulkActions": "Bulk actions ({count})",
+  "@bulkActions": {
+    "description": "Label of the bulk actions button; count is the number of mods the actions would apply to",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "libraryHelp": "• Left-click a {type} to see its assets and actions\n• Right-click a {type} for more actions\n• {modifier}-click to select several {typePlural}\n• Hover the backup icon on a {type} to see its backup date and asset count\n• Hover the {modsLabel}/{savesLabel} selector to see how many there are\n• Bulk actions respect the search text and filters",
+  "@libraryHelp": {
+    "description": "Bullet help text behind the info icon of the mods toolbar",
+    "placeholders": {
+      "type": {"type": "String"},
+      "typePlural": {"type": "String"},
+      "modifier": {"type": "String"},
+      "modsLabel": {"type": "String"},
+      "savesLabel": {"type": "String"}
+    }
+  },
+  "modifierCtrl": "Ctrl",
+  "@modifierCtrl": {"description": "Name of the control key on Windows and Linux"},
+  "modifierCmd": "Cmd",
+  "@modifierCmd": {"description": "Name of the command key on macOS"},
+
+  "noModsMatchFilters": "No {typePlural} match the current filters",
+  "@noModsMatchFilters": {
+    "description": "Hint shown when the search text or filters hide every item",
+    "placeholders": {"typePlural": {"type": "String"}}
+  },
+  "noModsFound": "No {typePlural} found in {folder}",
+  "@noModsFound": {
+    "description": "Hint shown when the library has no items of the selected type",
+    "placeholders": {
+      "typePlural": {"type": "String"},
+      "folder": {"type": "String"}
+    }
+  },
+
+  "selectAMod": "Select a {type}",
+  "@selectAMod": {
+    "description": "Header of the right panel when nothing is selected",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "selectedCount": "{count} {typePlural} selected",
+  "@selectedCount": {
+    "description": "Header of the right panel when several items are selected",
+    "placeholders": {
+      "count": {"type": "int"},
+      "typePlural": {"type": "String"}
+    }
+  },
+  "assetsSummaryTotal": "Asset files",
+  "@assetsSummaryTotal": {"description": "Label of the total row in the selected mod's asset summary"},
+  "assetsNone": "No asset files referenced",
+  "@assetsNone": {"description": "Shown in the selected mod panel when the mod references no assets"},
+  "presentOfTotal": "{present}/{total}",
+  "@presentOfTotal": {
+    "description": "Asset count as 'on disk / referenced'",
+    "placeholders": {
+      "present": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "assetTypeAssetBundles": "Asset bundles",
+  "@assetTypeAssetBundles": {"description": "Asset type label"},
+  "assetTypeAudio": "Audio",
+  "@assetTypeAudio": {"description": "Asset type label"},
+  "assetTypeImages": "Images",
+  "@assetTypeImages": {"description": "Asset type label"},
+  "assetTypeModels": "Models",
+  "@assetTypeModels": {"description": "Asset type label"},
+  "assetTypePdfs": "PDFs",
+  "@assetTypePdfs": {"description": "Asset type label"},
+
+  "menuDownload": "Download",
+  "@menuDownload": {"description": "Mod context menu: download missing assets"},
+  "menuViewImages": "View images",
+  "@menuViewImages": {"description": "Mod context menu: open the images viewer"},
+  "menuOpenInFileExplorer": "Open in file explorer",
+  "@menuOpenInFileExplorer": {"description": "Mod context menu: reveal the JSON file in the OS file manager"},
+  "menuOpenSteamWorkshopPage": "Open Steam Workshop page",
+  "@menuOpenSteamWorkshopPage": {"description": "Mod context menu: open the mod's Workshop page in the browser"},
+  "menuUpdateFromWorkshop": "Update from Steam Workshop",
+  "@menuUpdateFromWorkshop": {"description": "Mod context menu: re-download the mod from the Workshop"},
+  "menuSaveAsMod": "Save as Mod",
+  "@menuSaveAsMod": {"description": "Save context menu: copy the save into the Workshop folder as a mod"},
+  "menuCopyName": "Copy name",
+  "@menuCopyName": {"description": "Mod context menu: copy the save name to the clipboard"},
+  "menuCopyFilename": "Copy filename",
+  "@menuCopyFilename": {"description": "Mod context menu: copy the JSON file name to the clipboard"},
+  "menuRename": "Rename {type}",
+  "@menuRename": {
+    "description": "Mod context menu: rename the mod/save",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "menuDelete": "Delete",
+  "@menuDelete": {"description": "Mod context menu: delete the mod"},
+  "menuImportBackup": "Import backup",
+  "@menuImportBackup": {"description": "Mod context menu: import the matching backup archive"},
+  "menuOpenBackupInFileExplorer": "Open backup in file explorer",
+  "@menuOpenBackupInFileExplorer": {"description": "Mod context menu: reveal the backup archive in the OS file manager"},
+  "menuCopyBackupFilename": "Copy backup filename",
+  "@menuCopyBackupFilename": {"description": "Mod context menu: copy the backup archive name to the clipboard"},
+  "menuDeleteBackup": "Delete backup",
+  "@menuDeleteBackup": {"description": "Mod context menu: delete the backup archive"},
+
+  "couldNotOpenFileExplorer": "Could not open the file explorer",
+  "@couldNotOpenFileExplorer": {"description": "Snack bar shown when revealing a file in the OS file manager failed"},
+  "couldNotOpenUrl": "Could not open {url}",
+  "@couldNotOpenUrl": {
+    "description": "Snack bar shown when the browser could not be launched",
+    "placeholders": {"url": {"type": "String"}}
+  }
 }

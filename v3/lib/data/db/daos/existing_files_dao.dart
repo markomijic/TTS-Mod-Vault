@@ -1,3 +1,6 @@
+import 'dart:convert' show jsonEncode;
+import 'dart:math' show min;
+
 import 'package:drift/drift.dart';
 import 'package:tts_mod_vault/data/db/app_database.dart';
 import 'package:tts_mod_vault/data/db/tables.dart';
@@ -11,22 +14,57 @@ class ExistingFilesDao extends DatabaseAccessor<AppDatabase>
     with _$ExistingFilesDaoMixin {
   ExistingFilesDao(super.db);
 
-  /// Replaces every row of [type] with [files] in one transaction. When two
+  /// Rows per multi-row `INSERT ... VALUES` statement in [replaceAll]:
+  /// 3 columns x 333 rows = 999 bound parameters, the limit of older SQLite
+  /// builds.
+  static const int rowsPerStatement = 333;
+
+  /// Makes the rows of [type] exactly [files] in one transaction. When two
   /// files map to the same key (e.g. `x.png` and `x.jpg`) the last one wins.
+  ///
+  /// Implemented as a diff inside SQLite rather than delete-and-reinsert:
+  /// keys no longer listed are deleted (one `NOT IN` over the key list,
+  /// passed as a JSON array and expanded with `json_each`), new keys are
+  /// inserted and changed paths updated by multi-row `INSERT ... ON
+  /// CONFLICT DO UPDATE` statements of [rowsPerStatement] rows; a row that
+  /// already matches is not touched. On an unchanged cache folder (every
+  /// warm start) that is a few index lookups per file and no page writes,
+  /// where rewriting ~8k rows took ~100 ms and grew the WAL by megabytes
+  /// per refresh.
   Future<void> replaceAll(
     AssetType type,
     Iterable<({String fileKey, String path})> files,
   ) async {
-    await batch((b) {
-      b.deleteWhere(existingFiles, (t) => t.assetType.equalsValue(type));
-      b.insertAll(existingFiles, [
-        for (final file in files)
-          ExistingFilesCompanion.insert(
-            assetType: type,
-            fileKey: file.fileKey,
-            path: file.path,
-          ),
-      ], mode: InsertMode.insertOrReplace);
+    final list = files.toList(growable: false);
+    await transaction(() async {
+      await customUpdate(
+        'DELETE FROM existing_files WHERE asset_type = ? '
+        'AND file_key NOT IN (SELECT value FROM json_each(?))',
+        variables: [
+          Variable.withInt(type.dbValue),
+          Variable.withString(jsonEncode([for (final f in list) f.fileKey])),
+        ],
+        updates: {existingFiles},
+        updateKind: UpdateKind.delete,
+      );
+      for (var start = 0; start < list.length; start += rowsPerStatement) {
+        final end = min(start + rowsPerStatement, list.length);
+        await customUpdate(
+          'INSERT INTO existing_files (asset_type, file_key, path) VALUES '
+          '${List.filled(end - start, '(?, ?, ?)').join(', ')} '
+          'ON CONFLICT(asset_type, file_key) DO UPDATE SET path = excluded.path '
+          'WHERE path != excluded.path',
+          variables: [
+            for (var i = start; i < end; i++) ...[
+              Variable.withInt(type.dbValue),
+              Variable.withString(list[i].fileKey),
+              Variable.withString(list[i].path),
+            ],
+          ],
+          updates: {existingFiles},
+          updateKind: UpdateKind.insert,
+        );
+      }
     });
   }
 

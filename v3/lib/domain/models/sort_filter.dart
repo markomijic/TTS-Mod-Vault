@@ -75,11 +75,14 @@ abstract class ModFilter with _$ModFilter {
   static const ModFilter empty = ModFilter();
 
   /// Whether no search text or filter is active (sort is ignored).
-  bool get isEmpty =>
-      query.trim().isEmpty &&
-      folders.isEmpty &&
-      backupStatuses.isEmpty &&
-      assetFilters.isEmpty;
+  bool get isEmpty => query.trim().isEmpty && !hasFilters;
+
+  /// True when any non-search filter (folders, backup states, asset filters)
+  /// is active.
+  bool get hasFilters =>
+      folders.isNotEmpty ||
+      backupStatuses.isNotEmpty ||
+      assetFilters.isNotEmpty;
 
   /// Opposite of [isEmpty].
   bool get isNotEmpty => !isEmpty;

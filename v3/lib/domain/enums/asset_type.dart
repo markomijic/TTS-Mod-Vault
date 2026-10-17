@@ -41,12 +41,7 @@ enum AssetType {
     rawFolderName: 'Models Raw',
     jsonKeys: ['ColliderURL', 'MeshURL'],
   ),
-  pdf(
-    dbValue: 4,
-    folderName: 'PDF',
-    rawFolderName: null,
-    jsonKeys: ['PDFUrl'],
-  );
+  pdf(dbValue: 4, folderName: 'PDF', rawFolderName: null, jsonKeys: ['PDFUrl']);
 
   const AssetType({
     required this.dbValue,

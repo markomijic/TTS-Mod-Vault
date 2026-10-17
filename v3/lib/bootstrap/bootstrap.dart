@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdfrx_engine/pdfrx_engine.dart' show Pdfrx, pdfrxInitialize;
 import 'package:tts_mod_vault/bootstrap/app_paths.dart';
+import 'package:tts_mod_vault/bootstrap/startup_timeline.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/data/db/app_database.dart';
@@ -33,22 +34,42 @@ final class BootstrapResult {
 
 /// Process-level start-up that must happen before `runApp`: bindings, window
 /// manager, pdfium, the database and the window itself.
-Future<BootstrapResult> bootstrap() async {
+///
+/// Every step's duration is recorded on [timeline] and logged as one
+/// `Bootstrap finished` line so the start-up cost stays visible.
+Future<BootstrapResult> bootstrap({StartupTimeline? timeline}) async {
+  final clock = timeline ?? StartupTimeline();
+  final startMs = clock.elapsedMs;
+  final splits = <String, int>{};
+  var last = startMs;
+  void split(String name) {
+    final now = clock.elapsedMs;
+    splits[name] = now - last;
+    last = now;
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
+  split('binding');
   await windowManager.ensureInitialized();
+  split('windowManager');
   _configurePdfiumModulePath();
   await pdfrxInitialize();
+  split('pdfium');
 
   final paths = await AppPaths.resolve();
   await paths.ensureExists();
+  split('paths');
   final db = AppDatabase.open(File(paths.databaseFile));
+  split('dbOpen');
   final kv = DriftKeyValueStore(db);
   final log = AppLog(
     store: LogStore(),
     sinks: [RotatingFileLogSink(directory: paths.dataDir)],
   );
+  split('kv');
 
   final info = await PackageInfo.fromPlatform();
+  split('packageInfo');
   final windowOptions = WindowOptions(
     minimumSize: const Size(854, 480),
     title: 'TTS Mod Vault ${info.version}',
@@ -58,6 +79,7 @@ Future<BootstrapResult> bootstrap() async {
     await windowManager.show();
     await windowManager.focus();
   });
+  split('windowShow');
 
   // v2 maximised from the splash page's post-frame callback; same timing here.
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -68,6 +90,12 @@ Future<BootstrapResult> bootstrap() async {
     LogSource.app,
     'TTS Mod Vault ${info.version} started',
     details: 'data directory: ${paths.dataDir}',
+  );
+  log.info(
+    LogSource.app,
+    'Bootstrap finished: '
+    '${[for (final e in splits.entries) '${e.key}Ms=${e.value}'].join(' ')} '
+    'totalMs=${clock.elapsedMs - startMs} sinceMainMs=${clock.elapsedMs}',
   );
 
   return BootstrapResult(db: db, kv: kv, log: log, dataDir: paths.dataDir);

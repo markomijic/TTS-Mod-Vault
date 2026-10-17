@@ -110,11 +110,12 @@ void main() {
     });
 
     test('closes before exceeding the byte target', () {
+      const target = LibraryController.targetBatchBytes;
       final entries = [
-        entry('a', 30 * mb),
-        entry('b', 15 * mb),
-        entry('c', 10 * mb), // would make 55 MB: new batch
-        entry('d', 68 * mb), // alone: larger than the target
+        entry('a', target * 6 ~/ 10),
+        entry('b', target * 3 ~/ 10),
+        entry('c', target * 2 ~/ 10), // would exceed the target: new batch
+        entry('d', target + mb), // alone: larger than the target
         entry('e', 1 * mb),
       ];
       final batches = LibraryController.createParseBatches(entries);

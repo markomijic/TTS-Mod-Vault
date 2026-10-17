@@ -35,8 +35,31 @@ class AppDatabase extends _$AppDatabase {
 
   static const int latestSchemaVersion = 1;
 
+  /// SQLite's default `wal_autocheckpoint` (pages), restored by
+  /// [resumeWalCheckpoints].
+  static const int defaultWalAutoCheckpointPages = 1000;
+
   @override
   int get schemaVersion => latestSchemaVersion;
+
+  /// Stops SQLite from checkpointing the WAL on commit until
+  /// [resumeWalCheckpoints]. A library refresh commits a dozen bulk writes
+  /// in a row; with the default auto-checkpoint every 4 MB of WAL, each of
+  /// those commits may copy the WAL into the database file and fsync it
+  /// while the UI is still waiting. Deferring moves that I/O to
+  /// [checkpointWal], run once the result is on screen. Durability is
+  /// unchanged: committed data lives in the WAL either way.
+  Future<void> deferWalCheckpoints() =>
+      customStatement('PRAGMA wal_autocheckpoint = 0');
+
+  /// Re-enables automatic checkpoints (see [deferWalCheckpoints]).
+  Future<void> resumeWalCheckpoints() => customStatement(
+    'PRAGMA wal_autocheckpoint = $defaultWalAutoCheckpointPages',
+  );
+
+  /// Runs a passive WAL checkpoint (never blocks readers or writers).
+  Future<void> checkpointWal() =>
+      customStatement('PRAGMA wal_checkpoint(PASSIVE)');
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

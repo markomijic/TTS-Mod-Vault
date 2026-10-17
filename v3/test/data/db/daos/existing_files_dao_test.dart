@@ -1,6 +1,8 @@
+import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tts_mod_vault/data/db/app_database.dart';
+import 'package:tts_mod_vault/data/db/daos/existing_files_dao.dart';
 import 'package:tts_mod_vault/domain/enums/asset_type.dart';
 
 void main() {
@@ -51,6 +53,63 @@ void main() {
       ]);
       await db.existingFilesDao.replaceAll(AssetType.pdf, []);
       expect((await db.existingFilesDao.countByType())[AssetType.pdf], 0);
+    });
+
+    test('diffs against the stored rows: updates, inserts, deletes', () async {
+      await db.existingFilesDao.replaceAll(AssetType.image, [
+        (fileKey: 'keep', path: 'Images/keep.png'),
+        (fileKey: 'change', path: 'Images/change.png'),
+        (fileKey: 'drop', path: 'Images/drop.png'),
+      ]);
+      // Unchanged content leaves the rows exactly as they are.
+      await db.existingFilesDao.replaceAll(AssetType.image, [
+        (fileKey: 'keep', path: 'Images/keep.png'),
+        (fileKey: 'change', path: 'Images/change.png'),
+        (fileKey: 'drop', path: 'Images/drop.png'),
+      ]);
+      expect((await db.existingFilesDao.countByType())[AssetType.image], 3);
+
+      await db.existingFilesDao.replaceAll(AssetType.image, [
+        (fileKey: 'keep', path: 'Images/keep.png'),
+        (fileKey: 'change', path: 'Images/change.jpg'),
+        (fileKey: 'new', path: 'Images/new.png'),
+      ]);
+      final rows = await (db.select(
+        db.existingFiles,
+      )..orderBy([(t) => OrderingTerm.asc(t.fileKey)])).get();
+      expect(
+        [for (final r in rows) (r.fileKey, r.path)],
+        [
+          ('change', 'Images/change.jpg'),
+          ('keep', 'Images/keep.png'),
+          ('new', 'Images/new.png'),
+        ],
+      );
+    });
+
+    test('more rows than one statement carries, last duplicate wins across '
+        'statements', () async {
+      const total = ExistingFilesDao.rowsPerStatement * 2 + 7;
+      await db.existingFilesDao.replaceAll(AssetType.image, [
+        for (var i = 0; i < total; i++)
+          (fileKey: 'k$i', path: 'Images/k$i "q" \\ ü.png'),
+        // Repeats a key from the first statement in the last one.
+        (fileKey: 'k1', path: 'Images/k1.jpg'),
+      ]);
+      expect((await db.existingFilesDao.countByType())[AssetType.image], total);
+      expect(
+        await db.existingFilesDao.pathFor(AssetType.image, 'k1'),
+        'Images/k1.jpg',
+      );
+      expect(
+        await db.existingFilesDao.pathFor(AssetType.image, 'k2'),
+        'Images/k2 "q" \\ ü.png',
+      );
+      // Shrinking back to a few rows deletes the rest.
+      await db.existingFilesDao.replaceAll(AssetType.image, [
+        (fileKey: 'k0', path: 'Images/k0.png'),
+      ]);
+      expect((await db.existingFilesDao.countByType())[AssetType.image], 1);
     });
   });
 

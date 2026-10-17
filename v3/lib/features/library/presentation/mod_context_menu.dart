@@ -1,10 +1,15 @@
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/platform/file_explorer.dart';
 import 'package:tts_mod_vault/app/widgets/app_context_menu.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/images_viewer/presentation/images_viewer_page.dart';
+import 'package:tts_mod_vault/features/library/presentation/dialogs/delete_mod_dialog.dart';
+import 'package:tts_mod_vault/features/library/presentation/dialogs/rename_mod_dialog.dart';
+import 'package:tts_mod_vault/features/library/presentation/dialogs/save_as_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl;
@@ -18,23 +23,30 @@ bool hasWorkshopId(Mod mod) => int.tryParse(mod.id) != null;
 
 /// Shows the mod context menu at [globalPosition].
 ///
-/// The item list and conditions are 2.x `showModContextMenu`. In Phase 1
-/// only the local actions are live (copy name/filename, open in file
-/// explorer, open the Workshop page, open the backup in file explorer);
-/// the rest show a "not implemented" snack bar. Later phases replace the
-/// callbacks in [buildModContextMenu]; the list itself stays.
+/// The item list and conditions are 2.x `showModContextMenu`. Live since
+/// Phase 1: copy name/filename, open in file explorer, open the Workshop
+/// page, open the backup in file explorer. Live since Phase 2: view images,
+/// rename, delete, save as mod. Download, update from Workshop, import
+/// backup and delete backup still show a "not implemented" snack bar until
+/// Phases 3 and 4 replace their callbacks in [buildModContextMenu]; the
+/// list itself stays.
 Future<void> showModContextMenu(
   BuildContext context,
+  WidgetRef ref,
   Offset globalPosition,
   Mod mod,
 ) => showAppContextMenu(
   context,
   globalPosition,
-  buildModContextMenu(context, mod),
+  buildModContextMenu(context, ref, mod),
 );
 
 /// The entries of the mod context menu for [mod].
-List<MenuEntry> buildModContextMenu(BuildContext context, Mod mod) {
+List<MenuEntry> buildModContextMenu(
+  BuildContext context,
+  WidgetRef ref,
+  Mod mod,
+) {
   final l10n = AppLocalizations.of(context);
   final type = mod.ref.type;
   final backup = mod.backup;
@@ -51,7 +63,7 @@ List<MenuEntry> buildModContextMenu(BuildContext context, Mod mod) {
     MenuAction(
       label: l10n.menuViewImages,
       icon: Icons.image_outlined,
-      onPressed: () => stub(l10n.menuViewImages),
+      onPressed: () => openImagesViewer(context, mod),
     ),
     MenuAction(
       label: l10n.menuOpenInFileExplorer,
@@ -75,7 +87,7 @@ List<MenuEntry> buildModContextMenu(BuildContext context, Mod mod) {
       MenuAction(
         label: l10n.menuSaveAsMod,
         icon: Icons.drive_file_move_outlined,
-        onPressed: () => stub(l10n.menuSaveAsMod),
+        onPressed: () => showSaveAsModDialog(context, mod),
       ),
     MenuAction(
       label: l10n.menuCopyName,
@@ -90,13 +102,13 @@ List<MenuEntry> buildModContextMenu(BuildContext context, Mod mod) {
     MenuAction(
       label: l10n.menuRename(type.singular(l10n)),
       icon: Icons.drive_file_rename_outline,
-      onPressed: () => stub(l10n.menuRename(type.singular(l10n))),
+      onPressed: () => showRenameModDialog(context, mod),
     ),
     MenuAction(
       label: l10n.menuDelete,
       icon: Icons.delete_outline,
       destructive: true,
-      onPressed: () => stub(l10n.menuDelete),
+      onPressed: () => showDeleteModDialog(context, ref, mod),
     ),
     if (backup != null) ...[
       const MenuDivider(),

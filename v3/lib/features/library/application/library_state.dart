@@ -81,32 +81,107 @@ final class LibraryState {
   );
 
   /// Copy in which each mod of [replacements] takes the place of the stored
-  /// mod with the same `jsonPath`; mods without a stored counterpart are
-  /// ignored. Only the lists that actually change get a new instance.
-  LibraryState withMods(Iterable<Mod> replacements) {
+  /// mod with the same `jsonPath`. Mods without a stored counterpart are
+  /// ignored unless [addMissing] is set, in which case they are inserted
+  /// into the list of their type at the position the summary query's order
+  /// (save name, case-insensitive, then path) gives them. Only the lists
+  /// that actually change get a new instance.
+  LibraryState withMods(Iterable<Mod> replacements, {bool addMissing = false}) {
     final byPath = {for (final mod in replacements) mod.jsonPath: mod};
     if (byPath.isEmpty) return this;
 
-    List<Mod> patch(List<Mod> list) {
+    List<Mod> patch(List<Mod> list, ModType type) {
       var changed = false;
       final out = <Mod>[];
+      final seen = <String>{};
       for (final mod in list) {
         final replacement = byPath[mod.jsonPath];
         if (replacement != null && replacement.ref.type == mod.ref.type) {
           changed = true;
+          seen.add(mod.jsonPath);
           out.add(replacement);
         } else {
           out.add(mod);
+        }
+      }
+      if (addMissing) {
+        for (final mod in byPath.values) {
+          if (mod.ref.type != type || seen.contains(mod.jsonPath)) continue;
+          if (_byPath.containsKey(mod.jsonPath)) continue;
+          changed = true;
+          out.insert(_insertionIndex(out, mod), mod);
         }
       }
       return changed ? out : list;
     }
 
     return copyWith(
-      mods: patch(mods),
-      saves: patch(saves),
-      savedObjects: patch(savedObjects),
+      mods: patch(mods, ModType.mod),
+      saves: patch(saves, ModType.save),
+      savedObjects: patch(savedObjects, ModType.savedObject),
     );
+  }
+
+  /// Copy without the mod at [jsonPath]; a backup that pointed at it loses
+  /// its `matchingModPath`. Returns `this` when the path is unknown.
+  LibraryState withoutMod(String jsonPath) {
+    final removed = modByPath(jsonPath);
+    if (removed == null) return this;
+    List<Mod> drop(List<Mod> list, ModType type) => removed.ref.type == type
+        ? [
+            for (final mod in list)
+              if (mod.jsonPath != jsonPath) mod,
+          ]
+        : list;
+    final detached = backups.any((b) => b.matchingModPath == jsonPath)
+        ? [
+            for (final backup in backups)
+              backup.matchingModPath == jsonPath
+                  ? backup.copyWith(matchingModPath: null)
+                  : backup,
+          ]
+        : backups;
+    return copyWith(
+      mods: drop(mods, ModType.mod),
+      saves: drop(saves, ModType.save),
+      savedObjects: drop(savedObjects, ModType.savedObject),
+      backups: detached,
+    );
+  }
+
+  /// Copy in which the backup at [oldPath] is replaced by [replacement]
+  /// (which may live at another path, after a rename). Returns `this` when
+  /// [oldPath] is unknown.
+  LibraryState withBackupReplaced(String oldPath, Backup replacement) {
+    final index = backups.indexWhere((b) => b.path == oldPath);
+    if (index < 0) return this;
+    final patched = List<Backup>.of(backups);
+    patched[index] = replacement;
+    return copyWith(backups: patched);
+  }
+
+  /// Index at which [mod] keeps [list] in the summary query's order.
+  static int _insertionIndex(List<Mod> list, Mod mod) {
+    final key = _orderKey(mod);
+    var low = 0;
+    var high = list.length;
+    while (low < high) {
+      final mid = (low + high) >> 1;
+      if (_compareKeys(_orderKey(list[mid]), key) <= 0) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return low;
+  }
+
+  static (String, String) _orderKey(Mod mod) =>
+      (mod.saveName.toLowerCase(), mod.jsonPath);
+
+  static int _compareKeys((String, String) a, (String, String) b) {
+    final byName = a.$1.compareTo(b.$1);
+    return byName != 0 ? byName : a.$2.compareTo(b.$2);
   }
 
   @override

@@ -172,12 +172,10 @@ void main() {
     expect(borderColor('Beta Mod'), scheme.primary);
     expect(borderColor('Delta Mod'), Colors.transparent);
     expect(find.text('Beta Mod'), findsNWidgets(2)); // card + panel header
-    // The panel summarises the selected mod's assets.
-    expect(find.text('Images'), findsOneWidget);
-    expect(find.text('3/4'), findsOneWidget);
-    expect(find.text('Audio'), findsOneWidget);
-    expect(find.text('0/1'), findsOneWidget);
-    expect(find.text('3/5'), findsOneWidget);
+    // The panel shows the asset list (empty in this harness) and the
+    // action bar for the selected mod.
+    expect(find.text('No asset files referenced'), findsOneWidget);
+    expect(find.text('Download all'), findsOneWidget);
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.tap(card('Delta Mod'));

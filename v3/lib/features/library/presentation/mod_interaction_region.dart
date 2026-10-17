@@ -51,7 +51,7 @@ class ModInteractionRegion extends HookConsumerWidget {
       final selection = ref.read(selectionProvider.notifier);
       if (event.buttons == kSecondaryButton) {
         selection.select(path);
-        showModContextMenu(context, event.position, mod);
+        showModContextMenu(context, ref, event.position, mod);
       } else if (event.buttons == kPrimaryButton) {
         final keyboard = HardwareKeyboard.instance;
         if (keyboard.isControlPressed || keyboard.isMetaPressed) {

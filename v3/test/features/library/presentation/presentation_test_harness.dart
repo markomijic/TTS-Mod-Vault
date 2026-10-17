@@ -20,6 +20,7 @@ import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/asset_detail/application/mod_assets_provider.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_page.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
@@ -247,6 +248,8 @@ List<Override> modsPageOverrides({
   keyValueStoreProvider.overrideWithValue(store ?? InMemoryKeyValueStore()),
   libraryControllerProvider.overrideWith(library),
   directoriesProvider.overrideWith(FixtureDirectoriesController.new),
+  // The selected-mod panel reads the store for the asset list; serve none.
+  modAssetsProvider.overrideWith((ref, path) async => const <Asset>[]),
 ];
 
 /// Pumps [ModsPage] inside a themed, localised `MaterialApp` with the

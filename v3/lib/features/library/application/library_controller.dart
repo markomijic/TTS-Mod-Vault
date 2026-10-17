@@ -16,6 +16,8 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/domain/rules/backup_rules.dart';
 import 'package:tts_mod_vault/features/library/application/library_settings.dart';
 import 'package:tts_mod_vault/features/library/application/library_state.dart';
+import 'package:tts_mod_vault/features/library/application/library_view_providers.dart'
+    show selectionProvider;
 import 'package:tts_mod_vault/features/library/application/refresh_progress.dart';
 import 'package:tts_mod_vault/features/library/library_tasks.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
@@ -79,14 +81,20 @@ class LibraryController extends AsyncNotifier<LibraryState> {
 
   /// Re-reads one mod JSON (after a rename, URL replacement or import),
   /// updates its rows and patches the mod in the current state. Cheap: one
-  /// worker read, one upsert, one summary query. Unknown paths are ignored.
-  Future<void> refreshMod(String jsonPath) async {
+  /// worker read, one upsert, one summary query.
+  ///
+  /// A path that is not in the state is ignored unless [type] is given, in
+  /// which case the file is indexed as a new mod of that type and inserted
+  /// into the state (save-as-mod, imports). [type] is ignored for a known
+  /// path.
+  Future<void> refreshMod(String jsonPath, {ModType? type}) async {
     await _running;
     final current = state.value;
     if (current == null) return;
     final normalized = p.normalize(jsonPath);
     final existing = current.modByPath(normalized);
-    if (existing == null) return;
+    final modType = existing?.ref.type ?? type;
+    if (modType == null) return;
 
     final options = await ref
         .read(libraryOptionsProvider.notifier)
@@ -94,9 +102,7 @@ class LibraryController extends AsyncNotifier<LibraryState> {
     final pool = ref.read(workerPoolProvider);
     final results = await pool.run(
       parseModFiles,
-      ParseModsRequest(
-        files: [(jsonPath: normalized, type: existing.ref.type)],
-      ),
+      ParseModsRequest(files: [(jsonPath: normalized, type: modType)]),
     );
     final parsed = results.single;
     if (!parsed.isOk) {
@@ -117,7 +123,55 @@ class LibraryController extends AsyncNotifier<LibraryState> {
       ),
     ]);
     if (!ref.mounted) return;
+    await _patchMods([normalized], options, addMissing: existing == null);
+  }
+
+  /// Re-runs the summary query for the mod at [jsonPath] and patches it
+  /// into the state, without re-reading the file. For changes that only
+  /// touch the store's user-owned columns (audio visibility, invalid URLs).
+  /// Unknown paths are ignored.
+  Future<void> resummarizeMod(String jsonPath) async {
+    await _running;
+    final current = state.value;
+    if (current == null) return;
+    final normalized = p.normalize(jsonPath);
+    if (current.modByPath(normalized) == null) return;
+    final options = await ref
+        .read(libraryOptionsProvider.notifier)
+        .ensureLoaded();
+    if (!ref.mounted) return;
     await _patchMods([normalized], options);
+  }
+
+  /// Drops the mod at [jsonPath] from the state (its store rows must already
+  /// be deleted by the caller) and from the selection; a backup matched to
+  /// it loses its `matchingModPath`. Unknown paths are ignored.
+  Future<void> removeMod(String jsonPath) async {
+    await _running;
+    if (!ref.mounted) return;
+    final current = state.value;
+    if (current == null) return;
+    final normalized = p.normalize(jsonPath);
+    final next = current.withoutMod(normalized);
+    if (identical(next, current)) return;
+    state = AsyncData(next);
+    final selection = ref.read(selectionProvider);
+    if (selection.contains(normalized)) {
+      ref
+          .read(selectionProvider.notifier)
+          .selectMany(selection.where((path) => path != normalized));
+    }
+  }
+
+  /// Replaces the backup at [oldPath] in the state with [replacement] (after
+  /// a rename on disk; the `backups` rows must already be updated by the
+  /// caller). The mods matched to it are not re-attached here; a following
+  /// [refreshMod] or [resummarizeMod] of the mod does that.
+  void replaceBackup(String oldPath, Backup replacement) {
+    final current = state.value;
+    if (current == null) return;
+    final next = current.withBackupReplaced(oldPath, replacement);
+    if (!identical(next, current)) state = AsyncData(next);
   }
 
   /// Re-queries the summaries of every mod referencing any of [fileKeys]
@@ -664,10 +718,14 @@ class LibraryController extends AsyncNotifier<LibraryState> {
     ];
   }
 
+  /// Re-queries the summaries of [paths] and patches them into the state.
+  /// With [addMissing] a summary for a path not yet in the state is inserted
+  /// as a new mod (folder and image as the store has them).
   Future<void> _patchMods(
     Iterable<String> paths,
-    LibraryOptions options,
-  ) async {
+    LibraryOptions options, {
+    bool addMissing = false,
+  }) async {
     final current = state.value;
     if (current == null) return;
     final summaries = await Future.wait([
@@ -684,16 +742,28 @@ class LibraryController extends AsyncNotifier<LibraryState> {
     for (final summary in summaries) {
       if (summary == null) continue;
       final previous = latest.modByPath(summary.jsonPath);
-      if (previous == null) continue;
+      if (previous == null) {
+        if (addMissing) replacements.add(matcher.attach(summary));
+        continue;
+      }
       // The scan is the authority for folder and image; keep what it found.
       final carried = summary.copyWith(
         folder: previous.folder,
         imagePath: previous.imagePath ?? summary.imagePath,
       );
-      replacements.add(matcher.attach(carried));
+      final attached = matcher.attach(carried);
+      final previousBackup = previous.backup;
+      if (previousBackup != null &&
+          attached.backup?.path != previousBackup.path) {
+        // Renamed away from its backup: the backup no longer has a mod.
+        matcher.detach(previousBackup.path, previous.jsonPath);
+      }
+      replacements.add(attached);
     }
     state = AsyncData(
-      latest.withMods(replacements).copyWith(backups: matcher.backups),
+      latest
+          .withMods(replacements, addMissing: addMissing)
+          .copyWith(backups: matcher.backups),
     );
   }
 
@@ -862,5 +932,13 @@ final class _BackupMatcher {
         presentAssetCount: mod.summary.present,
       ),
     );
+  }
+
+  /// Clears `matchingModPath` of the backup at [backupPath] when it points
+  /// at [modPath] (the mod no longer produces that backup's name).
+  void detach(String backupPath, String modPath) {
+    final index = _backups.indexWhere((b) => b.path == backupPath);
+    if (index < 0 || _backups[index].matchingModPath != modPath) return;
+    _backups[index] = _backups[index].copyWith(matchingModPath: null);
   }
 }

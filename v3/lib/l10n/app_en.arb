@@ -360,5 +360,246 @@
   "@couldNotOpenUrl": {
     "description": "Snack bar shown when the browser could not be launched",
     "placeholders": {"url": {"type": "String"}}
+  },
+
+  "assetStatusAll": "All",
+  "@assetStatusAll": {"description": "Asset status filter: show every asset"},
+  "assetStatusMissing": "Missing",
+  "@assetStatusMissing": {"description": "Asset status filter: show only assets whose file is not on disk"},
+  "assetStatusDownloaded": "Downloaded",
+  "@assetStatusDownloaded": {"description": "Asset status filter: show only assets whose file is on disk"},
+  "assetStatusFilterTooltip": "Filter by file status",
+  "@assetStatusFilterTooltip": {"description": "Tooltip of the asset status filter button"},
+  "assetInvalidChip": "Invalid",
+  "@assetInvalidChip": {"description": "Filter chip that narrows the asset list to URLs flagged as invalid"},
+  "assetSearchTooltip": "Search URLs",
+  "@assetSearchTooltip": {"description": "Tooltip of the search icon in the asset toolbar"},
+  "assetSearchHint": "Search URLs",
+  "@assetSearchHint": {"description": "Placeholder of the asset URL search field"},
+
+  "audioVisibilityUsingGlobal": "Using global setting ({state})",
+  "@audioVisibilityUsingGlobal": {
+    "description": "Tooltip of the audio button when the mod follows the global 'ignore audio' setting; state is 'hidden' or 'shown'",
+    "placeholders": {"state": {"type": "String"}}
+  },
+  "audioVisibilityOverrideShow": "Override: show audio assets",
+  "@audioVisibilityOverrideShow": {"description": "Tooltip of the audio button when the mod always shows audio"},
+  "audioVisibilityOverrideHide": "Override: hide audio assets",
+  "@audioVisibilityOverrideHide": {"description": "Tooltip of the audio button when the mod always hides audio"},
+  "audioStateHidden": "hidden",
+  "@audioStateHidden": {"description": "Audio state word used inside the global-setting tooltip and menu item"},
+  "audioStateShown": "shown",
+  "@audioStateShown": {"description": "Audio state word used inside the global-setting tooltip and menu item"},
+  "audioMenuUseGlobal": "Use global setting ({state})",
+  "@audioMenuUseGlobal": {
+    "description": "Audio menu item: follow the global setting; state is 'hidden' or 'shown'",
+    "placeholders": {"state": {"type": "String"}}
+  },
+  "audioMenuAlwaysShow": "Always show",
+  "@audioMenuAlwaysShow": {"description": "Audio menu item: always show audio assets for this mod"},
+  "audioMenuAlwaysHide": "Always hide",
+  "@audioMenuAlwaysHide": {"description": "Audio menu item: always hide audio assets for this mod"},
+
+  "downloadMissingOfType": "Download all missing {type}",
+  "@downloadMissingOfType": {
+    "description": "Tooltip of the download icon in an asset group header; type is the lower-case asset type label",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "pdfShowThumbnails": "Show thumbnails",
+  "@pdfShowThumbnails": {"description": "Tooltip of the PDF header toggle while URLs are shown"},
+  "pdfShowUrls": "Show URLs",
+  "@pdfShowUrls": {"description": "Tooltip of the PDF header toggle while thumbnails are shown"},
+  "openImagesViewer": "View images",
+  "@openImagesViewer": {"description": "Tooltip of the images header icon that opens the images viewer"},
+
+  "assetsLoading": "Loading assets…",
+  "@assetsLoading": {"description": "Progress text while the selected mod's asset list is read"},
+  "noAssetsMatchFilters": "No assets match the current filters",
+  "@noAssetsMatchFilters": {"description": "Hint shown when the asset filters or search hide every asset"},
+
+  "assetMenuOpenUrl": "Open URL in browser",
+  "@assetMenuOpenUrl": {"description": "Asset context menu: open the URL in the default browser"},
+  "assetMenuCopyUrl": "Copy URL",
+  "@assetMenuCopyUrl": {"description": "Asset context menu: copy the URL to the clipboard"},
+  "assetMenuOpenFile": "Open file",
+  "@assetMenuOpenFile": {"description": "Asset context menu: open the cached file with the default application"},
+  "assetMenuReplaceUrl": "Replace URL…",
+  "@assetMenuReplaceUrl": {"description": "Asset context menu: open the Replace URL dialog"},
+  "assetMenuCheckUrl": "Check URL",
+  "@assetMenuCheckUrl": {"description": "Asset context menu: check whether the URL is still live"},
+  "assetMenuSharedWith": "Shared with…",
+  "@assetMenuSharedWith": {"description": "Asset context menu: list the other mods that reference the same file"},
+  "assetMenuDeleteFile": "Delete file",
+  "@assetMenuDeleteFile": {"description": "Asset context menu: delete the cached file"},
+  "couldNotOpenFile": "Could not open the file: {reason}",
+  "@couldNotOpenFile": {
+    "description": "Snack bar shown when the OS could not open an asset file",
+    "placeholders": {"reason": {"type": "String"}}
+  },
+
+  "sharedAssetTitle": "Shared asset",
+  "@sharedAssetTitle": {"description": "Title of the dialog listing the mods that share an asset"},
+  "sharedAssetNotShared": "This asset is not shared with other mods",
+  "@sharedAssetNotShared": {"description": "Dialog text when no other mod references the asset"},
+  "sharedAssetSummary": "This asset is shared with {summary}.",
+  "@sharedAssetSummary": {
+    "description": "First line of the shared asset dialog; summary is e.g. '3 mods, 1 save'",
+    "placeholders": {"summary": {"type": "String"}}
+  },
+  "close": "Close",
+  "@close": {"description": "Generic dialog button that closes an informational dialog"},
+
+  "deleteAssetFileTitle": "Delete asset file?",
+  "@deleteAssetFileTitle": {"description": "Title of the confirmation shown before deleting a cached asset file"},
+  "deleteAssetFileMessage": "The cached file for this URL will be deleted.\n\n{fileName}",
+  "@deleteAssetFileMessage": {
+    "description": "Body of the delete asset file confirmation",
+    "placeholders": {"fileName": {"type": "String"}}
+  },
+  "deleteSharedAssetFileMessage": "{summary}\n\nDelete anyway?",
+  "@deleteSharedAssetFileMessage": {
+    "description": "Body of the delete confirmation when other mods reference the file; summary is the sharedAssetSummary sentence",
+    "placeholders": {"summary": {"type": "String"}}
+  },
+  "assetFileDeleted": "File deleted",
+  "@assetFileDeleted": {"description": "Snack bar shown after an asset file was deleted"},
+
+  "replaceUrlTitle": "Replace URL",
+  "@replaceUrlTitle": {"description": "Title of the Replace URL dialog"},
+  "replaceUrlCurrent": "Current URL",
+  "@replaceUrlCurrent": {"description": "Label above the current URL in the Replace URL dialog"},
+  "replaceUrlNew": "New URL",
+  "@replaceUrlNew": {"description": "Label of the new URL field in the Replace URL dialog"},
+  "replaceUrlEmpty": "Enter a URL",
+  "@replaceUrlEmpty": {"description": "Validation message when the new URL field is empty"},
+  "replaceUrlUnchanged": "The new URL is the same as the current one",
+  "@replaceUrlUnchanged": {"description": "Validation message when the new URL equals the current URL"},
+  "replaceUrlRenameFile": "Also rename the cached file",
+  "@replaceUrlRenameFile": {"description": "Checkbox in the Replace URL dialog; renames the file on disk to match the new URL"},
+  "replaceUrlWarning": "This will edit the {type} JSON file.",
+  "@replaceUrlWarning": {
+    "description": "Warning line in the Replace URL dialog; type is the lower-case mod type noun",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "apply": "Apply",
+  "@apply": {"description": "Dialog button that applies the entered change"},
+  "urlReplaced": "URL replaced",
+  "@urlReplaced": {"description": "Snack bar shown after an asset URL was replaced"},
+
+  "actionDownloadAll": "Download all",
+  "@actionDownloadAll": {"description": "Selected mod action: download every missing asset file"},
+  "actionBackup": "Backup",
+  "@actionBackup": {"description": "Selected mod action: create a backup archive"},
+  "actionCheckUrls": "Check URLs",
+  "@actionCheckUrls": {"description": "Selected mod action: check every asset URL for validity"},
+  "actionDeleteAssets": "Delete assets",
+  "@actionDeleteAssets": {"description": "Selected mod action: delete the mod's cached asset files"},
+  "actionUpdateUrls": "Update URLs",
+  "@actionUpdateUrls": {"description": "Selected mod action: replace URL prefixes across the mod"},
+  "operationInProgress": "Operation in progress…",
+  "@operationInProgress": {"description": "Text of the bottom bar slot while an operation runs"},
+
+  "bulkDownloadAndBackup": "Download & backup",
+  "@bulkDownloadAndBackup": {"description": "Multi-select action: download missing assets, then back up each mod"},
+  "bulkUpdateMods": "Update mods",
+  "@bulkUpdateMods": {"description": "Multi-select action: update every selected mod from the Steam Workshop"},
+  "bulkCheckUrls": "Check for invalid URLs",
+  "@bulkCheckUrls": {"description": "Multi-select action: check every asset URL of the selected mods"},
+
+  "assetHelpStatusHeading": "Asset file status:",
+  "@assetHelpStatusHeading": {"description": "Heading of the colour legend in the asset panel help tooltip"},
+  "assetHelpMissing": "Missing",
+  "@assetHelpMissing": {"description": "Legend entry: the asset file is not on disk"},
+  "assetHelpDownloaded": "Downloaded",
+  "@assetHelpDownloaded": {"description": "Legend entry: the asset file is on disk"},
+  "assetHelpInvalid": "Invalid URL",
+  "@assetHelpInvalid": {"description": "Legend entry: a URL check flagged the URL as dead"},
+  "assetHelpSelected": "Selected URL",
+  "@assetHelpSelected": {"description": "Legend entry: the URL that was clicked last"},
+  "assetHelpActions": "Actions:\n• Left- or right-click a URL for options\n• Double-click a PDF thumbnail to open the file\n• Download all: download every missing asset file\n• Backup: create a backup from the downloaded asset files",
+  "@assetHelpActions": {"description": "Bullet list of actions in the asset panel help tooltip"},
+
+  "pdfNotDownloaded": "Not downloaded",
+  "@pdfNotDownloaded": {"description": "Label on a PDF thumbnail tile whose file is not on disk"},
+  "pdfRenderFailed": "Could not render PDF",
+  "@pdfRenderFailed": {"description": "Label on a PDF thumbnail tile when the first page could not be rendered"},
+
+  "back": "Back",
+  "@back": {"description": "Tooltip of the back button on full-screen pages"},
+  "imagesViewerTitle": "{name} – {count, plural, =1{1 image} other{{count} images}}",
+  "@imagesViewerTitle": {
+    "description": "Title of the images viewer page: the mod name and the number of downloaded images",
+    "placeholders": {
+      "name": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "imagesViewerLoading": "Loading images…",
+  "@imagesViewerLoading": {"description": "Progress text while the images viewer loads the mod's asset list"},
+  "imagesViewerEmpty": "No downloaded images",
+  "@imagesViewerEmpty": {"description": "Shown in the images viewer when none of the mod's images is on disk"},
+  "imagesViewerHelp": "• Click an image to open it\n• Right-click an image for more actions\n• Esc closes this page",
+  "@imagesViewerHelp": {"description": "Tooltip of the info icon on the images viewer page"},
+  "imageLoadFailed": "Could not load image",
+  "@imageLoadFailed": {"description": "Label on an image tile whose file could not be decoded"},
+
+  "renameDialogTitle": "Rename {type}",
+  "@renameDialogTitle": {
+    "description": "Title of the rename dialog; type is the lower-case singular noun",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "renameDialogHint": "Changes the \"SaveName\" inside the JSON file. The file name stays the same.",
+  "@renameDialogHint": {"description": "Explanation under the title of the rename dialog"},
+  "renameNameLabel": "Name",
+  "@renameNameLabel": {"description": "Label of the name field in the rename dialog"},
+  "renameNameEmpty": "Enter a name",
+  "@renameNameEmpty": {"description": "Validation message under an empty name field"},
+  "renameAlsoBackup": "Also rename the backup file",
+  "@renameAlsoBackup": {"description": "Checkbox in the rename dialog, shown only when the mod has a backup"},
+  "renameSavedObjectNote": "Only mods and saves carry a \"SaveName\"; saved objects cannot be renamed here.",
+  "@renameSavedObjectNote": {"description": "Inline note in the rename dialog when renaming a saved object failed"},
+  "renameAction": "Rename",
+  "@renameAction": {"description": "Confirm button of the rename dialog"},
+  "renamedTo": "Renamed to \"{name}\"",
+  "@renamedTo": {
+    "description": "Snack bar after a successful rename",
+    "placeholders": {"name": {"type": "String"}}
+  },
+
+  "deleteModTitle": "Delete {type}?",
+  "@deleteModTitle": {
+    "description": "Title of the delete confirmation; type is the lower-case singular noun",
+    "placeholders": {"type": {"type": "String"}}
+  },
+  "deleteModMessage": "Are you sure you want to delete\n{name}?\n\nThe file {fileName} and its image are removed. Asset files are not affected.",
+  "@deleteModMessage": {
+    "description": "Body of the delete confirmation",
+    "placeholders": {
+      "name": {"type": "String"},
+      "fileName": {"type": "String"}
+    }
+  },
+  "deletedMod": "{name} deleted",
+  "@deletedMod": {
+    "description": "Snack bar after a mod was deleted",
+    "placeholders": {"name": {"type": "String"}}
+  },
+
+  "saveAsModHint": "Copies this save's file and image into the selected folder so it appears as a mod. The original save is kept.",
+  "@saveAsModHint": {"description": "Explanation under the title of the Save as Mod dialog"},
+  "saveAsModFolderLabel": "Target folder",
+  "@saveAsModFolderLabel": {"description": "Label of the target folder field in the Save as Mod dialog"},
+  "saveAsModFolderEmpty": "Select a folder",
+  "@saveAsModFolderEmpty": {"description": "Validation message under an empty target folder field"},
+  "saveAsModFileNameLabel": "File name",
+  "@saveAsModFileNameLabel": {"description": "Label of the file name field in the Save as Mod dialog; the .json suffix is shown separately"},
+  "saveAsModFileNameEmpty": "Enter a file name",
+  "@saveAsModFileNameEmpty": {"description": "Validation message under an empty file name field"},
+  "saveAsModFileNameInvalid": "The file name contains characters that are not allowed",
+  "@saveAsModFileNameInvalid": {"description": "Validation message under a file name field with characters such as / or :"},
+  "savedAsMod": "{name} saved as mod",
+  "@savedAsMod": {
+    "description": "Snack bar after a save was copied into the Workshop folder",
+    "placeholders": {"name": {"type": "String"}}
   }
 }

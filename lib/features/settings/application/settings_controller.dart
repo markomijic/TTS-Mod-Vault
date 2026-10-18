@@ -20,6 +20,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:ui' show Locale;
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:meta/meta.dart';
@@ -32,6 +33,7 @@ import 'package:tts_mod_vault/features/downloads/application/network_options.dar
 import 'package:tts_mod_vault/features/library/application/library_settings.dart';
 import 'package:tts_mod_vault/features/settings/application/app_settings.dart';
 import 'package:tts_mod_vault/features/url_updates/application/url_replacement_preset.dart';
+import 'package:tts_mod_vault/l10n/locale_tags.dart';
 
 export 'package:tts_mod_vault/features/settings/application/app_settings.dart';
 
@@ -322,6 +324,11 @@ final allowCustomSavesFolderSettingProvider = Provider<bool>(
 /// `AppSettings.showPdfThumbnails`.
 final showPdfThumbnailsSettingProvider = Provider<bool>(
   (ref) => ref.watch(settingsProvider.select((s) => s.showPdfThumbnails)),
+);
+
+/// `AppSettings.locale` as a [Locale]; `null` follows the system.
+final localeSettingProvider = Provider<Locale?>(
+  (ref) => localeFromTag(ref.watch(settingsProvider.select((s) => s.locale))),
 );
 
 /// `AppSettings.assetUrlFontSize`.

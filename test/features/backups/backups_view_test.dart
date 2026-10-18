@@ -92,7 +92,7 @@ void main() {
     expect(find.text('3.0 MB · Weekly'), findsOneWidget);
     expect(find.text('1.5 MB · Archive'), findsOneWidget);
     expect(
-      find.text(modDateFormat.format(backups.zetaPack.modified)),
+      find.text(formatModDate('en', backups.zetaPack.modified)),
       findsOneWidget,
     );
     // Toolbar: backups controls, no mods controls.
@@ -373,7 +373,7 @@ void main() {
     expect(find.text('3.0 MB'), findsOneWidget);
     expect(find.text('Modified'), findsOneWidget);
     expect(
-      find.text(modDateFormat.format(backups.alpha.modified)),
+      find.text(formatModDate('en', backups.alpha.modified)),
       findsNWidgets(2), // card + panel
     );
     expect(find.text('Assets in backup'), findsOneWidget);

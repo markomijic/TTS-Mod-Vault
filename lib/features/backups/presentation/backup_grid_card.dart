@@ -4,7 +4,8 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_badges.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_interaction_region.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart'
-    show BadgeBackdrop, modDateFormat;
+    show BadgeBackdrop, formatModDate;
+import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Width of the selection / hover border.
 const double _borderWidth = 3;
@@ -84,6 +85,7 @@ class _InfoBand extends StatelessWidget {
     final detailStyle = theme.textTheme.labelSmall?.copyWith(
       color: scheme.onInverseSurface,
     );
+    final localeName = AppLocalizations.of(context).localeName;
     return ColoredBox(
       color: scheme.inverseSurface.withValues(alpha: 0.8),
       child: Padding(
@@ -111,7 +113,7 @@ class _InfoBand extends StatelessWidget {
               style: detailStyle,
             ),
             Text(
-              modDateFormat.format(backup.modified),
+              formatModDate(localeName, backup.modified),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: detailStyle,

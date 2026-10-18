@@ -82,10 +82,12 @@ int? extractEpochTimeValue(String text) {
 
 int? _dateToUnixSeconds(String dateValue) {
   try {
+    // These patterns parse the dates TTS writes into mod files, not UI text,
+    // so they stay pinned to en_US whatever language the app is shown in.
     final upper = dateValue.toUpperCase();
     final format = upper.contains('AM') || upper.contains('PM')
-        ? DateFormat('M/d/yyyy h:mm:ss a')
-        : DateFormat('MM/dd/yyyy HH:mm:ss');
+        ? DateFormat('M/d/yyyy h:mm:ss a', 'en_US')
+        : DateFormat('MM/dd/yyyy HH:mm:ss', 'en_US');
 
     final dateTime = format.tryParse(dateValue);
     if (dateTime == null) return null;

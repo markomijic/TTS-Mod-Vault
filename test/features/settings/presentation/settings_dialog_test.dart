@@ -651,4 +651,21 @@ void main() {
       BackupSortOption.sizeDesc,
     );
   });
+
+  testWidgets('the language dropdown lists System default and English', (
+    tester,
+  ) async {
+    await open(tester);
+    await section(tester, 'Interface');
+    expect(find.text('Language'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('settings-language')));
+    await tester.pumpAndSettle();
+    expect(find.text('System default'), findsWidgets);
+    await tester.tap(find.text('English').last);
+    await tester.pumpAndSettle();
+    await save(tester);
+
+    expect(settings().locale, 'en');
+  });
 }

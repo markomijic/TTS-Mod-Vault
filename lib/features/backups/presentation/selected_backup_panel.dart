@@ -13,7 +13,7 @@ import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
 import 'package:tts_mod_vault/features/library/presentation/item_actions.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart'
-    show modDateFormat;
+    show formatModDate;
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// The right column of the library page while the Backups tab is shown.
@@ -97,7 +97,7 @@ class SelectedBackupView extends ConsumerWidget {
               ),
               _DetailRow(
                 label: l10n.backupDetailModified,
-                value: Text(modDateFormat.format(backup.modified)),
+                value: Text(formatModDate(l10n.localeName, backup.modified)),
               ),
               _DetailRow(
                 label: l10n.backupDetailAssets,

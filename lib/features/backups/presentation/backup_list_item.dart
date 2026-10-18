@@ -4,7 +4,8 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_badges.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_interaction_region.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart'
-    show modDateFormat;
+    show formatModDate;
+import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Thumbnail edge length.
 const double _thumbnailSize = 40;
@@ -34,6 +35,7 @@ class BackupListItem extends StatelessWidget {
     final detailStyle = theme.textTheme.bodySmall?.copyWith(
       color: scheme.onSurfaceVariant,
     );
+    final localeName = AppLocalizations.of(context).localeName;
 
     return BackupInteractionRegion(
       backup: backup,
@@ -98,7 +100,10 @@ class BackupListItem extends StatelessWidget {
               Gaps.w12,
               BackupMatchBadge(backup: backup),
               Gaps.w12,
-              Text(modDateFormat.format(backup.modified), style: detailStyle),
+              Text(
+                formatModDate(localeName, backup.modified),
+                style: detailStyle,
+              ),
             ],
           ),
         ),

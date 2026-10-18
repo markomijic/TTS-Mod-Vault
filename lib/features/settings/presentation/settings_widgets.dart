@@ -61,7 +61,13 @@ class SettingsSectionTitle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: Insets.xs),
       child: Row(
         children: [
-          Text(title, style: theme.textTheme.titleMedium),
+          Flexible(
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           if (info case final info?) ...[Gaps.w8, SettingsInfoIcon(info)],
         ],
       ),

@@ -3,8 +3,28 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/features/startup/presentation/startup_page.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
+
+/// Picks the supported locale closest to [requested]: exact match (language,
+/// script and country), then the same language (`pt_BR` -> `pt`, or `pt` ->
+/// the first `pt_*` there is), then English.
+Locale resolveLocale(Locale? requested, Iterable<Locale> supported) {
+  const fallback = Locale('en');
+  if (requested == null) return fallback;
+  for (final locale in supported) {
+    if (locale == requested) return locale;
+  }
+  Locale? sameLanguage;
+  for (final locale in supported) {
+    if (locale.languageCode != requested.languageCode) continue;
+    // Prefer the bare language, e.g. `pt` for `pt_BR`.
+    if (locale.countryCode == null && locale.scriptCode == null) return locale;
+    sameLanguage ??= locale;
+  }
+  return sameLanguage ?? fallback;
+}
 
 /// The root widget: a [MaterialApp] themed from [themeControllerProvider]
 /// with [StartupPage] as its home (which becomes the shell once loaded).
@@ -17,6 +37,7 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(themeControllerProvider);
+    final locale = ref.watch(localeSettingProvider);
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       theme: AppTheme.build(settings, Brightness.light),
@@ -29,7 +50,9 @@ class App extends ConsumerWidget {
         AppLocalizations.delegate,
         ...GlobalMaterialLocalizations.delegates,
       ],
+      locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: resolveLocale,
       debugShowCheckedModeBanner: false,
       home: const StartupPage(),
     );

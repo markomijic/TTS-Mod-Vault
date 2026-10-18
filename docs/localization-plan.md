@@ -129,6 +129,65 @@ Before any real translation, find layout bugs once:
 4. Delete `app_xx.arb`; do not commit it. Note in this file which widgets were
    changed.
 
+### As implemented
+
+What turned out differently from the text above:
+
+- **A1.** `AppSettings.locale` is a `String?` BCP 47 tag, serialised as
+  `locale` (`null` when following the system). `copyWith` takes a
+  `ValueGetter<String?>` (`copyWith(locale: () => null)`) so it can clear the
+  field. Tags are parsed by `localeFromTag` in `lib/l10n/locale_tags.dart`,
+  which also holds the hand-kept `nativeLanguageNames` map (only `English` so
+  far; **add an entry with every new `app_<locale>.arb`**, otherwise the
+  dropdown lists the bare tag). The dropdown lists `System default` plus
+  `AppLocalizations.supportedLocales`; a stored tag that is no longer
+  supported shows as System default. `localeSettingProvider` exposes it as a
+  `Locale?`. New ARB keys: `settingLanguage`, `settingLanguageSystemDefault`.
+  The Reset button already restores `AppSettings.defaults`, so it clears the
+  language with no extra code.
+- **A2.** `resolveLocale` (top level in `lib/app/app.dart`, unit-tested) is the
+  `localeResolutionCallback`: exact match, then same language (the bare
+  language first, so `pt_BR` gives `pt`, and `pt` gives the first `pt_*`),
+  then `en`.
+- **A3.** The helper is `formatModDate(String localeName, DateTime)` in
+  `mod_badges.dart`, called with `AppLocalizations.localeName` rather than
+  `Localizations.localeOf(context)`: two call sites (`backupTooltip`,
+  `epochSecondsLabel`) only have an `AppLocalizations`, not a context. Formats
+  are cached per locale. It falls back to the default (English) format when
+  `intl` has no date symbols for the locale, which also keeps bare unit tests
+  that never initialise date data working; the fallback is not cached. The
+  existing tests now call `formatModDate('en', ...)` instead of the removed
+  global `modDateFormat`. Verified (`test/l10n/date_symbols_test.dart`) that
+  the material_ui delegates load the date symbols, so no
+  `initializeDateFormatting` call is needed. `mod_metadata.dart` is pinned to
+  `en_US`.
+- **A4.** `untranslated-messages-file: build/untranslated.json` is in
+  `l10n.yaml` (`build/` is git-ignored; the file is `{}` while only English
+  exists). `flutter gen-l10n` also prints that `synthetic-package` "no longer
+  has any effect"; the line is left alone. The consistency test also checks
+  `@@locale` against the file name and compares the placeholders actually used
+  in each message, not just the declared ones. Its identical-to-English check
+  only prints a list, it never fails.
+- **A5.** The temporary locale could not be `xx`: gen-l10n rejects it as an
+  invalid language code, and a locale the Material delegates do not support
+  would break `MaterialLocalizations.of`. It was `sw` instead (supported by
+  Material, with `intl` date symbols). **A shipped locale must be supported by
+  `GlobalMaterialLocalizations`** (check before adding one). Rather than
+  running the desktop app by hand, a throwaway widget test pumped the shell
+  with that locale at 854 x 480 and 1280 x 800 and drove it through: expanded
+  sidebar, library page and type selector, selecting a mod, every tab, every
+  Settings section, the Workshop download dialog and the three Help tabs,
+  collecting every `RenderFlex` overflow. It found one: the title row in
+  `SettingsSectionTitle` (Folders section at the minimum size), fixed with
+  `Flexible` plus ellipsis in `settings_widgets.dart`. Not covered by that
+  pass: snack bars, the Cleanup / Import / Update URLs dialogs, the Backups
+  tab with real rows and the bulk-action results; look at those when the first
+  real translation lands. At 854 x 480 the last Settings section ("Update URL
+  presets") sits below the fold of the section list and needs scrolling; with
+  longer labels that is the same as in English. The test and `app_sw.arb` were
+  deleted; nothing in git references them.
+- `build_runner` was not needed: no annotated class was touched.
+
 ## 3. Phase B: first language and the help text
 
 Pick one pilot language someone on the project reads fluently; the first

@@ -7,6 +7,7 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_interaction_region.dart';
 import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
+import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Thumbnail edge length.
 const double _thumbnailSize = 40;
@@ -98,7 +99,10 @@ class ModsListItem extends ConsumerWidget {
               if (showBackupState && mod.backupStatus != BackupStatus.none)
                 Gaps.w12,
               Text(
-                modDateFormat.format(mod.modified),
+                formatModDate(
+                  AppLocalizations.of(context).localeName,
+                  mod.modified,
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),

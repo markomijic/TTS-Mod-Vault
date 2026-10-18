@@ -25,8 +25,8 @@ void main() {
 
     expect(lines, [
       'Up to date',
-      'Mod saved: ${modDateFormat.format(DateTime(2024, 3, 5, 9, 15))}',
-      'Backup: ${modDateFormat.format(mod.backup!.modified)}',
+      'Mod saved: ${formatModDate('en', DateTime(2024, 3, 5, 9, 15))}',
+      'Backup: ${formatModDate('en', mod.backup!.modified)}',
       '4 assets in backup',
     ]);
   });
@@ -42,7 +42,7 @@ void main() {
 
     expect(
       backupTooltip(l10n, mod),
-      contains('Mod saved: ${modDateFormat.format(modified)}'),
+      contains('Mod saved: ${formatModDate('en', modified)}'),
     );
   });
 

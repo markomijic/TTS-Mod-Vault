@@ -4,7 +4,7 @@ import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/features/backups/application/backup_service.dart'
     show JsonConflictChoice, JsonImportConflict;
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart'
-    show modDateFormat;
+    show formatModDate;
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Width of the dialog body.
@@ -94,11 +94,12 @@ class JsonConflictDialog extends StatelessWidget {
   }
 }
 
-/// [epochSeconds] formatted with [modDateFormat], or "N/A" when it is not a
+/// [epochSeconds] formatted with [formatModDate], or "N/A" when it is not a
 /// positive timestamp.
 String epochSecondsLabel(AppLocalizations l10n, int epochSeconds) {
   if (epochSeconds <= 0) return l10n.notAvailable;
-  return modDateFormat.format(
+  return formatModDate(
+    l10n.localeName,
     DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000),
   );
 }

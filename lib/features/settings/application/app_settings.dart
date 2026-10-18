@@ -3,6 +3,7 @@
 /// decodes unchanged. Theme settings live separately in `ThemeSettings`.
 library;
 
+import 'package:flutter/foundation.dart' show ValueGetter;
 import 'package:meta/meta.dart';
 import 'package:tts_mod_vault/domain/models/sort_filter.dart';
 import 'package:tts_mod_vault/features/url_updates/application/url_replacement_preset.dart';
@@ -82,6 +83,7 @@ final class AppSettings {
     this.ignoredSubfolders = const [],
     this.ignoredDomains = const [],
     this.showPdfThumbnails = false,
+    this.locale,
   });
 
   /// Reads settings from their JSON form (v2 keys).
@@ -127,6 +129,7 @@ final class AppSettings {
       ignoredSubfolders: _strings(json['ignoredSubfolders']),
       ignoredDomains: _strings(json['ignoredDomains']),
       showPdfThumbnails: _bool(json['showPdfThumbnails'], d.showPdfThumbnails),
+      locale: _locale(json['locale']),
     );
   }
 
@@ -199,6 +202,9 @@ final class AppSettings {
   /// Render first-page thumbnails for PDF assets.
   final bool showPdfThumbnails;
 
+  /// UI language as a BCP 47 tag (`de`, `pt-BR`); `null` follows the system.
+  final String? locale;
+
   /// Clamps a download concurrency to `1..maxConcurrentDownloads`.
   static int clampConcurrentDownloads(int value) =>
       value.clamp(1, maxConcurrentDownloads);
@@ -229,6 +235,7 @@ final class AppSettings {
     'ignoredSubfolders': ignoredSubfolders,
     'ignoredDomains': ignoredDomains,
     'showPdfThumbnails': showPdfThumbnails,
+    'locale': locale,
   };
 
   /// Copy with some fields replaced.
@@ -250,6 +257,7 @@ final class AppSettings {
     List<String>? ignoredSubfolders,
     List<String>? ignoredDomains,
     bool? showPdfThumbnails,
+    ValueGetter<String?>? locale,
   }) => AppSettings(
     useModsListView: useModsListView ?? this.useModsListView,
     useBackupsListView: useBackupsListView ?? this.useBackupsListView,
@@ -272,6 +280,7 @@ final class AppSettings {
     ignoredSubfolders: ignoredSubfolders ?? this.ignoredSubfolders,
     ignoredDomains: ignoredDomains ?? this.ignoredDomains,
     showPdfThumbnails: showPdfThumbnails ?? this.showPdfThumbnails,
+    locale: locale == null ? this.locale : locale(),
   );
 
   @override
@@ -294,7 +303,8 @@ final class AppSettings {
           other.assetUrlFontSize == assetUrlFontSize &&
           _sameList(other.ignoredSubfolders, ignoredSubfolders) &&
           _sameList(other.ignoredDomains, ignoredDomains) &&
-          other.showPdfThumbnails == showPdfThumbnails;
+          other.showPdfThumbnails == showPdfThumbnails &&
+          other.locale == locale;
 
   @override
   int get hashCode => Object.hash(
@@ -315,6 +325,7 @@ final class AppSettings {
     Object.hashAll(ignoredSubfolders),
     Object.hashAll(ignoredDomains),
     showPdfThumbnails,
+    locale,
   );
 
   @override
@@ -347,6 +358,9 @@ final class AppSettings {
     final String s => double.tryParse(s) ?? fallback,
     _ => fallback,
   };
+
+  static String? _locale(Object? value) =>
+      value is String && value.trim().isNotEmpty ? value.trim() : null;
 
   static List<String> _strings(Object? value) => value is List
       ? List.unmodifiable([

@@ -6,8 +6,36 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
-/// Date format used for file and backup dates on cards and rows.
-final DateFormat modDateFormat = DateFormat.yMMMd().add_Hm();
+final Map<String, DateFormat> _modDateFormats = {};
+
+/// Formats a file or backup date for cards, rows and dialogs in the UI
+/// language [localeName] (`AppLocalizations.localeName`).
+///
+/// Formats are cached per locale because the grids build many cards. A locale
+/// without `intl` date symbols (for example a throwaway test locale) falls
+/// back to the default (English) format instead of throwing, uncached so a later
+/// initialisation is picked up. Not for parsing TTS file content,
+/// which is pinned to `en_US` in `mod_metadata.dart`.
+String formatModDate(String localeName, DateTime date) {
+  final cached = _modDateFormats[localeName];
+  if (cached != null) return cached.format(date);
+  if (!_hasDateSymbols(localeName)) {
+    return DateFormat.yMMMd().add_Hm().format(date);
+  }
+  return (_modDateFormats[localeName] = DateFormat.yMMMd(
+    localeName,
+  ).add_Hm()).format(date);
+}
+
+/// Whether `intl` can format dates in [localeName]. Asking before any date
+/// data was initialised (a bare unit test) throws, which counts as "no".
+bool _hasDateSymbols(String localeName) {
+  try {
+    return DateFormat.localeExists(localeName);
+  } on Exception {
+    return false;
+  }
+}
 
 /// Hover delay of the badge tooltips.
 const Duration _tooltipWait = Duration(milliseconds: 300);
@@ -30,8 +58,12 @@ String backupTooltip(AppLocalizations l10n, Mod mod) {
   if (backup != null) {
     final saved = mod.savedAt ?? mod.modified;
     lines
-      ..add(l10n.backupTooltipModSaved(modDateFormat.format(saved)))
-      ..add(l10n.backupTooltipModified(modDateFormat.format(backup.modified)))
+      ..add(l10n.backupTooltipModSaved(formatModDate(l10n.localeName, saved)))
+      ..add(
+        l10n.backupTooltipModified(
+          formatModDate(l10n.localeName, backup.modified),
+        ),
+      )
       ..add(l10n.backupTooltipAssets(backup.assetCount));
     if (mod.backupStatus == BackupStatus.assetCountMismatch) {
       lines.add(l10n.backupTooltipMismatch(mod.summary.present));

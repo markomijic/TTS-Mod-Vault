@@ -1,5 +1,5 @@
 /// The Interface section of the Settings dialog: list/grid defaults, card
-/// titles, default sorts and the asset URL font size.
+/// titles, the language, default sorts and the asset URL font size.
 library;
 
 import 'package:material_ui/material_ui.dart';
@@ -9,6 +9,7 @@ import 'package:tts_mod_vault/features/library/presentation/library_labels.dart'
 import 'package:tts_mod_vault/features/settings/application/app_settings.dart';
 import 'package:tts_mod_vault/features/settings/presentation/settings_widgets.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
+import 'package:tts_mod_vault/l10n/locale_tags.dart';
 
 /// Edits the interface settings of [draft].
 class InterfaceSection extends StatelessWidget {
@@ -28,6 +29,12 @@ class InterfaceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // A stored language that is no longer supported shows as the system
+    // default, the way the app resolves it.
+    final tags = {
+      for (final locale in AppLocalizations.supportedLocales) localeTag(locale),
+    };
+    final selectedLanguage = tags.contains(draft.locale) ? draft.locale : null;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,6 +53,24 @@ class InterfaceSection extends StatelessWidget {
             title: l10n.settingShowTitleOnCards,
             value: draft.showTitleOnCards,
             onChanged: (v) => onChanged(draft.copyWith(showTitleOnCards: v)),
+          ),
+          SettingsLabeledRow(
+            title: l10n.settingLanguage,
+            trailing: DropdownButton<String?>(
+              key: const Key('settings-language'),
+              value: selectedLanguage,
+              items: [
+                DropdownMenuItem(
+                  child: Text(l10n.settingLanguageSystemDefault),
+                ),
+                for (final locale in AppLocalizations.supportedLocales)
+                  DropdownMenuItem(
+                    value: localeTag(locale),
+                    child: Text(nativeLanguageName(locale)),
+                  ),
+              ],
+              onChanged: (tag) => onChanged(draft.copyWith(locale: () => tag)),
+            ),
           ),
           SettingsLabeledRow(
             title: l10n.settingDefaultModSort,

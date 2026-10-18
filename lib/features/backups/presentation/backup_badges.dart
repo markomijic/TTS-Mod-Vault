@@ -4,7 +4,7 @@ import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_labels.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart'
-    show modDateFormat;
+    show formatModDate;
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Hover delay of the badge tooltip.
@@ -20,7 +20,7 @@ String backupBadgeTooltip(AppLocalizations l10n, Backup backup) => [
   backup.matchLabel(l10n),
   backup.fileSizeLabel,
   l10n.backupTooltipAssets(backup.assetCount),
-  modDateFormat.format(backup.modified),
+  formatModDate(l10n.localeName, backup.modified),
 ].join('\n');
 
 /// The matched/unmatched icon with its tooltip.

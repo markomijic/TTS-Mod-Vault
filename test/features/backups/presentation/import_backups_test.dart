@@ -16,7 +16,7 @@ import 'package:tts_mod_vault/features/backups/presentation/import_results_dialo
 import 'package:tts_mod_vault/features/backups/presentation/json_conflict_dialog.dart';
 import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart'
-    show modDateFormat;
+    show formatModDate;
 import 'package:tts_mod_vault/features/library/presentation/mods_grid_card.dart';
 
 import '../../library/presentation/presentation_test_harness.dart';
@@ -181,14 +181,14 @@ void main() {
         expect(find.textContaining('"100001.json"'), findsOneWidget);
         expect(
           find.text(
-            'Your current file: ${modDateFormat.format(localSaved)}'
+            'Your current file: ${formatModDate('en', localSaved)}'
             '\n4 asset files',
           ),
           findsOneWidget,
         );
         expect(
           find.text(
-            'Backup file: ${modDateFormat.format(backupSaved)}\n1 asset file',
+            'Backup file: ${formatModDate('en', backupSaved)}\n1 asset file',
           ),
           findsOneWidget,
         );

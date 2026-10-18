@@ -11,12 +11,24 @@ The Vault cache is rebuilt on the first start, so the first library load takes a
 · Theming: light, dark and system mode, colour presets (including the Classic 2.x look) and a custom seed colour
 · Help, Changelog and About in one dialog with a manual update check
 · Settings dialog with an Appearance section; every 2.x option is kept
+· Copy missing URLs of the selected mod
+· Every operation, including the cleanup scan, can be cancelled from the progress bar
 
 ## Changes
 
-· Settings and folders are imported from TTS Mod Vault 2.x on the first start
+· Settings and folders are imported from TTS Mod Vault 2.x on the first start; the 2.x files are left untouched
 · Caches from 2.x are not imported; the library is indexed again on the first start
-· Keyboard shortcuts: Ctrl+F search, F5 refresh, Esc clear selection, Delete remove the selected mod
+· App data moved from Documents/TTS Mod Vault to the app data folder (see Help → Troubleshooting)
+· Keyboard shortcuts: Ctrl+F search, F5 refresh, Esc clear selection, Delete remove the selected mod or backup
+· The sidebar no longer expands on hover; the chevron at the top toggles labels and the choice is remembered
+· Checking a single URL from the asset menu runs like the per-mod check and records the result
+· URL checks skip audio URLs hidden by the audio setting
+· Importing a backup of a save or saved object registers it in the library right away
+· Update from Workshop is unavailable for mods whose file name is not a Workshop id
+· Backup tooltips show the mod's save date next to the backup date
+· Fixed renaming of mods whose name contains escaped quotes
+· Fixed .wav and .ogg files being detected with the wrong extension
+· Fixed mods with the same file name in different folders overwriting each other in the library
 
 # v2.1.0
 

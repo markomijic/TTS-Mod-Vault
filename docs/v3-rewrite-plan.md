@@ -84,7 +84,7 @@ v3 uses `path_provider`'s application-support directory, which is the convention
 First run:
 
 1. Open (create) `vault.sqlite`, run migrations.
-2. If the v2 folder exists and contains `AppData.hive`: read the `TTSModVaultSettings` JSON, `ModsDir`, `SavesDir`, `BackupsDir`, write them to `kv`, then delete the whole v2 folder. Log one info line ("Imported settings from TTS Mod Vault 2.x").
+2. If the v2 folder exists and contains `AppData.hive`: read the `TTSModVaultSettings` JSON, `ModsDir`, `SavesDir`, `BackupsDir`, write them to `kv`, and leave the v2 folder untouched (amended D4: 2.x keeps running next to 3.x). Log one info line ("Imported settings from TTS Mod Vault 2.x").
 3. If it does not exist (fresh install, or v3 already ran once): nothing happens. Settings fall back to `Settings.defaults()`, directories to the per-OS TTS defaults, and if those folders are missing the existing "select your Mods and Saves folders" screen appears exactly as in v2.
 
 Either way the mod index is built from scratch on the first start, the same as "Refresh with clear cache" in v2.

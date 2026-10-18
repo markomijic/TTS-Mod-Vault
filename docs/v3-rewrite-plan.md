@@ -376,7 +376,7 @@ Taken from the README and the code. Every item must be reachable in v3 before cu
 - [x] Filters: folders, backup state, complete/missing, audio/image/model/PDF/asset bundle presence
 - [x] Search mods by name; search assets of selected mod
 - [x] Single and Ctrl/Cmd multi-select
-- [ ] Selected mod: grouped assets, type chips, downloaded/missing filter, invalid filter, PDF thumbnails toggle + default setting, images viewer, open files (audio/image/PDF), open in file explorer (partial: image-tile and PDF-thumbnail context menus offer fewer actions than v2; see docs/v3-parity-audit.md G1)
+- [x] Selected mod: grouped assets, type chips, downloaded/missing filter, invalid filter, PDF thumbnails toggle + default setting, images viewer, open files (audio/image/PDF), open in file explorer (image tiles and PDF thumbnails offer the full asset menu since the G1 fix, see docs/v3-parity-audit.md)
 - [x] Asset actions: open URL, copy URL, replace URL (with optional file rename), delete file, shared-with info
 - [x] Per-mod audio visibility override + global ignore-audio setting
 - [x] Download missing assets (single asset, per type, whole mod); concurrency setting; ignored domains

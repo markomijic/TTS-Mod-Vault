@@ -1,11 +1,13 @@
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:flutter/services.dart' show KeyDownEvent, LogicalKeyboardKey;
 import 'package:flutter_hooks/flutter_hooks.dart' show useFocusNode;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tts_mod_vault/app/shell/operation_running_provider.dart';
 import 'package:tts_mod_vault/app/widgets/delayed_progress.dart';
 import 'package:tts_mod_vault/app/widgets/error_message.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backups_view.dart';
 import 'package:tts_mod_vault/features/backups/presentation/selected_backup_panel.dart';
 import 'package:tts_mod_vault/features/backups/presentation/toolbar/backup_filter_menu_button.dart';
@@ -18,8 +20,10 @@ import 'package:tts_mod_vault/features/library/application/library_controller.da
 import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
 import 'package:tts_mod_vault/features/library/application/refresh_progress.dart';
+import 'package:tts_mod_vault/features/library/presentation/dialogs/delete_mod_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_view.dart';
+import 'package:tts_mod_vault/features/library/presentation/refresh_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/selected_mod_panel.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/bulk_actions_button.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/filter_menu_button.dart';
@@ -55,9 +59,12 @@ const double _refreshBarHeight = 3;
 /// └─ Expanded(flex: 1) SelectedModPanel | SelectedBackupPanel
 /// ```
 ///
-/// Keyboard: Ctrl/Cmd+F focuses the search field of the current tab; Esc
-/// clears the current tab's selection, or unfocuses the search field when
-/// it has focus.
+/// Keyboard (plan 4.6): Ctrl/Cmd+F focuses the search field of the current
+/// tab; Esc clears the current tab's selection, or unfocuses the search
+/// field when it has focus; F5 opens the Refresh confirmation; Delete
+/// opens the delete confirmation for the one selected mod or backup. F5 and
+/// Delete are ignored while an operation runs, and Delete is left to the
+/// text field while one has focus.
 class LibraryPage extends HookConsumerWidget {
   /// Creates the page.
   const LibraryPage({super.key, this.bottomSlot = const LibraryBottomSlot()});
@@ -86,16 +93,42 @@ class LibraryPage extends HookConsumerWidget {
       }
     }
 
+    void refresh() {
+      if (ref.read(operationRunningProvider)) return;
+      showRefreshDialog(context, ref);
+    }
+
+    // Delete is handled on the focus node rather than as a shortcut so the
+    // key still reaches a focused text field (a shortcut would swallow it).
+    KeyEventResult deleteSelected(FocusNode node, KeyEvent event) {
+      if (event is! KeyDownEvent ||
+          event.logicalKey != LogicalKeyboardKey.delete ||
+          focusIsInTextField()) {
+        return KeyEventResult.ignored;
+      }
+      if (ref.read(operationRunningProvider)) return KeyEventResult.handled;
+      if (ref.read(libraryTabProvider) == LibraryTab.backups) {
+        final backup = ref.read(selectedBackupProvider);
+        if (backup != null) deleteBackupWithConfirm(context, ref, backup);
+      } else {
+        final mod = ref.read(selectedModProvider);
+        if (mod != null) showDeleteModDialog(context, ref, mod);
+      }
+      return KeyEventResult.handled;
+    }
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyF, control: true):
             focusSearch,
         const SingleActivator(LogicalKeyboardKey.keyF, meta: true): focusSearch,
         const SingleActivator(LogicalKeyboardKey.escape): escape,
+        const SingleActivator(LogicalKeyboardKey.f5): refresh,
       },
       child: Focus(
         focusNode: pageFocus,
         autofocus: true,
+        onKeyEvent: deleteSelected,
         child: Row(
           children: [
             Expanded(
@@ -115,6 +148,15 @@ class LibraryPage extends HookConsumerWidget {
       ),
     );
   }
+}
+
+/// Whether the keyboard focus is inside an [EditableText] (a text field),
+/// where Delete must keep editing text.
+bool focusIsInTextField() {
+  final context = FocusManager.instance.primaryFocus?.context;
+  if (context == null) return false;
+  return context.widget is EditableText ||
+      context.findAncestorWidgetOfExactType<EditableText>() != null;
 }
 
 /// What docks under the library list (plan section 4.8): the one

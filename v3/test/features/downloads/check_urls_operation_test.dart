@@ -111,6 +111,49 @@ void main() {
     );
   });
 
+  test(
+    'a single-asset check merges its outcome into the stored list',
+    () async {
+      await h.db.modsDao.setInvalidUrls(alpha.jsonPath, [live, missing]);
+      final assets = await h.assetsInStore(alpha);
+      Asset byUrl(String url) => assets.singleWhere((a) => a.url == url);
+      Future<Set<String>> storedInvalid() async => {
+        for (final a in await h.assetsInStore(alpha))
+          if (a.invalid) a.url,
+      };
+
+      // A live URL is removed from the list, the rest stays.
+      final progress = h.recordProgress();
+      final first = await service().checkUrl(alpha, byUrl(live));
+      expect(first.cancelled, isFalse);
+      expect(first.total, 1);
+      expect(first.checked, 1);
+      expect(first.invalidUrls, isEmpty);
+      expect(first.allLive, isTrue);
+      expect(await storedInvalid(), {missing});
+      expect(progress.last.total, 1);
+      expect(progress.every((p) => p.kind == OperationKind.checkUrls), isTrue);
+      expect(h.library.resummarizeCalls, [alpha.jsonPath]);
+
+      // A dead URL is added; only that URL was requested.
+      final before = h.server.requestsTo('/png').length;
+      final second = await service().checkUrl(alpha, byUrl(html));
+      expect(second.invalidUrls, [html]);
+      expect(second.allLive, isFalse);
+      expect(await storedInvalid(), {missing, html});
+      expect(h.server.requestsTo('/png'), hasLength(before));
+
+      // Checking it again does not duplicate the entry.
+      await service().checkUrl(alpha, byUrl(html));
+      final assetsAfter = await h.assetsInStore(alpha);
+      expect(assetsAfter.where((a) => a.invalid).map((a) => a.url).toList(), [
+        missing,
+        html,
+      ]);
+      expect(h.runnerState, OperationState.idle);
+    },
+  );
+
   test('respects the concurrency setting', () async {
     final gamma = h.workshopMod('100003', saveName: 'Gamma');
     await h.indexMods(

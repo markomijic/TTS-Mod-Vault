@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
+import 'package:tts_mod_vault/core/cancellation/cancellation_token.dart';
 import 'package:tts_mod_vault/domain/constants.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/domain/rules/file_key.dart';
@@ -148,6 +149,25 @@ void main() {
     expect(byPath[fixture.rawModelOrphan]!.type, AssetType.model);
     // Sorted by type then path: images before models.
     expect(scan.candidates.last.path, fixture.rawModelOrphan);
+  });
+
+  test(
+    'a cancelled token aborts the scan with the cancellation error',
+    () async {
+      final token = CancellationToken()..cancel('test');
+      await expectLater(
+        service.scanOrphans(token: token),
+        throwsA(isA<OperationCancelledException>()),
+      );
+    },
+  );
+
+  test('cancelling during the scan aborts it', () async {
+    final token = CancellationToken();
+    final pending = service.scanOrphans(token: token);
+    token.cancel('test');
+    await expectLater(pending, throwsA(isA<OperationCancelledException>()));
+    expect(File(fixture.orphanFile).existsSync(), isTrue);
   });
 
   test('scan tolerates missing raw folders', () async {

@@ -3,10 +3,8 @@
 /// (a snack bar for a clean download, a results dialog otherwise).
 library;
 
-import 'package:hooks_riverpod/hooks_riverpod.dart' show Provider, WidgetRef;
+import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:material_ui/material_ui.dart';
-import 'package:tts_mod_vault/data/net/dio_client.dart';
-import 'package:tts_mod_vault/data/net/url_checker.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_results_dialog.dart';
@@ -44,29 +42,24 @@ Future<void> checkModUrls(BuildContext context, WidgetRef ref, Mod mod) async {
   );
 }
 
-/// Answers whether one URL is reachable.
-typedef SingleUrlCheck = Future<bool> Function(String url);
-
-/// The quick single-URL check behind the asset menu's "Check URL": a HEAD /
-/// ranged GET through [UrlChecker]. Not a runner operation (one request
-/// needs no progress bar or cancel). Tests override it with a stub.
-final singleUrlCheckProvider = Provider<SingleUrlCheck>((ref) {
-  final checker = UrlChecker(dio: ref.watch(dioProvider));
-  return checker.isLive;
-});
-
-/// Checks one URL right away through [singleUrlCheckProvider] and reports
-/// with a snack bar. Port of v2's "Check URL" menu item.
+/// Checks one [asset] URL of [mod] as a one-asset runner operation (so it
+/// shows in the progress bar, can be cancelled and updates the stored
+/// invalid flag) and reports with a snack bar. Port of v2's "Check URL"
+/// menu item; a cancelled check says nothing.
 Future<void> checkSingleUrl(
   BuildContext context,
   WidgetRef ref,
-  String url,
+  Mod mod,
+  Asset asset,
 ) async {
   final ui = OperationUi.of(context);
-  final live = await ref.read(singleUrlCheckProvider)(url);
-  if (!ui.mounted) return;
+  final service = ref.read(downloadsServiceProvider);
+  final result = await ui.launch(() => service.checkUrl(mod, asset));
+  if (result == null || result.cancelled || !ui.mounted) return;
   ui.showSnackBar(
-    live ? ui.l10n.urlCheckSingleValid : ui.l10n.urlCheckSingleInvalid,
+    result.invalidUrls.isEmpty
+        ? ui.l10n.urlCheckSingleValid
+        : ui.l10n.urlCheckSingleInvalid,
   );
 }
 

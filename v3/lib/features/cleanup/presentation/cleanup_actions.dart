@@ -10,6 +10,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/widgets/app_dialog.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
+import 'package:tts_mod_vault/core/cancellation/cancellation_token.dart';
 import 'package:tts_mod_vault/features/cleanup/application/cleanup_service.dart';
 import 'package:tts_mod_vault/features/cleanup/presentation/cleanup_confirm_dialog.dart';
 import 'package:tts_mod_vault/features/cleanup/presentation/cleanup_labels.dart';
@@ -19,22 +20,34 @@ import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 /// Size of the spinner in the scanning modal.
 const double _spinnerSize = 24;
 
-/// Runs the cleanup flow. Dismissing the scanning modal abandons the scan
-/// result; an empty scan shows "No unused files found" (or the scan's
-/// first warning when it failed).
+/// Runs the cleanup flow. Dismissing the scanning modal cancels the scan
+/// (its token) and drops any result it still produces; an empty scan shows
+/// "No unused files found" (or the scan's first warning when it failed).
 Future<void> runCleanup(BuildContext context, WidgetRef ref) async {
   final ui = OperationUi.of(context);
   final l10n = ui.l10n;
   final service = ref.read(cleanupServiceProvider);
 
   // The modal pops itself (with true) once the scan answers; the user
-  // closing it first pops null, which abandons the result.
+  // closing it first pops null, which cancels the scan.
+  final token = CancellationToken();
   final scanDone = Completer<void>();
   final modal = ui.showAppDialog<bool>(
     (_) => ScanningDialog(closeWhen: scanDone.future),
   );
-  final scan = await service.scanOrphans();
-  scanDone.complete();
+  unawaited(
+    modal.then((keep) {
+      if (keep != true) token.cancel('Scan dismissed');
+    }),
+  );
+  final CleanupScan scan;
+  try {
+    scan = await service.scanOrphans(token: token);
+  } on OperationCancelledException {
+    return;
+  } finally {
+    scanDone.complete();
+  }
   final keep = await modal;
   if (keep != true || !ui.mounted) return;
 

@@ -57,15 +57,22 @@ final class UrlCheckResult {
 /// invalid URLs replace the mod's stored list (an empty list clears it), the
 /// mod is re-summarised and its asset list invalidated; on cancellation the
 /// partial result is returned without being persisted.
+///
+/// With [onlyAsset] (the asset menu's "Check URL") just that URL is checked
+/// and its outcome is merged into the stored list: the URL is added when
+/// dead and removed when live, the other entries are kept.
 final class CheckUrlsOperation extends Operation<UrlCheckResult> {
   /// Creates the operation.
-  CheckUrlsOperation({required this.ref, required this.mod});
+  CheckUrlsOperation({required this.ref, required this.mod, this.onlyAsset});
 
   /// Supplies the database, network client and library.
   final Ref ref;
 
   /// The mod whose URLs are checked.
   final Mod mod;
+
+  /// When set, the one asset to check instead of the whole mod.
+  final Asset? onlyAsset;
 
   final List<String> _invalid = [];
   int _checked = 0;
@@ -90,13 +97,19 @@ final class CheckUrlsOperation extends Operation<UrlCheckResult> {
         .read(networkOptionsProvider.notifier)
         .ensureLoaded();
     final ignoreAudio = ref.read(libraryOptionsProvider).ignoreAudioGlobally;
-    final assets = await ref
-        .read(appDatabaseProvider)
-        .libraryQueries
-        .assetsForMod(
-          modPath,
-          includeAudio: includeAudioFor(mod, ignoreAudioGlobally: ignoreAudio),
-        );
+    final onlyAsset = this.onlyAsset;
+    final assets = onlyAsset != null
+        ? [onlyAsset]
+        : await ref
+              .read(appDatabaseProvider)
+              .libraryQueries
+              .assetsForMod(
+                modPath,
+                includeAudio: includeAudioFor(
+                  mod,
+                  ignoreAudioGlobally: ignoreAudio,
+                ),
+              );
     ctx.checkCancelled();
     _total = assets.length;
 
@@ -168,10 +181,10 @@ final class CheckUrlsOperation extends Operation<UrlCheckResult> {
     }
 
     final invalid = List<String>.unmodifiable(_invalid);
-    await ref
-        .read(appDatabaseProvider)
-        .modsDao
-        .setInvalidUrls(modPath, invalid);
+    final stored = onlyAsset == null
+        ? invalid
+        : await _mergeStoredInvalidUrls(modPath, onlyAsset.url, invalid);
+    await ref.read(appDatabaseProvider).modsDao.setInvalidUrls(modPath, stored);
     if (ref.mounted) {
       await ref
           .read(libraryControllerProvider.notifier)
@@ -204,5 +217,24 @@ final class CheckUrlsOperation extends Operation<UrlCheckResult> {
       checked: _checked,
       total: assets.length,
     );
+  }
+
+  /// The mod's stored invalid list with [url] added or removed according
+  /// to [invalid] (the single-asset outcome), other entries untouched.
+  Future<List<String>> _mergeStoredInvalidUrls(
+    String modPath,
+    String url,
+    List<String> invalid,
+  ) async {
+    final current = await ref
+        .read(appDatabaseProvider)
+        .libraryQueries
+        .assetsForMod(modPath);
+    final stored = <String>[
+      for (final asset in current)
+        if (asset.invalid && asset.url != url) asset.url,
+    ];
+    if (invalid.contains(url)) stored.add(url);
+    return List<String>.unmodifiable(stored);
   }
 }

@@ -6,6 +6,7 @@
 
 import 'dart:async';
 
+import 'package:tts_mod_vault/core/cancellation/cancellation_token.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/cleanup/application/cleanup_service.dart';
 import 'package:tts_mod_vault/features/cleanup/application/delete_assets_service.dart';
@@ -65,6 +66,9 @@ final class FakeCleanupService extends CleanupService {
   /// observe the scanning modal).
   Completer<void>? gate;
 
+  /// The token of the last `scanOrphans` call.
+  CancellationToken? lastToken;
+
   /// Candidate lists passed to `deleteCandidates`.
   final List<List<CleanupCandidate>> deleteCalls = [];
 
@@ -75,9 +79,12 @@ final class FakeCleanupService extends CleanupService {
   bool alreadyRunning = false;
 
   @override
-  Future<CleanupScan> scanOrphans() async {
+  Future<CleanupScan> scanOrphans({CancellationToken? token}) async {
     scanCalls++;
+    lastToken = token;
     if (gate case final g?) await g.future;
+    // Like the real scan: a cancelled token aborts instead of answering.
+    token?.throwIfCancelled();
     return scan;
   }
 

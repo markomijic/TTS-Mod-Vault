@@ -2,14 +2,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/shell/operation_running_provider.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
-import 'package:tts_mod_vault/app/widgets/app_dialog.dart';
 import 'package:tts_mod_vault/features/about/presentation/help_dialog.dart';
 import 'package:tts_mod_vault/features/about/presentation/update_notice.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
 import 'package:tts_mod_vault/features/backups/presentation/import_json_dialog.dart';
 import 'package:tts_mod_vault/features/cleanup/presentation/cleanup_actions.dart';
-import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_page.dart';
+import 'package:tts_mod_vault/features/library/presentation/refresh_dialog.dart';
 import 'package:tts_mod_vault/features/settings/presentation/settings_defaults_applier.dart';
 import 'package:tts_mod_vault/features/settings/presentation/settings_dialog.dart';
 import 'package:tts_mod_vault/features/workshop/presentation/download_workshop_mods_dialog.dart';
@@ -32,20 +31,6 @@ class AppShell extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final enabled = !operationRunning;
 
-    Future<void> refresh() async {
-      final clearCache = await showConfirmDialogWithCheckbox(
-        context,
-        title: l10n.refreshDialogTitle,
-        checkboxLabel: l10n.refreshClearCacheLabel,
-        checkboxInfo: l10n.refreshClearCacheInfo,
-        confirmLabel: l10n.actionRefresh,
-      );
-      if (clearCache == null) return;
-      await ref
-          .read(libraryControllerProvider.notifier)
-          .refresh(clearCache: clearCache);
-    }
-
     return UpdateNotice(
       child: SettingsDefaultsApplier(
         child: Scaffold(
@@ -58,7 +43,7 @@ class AppShell extends ConsumerWidget {
                       icon: Icons.refresh,
                       label: l10n.actionRefresh,
                       enabled: enabled,
-                      onPressed: refresh,
+                      onPressed: () => showRefreshDialog(context, ref),
                     ),
                     SidebarAction(
                       icon: Icons.cleaning_services_outlined,

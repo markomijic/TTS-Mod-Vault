@@ -11,7 +11,6 @@ import 'package:tts_mod_vault/features/asset_detail/presentation/asset_list.dart
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_url_row.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/selected_mod_actions.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
-import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_results_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/url_check_results_dialog.dart';
 import 'package:tts_mod_vault/features/operations/application/operation_runner.dart';
@@ -24,22 +23,16 @@ import 'fake_downloads_service.dart';
 void main() {
   late AssetDetailHarness h;
   late FakeDownloadsService service;
-  var urlLive = false;
 
   Future<void> setUpHarness({List<Override> extra = const []}) async {
     h = await AssetDetailHarness.create(
-      overrides: [
-        fakeDownloadsServiceOverride(),
-        singleUrlCheckProvider.overrideWithValue((url) async => urlLive),
-        ...extra,
-      ],
+      overrides: [fakeDownloadsServiceOverride(), ...extra],
     );
     service =
         h.container.read(downloadsServiceProvider) as FakeDownloadsService;
   }
 
   setUp(() async {
-    urlLive = false;
     await setUpHarness();
   });
 
@@ -245,9 +238,8 @@ void main() {
       expect(find.byType(UrlCheckResultsDialog), findsOneWidget);
     });
 
-    testWidgets('asset menu Check URL reports with a snack bar', (
-      tester,
-    ) async {
+    testWidgets('asset menu Check URL runs a one-asset check and reports '
+        'with a snack bar', (tester) async {
       h.select(h.fixture.alpha);
       await pumpPanel(tester, h);
 
@@ -255,12 +247,31 @@ void main() {
       await tester.tap(find.text('Check URL'));
       await tester.pumpAndSettle();
       expect(find.text('URL is not reachable'), findsOneWidget);
+      expect(service.checkUrlCalls, hasLength(1));
+      final (mod, asset) = service.checkUrlCalls.single;
+      expect(mod.jsonPath, h.fixture.alpha.jsonPath);
+      expect(asset.url, h.fixture.img1.url);
 
-      urlLive = true;
+      service.singleUrlLive = true;
       await rightClick(tester, h.fixture.img1);
       await tester.tap(find.text('Check URL'));
       await tester.pumpAndSettle();
       expect(find.text('URL is valid'), findsOneWidget);
+      expect(service.checkUrlCalls, hasLength(2));
+    });
+
+    testWidgets('a refused single Check URL shows the already-running snack '
+        'bar', (tester) async {
+      service.alreadyRunning = true;
+      h.select(h.fixture.alpha);
+      await pumpPanel(tester, h);
+
+      await rightClick(tester, h.fixture.img1);
+      await tester.tap(find.text('Check URL'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('An operation is already running'), findsOneWidget);
+      expect(service.checkUrlCalls, isEmpty);
     });
   });
 

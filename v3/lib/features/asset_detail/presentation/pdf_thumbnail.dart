@@ -9,6 +9,7 @@ import 'package:tts_mod_vault/app/theme/vault_colors.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/data/pdf/pdf_thumbnail_renderer.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/asset_detail/presentation/asset_context_menu.dart';
 import 'package:tts_mod_vault/features/images_viewer/presentation/asset_file_actions.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
@@ -40,12 +41,21 @@ const double _iconFraction = 0.3;
 ///
 /// A placeholder with a PDF icon is shown while loading, when the file is
 /// not downloaded ([Asset.path] is null) and when rendering failed. Left
-/// click opens the file, right click shows the asset file menu.
+/// click opens the file, right click shows the full asset context menu
+/// (the same one the URL rows offer).
 class PdfThumbnail extends HookConsumerWidget {
-  /// Creates the tile for [asset].
-  const PdfThumbnail({super.key, required this.asset, this.size = 192});
+  /// Creates the tile for [asset] of [mod].
+  const PdfThumbnail({
+    super.key,
+    required this.mod,
+    required this.asset,
+    this.size = 192,
+  });
 
-  /// The PDF asset; only [Asset.path] and [Asset.url] are used.
+  /// The mod the asset belongs to (for the context menu actions).
+  final Mod mod;
+
+  /// The PDF asset.
   final Asset asset;
 
   /// Edge length of the square tile in logical pixels.
@@ -144,8 +154,13 @@ class PdfThumbnail extends HookConsumerWidget {
         onExit: (_) => hovered.value = false,
         child: GestureDetector(
           onTap: path == null ? null : () => openAssetFile(context, path),
-          onSecondaryTapUp: (details) =>
-              showAssetFileMenu(context, details.globalPosition, asset),
+          onSecondaryTapUp: (details) => showAssetContextMenu(
+            context,
+            ref,
+            details.globalPosition,
+            mod,
+            asset,
+          ),
           child: AnimatedContainer(
             duration: _borderDuration,
             width: size,

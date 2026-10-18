@@ -5,6 +5,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/data/pdf/pdf_thumbnail_renderer.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/pdf_thumbnail.dart';
@@ -41,12 +42,32 @@ const _asset = Asset(
   path: r'C:\Mods\PDF\rules.pdf',
 );
 
+final Mod _mod = Mod(
+  ref: ModRef.fromPath(ModType.mod, p.join('C:', 'Mods', 'Workshop', '1.json')),
+  saveName: 'Alpha Mod',
+  folder: 'Workshop',
+  epochTime: null,
+  modified: DateTime(2024),
+  sizeBytes: 1,
+  imagePath: null,
+  audio: AudioVisibility.useGlobalSetting,
+  summary: const AssetSummary(
+    total: 1,
+    present: 1,
+    hasAudio: false,
+    totalByType: {AssetType.pdf: 1},
+    presentByType: {AssetType.pdf: 1},
+  ),
+);
+
 Future<_FakeRenderer> _pumpTile(WidgetTester tester, Asset asset) async {
   final renderer = _FakeRenderer();
   await pumpThemedApp(
     tester,
     home: Scaffold(
-      body: Center(child: PdfThumbnail(asset: asset)),
+      body: Center(
+        child: PdfThumbnail(mod: _mod, asset: asset),
+      ),
     ),
     overrides: [pdfThumbnailRendererProvider.overrideWithValue(renderer)],
   );
@@ -114,8 +135,9 @@ void main() {
       home: Scaffold(
         body: ValueListenableBuilder(
           valueListenable: show,
-          builder: (context, visible, _) =>
-              visible ? const PdfThumbnail(asset: _asset) : const SizedBox(),
+          builder: (context, visible, _) => visible
+              ? PdfThumbnail(mod: _mod, asset: _asset)
+              : const SizedBox(),
         ),
       ),
       overrides: [pdfThumbnailRendererProvider.overrideWithValue(renderer)],
@@ -131,8 +153,10 @@ void main() {
   testWidgets('respects a custom size', (tester) async {
     await pumpThemedApp(
       tester,
-      home: const Scaffold(
-        body: Center(child: PdfThumbnail(asset: _asset, size: 96)),
+      home: Scaffold(
+        body: Center(
+          child: PdfThumbnail(mod: _mod, asset: _asset, size: 96),
+        ),
       ),
       overrides: [
         pdfThumbnailRendererProvider.overrideWithValue(_FakeRenderer()),
@@ -141,13 +165,38 @@ void main() {
     expect(tester.getSize(find.byType(PdfThumbnail)), const Size(96, 96));
   });
 
-  testWidgets('right-click shows the file menu', (tester) async {
+  testWidgets('right-click shows the full asset context menu', (tester) async {
     await _pumpTile(tester, _asset);
     await tester.tap(find.byType(PdfThumbnail), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Open file'), findsOneWidget);
-    expect(find.text('Open in file explorer'), findsOneWidget);
-    expect(find.text('Copy URL'), findsOneWidget);
+    for (final label in [
+      'Open URL in browser',
+      'Copy URL',
+      'Copy filename',
+      'Open file',
+      'Open in file explorer',
+      'Replace URL…',
+      'Check URL',
+      'Shared with…',
+      'Delete file',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    // The file is on disk, so Download is not offered.
+    expect(find.text('Download'), findsNothing);
+  });
+
+  testWidgets('right-click on a missing file offers Download, no file items', (
+    tester,
+  ) async {
+    await _pumpTile(tester, _asset.copyWith(path: null));
+    await tester.tap(find.byType(PdfThumbnail), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Download'), findsOneWidget);
+    expect(find.text('Open file'), findsNothing);
+    expect(find.text('Delete file'), findsNothing);
+    expect(find.text('Check URL'), findsOneWidget);
   });
 }

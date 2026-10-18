@@ -2,6 +2,7 @@
 // panel) and deleting from the mod context menu.
 
 import 'package:flutter/gestures.dart' show kSecondaryButton;
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -90,6 +91,29 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Delete backup'));
       await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(service.deleteCalls.map((b) => b.path), [backups.gamma.path]);
+      expect(find.text('Gamma Mod.ttsmod deleted'), findsOneWidget);
+    });
+
+    testWidgets('Delete key confirms and deletes the selected backup', (
+      tester,
+    ) async {
+      await pumpBackupsTab(tester);
+
+      // Nothing selected: nothing happens.
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+
+      await tester.tap(card('Gamma Mod.ttsmod'));
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pumpAndSettle();
+      expect(find.text('Delete backup?'), findsOneWidget);
+
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
       await tester.pumpAndSettle();
 

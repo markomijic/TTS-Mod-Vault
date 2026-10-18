@@ -52,6 +52,11 @@ class DownloadsService {
   Future<UrlCheckResult> checkUrls(Mod mod) =>
       _runner.run(CheckUrlsOperation(ref: ref, mod: mod));
 
+  /// Checks one [asset] URL of [mod] and updates its entry in the stored
+  /// invalid list.
+  Future<UrlCheckResult> checkUrl(Mod mod, Asset asset) =>
+      _runner.run(CheckUrlsOperation(ref: ref, mod: mod, onlyAsset: asset));
+
   /// Requests cancellation of the running operation.
   void cancel() => _runner.cancel();
 }

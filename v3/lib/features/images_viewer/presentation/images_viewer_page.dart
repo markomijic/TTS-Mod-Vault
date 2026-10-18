@@ -75,7 +75,7 @@ class ImagesViewerPage extends ConsumerWidget {
             ],
           ),
           body: switch (images) {
-            AsyncData(:final value) => _ImagesGrid(images: value),
+            AsyncData(:final value) => _ImagesGrid(mod: mod, images: value),
             AsyncError(:final error) => Center(
               child: ErrorMessage(
                 error: error,
@@ -99,8 +99,9 @@ List<Asset> downloadedImages(List<Asset> assets) => [
 ];
 
 class _ImagesGrid extends StatelessWidget {
-  const _ImagesGrid({required this.images});
+  const _ImagesGrid({required this.mod, required this.images});
 
+  final Mod mod;
   final List<Asset> images;
 
   @override
@@ -125,7 +126,7 @@ class _ImagesGrid extends StatelessWidget {
       ),
       itemCount: images.length,
       itemBuilder: (context, index) =>
-          ImagesViewerGridCard(asset: images[index]),
+          ImagesViewerGridCard(mod: mod, asset: images[index]),
     );
   }
 }

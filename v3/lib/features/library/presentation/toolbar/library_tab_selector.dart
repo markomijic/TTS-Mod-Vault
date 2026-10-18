@@ -12,7 +12,9 @@ const Duration _tooltipWait = Duration(milliseconds: 300);
 /// Mods | Saves | Saved Objects | Backups segmented button over
 /// [availableLibraryTabsProvider]. Switching goes through
 /// `LibraryTabController.set`, which clears the selection and the search
-/// text; the tooltip lists how many items of each kind the library holds.
+/// text; the tooltip lists how many items of each kind the library holds,
+/// leaving out empty kinds (no tooltip at all when everything is empty, as
+/// in 2.x).
 class LibraryTabSelector extends ConsumerWidget {
   /// Creates the selector.
   const LibraryTabSelector({super.key});
@@ -33,32 +35,41 @@ class LibraryTabSelector extends ConsumerWidget {
       ),
     );
 
-    final tooltip = [
+    final parts = <String?>[
       for (final tab in tabs)
         switch (tab) {
-          LibraryTab.mods => ModType.mod.count(l10n, counts.mods),
-          LibraryTab.saves => ModType.save.count(l10n, counts.saves),
-          LibraryTab.savedObjects => ModType.savedObject.count(
+          LibraryTab.mods when counts.mods > 0 => ModType.mod.count(
             l10n,
-            counts.savedObjects,
+            counts.mods,
           ),
-          LibraryTab.backups => l10n.backupsCount(counts.backups),
+          LibraryTab.saves when counts.saves > 0 => ModType.save.count(
+            l10n,
+            counts.saves,
+          ),
+          LibraryTab.savedObjects when counts.savedObjects > 0 =>
+            ModType.savedObject.count(l10n, counts.savedObjects),
+          LibraryTab.backups when counts.backups > 0 => l10n.backupsCount(
+            counts.backups,
+          ),
+          _ => null,
         },
-    ].join(l10n.listSeparator);
+    ].nonNulls.toList();
 
+    final button = SegmentedButton<LibraryTab>(
+      showSelectedIcon: false,
+      segments: [
+        for (final tab in tabs)
+          ButtonSegment(value: tab, label: Text(tab.title(l10n))),
+      ],
+      selected: {tabs.contains(selected) ? selected : LibraryTab.mods},
+      onSelectionChanged: (selection) =>
+          ref.read(libraryTabProvider.notifier).set(selection.single),
+    );
+    if (parts.isEmpty) return button;
     return Tooltip(
       waitDuration: _tooltipWait,
-      message: tooltip,
-      child: SegmentedButton<LibraryTab>(
-        showSelectedIcon: false,
-        segments: [
-          for (final tab in tabs)
-            ButtonSegment(value: tab, label: Text(tab.title(l10n))),
-        ],
-        selected: {tabs.contains(selected) ? selected : LibraryTab.mods},
-        onSelectionChanged: (selection) =>
-            ref.read(libraryTabProvider.notifier).set(selection.single),
-      ),
+      message: parts.join(l10n.listSeparator),
+      child: button,
     );
   }
 }

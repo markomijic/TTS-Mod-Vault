@@ -146,7 +146,8 @@ class AssetList extends ConsumerWidget {
                 spacing: Insets.sm,
                 runSpacing: Insets.sm,
                 children: [
-                  for (final asset in row.assets) PdfThumbnail(asset: asset),
+                  for (final asset in row.assets)
+                    PdfThumbnail(mod: mod, asset: asset),
                 ],
               ),
             ),

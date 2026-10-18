@@ -5,9 +5,11 @@ plus the fixes listed below, with the v2 code under `lib/src/` as the reference.
 Every line was verified by reading the implementing v3 code and its tests, not
 by running the app.
 
-Result: **27 done, 1 partial, 0 missing.** The partial item (reduced context
-menu on images-viewer and PDF tiles) and the smaller observations are listed
-under "Gaps needing work".
+Result: **28 done, 0 partial, 0 missing.** The one partial item found by the
+audit (reduced context menu on images-viewer and PDF tiles) and the smaller
+observations were listed under "Gaps needing work"; all four gaps have since
+been closed (that section records what was done), followed by the keyboard
+and light-theme passes of Phase 6 (sections at the end).
 
 Paths below are relative to `v3/lib/`.
 
@@ -15,17 +17,17 @@ Paths below are relative to `v3/lib/`.
 
 | # | Checklist line | Status | Implemented in | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | Mods / Saves / Saved Objects (setting) tabs with counts tooltip | done | `features/library/presentation/toolbar/library_tab_selector.dart` (`LibraryTabSelector`), `features/library/application/library_tab.dart` (`availableLibraryTabsProvider`, `LibraryTabController`) | Saved Objects only with `showSavedObjects`; Backups tab only when a backups folder is set (`Directories.hasBackupsDir`). Switching clears selection and search as in 2.x. Tooltip lists "N mods, N saves, ..." (v2 omitted zero counts; v3 shows them, harmless). Tests: `library_page_test`, `backups_view_test`. |
+| 1 | Mods / Saves / Saved Objects (setting) tabs with counts tooltip | done | `features/library/presentation/toolbar/library_tab_selector.dart` (`LibraryTabSelector`), `features/library/application/library_tab.dart` (`availableLibraryTabsProvider`, `LibraryTabController`) | Saved Objects only with `showSavedObjects`; Backups tab only when a backups folder is set (`Directories.hasBackupsDir`). Switching clears selection and search as in 2.x. Tooltip lists "N mods, N saves, ..." and, since G4, leaves out empty kinds (no tooltip when everything is empty), as v2 did. Tests: `library_page_test`, `backups_view_test`. |
 | 2 | Grid and list views (settings), title-on-cards setting | done | `mods_view.dart`, `mods_grid.dart`/`mods_grid_card.dart`, `mods_list.dart`/`mods_list_item.dart`, `toolbar/view_toggle_button.dart`; backups: `features/backups/presentation/backups_view.dart` | `useModsListViewSettingProvider`, `useBackupsListViewSettingProvider`, `showTitleOnCardsSettingProvider`; saves always show the title band (file name + name) as in 2.x. Grid card has no sync file check (image via `Mod.imagePath` + `errorBuilder`). |
 | 3 | Sort: A-Z, newest, recently updated, missing assets; default sort setting (mods and backups) | done | `toolbar/sort_menu_button.dart`, `features/library/application/library_view_providers.dart` (`filteredModsProvider`), `features/settings/presentation/settings_defaults_applier.dart`, `interface_section.dart` | Non-name sorts tie-break by name; `newest` falls back to mtime when the JSON has no date. Default sorts applied once on mount and again on Save when changed (`SettingsDialog._applyEffects`). Tests: `library_view_providers_test`, `settings_defaults_applier_test`, `settings_dialog_test`. |
 | 4 | Filters: folders, backup state, complete/missing, audio/image/model/PDF/asset bundle presence | done | `toolbar/filter_menu_button.dart`, `ModFilterController` | Folder sets remembered per type; missing/complete exclude each other; backup-state section hidden when `showBackupState` is off (as v2). **Fixed:** switching the setting off now also drops active backup-status filters (v2 did; v3 left them silently applied). |
 | 5 | Search mods by name; search assets of selected mod | done | `toolbar/library_search_field.dart`, `features/asset_detail/presentation/asset_toolbar.dart` (`AssetSearchField`) | Debounced; Ctrl/Cmd+F focuses the mod/backup search, Esc clears selection or unfocuses (`LibraryPage`). Tests: `library_page_test`, `backups_view_test`, `selected_mod_panel_test`. |
 | 6 | Single and Ctrl/Cmd multi-select | done | `features/library/presentation/item_interaction_region.dart`, `mod_interaction_region.dart`, `backup_interaction_region.dart`, `SelectionController` | `HardwareKeyboard.isControlPressed || isMetaPressed` toggles; right click selects + menu; ignored while an operation runs. Multi-select panel: `features/asset_detail/presentation/multi_select_view.dart`. |
-| 7 | Selected mod: grouped assets, type chips, downloaded/missing filter, invalid filter, PDF thumbnails toggle + default setting, images viewer, open files (audio/image/PDF), open in file explorer | **partial** | `selected_mod_view.dart`, `asset_toolbar.dart`, `asset_list.dart` (`AssetGroupHeader`, `PdfGridRow`), `pdf_thumbnail.dart`, `features/images_viewer/presentation/images_viewer_page.dart`, `asset_file_actions.dart` | Everything listed is reachable: chips from the unfiltered list, status menu, Invalid chip, PDF thumbnails/URLs header toggle seeded from `showPdfThumbnails`, images viewer from the Images header icon **and** the mod context menu, open file via `open_filex`, reveal in explorer. Gap: the right-click menu on image tiles and PDF thumbnails offers only Open file / Open in explorer / Copy URL, while v2 offered the full asset menu there (Check URL, Shared with, Delete file, Replace URL, Copy filename). See gap G1. |
+| 7 | Selected mod: grouped assets, type chips, downloaded/missing filter, invalid filter, PDF thumbnails toggle + default setting, images viewer, open files (audio/image/PDF), open in file explorer | done | `selected_mod_view.dart`, `asset_toolbar.dart`, `asset_list.dart` (`AssetGroupHeader`, `PdfGridRow`), `pdf_thumbnail.dart`, `features/images_viewer/presentation/images_viewer_page.dart`, `asset_file_actions.dart` | Everything listed is reachable: chips from the unfiltered list, status menu, Invalid chip, PDF thumbnails/URLs header toggle seeded from `showPdfThumbnails`, images viewer from the Images header icon **and** the mod context menu, open file via `open_filex`, reveal in explorer. **Fixed (G1):** the right-click menu on image tiles and PDF thumbnails is now the full asset menu (`showAssetContextMenu`), as in v2; the reduced `showAssetFileMenu` is gone. |
 | 8 | Asset actions: open URL, copy URL, replace URL (with optional file rename), delete file, shared-with info | done | `features/asset_detail/presentation/asset_context_menu.dart`, `replace_url_dialog.dart`, `features/library/application/mod_edit_service.dart` | Download only for missing files, Open/Reveal/Delete only for files on disk. **Fixed:** "Copy filename" (v2 item) added; copies the cached name without extension, or the TTS name of the URL when missing. Tests: `selected_mod_panel_test`, `asset_detail_helpers_test`, `mod_edit_service_test`. |
 | 9 | Per-mod audio visibility override + global ignore-audio setting | done | `asset_toolbar.dart` (`AudioVisibilityButton`), `ModEditService.setAudioVisibility`, `features_section.dart` (`settingIgnoreAudio`) | Button only when the mod references audio; tinted while overriding; menu of the three choices with the global state in the label. |
 | 10 | Download missing assets (single asset, per type, whole mod); concurrency setting; ignored domains | done | `features/downloads/presentation/download_actions.dart`, `features/downloads/application/download_assets_operation.dart`, `network_options.dart`, `network_section.dart` | `downloadAsset` / `downloadType` / `downloadMod`; `concurrentDownloads` and `ignoredDomains` passed to the downloader. Results dialog on failures/cancel. Tests: `download_wiring_test`, `download_assets_operation_test`. |
-| 11 | Check URLs for a mod, persist invalid URLs; bulk check with results dialog | done | `check_urls_operation.dart` (`setInvalidUrls`), `url_check_results_dialog.dart`, `features/bulk/presentation/bulk_url_check_results_dialog.dart` | Invalid list replaces the stored one (empty clears). The asset-menu single-URL check is one request with 15 s connect/send/receive timeouts and no cancel, same as v2 (gap G3, optional). |
+| 11 | Check URLs for a mod, persist invalid URLs; bulk check with results dialog | done | `check_urls_operation.dart` (`setInvalidUrls`), `url_check_results_dialog.dart`, `features/bulk/presentation/bulk_url_check_results_dialog.dart` | Invalid list replaces the stored one (empty clears). **Changed (G3):** the asset-menu single-URL check is now a one-asset `CheckUrlsOperation` on the runner (progress bar + Cancel) that merges its outcome into the stored invalid list. |
 | 12 | Download Workshop mods by one or many ids; update from Workshop (single, bulk, force) | done | `features/workshop/presentation/download_workshop_mods_dialog.dart`, `workshop_id_parser.dart`, `update_from_workshop.dart`, `bulk_actions.dart` (`runBulkUpdateWorkshop`) | Ids or item URLs, target folder picker; "Force update" checkbox on the confirmation; context-menu item disabled for non-numeric ids (v2 showed it regardless). |
 | 13 | Backup create (folder picker, default folder, set-as-default), replace prompt, progress | done | `features/backups/presentation/backup_actions.dart` (`backupMod`), `features/backups/application/backup_service.dart` | No default folder → picker + "use as default" checkbox; existing archive or backup elsewhere → Cancel / Select new folder / Replace; progress through the operations engine. Tests: `backup_mod_test`, `backup_service_test`. |
 | 14 | Backup status: none / up to date / out of date / asset count mismatch, with tooltip times | done | `domain/rules/backup_rules.dart`, `features/library/presentation/mod_badges.dart` (`backupTooltip`, `BackupStatusBadge`) | **Fixed:** tooltip now shows the mod's save date (falls back to the file mtime) next to the backup date, as v2's "Update: / Backup:" lines did; asset count and the mismatch line as before. Test: `mod_badges_test`. |
@@ -34,9 +36,9 @@ Paths below are relative to `v3/lib/`.
 | 17 | Rename mod/save/saved object (+ rename backup); Save as Mod; delete mod (+ image + cache) | done | `dialogs/rename_mod_dialog.dart`, `save_as_mod_dialog.dart`, `delete_mod_dialog.dart`, `ModEditService` | Rename rewrites `SaveName` preserving creation time; "also rename backup" checkbox when one exists (keeps the forced-id form); saved objects get the explanatory failure. Save as Mod only for saves. Delete removes JSON + image, `modsDao.deleteByPaths` (cascades `mod_assets`, `PRAGMA foreign_keys = ON`) and `LibraryController.removeMod`. |
 | 18 | Delete mod assets (non-shared / all) with shared report; bulk delete assets | done | `features/cleanup/presentation/delete_mod_assets_dialog.dart`, `features/cleanup/application/delete_assets_service.dart`, `features/bulk/presentation/bulk_delete_assets_dialog.dart` | Exclusive count, expandable shared list with sharing mods per URL, "also delete shared" checkbox; bulk scope dialog. |
 | 19 | Update URLs (prefix or whole URL, `|` multi old prefixes, presets from settings, rename files) single and bulk | done | `features/url_updates/presentation/update_urls_dialog.dart`, `application/url_prefix_rules.dart`, `url_updates_service.dart`, `settings/presentation/url_presets_section.dart` | Preset dropdown (falls back to "Custom" on edit), `|` copy button, validation, rename option, help dialog. Tests: `update_urls_dialog_test`, `url_prefix_rules_test`. |
-| 20 | Cleanup unused cached files | done | `features/cleanup/presentation/cleanup_actions.dart`, `cleanup_confirm_dialog.dart`, `application/cleanup_service.dart` | Scan (five asset folders + raw folders + legacy-host duplicates), confirm dialog, deletion on the runner with cancel. The "Scanning…" modal's Cancel abandons the result but the scan keeps running in the background (gap G2). |
+| 20 | Cleanup unused cached files | done | `features/cleanup/presentation/cleanup_actions.dart`, `cleanup_confirm_dialog.dart`, `application/cleanup_service.dart` | Scan (five asset folders + raw folders + legacy-host duplicates), confirm dialog, deletion on the runner with cancel. **Fixed (G2):** the "Scanning…" modal's Cancel now cancels the scan itself through a `CancellationToken`. |
 | 21 | Bulk: download, backup, download+backup, with skip/replace rules and post-backup deletion; cancel for every bulk op | done | `features/bulk/presentation/bulk_actions_menu.dart`, `bulk_actions.dart`, `bulk_backup_dialog.dart` (`BulkBackupBehavior`, `PostBackupDeletion`), `application/bulk_operations.dart` | Bulk button shows the affected count; targets are the multi-selection or the filtered list (`bulk_targets.dart`); every op runs on the engine with the shared Cancel. Also Update from Workshop, Delete assets, Check URLs, Update URLs, Import backups. Tests: `bulk_operations_test`, `bulk_actions_menu_test`. |
-| 22 | Refresh with optional clear cache | done | `app/shell/app_shell.dart` (`refresh`), `LibraryController.refresh(clearCache:)` | Confirm dialog with the "clear cache" checkbox + info. |
+| 22 | Refresh with optional clear cache | done | `features/library/presentation/refresh_dialog.dart` (`showRefreshDialog`, used by the sidebar in `app/shell/app_shell.dart` and by F5 on the library page), `LibraryController.refresh(clearCache:)` | Confirm dialog with the "clear cache" checkbox + info. |
 | 23 | Settings: folders (mods, saves, backups, custom saves folder), ignored subfolders, ignored domains, force JSON filename in backup names, check updates on start, asset URL font size, concurrent downloads, show saved objects, show backup state | done | `features/settings/presentation/settings_dialog.dart`, `folders_section.dart`, `features_section.dart`, `interface_section.dart`, `network_section.dart`, `application/app_settings.dart` | All v2 fields, same JSON keys and defaults; folder validation as the start-up picker; "Allow custom Saves folder" and "Show PDF thumbnails" in Features. "Reset to defaults" also resets the theme: v2 had no theme, the confirm text says "including the theme", and Appearance is a section of this dialog, so this is kept as intended behaviour (noted, not a bug). |
 | 24 | Update check against GitHub releases with Nexus/GitHub links; Help; Changelog; Ko-fi/Steam links | done | `features/about/application/update_check.dart`, `presentation/update_notice.dart` (`UpdateAvailableDialog`), `help_dialog.dart` (Help / Changelog / About tabs), `about_links.dart` | Dialog: Cancel / Nexus Mods / GitHub; About tab: GitHub releases, Nexus Mods, Steam discussion, Ko-fi, manual check, open log folder. Content from `assets/text/help.md`, `changelog.md`. |
 | 25 | Collapsible log panel with level/source filters, search, jump to mod, copy, clear, error badge, one-click open of the rotating log file | done | `features/logs/presentation/log_panel.dart`, `log_panel_header.dart`, `log_entry_row.dart` (`selectLogEntryMod`), `application/log_providers.dart`, `core/logging/log_sink.dart` | Resizable, persisted height; unseen badge + header flash; open file / open folder / copy path. |
@@ -53,7 +55,7 @@ Paths below are relative to `v3/lib/`.
 - Help tooltip in the selected-mod header: `SelectedModHeader(showHelp: true)` on the empty header and the selected view (`AssetHelpTooltip`, colour legend + actions).
 - Images viewer reachable from the mod context menu and the Images group header: yes (`openImagesViewer`).
 - "Open in file explorer" for assets (`asset_context_menu.dart`), mods and backups (`mod_context_menu.dart`, `backup_context_menu.dart`, `selected_backup_panel.dart`): yes.
-- Esc clears the selection and Ctrl/Cmd+F focuses the search on both tabs: `LibraryPage` `CallbackShortcuts`; tests in `library_page_test` and `backups_view_test`.
+- Esc clears the selection and Ctrl/Cmd+F focuses the search on both tabs: `LibraryPage` `CallbackShortcuts`; tests in `library_page_test` and `backups_view_test`. F5 and Delete were added in the keyboard pass (see below).
 - Deleting a mod removes its cached rows: `modsDao.deleteByPaths` + `ModAssets.modPath` `onDelete: cascade` with foreign keys enabled, then `removeMod`.
 - Renaming a mod renames the backup when asked: `ModEditService.renameMod(renameBackup:)` → `_renameBackupFor` (disk, `backups` table, library state).
 - Bulk button shows the affected count and respects filters: `bulkTargetsProvider` (selection ≥ 2, else `filteredModsProvider`).
@@ -70,12 +72,15 @@ All within existing patterns, with tests; `dart format`, `flutter analyze` and `
 
 ## Gaps needing work
 
-| Id | Gap | Proposal | Size |
+All four gaps are **resolved**. The table keeps the original finding and
+proposal and adds what was done.
+
+| Id | Gap | Proposal | Status |
 | --- | --- | --- | --- |
-| G1 | Image tiles (images viewer) and PDF thumbnails offer a reduced right-click menu (Open file, Open in explorer, Copy URL). v2 offered the full asset menu on both (plus Check URL, Shared with, Delete file, Replace URL, Copy filename). | Give `ImagesViewerGridCard` and `PdfThumbnail` the owning `Mod` (the viewer page and `AssetList` have it), make the card a `HookConsumerWidget`, and call `showAssetContextMenu(context, ref, position, mod, asset)` instead of `showAssetFileMenu`; delete `showAssetFileMenu` once unused. Update `images_viewer_page_test` and `pdf_thumbnail_test` constructors and assert the extra items. | ~60 lines incl. tests |
-| G2 | Cleanup scan is not cancellable: the "Scanning…" modal's Cancel abandons the result, but `CleanupService.scanOrphans` keeps running (worker-pool directory listings + the orphan query) until it finishes. | Add a `CancellationToken` parameter to `scanOrphans`/`_scan`, check it between the listing phase, the raw-file usage query and the size stats, and cancel the token when the modal pops with null (`runCleanup`). Optionally run the scan as a runner `Operation` so the docked bar and its Cancel cover it. | ~40 lines + test |
-| G3 | Single-URL "Check URL" (asset menu) is a fire-and-forget request with no cancel; bounded only by the 15 s connect/send/receive timeouts. Same as v2. | Either accept (one request, bounded), or route it through `OperationUi.launch` with a one-asset `CheckUrlsOperation` so the progress bar and Cancel appear and the result also persists the invalid flag. | ~30 lines + test |
-| G4 | Tab selector tooltip lists zero counts ("0 saved objects"); v2 omitted empty kinds and showed no tooltip when everything was empty. | Filter `counts == 0` out of the tooltip list and skip the `Tooltip` when the list is empty. Cosmetic. | ~10 lines |
+| G1 | Image tiles (images viewer) and PDF thumbnails offer a reduced right-click menu (Open file, Open in explorer, Copy URL). v2 offered the full asset menu on both (plus Check URL, Shared with, Delete file, Replace URL, Copy filename). | Give `ImagesViewerGridCard` and `PdfThumbnail` the owning `Mod` (the viewer page and `AssetList` have it), make the card a `HookConsumerWidget`, and call `showAssetContextMenu(context, ref, position, mod, asset)` instead of `showAssetFileMenu`; delete `showAssetFileMenu` once unused. Update `images_viewer_page_test` and `pdf_thumbnail_test` constructors and assert the extra items. | **Resolved** as proposed. `ImagesViewerGridCard(mod:, asset:)` is a `HookConsumerWidget`, `PdfThumbnail(mod:, asset:)` too; both call `showAssetContextMenu`. `asset_file_actions.dart` keeps only `urlTail` and `openAssetFile`. Tests: `pdf_thumbnail_test` (full menu on a downloaded file, Download-only variant for a missing one), `images_viewer_page_test`. |
+| G2 | Cleanup scan is not cancellable: the "Scanning…" modal's Cancel abandons the result, but `CleanupService.scanOrphans` keeps running (worker-pool directory listings + the orphan query) until it finishes. | Add a `CancellationToken` parameter to `scanOrphans`/`_scan`, check it between the listing phase, the raw-file usage query and the size stats, and cancel the token when the modal pops with null (`runCleanup`). Optionally run the scan as a runner `Operation` so the docked bar and its Cancel cover it. | **Resolved.** `scanOrphans({CancellationToken? token})` checks the token before and between the phases and passes it to `pool.runAll` / `pool.run`; a cancelled scan throws `OperationCancelledException` (logged as info, not as a failed scan). `runCleanup` creates the token, cancels it when the modal pops without `true` and swallows the exception. Not made a runner `Operation` (the modal already offers Cancel). Tests: `cleanup_service_test` (pre-cancelled and mid-scan cancel), `cleanup_test` (modal Cancel cancels the token; a completed scan leaves it alone). |
+| G3 | Single-URL "Check URL" (asset menu) is a fire-and-forget request with no cancel; bounded only by the 15 s connect/send/receive timeouts. Same as v2. | Either accept (one request, bounded), or route it through `OperationUi.launch` with a one-asset `CheckUrlsOperation` so the progress bar and Cancel appear and the result also persists the invalid flag. | **Implemented.** `CheckUrlsOperation(onlyAsset:)` checks that one URL and merges the outcome into the mod's stored invalid list (adds the URL when dead, removes it when live, keeps the rest); `DownloadsService.checkUrl(mod, asset)`; `checkSingleUrl(context, ref, mod, asset)` runs it through `OperationUi.launch` and shows "URL is valid" / "URL is not reachable" (nothing when cancelled). `singleUrlCheckProvider` removed. Tests: `check_urls_operation_test` (merge semantics, one request, progress total 1), `download_wiring_test`. |
+| G4 | Tab selector tooltip lists zero counts ("0 saved objects"); v2 omitted empty kinds and showed no tooltip when everything was empty. | Filter `counts == 0` out of the tooltip list and skip the `Tooltip` when the list is empty. Cosmetic. | **Resolved** as proposed (`library_tab_selector.dart`). Tests: `library_page_test` ("5 mods, 1 save" with an empty backups folder; no tooltip for an empty library). |
 
 Decision recorded: "Reset to defaults" also resetting the theme is kept (v2 had no theme; the confirmation text already says so; Appearance is a section of the same dialog).
 
@@ -94,3 +99,48 @@ Greps over `v3/lib` (generated files excluded):
 | `showDialog` from application code | **None**; dialogs are shown from `presentation` through `OperationUi.showAppDialog` / `showDialog`, with callbacks (`onJsonConflict`) crossing the layer. |
 
 Nothing trivial was left to fix in this section.
+
+## Keyboard shortcuts (plan 4.6)
+
+All on `LibraryPage`, so they work on every tab; none fires while a dialog
+is open (the dialog route owns the focus).
+
+| Key | Action | Where |
+| --- | --- | --- |
+| Ctrl/Cmd+F | Focus the search field of the current tab | `CallbackShortcuts` |
+| Esc | Unfocus the search field if it has focus, else clear the current tab's selection | `CallbackShortcuts` |
+| F5 | The Refresh confirmation (`showRefreshDialog`, shared with the sidebar's Refresh item); ignored while an operation runs | `CallbackShortcuts` |
+| Delete | Mods / Saves / Saved Objects: `showDeleteModDialog` for the one selected mod; Backups: `deleteBackupWithConfirm` for the one selected backup. Nothing with zero or several selected, nothing while an operation runs | `Focus.onKeyEvent` |
+
+Delete is handled on the page's focus node rather than as a shortcut because
+a `CallbackShortcuts` binding reports the key as handled even when its
+callback does nothing, which would have stopped Delete from editing text in
+the search field. `focusIsInTextField()` (primary focus inside an
+`EditableText`) makes the handler return `ignored` so the field keeps the
+key. Ctrl/Cmd-click multi-select is unchanged.
+
+Tests: `library_page_test` (tooltip, F5 with and without the search field
+focused, Delete with none / one / several selected, Delete while typing
+edits the text), `backup_edit_test` (Delete on the Backups tab),
+`backups_view_test` (Esc, Ctrl+F on the Backups tab).
+
+## Light theme
+
+`test/app/theme/app_theme_test.dart` checks, for every preset (Vault,
+Classic, Ocean, Forest, Ember, Rose) in both brightnesses, that each
+`VaultColors` colour (asset present / missing / invalid, backup up to date /
+out of date / mismatch / none, log info / success / warning / error) plus
+`colorScheme.primary` (selected-card border), `error`, `onSurface` and
+`onSurfaceVariant` has a WCAG contrast ratio of at least 3.0 against both
+`colorScheme.surface` and `colorScheme.surfaceContainer`; a further test
+runs `VaultColors.fromScheme` on an amber fidelity scheme in both
+brightnesses. Every preset passed as is, so `VaultColors.fromScheme` was not
+changed: its hues come from `ColorScheme.fromSeed(...).primary` at the
+scheme's brightness, which lands on tone 40 (light) / 80 (dark) against
+surfaces at tone 98 / 6, and `backupNone` reuses `onSurfaceVariant`. The
+measured minimum over all presets is 5.52 in light mode (Forest, `primary`
+on `surfaceContainer`) and 9.56 in dark mode (Forest, `logInfo`), both well
+above the 3.0 threshold and even the 4.5 text threshold. The
+asset URL rows (`asset_url_row.dart`) and the log rows use exactly these
+colours, and the selected card border is `primary`, so the same assertions
+cover them.

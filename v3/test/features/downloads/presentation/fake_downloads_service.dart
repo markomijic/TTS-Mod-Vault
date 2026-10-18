@@ -25,6 +25,9 @@ final class FakeDownloadsService extends DownloadsService {
   /// Mods passed to `checkUrls`.
   final List<Mod> checkUrlsCalls = [];
 
+  /// `(mod, asset)` pairs passed to `checkUrl`.
+  final List<(Mod, Asset)> checkUrlCalls = [];
+
   /// Result of every download call.
   DownloadBatchResult downloadResult = oneDownloaded;
 
@@ -35,6 +38,10 @@ final class FakeDownloadsService extends DownloadsService {
     checked: 3,
     total: 3,
   );
+
+  /// Whether the single-URL check answers "live" (the result then has no
+  /// invalid URL) or "dead" (the result lists the checked URL).
+  bool singleUrlLive = false;
 
   /// Whether calls throw as the runner does while something runs.
   bool alreadyRunning = false;
@@ -79,6 +86,18 @@ final class FakeDownloadsService extends DownloadsService {
     _guard();
     checkUrlsCalls.add(mod);
     return urlCheckResult;
+  }
+
+  @override
+  Future<UrlCheckResult> checkUrl(Mod mod, Asset asset) async {
+    _guard();
+    checkUrlCalls.add((mod, asset));
+    return UrlCheckResult(
+      invalidUrls: singleUrlLive ? const [] : [asset.url],
+      cancelled: false,
+      checked: 1,
+      total: 1,
+    );
   }
 }
 

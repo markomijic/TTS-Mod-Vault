@@ -1,9 +1,11 @@
 import 'dart:io' show File;
 
-import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState;
+import 'package:flutter_hooks/flutter_hooks.dart' show useState;
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/asset_detail/presentation/asset_context_menu.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/pdf_thumbnail.dart'
     show AssetCaption;
 import 'package:tts_mod_vault/features/images_viewer/presentation/asset_file_actions.dart';
@@ -23,17 +25,25 @@ const double _errorIconSize = 48;
 
 /// One downloaded image in the images viewer: the file decoded at tile
 /// size, the URL's tail as caption and a hover border. Click opens the
-/// file, right click shows the asset file menu. Port of 2.x
-/// `ImagesViewerGridCard` without the network and delete actions.
-class ImagesViewerGridCard extends HookWidget {
-  /// Creates the card for [asset], whose [Asset.path] must be non-null.
-  const ImagesViewerGridCard({super.key, required this.asset});
+/// file, right click shows the full asset context menu (the same one the
+/// URL rows offer). Port of 2.x `ImagesViewerGridCard`.
+class ImagesViewerGridCard extends HookConsumerWidget {
+  /// Creates the card for [asset] of [mod]; [Asset.path] should be
+  /// non-null.
+  const ImagesViewerGridCard({
+    super.key,
+    required this.mod,
+    required this.asset,
+  });
+
+  /// The mod the asset belongs to (for the context menu actions).
+  final Mod mod;
 
   /// The image asset shown.
   final Asset asset;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final hovered = useState(false);
     final path = asset.path;
@@ -47,8 +57,13 @@ class ImagesViewerGridCard extends HookWidget {
         onExit: (_) => hovered.value = false,
         child: GestureDetector(
           onTap: path == null ? null : () => openAssetFile(context, path),
-          onSecondaryTapUp: (details) =>
-              showAssetFileMenu(context, details.globalPosition, asset),
+          onSecondaryTapUp: (details) => showAssetContextMenu(
+            context,
+            ref,
+            details.globalPosition,
+            mod,
+            asset,
+          ),
           child: AnimatedContainer(
             duration: _borderDuration,
             decoration: BoxDecoration(

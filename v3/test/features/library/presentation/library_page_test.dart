@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backups_view.dart';
 import 'package:tts_mod_vault/features/backups/presentation/selected_backup_panel.dart';
+import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/library/application/library_settings.dart';
 import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
@@ -65,6 +66,41 @@ void main() {
         .setIncludeSavedObjects(false);
     await tester.pumpAndSettle();
     expect(segment('Saved Objects'), findsNothing);
+  });
+
+  testWidgets('tab tooltip lists the counts without empty kinds', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+
+    final tooltip = tester.widget<Tooltip>(
+      find.ancestor(
+        of: find.byType(SegmentedButton<LibraryTab>),
+        matching: find.byType(Tooltip),
+      ),
+    );
+    // 5 mods, 1 save, no backups: the empty kind is left out.
+    expect(tooltip.message, '5 mods, 1 save');
+  });
+
+  testWidgets('an empty library has no tab tooltip', (tester) async {
+    final empty = ProviderContainer.test(
+      overrides: libraryPageOverrides(
+        library: () =>
+            SpyLibraryController(LibraryState(lastRefresh: DateTime(2024, 5))),
+        store: store,
+      ),
+    );
+    await pumpLibraryPage(tester, empty);
+
+    expect(find.byType(SegmentedButton<LibraryTab>), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.byType(SegmentedButton<LibraryTab>),
+        matching: find.byType(Tooltip),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('no Backups tab without a backups folder', (tester) async {
@@ -316,6 +352,88 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(field.focusNode!.hasFocus, isTrue);
+  });
+
+  testWidgets('F5 opens the refresh dialog and confirming refreshes', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.f5);
+    await tester.pumpAndSettle();
+    expect(find.text('Refresh all data?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Refresh'));
+    await tester.pumpAndSettle();
+    expect(controller.refreshCalls, [false]);
+    expect(find.text('Refresh all data?'), findsNothing);
+  });
+
+  testWidgets('F5 while the search field has focus still refreshes', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+    await tester.tap(find.byType(TextField));
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.f5);
+    await tester.pumpAndSettle();
+    expect(find.text('Refresh all data?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(controller.refreshCalls, isEmpty);
+  });
+
+  testWidgets('Delete opens the delete confirmation for the selected mod', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+
+    // Nothing selected: nothing happens.
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+
+    await tester.tap(card('Beta Mod'));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete mod?'), findsOneWidget);
+    expect(find.textContaining('Beta Mod'), findsWidgets);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(container.read(selectionProvider), {library.beta.jsonPath});
+
+    // Several selected: no dialog.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(card('Delta Mod'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('Delete inside the search field edits the text instead', (
+    tester,
+  ) async {
+    await pumpLibraryPage(tester, container);
+    await tester.tap(card('Beta Mod'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'ab');
+    final field = tester.widget<TextField>(find.byType(TextField));
+    field.controller!.selection = const TextSelection.collapsed(offset: 0);
+    await tester.pump();
+    expect(field.focusNode!.hasFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(field.controller!.text, 'b');
   });
 
   testWidgets('right-click shows the mod menu with the expected items', (

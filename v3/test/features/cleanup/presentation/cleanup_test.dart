@@ -97,8 +97,8 @@ void main() {
     expect(find.text('Cleanup scan failed: boom'), findsOneWidget);
   });
 
-  testWidgets('the scanning modal shows while the scan runs and can be '
-      'dismissed', (tester) async {
+  testWidgets('the scanning modal shows while the scan runs and Cancel '
+      'cancels the scan', (tester) async {
     final gate = Completer<void>();
     service
       ..gate = gate
@@ -109,16 +109,29 @@ void main() {
     await tester.pump();
     expect(find.byType(ScanningDialog), findsOneWidget);
     expect(find.text('Scanning for unused files…'), findsOneWidget);
+    expect(service.lastToken, isNotNull);
+    expect(service.lastToken!.isCancelled, isFalse);
 
-    // Dismiss: the result is dropped when the scan answers.
+    // Dismiss: the token is cancelled and the aborted scan is swallowed.
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
+    expect(service.lastToken!.isCancelled, isTrue);
     gate.complete();
     await tester.pumpAndSettle();
 
     expect(find.byType(ScanningDialog), findsNothing);
     expect(find.byType(CleanupConfirmDialog), findsNothing);
     expect(find.byType(SnackBar), findsNothing);
+    expect(service.deleteCalls, isEmpty);
+  });
+
+  testWidgets('a scan that completes is not cancelled', (tester) async {
+    await pumpShell(tester, container);
+
+    await tapSidebar(tester, 'Cleanup');
+
+    expect(service.lastToken, isNotNull);
+    expect(service.lastToken!.isCancelled, isFalse);
   });
 
   testWidgets('the scanning modal closes itself when the scan answers', (

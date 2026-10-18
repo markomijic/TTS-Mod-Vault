@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
+import 'package:tts_mod_vault/core/cancellation/cancellation_token.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/data/fs/cleanup_directory_scanner.dart';
 import 'package:tts_mod_vault/data/fs/file_ops.dart';
@@ -143,13 +144,15 @@ class CleanupService {
   /// * in all seven folders, legacy-host files whose current-host twin
   ///   exists.
   ///
-  /// Files that vanished since they were indexed are left out. Never
-  /// throws: a failure is logged and comes back as an empty scan with the
-  /// error among its warnings.
-  Future<CleanupScan> scanOrphans() async {
+  /// Files that vanished since they were indexed are left out. A failure
+  /// is logged and comes back as an empty scan with the error among its
+  /// warnings. Cancelling [token] (checked between the listing, the
+  /// raw-file usage query and the size stats, and forwarded to the worker
+  /// tasks) throws [OperationCancelledException] instead.
+  Future<CleanupScan> scanOrphans({CancellationToken? token}) async {
     final log = ref.read(appLogProvider);
     try {
-      final scan = await _scan();
+      final scan = await _scan(token);
       log.info(
         LogSource.cleanup,
         'Cleanup scan found ${scan.candidates.length} orphaned file(s), '
@@ -157,6 +160,9 @@ class CleanupService {
         details: scan.warnings.isEmpty ? null : scan.warnings.join('\n'),
       );
       return scan;
+    } on OperationCancelledException {
+      log.info(LogSource.cleanup, 'Cleanup scan cancelled');
+      rethrow;
     } on Object catch (error, stackTrace) {
       log.error(
         LogSource.cleanup,
@@ -171,7 +177,8 @@ class CleanupService {
     }
   }
 
-  Future<CleanupScan> _scan() async {
+  Future<CleanupScan> _scan(CancellationToken? token) async {
+    token?.throwIfCancelled();
     final db = ref.read(appDatabaseProvider);
     final pool = ref.read(workerPoolProvider);
     final directories = await ref.read(directoriesProvider.future);
@@ -188,10 +195,16 @@ class CleanupService {
           CleanupDirScanRequest(type: type, directory: raw, includeFiles: true),
       ],
     ];
-    final (orphans, listings) = await (
-      db.libraryQueries.orphanedExistingFiles(),
-      pool.runAll(scanCleanupDirectory, requests),
-    ).wait;
+    // Both run at once; awaited one after the other (not `.wait`) so a
+    // cancellation surfaces as itself, not wrapped in a ParallelWaitError.
+    final orphansFuture = db.libraryQueries.orphanedExistingFiles()..ignore();
+    final listings = await pool.runAll(
+      scanCleanupDirectory,
+      requests,
+      token: token,
+    );
+    final orphans = await orphansFuture;
+    token?.throwIfCancelled();
     for (final listing in listings) {
       warnings.addAll(listing.warnings);
     }
@@ -205,6 +218,7 @@ class CleanupService {
     final referenced = await db.libraryQueries.sharedUsageCounts({
       for (final (_, file) in rawFiles) file.fileKey,
     });
+    token?.throwIfCancelled();
 
     final candidates = <CleanupCandidate>[];
     final seen = <String>{};
@@ -254,7 +268,8 @@ class CleanupService {
     ];
     final sizes = await pool.run(statFileSizes, [
       for (final orphan in indexedOrphans) orphan.path,
-    ]);
+    ], token: token);
+    token?.throwIfCancelled();
     for (var i = 0; i < indexedOrphans.length; i++) {
       final orphan = indexedOrphans[i];
       final size = sizes[i];

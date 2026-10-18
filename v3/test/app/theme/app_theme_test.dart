@@ -5,7 +5,81 @@ import 'package:tts_mod_vault/app/theme/theme_presets.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
 import 'package:tts_mod_vault/app/theme/vault_colors.dart';
 
+/// WCAG 2.x minimum contrast for graphical objects and large text.
+const double minContrast = 3;
+
+/// WCAG relative-luminance contrast ratio of two opaque colours (1..21).
+double contrastRatio(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final lighter = la > lb ? la : lb;
+  final darker = la > lb ? lb : la;
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 void main() {
+  group('contrast', () {
+    for (final preset in ThemePresets.all) {
+      for (final brightness in Brightness.values) {
+        test('${preset.id} / ${brightness.name} semantic colours are readable '
+            'on the surfaces', () {
+          final theme = AppTheme.build(
+            ThemeSettings.fromPreset(preset),
+            brightness,
+          );
+          final scheme = theme.colorScheme;
+          final colors = theme.extension<VaultColors>()!;
+          final backgrounds = {
+            'surface': scheme.surface,
+            'surfaceContainer': scheme.surfaceContainer,
+          };
+          final foregrounds = {
+            // Asset URL rows and tile placeholders.
+            'assetPresent': colors.assetPresent,
+            'assetMissing': colors.assetMissing,
+            'assetInvalid': colors.assetInvalid,
+            // Backup badges.
+            'backupUpToDate': colors.backupUpToDate,
+            'backupOutOfDate': colors.backupOutOfDate,
+            'backupMismatch': colors.backupMismatch,
+            'backupNone': colors.backupNone,
+            // Log rows.
+            'logInfo': colors.logInfo,
+            'logSuccess': colors.logSuccess,
+            'logWarning': colors.logWarning,
+            'logError': colors.logError,
+            // Selected-card border and destructive text.
+            'primary (selected border)': scheme.primary,
+            'error': scheme.error,
+            'onSurface': scheme.onSurface,
+            'onSurfaceVariant': scheme.onSurfaceVariant,
+          };
+          for (final MapEntry(key: name, value: color) in foregrounds.entries) {
+            for (final MapEntry(key: bgName, value: background)
+                in backgrounds.entries) {
+              final ratio = contrastRatio(color, background);
+              expect(
+                ratio,
+                greaterThanOrEqualTo(minContrast),
+                reason:
+                    '$name ${_hex(color)} on $bgName ${_hex(background)}: '
+                    '${ratio.toStringAsFixed(2)}',
+              );
+            }
+          }
+        });
+      }
+    }
+
+    test('contrastRatio is symmetric and spans 1..21', () {
+      const black = Color(0xFF000000);
+      const white = Color(0xFFFFFFFF);
+      expect(contrastRatio(black, white), closeTo(21, 0.01));
+      expect(contrastRatio(white, black), closeTo(21, 0.01));
+      expect(contrastRatio(white, white), closeTo(1, 0.001));
+    });
+  });
+
   group('AppTheme.build', () {
     for (final preset in ThemePresets.all) {
       for (final brightness in Brightness.values) {
@@ -74,6 +148,34 @@ void main() {
   });
 
   group('VaultColors', () {
+    test('fromScheme lifts every semantic colour to the minimum contrast', () {
+      // A scheme whose primary is close to the surface tone would otherwise
+      // leave the harmonised hues unreadable; fromScheme must correct them.
+      for (final brightness in Brightness.values) {
+        final scheme = ColorScheme.fromSeed(
+          seedColor: const Color(0xFFF9A825),
+          brightness: brightness,
+          dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+        );
+        final colors = VaultColors.fromScheme(scheme);
+        for (final color in [
+          colors.assetPresent,
+          colors.assetInvalid,
+          colors.logInfo,
+          colors.backupNone,
+        ]) {
+          expect(
+            contrastRatio(color, scheme.surface),
+            greaterThanOrEqualTo(minContrast),
+          );
+          expect(
+            contrastRatio(color, scheme.surfaceContainer),
+            greaterThanOrEqualTo(minContrast),
+          );
+        }
+      }
+    });
+
     test('lerp at the ends returns the inputs', () {
       final a = VaultColors.fromScheme(
         ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4)),
@@ -99,3 +201,6 @@ void main() {
     });
   });
 }
+
+String _hex(Color color) =>
+    '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';

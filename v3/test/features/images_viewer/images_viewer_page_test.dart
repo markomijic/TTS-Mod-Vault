@@ -125,7 +125,9 @@ void main() {
     expect(find.byType(ImagesViewerGridCard), findsNothing);
   });
 
-  testWidgets('right-click on a tile shows the file menu', (tester) async {
+  testWidgets('right-click on a tile shows the full asset context menu', (
+    tester,
+  ) async {
     await pumpThemedApp(
       tester,
       home: ImagesViewerPage(mod: _mod('Alpha Mod')),
@@ -144,9 +146,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Open file'), findsOneWidget);
-    expect(find.text('Open in file explorer'), findsOneWidget);
-    expect(find.text('Copy URL'), findsOneWidget);
+    for (final label in [
+      'Open URL in browser',
+      'Copy URL',
+      'Copy filename',
+      'Open file',
+      'Open in file explorer',
+      'Replace URL…',
+      'Check URL',
+      'Shared with…',
+      'Delete file',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(find.text('Download'), findsNothing);
   });
 
   testWidgets('openImagesViewer pushes the page; Back and Esc pop it', (

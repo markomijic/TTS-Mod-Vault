@@ -91,7 +91,7 @@ List<MenuEntry> buildAssetContextMenu(
     MenuAction(
       label: l10n.assetMenuCheckUrl,
       icon: Icons.link,
-      onPressed: () => checkSingleUrl(context, ref, asset.url),
+      onPressed: () => checkSingleUrl(context, ref, mod, asset),
     ),
     MenuAction(
       label: l10n.assetMenuSharedWith,

@@ -13,7 +13,6 @@ any directory, in Windows PowerShell 5.1 or newer:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File packaging\windows\build_zip.ps1                  # builds the project at the repo root
-powershell -ExecutionPolicy Bypass -File packaging\windows\build_zip.ps1 -PROJECT_DIR v3  # builds the v3 rewrite in v3/ (until cut-over)
 ```
 
 Add `-Clean` to run `flutter clean` first.
@@ -27,7 +26,7 @@ release folder before zipping. It uses `fvm flutter` when FVM is installed
 (`.fvmrc` pins the Flutter version), otherwise plain `flutter`. Every missing
 piece ends the script with a non-zero exit code.
 
-Output (in `<project>\build\`, so `v3\build\` with `-PROJECT_DIR v3`):
+Output (in `build\`):
 
 | File | Use |
 | --- | --- |
@@ -69,8 +68,7 @@ the entry count matches the file count, and that no entry contains a backslash.
 | File | Role |
 | --- | --- |
 | `packaging/windows/build_zip.ps1` | Runs codegen + build, verifies the bundle, writes the zip |
-| `<project>/windows/runner/Runner.rc` | Product strings (`CompanyName` `io.github.markomijic`, `ProductName` `TTS Mod Vault`); these also name the app-data folder `%APPDATA%\io.github.markomijic\TTS Mod Vault\` |
-| `<project>/windows/CMakeLists.txt` | `BINARY_NAME` `tts_mod_vault` (the exe name the script checks for) |
-| `<project>/windows/runner/resources/app_icon.ico` | App icon |
+| `windows/runner/Runner.rc` | Product strings (`CompanyName` `io.github.markomijic`, `ProductName` `TTS Mod Vault`); these also name the app-data folder `%APPDATA%\io.github.markomijic\TTS Mod Vault\` |
+| `windows/CMakeLists.txt` | `BINARY_NAME` `tts_mod_vault` (the exe name the script checks for) |
+| `windows/runner/resources/app_icon.ico` | App icon |
 
-`<project>` is the repo root, or `v3/` when `-PROJECT_DIR v3` is passed.

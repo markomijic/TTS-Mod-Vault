@@ -5,8 +5,7 @@
 # Run this ON macOS (Apple Silicon):  bash packaging/macos/build_dmg.sh
 #
 # PROJECT_DIR selects which Flutter project in the repo is built. It defaults
-# to the repo root ("."). While the v3 rewrite lives in v3/, build it with:
-#   PROJECT_DIR=v3 bash packaging/macos/build_dmg.sh
+# to the repo root (".").
 # All paths below (pubspec.yaml, build/) are relative to that project.
 #
 # WHY A CLEAN BUILD: incremental Flutter macOS builds can leave the outer .app's
@@ -37,7 +36,7 @@ VOL_NAME="TTS Mod Vault"          # mounted DMG volume name
 DMG_NAME="TTSModVault.dmg"        # dmg filename (matches existing releases)
 
 # Resolve repo root robustly, regardless of where this script is invoked from,
-# then enter the Flutter project (repo root by default, v3/ during the rewrite).
+# then enter the Flutter project (the repo root by default).
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 PROJECT_DIR="${PROJECT_DIR:-.}"
 cd "$ROOT/$PROJECT_DIR"

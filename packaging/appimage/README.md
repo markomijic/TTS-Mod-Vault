@@ -12,11 +12,10 @@ Run on **Linux** (Flutter cannot build Linux targets on Windows/macOS):
 
 ```bash
 bash packaging/appimage/build_appimage.sh                 # builds the project at the repo root
-PROJECT_DIR=v3 bash packaging/appimage/build_appimage.sh  # builds the v3 rewrite in v3/ (until cut-over)
 ```
 
-Output: `<project>/build/TTS_Mod_Vault-x86_64.AppImage` (so `v3/build/...` with
-`PROJECT_DIR=v3`). The artefact name never changes.
+Output: `build/TTS_Mod_Vault-x86_64.AppImage` (relative to the project). The
+artefact name never changes.
 
 The script runs, in order: `flutter pub get`, `dart run build_runner build`
 (drift / freezed / riverpod code generation; generated `*.g.dart` files are not
@@ -68,7 +67,7 @@ docker run --rm -v "$PWD":/src -w /src ubuntu:22.04 bash -c '
     pkg-config libgtk-3-dev &&
   # install Flutter inside the container, enable native assets, then:
   flutter config --enable-native-assets &&
-  PROJECT_DIR=v3 bash packaging/appimage/build_appimage.sh
+  bash packaging/appimage/build_appimage.sh
 '
 ```
 
@@ -81,11 +80,9 @@ confuse the two.)
 | File | Role |
 | --- | --- |
 | `packaging/appimage/build_appimage.sh` | Runs codegen + build, assembles the AppDir, runs appimagetool |
-| `<project>/linux/io.github.markomijic.tts_mod_vault.desktop` | Desktop entry (single source of truth) |
-| `<project>/linux/io.github.markomijic.tts_mod_vault.metainfo.xml` | AppStream metadata |
-| `<project>/assets/icon/tts_mod_vault_icon.png` | App icon (from `pubspec.yaml`) |
-
-`<project>` is the repo root, or `v3/` when `PROJECT_DIR=v3` is set.
+| `linux/io.github.markomijic.tts_mod_vault.desktop` | Desktop entry (single source of truth) |
+| `linux/io.github.markomijic.tts_mod_vault.metainfo.xml` | AppStream metadata |
+| `assets/icon/tts_mod_vault_icon.png` | App icon (from `pubspec.yaml`) |
 
 The app id is `io.github.markomijic.tts_mod_vault` — it must stay consistent
 across the desktop file name, the metainfo `<id>`, `APPLICATION_ID` in

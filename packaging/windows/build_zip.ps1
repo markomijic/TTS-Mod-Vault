@@ -16,12 +16,11 @@
     Run it ON WINDOWS, from any directory, in Windows PowerShell 5.1 or newer:
 
         powershell -ExecutionPolicy Bypass -File packaging\windows\build_zip.ps1
-        powershell -ExecutionPolicy Bypass -File packaging\windows\build_zip.ps1 -PROJECT_DIR v3
 
 .PARAMETER PROJECT_DIR
     Which Flutter project in the repo to build, relative to the repo root.
-    Defaults to the repo root ("."). While the v3 rewrite lives in v3/, pass
-    "v3". All paths below (pubspec.yaml, build\) are relative to that project.
+    Defaults to the repo root ("."). All paths below (pubspec.yaml, build\) are
+    relative to that project.
 
 .PARAMETER Clean
     Run `flutter clean` before building (the macOS script always does; on
@@ -83,7 +82,7 @@ function Invoke-Capture([string[]]$Command) {
 
 # ---- locate the project -----------------------------------------------------
 # Resolve the repo root regardless of where the script is invoked from, then
-# enter the Flutter project (repo root by default, v3\ during the rewrite).
+# enter the Flutter project (the repo root by default).
 $root = $null
 try {
     $root = (& git -C $PSScriptRoot rev-parse --show-toplevel 2>$null)

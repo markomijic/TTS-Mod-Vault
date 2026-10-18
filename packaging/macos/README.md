@@ -12,7 +12,6 @@ Windows/Linux):
 
 ```bash
 bash packaging/macos/build_dmg.sh                 # builds the project at the repo root
-PROJECT_DIR=v3 bash packaging/macos/build_dmg.sh  # builds the v3 rewrite in v3/ (until cut-over)
 ```
 
 The script runs, in order: `flutter clean` (unless `SKIP_CLEAN=1`), `flutter pub
@@ -21,7 +20,7 @@ generated `*.g.dart` files are not committed), `flutter gen-l10n`,
 `flutter build macos --release`, the native-asset and code-signature checks,
 then the DMG and zip steps. Artefact names never change.
 
-Output (in `<project>/build/`, so `v3/build/` with `PROJECT_DIR=v3`):
+Output (in `build/`):
 
 | File | Use |
 | --- | --- |

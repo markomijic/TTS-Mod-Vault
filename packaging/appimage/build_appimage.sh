@@ -4,8 +4,7 @@
 # Run this ON LINUX (e.g. your Ubuntu VM):  bash packaging/appimage/build_appimage.sh
 #
 # PROJECT_DIR selects which Flutter project in the repo is built. It defaults
-# to the repo root ("."). While the v3 rewrite lives in v3/, build it with:
-#   PROJECT_DIR=v3 bash packaging/appimage/build_appimage.sh
+# to the repo root (".").
 # All paths below (icon, linux/, build/) are relative to that project.
 #
 # NOTE ON COMPATIBILITY: an AppImage bundles app libraries but NOT glibc, so the
@@ -28,7 +27,7 @@ ICON_SRC="assets/icon/tts_mod_vault_icon.png"
 OUT_NAME="TTS_Mod_Vault-x86_64.AppImage"
 
 # Resolve repo root robustly, regardless of where this script is invoked from,
-# then enter the Flutter project (repo root by default, v3/ during the rewrite).
+# then enter the Flutter project (the repo root by default).
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 PROJECT_DIR="${PROJECT_DIR:-.}"
 cd "$ROOT/$PROJECT_DIR"

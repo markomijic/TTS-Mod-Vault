@@ -1,13 +1,11 @@
 name: tts_mod_vault
 description: "Download and backup assets for your Tabletop Simulator mods"
-
-# Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 2.1.0+1
+version: 3.0.0+1
 
 environment:
-  sdk: ^3.5.4
+  sdk: ^3.13.0
 
 dependencies:
   flutter:
@@ -15,31 +13,64 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  path: ^1.9.0
-  hooks_riverpod: 2.6.1
-  flutter_hooks: ^0.21.2
-  http: ^1.2.2
-  dio: ^5.7.0
-  collection: ^1.19.0
-  window_manager: ^0.5.1
-  mime: ^2.0.0
-  file_picker: ^10.1.9
-  archive: ^4.0.5
-  package_info_plus: ^9.0.0
-  url_launcher: ^6.3.1
-  intl: ^0.20.2
-  hive_ce_flutter: ^2.3.1
-  open_filex: ^4.7.0
-  image: ^4.5.4
-  bson: ^5.0.7
+  # UI
+  material_ui: ^1.7.0
+  flutter_hooks: ^0.21.3
+  window_manager: ^0.5.2
+
+  # State
+  hooks_riverpod: ^3.4.3
+  riverpod_annotation: ^4.0.7
+
+  # Models
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
+  collection: ^1.19.1
+  meta: ^1.16.0
+
+  # Store
+  drift: ^2.35.2
+  sqlite3: ^3.7.1
+  path_provider: ^2.1.6
+
+  # Files & archives
+  path: ^1.9.1
+  file: ^7.0.1
+  archive: ^4.5.2
+  mime: ^2.1.0
+  file_picker: ^13.1.0
+  open_filex: ^5.0.0
+
+  # Network
+  dio: ^5.11.1
+  url_launcher: ^6.3.3
+  bson: ^5.0.8
   fixnum: ^1.1.1
-  pdfrx_engine: ^0.4.3
+
+  # Media
+  image: ^4.12.0
+  pdfrx_engine: ^0.6.1
+
+  # Misc
+  intl: ^0.20.3
+  package_info_plus: ^10.2.2
+
+  # Temporary: one-shot import of v2 settings (remove in 3.1)
+  hive_ce_flutter: ^2.5.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+
+  build_runner: ^2.4.0
+  riverpod_generator: ^4.0.9
+  freezed: ^4.0.2
+  json_serializable: ^6.14.1
+  drift_dev: ^2.35.1
+
+  mocktail: ^1.0.5
   icons_launcher: ^3.0.1
 
 icons_launcher:
@@ -54,9 +85,8 @@ icons_launcher:
 
 flutter:
   uses-material-design: true
-
-  # Enable generation of localized Strings from arb files.
   generate: true
 
   assets:
     - assets/icon/
+    - assets/text/

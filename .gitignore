@@ -37,6 +37,7 @@ CLAUDE.md
 .pub-cache/
 .pub/
 /build/
+/coverage/
 
 # Symbolication related
 app.*.symbols
@@ -51,6 +52,11 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
-# v3 rewrite project (lives in v3/ until cut-over)
-v3/build/
-v3/.fvm/
+
+# Widget Preview related
+.widget_preview/
+
+# Generated code (builds run `dart run build_runner build` + `flutter gen-l10n` first)
+*.g.dart
+*.freezed.dart
+lib/l10n/generated/

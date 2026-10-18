@@ -2,18 +2,10 @@ import 'dart:convert';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart' show ThemeMode;
+import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/app/theme/theme_presets.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
-
-/// The persistent key-value store used by the app shell.
-///
-/// Must be overridden in `main.dart` (with the SQLite-backed store) and in
-/// tests (with [InMemoryKeyValueStore]); reading it without an override
-/// throws.
-final keyValueStoreProvider = Provider<KeyValueStore>(
-  (ref) => throw UnimplementedError('override in main'),
-);
 
 /// Holds the current [ThemeSettings] and persists changes.
 ///

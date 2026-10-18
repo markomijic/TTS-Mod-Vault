@@ -3,9 +3,8 @@ import 'dart:io' show Directory;
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
+import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/app/providers/startup_timeline_provider.dart';
-import 'package:tts_mod_vault/app/theme/theme_controller.dart'
-    show keyValueStoreProvider;
 import 'package:tts_mod_vault/bootstrap/startup_timeline.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/data/legacy/hive_settings_importer.dart';

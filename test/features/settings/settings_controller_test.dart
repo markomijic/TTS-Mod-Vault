@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
-import 'package:tts_mod_vault/app/theme/theme_controller.dart';
+import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/sort_filter.dart';

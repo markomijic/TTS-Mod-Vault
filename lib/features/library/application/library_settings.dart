@@ -1,8 +1,7 @@
 import 'dart:convert';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/app/theme/theme_controller.dart'
-    show keyValueStoreProvider;
+import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 
 /// The settings the library refresh depends on.

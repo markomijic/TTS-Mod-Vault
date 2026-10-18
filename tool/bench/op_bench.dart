@@ -54,8 +54,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
-import 'package:tts_mod_vault/app/theme/theme_controller.dart'
-    show keyValueStoreProvider;
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/workers/worker_pool.dart';
 import 'package:tts_mod_vault/data/db/app_database.dart';

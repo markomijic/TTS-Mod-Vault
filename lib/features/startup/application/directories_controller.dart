@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:tts_mod_vault/app/theme/theme_controller.dart'
-    show keyValueStoreProvider;
+import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/domain/models/directories.dart';
 import 'package:tts_mod_vault/domain/rules/tts_paths.dart';
 

@@ -8,6 +8,7 @@ import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/directories.dart';
 import 'package:tts_mod_vault/domain/rules/tts_paths.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/directory_picker.dart';
 import 'package:tts_mod_vault/features/startup/application/startup_controller.dart';
@@ -38,7 +39,7 @@ class SelectDirectoriesView extends HookConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final exists = ref.watch(directoryExistsProvider);
-    final allowCustomSaves = ref.watch(allowCustomSavesFolderProvider);
+    final allowCustomSaves = ref.watch(allowCustomSavesFolderSettingProvider);
     final stored =
         ref.watch(directoriesProvider).value ??
         defaultDirectories(

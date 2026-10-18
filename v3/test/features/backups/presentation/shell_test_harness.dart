@@ -10,8 +10,8 @@ import 'package:tts_mod_vault/app/shell/app_shell.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
 import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
-import 'package:tts_mod_vault/features/about/presentation/update_notice.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 import '../../library/presentation/presentation_test_harness.dart';
@@ -25,7 +25,7 @@ ProviderContainer shellContainer(
 }) => ProviderContainer.test(
   overrides: [
     ...libraryPageOverrides(library: () => SpyLibraryController(state)),
-    checkForUpdatesOnStartProvider.overrideWithValue(false),
+    checkForUpdatesOnStartSettingProvider.overrideWithValue(false),
     ...overrides,
   ],
 );

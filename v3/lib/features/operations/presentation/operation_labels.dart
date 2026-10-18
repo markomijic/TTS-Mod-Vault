@@ -7,6 +7,8 @@ import 'package:tts_mod_vault/features/downloads/application/downloads_providers
     show checkUrlsProgressLabel;
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/features/operations/application/operation.dart';
+import 'package:tts_mod_vault/features/url_updates/application/update_urls_operation.dart'
+    show updateUrlsProgressLabel;
 import 'package:tts_mod_vault/features/workshop/application/workshop_service.dart'
     show
         workshopDetailsProgressLabel,
@@ -37,13 +39,33 @@ abstract final class OperationLabelKeys {
 
   /// Deleting a mod's cached files (`deleteAssetsLabel`).
   static const String deleteAssets = 'deleteAssets.deleting';
+
+  /// Bulk download (`BulkDownloadOperation.progressLabel`; count = mods).
+  static const String bulkDownload = 'bulk.download';
+
+  /// Bulk backup (`BulkBackupOperation.progressLabel`; count = mods).
+  static const String bulkBackup = 'bulk.backup';
+
+  /// Bulk download then backup (`BulkDownloadAndBackupOperation`).
+  static const String bulkDownloadAndBackup = 'bulk.downloadAndBackup';
+
+  /// Bulk asset deletion (`BulkDeleteAssetsOperation`).
+  static const String bulkDeleteAssets = 'bulk.deleteAssets';
+
+  /// Bulk URL check (`BulkCheckUrlsOperation`).
+  static const String bulkCheckUrls = 'bulk.checkUrls';
+
+  /// URL prefix rewrite (`updateUrlsProgressLabel`; count = mods).
+  static const String updateUrls = updateUrlsProgressLabel;
 }
 
 /// The text shown for [progress]: the label resolved from its key, with the
 /// `done/total` count appended when the total is known.
 ///
 /// `downloading.<type>` becomes "Downloading Images 3/12",
-/// `checking.urls` becomes "Checked 3/12 URLs"; an unknown key is shown as
+/// `checking.urls` becomes "Checked 3/12 URLs", `bulk.download` becomes
+/// "Downloading mods 3/12" (the bar shows the current mod name from
+/// `OperationProgress.detail` underneath); an unknown key is shown as
 /// its humanised form so a new operation never crashes the bar.
 String operationProgressText(AppLocalizations l10n, OperationProgress p) {
   final key = p.label;
@@ -78,6 +100,13 @@ String _baseLabel(AppLocalizations l10n, String key) {
     OperationLabelKeys.importFile => l10n.operationBackupImporting,
     OperationLabelKeys.cleanupDeleting => l10n.operationCleanupDeleting,
     OperationLabelKeys.deleteAssets => l10n.operationAssetsDeleting,
+    OperationLabelKeys.bulkDownload => l10n.operationBulkDownloading,
+    OperationLabelKeys.bulkBackup => l10n.operationBulkBackingUp,
+    OperationLabelKeys.bulkDownloadAndBackup =>
+      l10n.operationBulkDownloadingAndBackingUp,
+    OperationLabelKeys.bulkDeleteAssets => l10n.operationBulkDeletingAssets,
+    OperationLabelKeys.bulkCheckUrls => l10n.operationBulkCheckingUrls,
+    OperationLabelKeys.updateUrls => l10n.operationUpdatingUrls,
     _ => humanizeLabelKey(key),
   };
 }

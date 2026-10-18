@@ -5,7 +5,8 @@ import 'package:tts_mod_vault/app/shell/operation_running_provider.dart'
 import 'package:tts_mod_vault/app/theme/vault_colors.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_context_menu.dart';
-import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_view_options.dart';
+import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_selection.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 /// One URL line of the asset list (port of 2.x `AssetsUrl`).
 ///
@@ -30,7 +31,7 @@ class AssetUrlRow extends ConsumerWidget {
     final selected = ref.watch(
       selectedAssetUrlProvider.select((selectedUrl) => selectedUrl == url),
     );
-    final fontSize = ref.watch(assetUrlFontSizeProvider);
+    final fontSize = ref.watch(assetUrlFontSizeSettingProvider);
     final theme = Theme.of(context);
     final colors = VaultColors.of(context);
 

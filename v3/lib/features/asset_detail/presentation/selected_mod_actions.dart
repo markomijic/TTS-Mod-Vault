@@ -2,13 +2,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/shell/operation_running_provider.dart'
     show operationRunningProvider;
-import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
 import 'package:tts_mod_vault/features/cleanup/presentation/delete_mod_assets_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_progress_bar.dart';
+import 'package:tts_mod_vault/features/url_updates/presentation/update_urls_dialog.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Bottom of the selected-mod view: the action buttons, or, while an
@@ -50,9 +50,8 @@ class OperationProgressSlot extends StatelessWidget {
 }
 
 /// The per-mod action buttons (2.x `SelectedModActionButtons` plus the
-/// items of its overflow menu). "Download all" (disabled when nothing is
-/// missing), "Check URLs", "Backup" and "Delete assets" are live; Update
-/// URLs is a Phase 5 stub showing the "not implemented" snack bar.
+/// items of its overflow menu): "Download all" (disabled when nothing is
+/// missing), "Backup", "Check URLs", "Delete assets" and "Update URLs".
 class SelectedModActions extends ConsumerWidget {
   /// Creates the buttons for [mod].
   const SelectedModActions({super.key, required this.mod});
@@ -64,9 +63,6 @@ class SelectedModActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final running = ref.watch(operationRunningProvider);
-
-    void stub(String label) =>
-        showAppSnackBar(context, l10n.notImplementedAction(label));
 
     return Wrap(
       spacing: Insets.sm,
@@ -97,7 +93,9 @@ class SelectedModActions extends ConsumerWidget {
           label: Text(l10n.actionDeleteAssets),
         ),
         FilledButton.tonalIcon(
-          onPressed: () => stub(l10n.actionUpdateUrls),
+          onPressed: running
+              ? null
+              : () => updateUrlsWithDialog(context, ref, [mod], bulk: false),
           icon: const Icon(Icons.edit_outlined),
           label: Text(l10n.actionUpdateUrls),
         ),

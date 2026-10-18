@@ -15,9 +15,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hooks_riverpod/misc.dart' show Override;
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
 import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
+import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/mod_assets_provider.dart';
@@ -248,13 +250,16 @@ final class FixtureDirectoriesController extends DirectoriesController {
 }
 
 /// The overrides every library page test needs. [directories] replaces
-/// [fixtureDirectories] (for example to drop the backups folder).
+/// [fixtureDirectories] (for example to drop the backups folder); [log]
+/// replaces the sink-less log the page's log panel reads by default.
 List<Override> libraryPageOverrides({
   required LibraryController Function() library,
   InMemoryKeyValueStore? store,
   Directories? directories,
+  AppLog? log,
 }) => [
   keyValueStoreProvider.overrideWithValue(store ?? InMemoryKeyValueStore()),
+  appLogProvider.overrideWithValue(log ?? AppLog(store: LogStore())),
   libraryControllerProvider.overrideWith(library),
   directoriesProvider.overrideWith(
     () => FixtureDirectoriesController(directories),

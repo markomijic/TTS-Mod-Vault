@@ -7,12 +7,14 @@ import 'package:tts_mod_vault/app/theme/vault_colors.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/domain/rules/file_key.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/asset_detail_filter.dart';
-import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_view_options.dart';
+import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_selection.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_list.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_toolbar.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_url_row.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/multi_select_view.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/selected_mod_view.dart';
+import 'package:tts_mod_vault/features/bulk/presentation/bulk_backup_dialog.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 import 'asset_detail_test_harness.dart';
 
@@ -61,7 +63,7 @@ void main() {
       expect(find.byType(MultiSelectView), findsNothing);
     });
 
-    testWidgets('two selected shows the multi-select view with stubs', (
+    testWidgets('two selected shows the multi-select view with bulk buttons', (
       tester,
     ) async {
       h.selectMany([h.fixture.alpha, h.fixture.beta]);
@@ -75,12 +77,14 @@ void main() {
       expect(find.text('Update mods'), findsOneWidget);
       expect(find.byIcon(Icons.info_outline), findsNothing);
 
+      // The buttons run the bulk flows (covered in
+      // test/features/bulk/presentation); here: the dialog opens.
       await tester.tap(find.text('Download & backup'));
       await tester.pumpAndSettle();
-      expect(
-        find.text('Download & backup: not implemented yet'),
-        findsOneWidget,
-      );
+      expect(find.byType(BulkBackupDialog), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BulkBackupDialog), findsNothing);
     });
 
     testWidgets('a save shows file name over its name', (tester) async {
@@ -283,17 +287,24 @@ void main() {
       await pumpPanel(tester, h);
       expect(
         tester.widget<Text>(find.text(h.fixture.img1.url)).style!.fontSize,
-        AssetUrlFontSizeController.defaultSize,
+        AppSettings.defaultAssetUrlFontSize,
       );
 
-      await h.container.read(assetUrlFontSizeProvider.notifier).set(40);
+      await h.container
+          .read(settingsProvider.notifier)
+          .update(
+            h.container.read(settingsProvider).copyWith(assetUrlFontSize: 40),
+          );
       await tester.pumpAndSettle();
 
       expect(
         tester.widget<Text>(find.text(h.fixture.img1.url)).style!.fontSize,
-        AssetUrlFontSizeController.maxSize,
+        AppSettings.maxAssetUrlFontSize,
       );
-      expect(await h.store.read(AssetUrlFontSizeController.storageKey), '24.0');
+      expect(
+        await h.store.read(SettingsController.storageKey),
+        contains('"assetUrlFontSize":24.0'),
+      );
     });
 
     testWidgets('header icons follow the group state', (tester) async {

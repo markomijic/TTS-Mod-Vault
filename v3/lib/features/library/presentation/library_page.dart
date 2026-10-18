@@ -28,6 +28,8 @@ import 'package:tts_mod_vault/features/library/presentation/toolbar/library_sear
 import 'package:tts_mod_vault/features/library/presentation/toolbar/library_tab_selector.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/sort_menu_button.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/view_toggle_button.dart';
+import 'package:tts_mod_vault/features/logs/presentation/log_panel.dart';
+import 'package:tts_mod_vault/features/operations/presentation/operation_progress_bar.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
@@ -49,7 +51,7 @@ const double _refreshBarHeight = 3;
 /// │   ├─ thin LinearProgressIndicator while a refresh runs
 /// │   ├─ Wrap toolbar (tab selector + tab-dependent controls)
 /// │   ├─ Expanded(ModsView | BackupsView | progress | error)
-/// │   └─ bottomSlot (log panel and progress bar dock here later)
+/// │   └─ bottomSlot ([LibraryBottomSlot]: progress bar over the log panel)
 /// └─ Expanded(flex: 1) SelectedModPanel | SelectedBackupPanel
 /// ```
 ///
@@ -58,9 +60,10 @@ const double _refreshBarHeight = 3;
 /// it has focus.
 class LibraryPage extends HookConsumerWidget {
   /// Creates the page.
-  const LibraryPage({super.key, this.bottomSlot = const SizedBox.shrink()});
+  const LibraryPage({super.key, this.bottomSlot = const LibraryBottomSlot()});
 
-  /// Docked under the list; the log panel and progress bar go here.
+  /// Docked under the list: by default the [LibraryBottomSlot] (operation
+  /// progress bar over the log panel); tests pass something lighter.
   final Widget bottomSlot;
 
   @override
@@ -112,6 +115,21 @@ class LibraryPage extends HookConsumerWidget {
       ),
     );
   }
+}
+
+/// What docks under the library list (plan section 4.8): the one
+/// [OperationProgressBar] of the operations engine, which collapses to
+/// nothing while idle, over the collapsible [LogPanel].
+class LibraryBottomSlot extends StatelessWidget {
+  /// Creates the slot.
+  const LibraryBottomSlot({super.key});
+
+  @override
+  Widget build(BuildContext context) => const Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [OperationProgressBar(), LogPanel()],
+  );
 }
 
 /// Toolbar, list and bottom slot of the library page.

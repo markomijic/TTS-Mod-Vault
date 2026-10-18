@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/asset_detail_filter.dart';
-import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_view_options.dart';
+import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_selection.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/multi_select_view.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/selected_mod_header.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/selected_mod_view.dart';

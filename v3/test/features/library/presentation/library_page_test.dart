@@ -9,12 +9,12 @@ import 'package:tts_mod_vault/features/backups/presentation/selected_backup_pane
 import 'package:tts_mod_vault/features/library/application/library_settings.dart';
 import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_grid_card.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_list_item.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_view.dart';
 import 'package:tts_mod_vault/features/library/presentation/selected_mod_panel.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/library_search_field.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 
 import 'presentation_test_harness.dart';
@@ -241,8 +241,8 @@ void main() {
     expect(find.byType(ModsGridCard), findsNothing);
     expect(find.text('Favourites'), findsNWidgets(2));
     expect(
-      await store.read(LibraryViewOptionsController.storageKey),
-      contains('"useListView":true'),
+      await store.read(SettingsController.storageKey),
+      contains('"useModsListView":true'),
     );
 
     await tester.tap(find.byTooltip('Show as grid'));
@@ -457,8 +457,10 @@ void main() {
     expect(tooltip.message, contains('2 asset files on disk'));
 
     await container
-        .read(libraryViewOptionsProvider.notifier)
-        .setShowBackupState(false);
+        .read(settingsProvider.notifier)
+        .update(
+          container.read(settingsProvider).copyWith(showBackupState: false),
+        );
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.folder_zip_outlined), findsNothing);

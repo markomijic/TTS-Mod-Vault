@@ -2,9 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_grid.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_list.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 /// Shows the filtered mods as a grid or a list, or one of two hints when
 /// the list is empty: "no match" when a search text or filter is active,
@@ -19,9 +19,7 @@ class ModsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mods = ref.watch(filteredModsProvider);
-    final useList = ref.watch(
-      libraryViewOptionsProvider.select((o) => o.useListView),
-    );
+    final useList = ref.watch(useModsListViewSettingProvider);
     if (mods.isEmpty) {
       return Center(
         child: Padding(

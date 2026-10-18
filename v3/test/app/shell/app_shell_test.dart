@@ -8,17 +8,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
+import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
 import 'package:tts_mod_vault/app/shell/app_shell.dart';
 import 'package:tts_mod_vault/app/shell/vault_sidebar.dart';
 import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
+import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
-import 'package:tts_mod_vault/features/about/presentation/update_notice.dart';
+import 'package:tts_mod_vault/features/about/presentation/help_dialog.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_page.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
+import 'package:tts_mod_vault/features/settings/presentation/settings_dialog.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/features/workshop/presentation/download_workshop_mods_dialog.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
@@ -58,6 +62,8 @@ Future<InMemoryKeyValueStore> pumpShell(
 }) async {
   final kv = store ?? InMemoryKeyValueStore();
   final spy = library ?? SpyLibraryController();
+  final log = AppLog(store: LogStore());
+  addTearDown(log.dispose);
   tester.view.physicalSize = const Size(1280, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -66,10 +72,11 @@ Future<InMemoryKeyValueStore> pumpShell(
     ProviderScope(
       overrides: [
         keyValueStoreProvider.overrideWithValue(kv),
+        appLogProvider.overrideWithValue(log),
         libraryControllerProvider.overrideWith(() => spy),
         directoriesProvider.overrideWith(_FixedDirectoriesController.new),
         // No GitHub release check in widget tests.
-        checkForUpdatesOnStartProvider.overrideWithValue(false),
+        checkForUpdatesOnStartSettingProvider.overrideWithValue(false),
       ],
       child: MaterialApp(
         theme: AppTheme.build(settings, Brightness.light),
@@ -193,16 +200,25 @@ void main() {
     expect(inSidebar(find.text('Cleanup')), findsNothing);
   });
 
-  testWidgets('unwired footer items show the not-implemented snack bar', (
-    tester,
-  ) async {
+  testWidgets('Help opens the help dialog', (tester) async {
     await pumpShell(tester);
 
     await tester.tap(inSidebar(find.byTooltip('Help')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
 
-    expect(find.text('Not implemented yet'), findsOneWidget);
+    expect(find.byType(HelpDialog), findsOneWidget);
+    expect(find.text('Changelog'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
+  });
+
+  testWidgets('Settings opens the settings dialog', (tester) async {
+    await pumpShell(tester);
+
+    await tester.tap(inSidebar(find.byTooltip('Settings')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsDialog), findsOneWidget);
+    expect(find.text('Check for updates on start'), findsOneWidget);
   });
 
   testWidgets('Download Workshop mods opens its dialog', (tester) async {

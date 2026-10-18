@@ -25,11 +25,6 @@ final directoryExistsProvider = Provider<DirectoryExists>(
       (path) => Directory(path).existsSync(),
 );
 
-/// Whether any existing folder is accepted as the Saves folder (the
-/// "custom saves folder" setting). Placeholder until settings land in
-/// Phase 5; always false for now.
-final allowCustomSavesFolderProvider = Provider<bool>((ref) => false);
-
 /// Drives the start-up sequence; see [StartupState] for the state machine.
 final startupControllerProvider =
     AsyncNotifierProvider<StartupController, StartupState>(
@@ -107,7 +102,7 @@ class StartupController extends AsyncNotifier<StartupState> {
     final modsDir = resolveModsDir(picked.modsDir, directoryExists: exists);
     final savesDir = resolveSavesDir(
       picked.savesDir,
-      allowCustomPath: ref.read(allowCustomSavesFolderProvider),
+      allowCustomPath: ref.read(allowCustomSavesFolderSettingProvider),
       directoryExists: exists,
     );
 

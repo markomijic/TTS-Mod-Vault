@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/mod_assets_provider.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 /// Download-status filter of the asset list (v2 `ExistingAssetsFilter`).
 enum AssetStatusFilter {
@@ -128,10 +129,14 @@ final class AssetDetailFilter {
 ///
 /// The presentation layer calls [reset] when the selected mod changes (v2
 /// cleared type, invalid and search on selection); [showPdfThumbnails]
-/// survives a reset because it is a view preference, not a filter.
+/// survives a reset because it is a view preference, not a filter. Its
+/// initial value is the `showPdfThumbnails` setting; the filter starts over
+/// when that setting changes.
 final class AssetDetailFilterController extends Notifier<AssetDetailFilter> {
   @override
-  AssetDetailFilter build() => AssetDetailFilter.empty;
+  AssetDetailFilter build() => AssetDetailFilter(
+    showPdfThumbnails: ref.watch(showPdfThumbnailsSettingProvider),
+  );
 
   /// Sets the type filter, or clears it when [type] is already selected or
   /// null (the chips toggle).

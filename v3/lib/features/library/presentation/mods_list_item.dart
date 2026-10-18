@@ -4,9 +4,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_interaction_region.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 /// Thumbnail edge length.
 const double _thumbnailSize = 40;
@@ -34,9 +34,7 @@ class ModsListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showBackupState = ref.watch(
-      libraryViewOptionsProvider.select((o) => o.showBackupState),
-    );
+    final showBackupState = ref.watch(showBackupStateSettingProvider);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isSave = mod.ref.type == ModType.save;

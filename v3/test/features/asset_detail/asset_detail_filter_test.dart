@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:tts_mod_vault/app/theme/theme_controller.dart';
+import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/domain/rules/file_key.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/asset_detail_filter.dart';
@@ -229,7 +231,12 @@ void main() {
     late AssetDetailFilterController controller;
 
     setUp(() {
-      container = ProviderContainer.test();
+      // The initial PDF view comes from the settings, which need a store.
+      container = ProviderContainer.test(
+        overrides: [
+          keyValueStoreProvider.overrideWithValue(InMemoryKeyValueStore()),
+        ],
+      );
       controller = container.read(assetDetailFilterProvider.notifier);
     });
 

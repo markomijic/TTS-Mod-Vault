@@ -8,24 +8,15 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/widgets/app_dialog.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/features/about/application/update_check.dart';
+import 'package:tts_mod_vault/features/about/presentation/about_links.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart' show launchUrl;
 
-/// The Nexus Mods page of the app (v2 `nexusModsDownloadPageUrl`).
-const String nexusModsDownloadPageUrl =
-    'https://www.nexusmods.com/tabletopsimulator/mods/426';
+export 'package:tts_mod_vault/features/about/presentation/about_links.dart'
+    show gitHubReleaseUrl, nexusModsDownloadPageUrl;
 
-/// The GitHub release page of [version] (v2 `getGitHubReleaseUrl`).
-String gitHubReleaseUrl(String version) =>
-    'https://github.com/markomijic/TTS-Mod-Vault/releases/tag/v$version';
-
-/// Whether the GitHub release check runs when the shell appears. A
-/// placeholder until the Phase 5 settings expose the switch; tests
-/// override it with `false`.
-final checkForUpdatesOnStartProvider = Provider<bool>((_) => true);
-
-/// Wraps [child] and, when [checkForUpdatesOnStartProvider] is on, watches
-/// [updateCheckProvider]; the first time it yields a version the
+/// Wraps [child] and, when the "check for updates on start" setting is on,
+/// watches [updateCheckProvider]; the first time it yields a version the
 /// [UpdateAvailableDialog] is shown. The check is lazy, so nothing is
 /// requested unless this widget is in the tree.
 class UpdateNotice extends ConsumerWidget {
@@ -37,11 +28,11 @@ class UpdateNotice extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(checkForUpdatesOnStartProvider)) {
+    if (ref.watch(checkForUpdatesOnStartSettingProvider)) {
       ref.listen(updateCheckProvider, (previous, next) {
         final latest = next.value;
         if (latest == null || !context.mounted) return;
-        showUpdateAvailableDialog(context, latest);
+        showUpdateAvailableDialog(context, ref, latest);
       });
     }
     return child;
@@ -52,6 +43,7 @@ class UpdateNotice extends ConsumerWidget {
 /// chosen download page afterwards.
 Future<void> showUpdateAvailableDialog(
   BuildContext context,
+  WidgetRef ref,
   String latestVersion,
 ) async {
   final target = await showDialog<UpdateTarget>(
@@ -65,7 +57,7 @@ Future<void> showUpdateAvailableDialog(
   };
   var ok = false;
   try {
-    ok = await launchUrl(Uri.parse(url));
+    ok = await ref.read(urlOpenerProvider)(Uri.parse(url));
   } on Object {
     ok = false;
   }

@@ -2,10 +2,10 @@
 // version, and stays quiet otherwise.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/misc.dart' show Override;
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/features/about/application/update_check.dart';
 import 'package:tts_mod_vault/features/about/presentation/update_notice.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 import '../../images_viewer/themed_app.dart';
 
@@ -13,13 +13,14 @@ void main() {
   Future<void> pumpNotice(
     WidgetTester tester, {
     String? latest = '9.9.9',
-    List<Override> extra = const [],
+    bool checkOnStart = true,
   }) => pumpThemedApp(
     tester,
     overrides: [
       currentAppVersionProvider.overrideWith((ref) async => '3.0.0'),
       updateCheckProvider.overrideWith((ref) async => latest),
-      ...extra,
+      // The start-up switch is a setting; serve it without a store.
+      checkForUpdatesOnStartSettingProvider.overrideWithValue(checkOnStart),
     ],
     home: const UpdateNotice(child: Scaffold(body: Text('shell'))),
   );
@@ -54,10 +55,7 @@ void main() {
   });
 
   testWidgets('no dialog when the start-up check is off', (tester) async {
-    await pumpNotice(
-      tester,
-      extra: [checkForUpdatesOnStartProvider.overrideWithValue(false)],
-    );
+    await pumpNotice(tester, checkOnStart: false);
     expect(find.byType(UpdateAvailableDialog), findsNothing);
   });
 

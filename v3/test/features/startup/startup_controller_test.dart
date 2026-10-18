@@ -7,6 +7,7 @@ import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/domain/models/directories.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/startup_controller.dart';
 
@@ -306,7 +307,7 @@ void main() {
         retry: (retryCount, error) => null,
         overrides: [
           ...startupOverrides(existing: {pickedTts, pickedMods, custom}),
-          allowCustomSavesFolderProvider.overrideWithValue(true),
+          allowCustomSavesFolderSettingProvider.overrideWithValue(true),
         ],
       );
       addTearDown(container.dispose);

@@ -4,7 +4,7 @@ import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Filter menu with three sections (folders, backup state, assets) as
@@ -21,9 +21,7 @@ class FilterMenuButton extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final filter = ref.watch(modFilterProvider);
     final folders = ref.watch(availableFoldersProvider);
-    final showBackupState = ref.watch(
-      libraryViewOptionsProvider.select((o) => o.showBackupState),
-    );
+    final showBackupState = ref.watch(showBackupStateSettingProvider);
     final notifier = ref.read(modFilterProvider.notifier);
     final activeCount =
         filter.folders.length +

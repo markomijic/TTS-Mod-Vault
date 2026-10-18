@@ -4,9 +4,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_interaction_region.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 /// Decoded width of card thumbnails; cards are at most 200 px wide.
 const int _thumbnailCacheWidth = 256;
@@ -34,10 +34,10 @@ class ModsGridCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final options = ref.watch(libraryViewOptionsProvider);
+    final showTitleOnCards = ref.watch(showTitleOnCardsSettingProvider);
+    final showBackupState = ref.watch(showBackupStateSettingProvider);
     final scheme = Theme.of(context).colorScheme;
-    final showTitleBand =
-        options.showTitleOnCards || mod.ref.type == ModType.save;
+    final showTitleBand = showTitleOnCards || mod.ref.type == ModType.save;
 
     return ModInteractionRegion(
       mod: mod,
@@ -69,10 +69,7 @@ class ModsGridCard extends ConsumerWidget {
                 top: Insets.xs,
                 right: Insets.xs,
                 child: _Overlay(
-                  child: BackupStatusBadge(
-                    mod: mod,
-                    visible: options.showBackupState,
-                  ),
+                  child: BackupStatusBadge(mod: mod, visible: showBackupState),
                 ),
               ),
               Positioned(

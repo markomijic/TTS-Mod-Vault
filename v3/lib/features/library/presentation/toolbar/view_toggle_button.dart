@@ -1,11 +1,12 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
-/// Switches between the grid and the list; the choice is persisted by
-/// `LibraryViewOptionsController`. The mod tabs share one flag
-/// (`useListView`), the Backups tab has its own (`useBackupsListView`).
+/// Switches between the grid and the list; the choice is a setting
+/// (`AppSettings.useModsListView` / `useBackupsListView`) written through
+/// `SettingsController.update`, so the Settings dialog and the toolbar
+/// always agree. The mod tabs share one flag, the Backups tab has its own.
 class ViewToggleButton extends ConsumerWidget {
   /// Creates the button.
   const ViewToggleButton({super.key, this.backups = false});
@@ -17,17 +18,23 @@ class ViewToggleButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final useList = ref.watch(
-      libraryViewOptionsProvider.select(
-        (o) => backups ? o.useBackupsListView : o.useListView,
-      ),
+      backups
+          ? useBackupsListViewSettingProvider
+          : useModsListViewSettingProvider,
     );
-    final notifier = ref.read(libraryViewOptionsProvider.notifier);
     return IconButton.outlined(
       tooltip: useList ? l10n.viewAsGrid : l10n.viewAsList,
       icon: Icon(useList ? Icons.grid_view_outlined : Icons.view_list_outlined),
-      onPressed: backups
-          ? notifier.toggleBackupsListView
-          : notifier.toggleListView,
+      onPressed: () {
+        final settings = ref.read(settingsProvider);
+        ref
+            .read(settingsProvider.notifier)
+            .update(
+              backups
+                  ? settings.copyWith(useBackupsListView: !useList)
+                  : settings.copyWith(useModsListView: !useList),
+            );
+      },
     );
   }
 }

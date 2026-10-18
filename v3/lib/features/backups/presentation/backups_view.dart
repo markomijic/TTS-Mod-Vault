@@ -7,7 +7,7 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_grid_card.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_list_item.dart';
 import 'package:tts_mod_vault/features/library/application/backup_view_providers.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
@@ -30,9 +30,7 @@ class BackupsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final backups = ref.watch(filteredBackupsProvider);
-    final useList = ref.watch(
-      libraryViewOptionsProvider.select((o) => o.useBackupsListView),
-    );
+    final useList = ref.watch(useBackupsListViewSettingProvider);
     if (backups.isEmpty) {
       return const Center(
         child: Padding(padding: EdgeInsets.all(Insets.xl), child: _EmptyHint()),

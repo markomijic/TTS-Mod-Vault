@@ -7,7 +7,7 @@ import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/core/result/result.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
-import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_view_options.dart';
+import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_selection.dart';
 import 'package:tts_mod_vault/features/library/application/mod_edit_service.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';

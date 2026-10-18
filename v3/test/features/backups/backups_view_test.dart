@@ -13,10 +13,10 @@ import 'package:tts_mod_vault/features/backups/presentation/backups_view.dart';
 import 'package:tts_mod_vault/features/library/application/backup_view_providers.dart';
 import 'package:tts_mod_vault/features/library/application/library_tab.dart';
 import 'package:tts_mod_vault/features/library/application/library_view_providers.dart';
-import 'package:tts_mod_vault/features/library/presentation/library_view_options.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_grid_card.dart';
 import 'package:tts_mod_vault/features/library/presentation/toolbar/library_search_field.dart';
+import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 
 import '../library/presentation/presentation_test_harness.dart';
 import 'backups_test_harness.dart';
@@ -259,9 +259,9 @@ void main() {
     expect(find.byType(BackupListItem), findsNWidgets(5));
     expect(find.byType(BackupGridCard), findsNothing);
     expect(find.text('Weekly'), findsNWidgets(3));
-    final stored = await store.read(LibraryViewOptionsController.storageKey);
+    final stored = await store.read(SettingsController.storageKey);
     expect(stored, contains('"useBackupsListView":true'));
-    expect(stored, contains('"useListView":false'));
+    expect(stored, contains('"useModsListView":false'));
 
     // The mods tabs still use the grid.
     await tester.tap(segment('Mods'));

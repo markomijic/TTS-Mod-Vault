@@ -62,12 +62,12 @@ About one to two days. Ships in 3.0, before the release; nothing changes for Eng
 
 - Add a nullable `locale` field (`String?`, BCP 47 tag such as `de`, `pt-BR`)
   to `AppSettings` in `lib/features/settings/application/app_settings.dart`.
-  `null` means "follow the system". Persist it through the existing settings
+  `null` meant "follow the system" (changed: now English). Persist it through the existing settings
   path (`SettingsController`, JSON in the kv store). The 2.x importer leaves it
   null; nothing to import.
 - Settings dialog, Interface section
   (`lib/features/settings/presentation/interface_section.dart` or wherever the
-  view toggles live): a dropdown "Language" with "System default" plus each
+  view toggles live): a dropdown "Language" with each
   supported locale shown by its native name ("Deutsch", "Hrvatski", ...), not
   its English name. The native names are a small hand-kept map; they are not in
   the ARB because each name is written in its own language.
@@ -77,7 +77,7 @@ About one to two days. Ships in 3.0, before the release; nothing changes for Eng
 
 In `lib/app/app.dart`:
 
-- `locale:` from the settings provider (`null` keeps the system locale).
+- `locale:` from the settings provider (English when unset).
 - `supportedLocales: AppLocalizations.supportedLocales` stays; it grows
   automatically as `app_<locale>.arb` files are added.
 - `localeResolutionCallback` that picks the closest supported locale: exact
@@ -134,15 +134,18 @@ Before any real translation, find layout bugs once:
 What turned out differently from the text above:
 
 - **A1.** `AppSettings.locale` is a `String?` BCP 47 tag, serialised as
-  `locale` (`null` when following the system). `copyWith` takes a
+  `locale` (`null` is English). `copyWith` takes a
   `ValueGetter<String?>` (`copyWith(locale: () => null)`) so it can clear the
   field. Tags are parsed by `localeFromTag` in `lib/l10n/locale_tags.dart`,
   which also holds the hand-kept `nativeLanguageNames` map (only `English` so
   far; **add an entry with every new `app_<locale>.arb`**, otherwise the
-  dropdown lists the bare tag). The dropdown lists `System default` plus
-  `AppLocalizations.supportedLocales`; a stored tag that is no longer
-  supported shows as System default. `localeSettingProvider` exposes it as a
-  `Locale?`. New ARB keys: `settingLanguage`, `settingLanguageSystemDefault`.
+  dropdown lists the bare tag). The dropdown lists
+  `AppLocalizations.supportedLocales` only; a stored tag that is no longer
+  supported shows as English. **Decision after the first draft: there is no
+  "System default" and the app does not follow the system language; English
+  is the default** (`locale == null` means English, and
+  `localeSettingProvider` is a non-null `Locale`). New ARB key:
+  `settingLanguage`.
   The Reset button already restores `AppSettings.defaults`, so it clears the
   language with no extra code.
 - **A2.** `resolveLocale` (top level in `lib/app/app.dart`, unit-tested) is the
@@ -288,7 +291,7 @@ reviews it. Only the hosted platform and RTL wait for demand.
 
 - [x] `flutter analyze` clean, `flutter test` green (the English tests
   unchanged; the ones that used `modDateFormat` call `formatModDate('en', ...)`).
-- [x] Settings shows a Language dropdown; choosing "System default" or a locale
+- [x] Settings shows a Language dropdown; choosing a language
   persists across restarts.
 - [x] With a temporary `app_sw.arb` present (not `xx`, see section 2), the app
   switches to it at runtime; date formats follow the locale

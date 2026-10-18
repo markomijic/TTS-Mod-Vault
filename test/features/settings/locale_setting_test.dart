@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -25,7 +26,7 @@ void main() {
     addTearDown(log.dispose);
   });
 
-  test('defaults to following the system and decodes junk as null', () {
+  test('defaults to English (null) and decodes junk as null', () {
     expect(AppSettings.defaults.locale, isNull);
     expect(AppSettings.fromJson(const {'locale': 5}).locale, isNull);
     expect(AppSettings.fromJson(const {'locale': '  '}).locale, isNull);
@@ -39,17 +40,17 @@ void main() {
     expect(set.copyWith(locale: () => null).locale, isNull);
   });
 
-  test('the locale persists and reset returns to the system default', () async {
+  test('the locale persists and reset returns to English', () async {
     final controller = container.read(settingsProvider.notifier);
     await controller.update(AppSettings.defaults.copyWith(locale: () => 'de'));
 
     final raw = await store.read(SettingsController.storageKey);
     final stored = jsonDecode(raw!) as Map<String, Object?>;
     expect(stored['locale'], 'de');
-    expect(container.read(localeSettingProvider)?.languageCode, 'de');
+    expect(container.read(localeSettingProvider).languageCode, 'de');
 
     await controller.reset();
     expect(container.read(settingsProvider).locale, isNull);
-    expect(container.read(localeSettingProvider), isNull);
+    expect(container.read(localeSettingProvider), const Locale('en'));
   });
 }

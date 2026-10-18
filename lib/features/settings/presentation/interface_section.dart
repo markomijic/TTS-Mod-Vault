@@ -29,12 +29,12 @@ class InterfaceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // A stored language that is no longer supported shows as the system
-    // default, the way the app resolves it.
+    // A stored language that is no longer supported shows as English, the way
+    // the app resolves it.
     final tags = {
       for (final locale in AppLocalizations.supportedLocales) localeTag(locale),
     };
-    final selectedLanguage = tags.contains(draft.locale) ? draft.locale : null;
+    final selectedLanguage = tags.contains(draft.locale) ? draft.locale : 'en';
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,20 +56,21 @@ class InterfaceSection extends StatelessWidget {
           ),
           SettingsLabeledRow(
             title: l10n.settingLanguage,
-            trailing: DropdownButton<String?>(
+            trailing: DropdownButton<String>(
               key: const Key('settings-language'),
               value: selectedLanguage,
               items: [
-                DropdownMenuItem(
-                  child: Text(l10n.settingLanguageSystemDefault),
-                ),
                 for (final locale in AppLocalizations.supportedLocales)
                   DropdownMenuItem(
                     value: localeTag(locale),
                     child: Text(nativeLanguageName(locale)),
                   ),
               ],
-              onChanged: (tag) => onChanged(draft.copyWith(locale: () => tag)),
+              onChanged: (tag) {
+                if (tag != null) {
+                  onChanged(draft.copyWith(locale: () => tag));
+                }
+              },
             ),
           ),
           SettingsLabeledRow(

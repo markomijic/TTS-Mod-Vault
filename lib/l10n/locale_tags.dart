@@ -8,7 +8,10 @@ import 'dart:ui' show Locale;
 /// in the ARB: a name in its own language is never translated. Add an entry
 /// when an `app_<locale>.arb` is added; a locale without one is listed by its
 /// tag.
-const Map<String, String> nativeLanguageNames = {'en': 'English'};
+const Map<String, String> nativeLanguageNames = {
+  'en': 'English',
+  'hr': 'Hrvatski',
+};
 
 /// Parses a BCP 47 [tag] (`de`, `pt-BR`, `zh-Hant-TW`; `_` is accepted too)
 /// into a [Locale], or `null` for a null or blank tag.

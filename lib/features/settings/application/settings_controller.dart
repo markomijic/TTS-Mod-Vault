@@ -326,9 +326,11 @@ final showPdfThumbnailsSettingProvider = Provider<bool>(
   (ref) => ref.watch(settingsProvider.select((s) => s.showPdfThumbnails)),
 );
 
-/// `AppSettings.locale` as a [Locale]; `null` follows the system.
-final localeSettingProvider = Provider<Locale?>(
-  (ref) => localeFromTag(ref.watch(settingsProvider.select((s) => s.locale))),
+/// `AppSettings.locale` as a [Locale]; English when none is chosen.
+final localeSettingProvider = Provider<Locale>(
+  (ref) =>
+      localeFromTag(ref.watch(settingsProvider.select((s) => s.locale))) ??
+      const Locale('en'),
 );
 
 /// `AppSettings.assetUrlFontSize`.

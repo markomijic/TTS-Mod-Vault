@@ -202,7 +202,8 @@ final class AppSettings {
   /// Render first-page thumbnails for PDF assets.
   final bool showPdfThumbnails;
 
-  /// UI language as a BCP 47 tag (`de`, `pt-BR`); `null` follows the system.
+  /// UI language as a BCP 47 tag (`hr`, `pt-BR`); `null` is the default,
+  /// English. The app does not follow the system language.
   final String? locale;
 
   /// Clamps a download concurrency to `1..maxConcurrentDownloads`.

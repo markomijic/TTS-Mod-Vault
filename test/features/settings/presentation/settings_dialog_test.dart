@@ -652,20 +652,22 @@ void main() {
     );
   });
 
-  testWidgets('the language dropdown lists System default and English', (
+  testWidgets('the language dropdown offers English and Croatian', (
     tester,
   ) async {
     await open(tester);
     await section(tester, 'Interface');
     expect(find.text('Language'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+    expect(settings().locale, isNull);
 
     await tester.tap(find.byKey(const Key('settings-language')));
     await tester.pumpAndSettle();
-    expect(find.text('System default'), findsWidgets);
-    await tester.tap(find.text('English').last);
+    expect(find.text('System default'), findsNothing);
+    await tester.tap(find.text('Hrvatski').last);
     await tester.pumpAndSettle();
     await save(tester);
 
-    expect(settings().locale, 'en');
+    expect(settings().locale, 'hr');
   });
 }

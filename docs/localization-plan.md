@@ -216,6 +216,38 @@ non-English share of the TTS community.
 - **Release notes.** A "Languages" line in `docs/v3-release-notes-*.md`, the
   in-app changelog and the Nexus description.
 
+### As implemented (code parts of B)
+
+Done without any real translation; the pilot language is still to be decided.
+
+- **Help text.** `helpTextProvider` is now a `FutureProvider.family` keyed by
+  the UI `Locale` and loads through `loadLocalizedAsset`
+  (`lib/features/about/application/localized_assets.dart`): `help_<lang>_<COUNTRY>.md`,
+  then `help_<lang>.md`, then `help.md`; English goes straight to `help.md`.
+  A missing locale file is a `FlutterError` that is caught and skipped; only
+  the base file may fail. `assets/text/` was already a registered asset
+  folder. Tests that override the provider use
+  `overrideWith((ref, locale) async => ...)`.
+- **Changelog note.** The Changelog tab shows `helpChangelogEnglishOnly`
+  above the text when the language is not English (English ARB string only;
+  its translation comes with the first language).
+- **Credits.** `TRANSLATORS.md` at the repo root is also a registered asset;
+  `translatorCreditsProvider` parses its `- <tag>: Name, Name` lines and the
+  About tab lists them under `aboutTranslators` (one `aboutTranslatorsLine`
+  per language, language shown by its native name). With no entries, the file
+  has none today, nothing is shown, so English users see no change. A test
+  asserts that every credited tag has an `app_<tag>.arb`.
+- **`docs/translating.md`** written (ARB format, placeholders, plurals, the
+  registration steps, checks, help text, the 10 % shipping rule).
+- The non-English paths (changelog note, help fallback, credits with a
+  language name) were checked once with a throwaway padded `sw` locale, which
+  is deleted again; the committed tests run in `en`.
+
+Still open for B, because they need the pilot language: the pilot
+`app_<locale>.arb` and its native-name entry, `help_<locale>.md`, the
+translator's `TRANSLATORS.md` line, and the "Languages" line in the release
+notes, the in-app changelog and the Nexus description.
+
 ## 4. Phase C: community translations and the long tail
 
 - **Contribution path.** `docs/translating.md`: ARB format, placeholders and
@@ -254,12 +286,14 @@ reviews it. Only the hosted platform and RTL wait for demand.
 
 ## 6. Definition of done for Phase A
 
-- `flutter analyze` clean, `flutter test` green (the English tests unchanged).
-- Settings shows a Language dropdown; choosing "System default" or a locale
+- [x] `flutter analyze` clean, `flutter test` green (the English tests
+  unchanged; the ones that used `modDateFormat` call `formatModDate('en', ...)`).
+- [x] Settings shows a Language dropdown; choosing "System default" or a locale
   persists across restarts.
-- With a temporary `app_xx.arb` present, the app switches to it at runtime and
-  dates on cards change format with it; with the file deleted, nothing in git
-  references it.
-- `build/untranslated.json` is produced by `flutter gen-l10n`.
-- `test/l10n/arb_consistency_test.dart` exists and passes.
-- This file's section 2 updated with anything that turned out differently.
+- [x] With a temporary `app_sw.arb` present (not `xx`, see section 2), the app
+  switches to it at runtime; date formats follow the locale
+  (`test/l10n/locale_test.dart`, `date_symbols_test.dart`); with the file
+  deleted, nothing in git references it.
+- [x] `build/untranslated.json` is produced by `flutter gen-l10n`.
+- [x] `test/l10n/arb_consistency_test.dart` exists and passes.
+- [x] This file's section 2 updated with anything that turned out differently.

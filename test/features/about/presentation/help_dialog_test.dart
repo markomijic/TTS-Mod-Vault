@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/misc.dart' show Override;
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/providers/app_log_provider.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
+import 'package:tts_mod_vault/features/about/application/translator_credits.dart';
 import 'package:tts_mod_vault/features/about/application/update_check.dart';
 import 'package:tts_mod_vault/features/about/presentation/about_links.dart';
 import 'package:tts_mod_vault/features/about/presentation/help_dialog.dart';
@@ -46,6 +47,7 @@ void main() {
     String? latest,
     String? logPath = r'C:\logs\vault.log',
     bool realAssets = false,
+    List<TranslatorCredit> credits = const [],
   }) async {
     final log = AppLog(store: LogStore());
     addTearDown(log.dispose);
@@ -54,9 +56,10 @@ void main() {
       overrides: [
         appLogProvider.overrideWithValue(log),
         if (!realAssets) ...<Override>[
-          helpTextProvider.overrideWith((ref) async => _help),
+          helpTextProvider.overrideWith((ref, locale) async => _help),
           changelogTextProvider.overrideWith((ref) async => _changelog),
         ],
+        translatorCreditsProvider.overrideWith((ref) async => credits),
         currentAppVersionProvider.overrideWith((ref) async => '3.0.0'),
         updateCheckProvider.overrideWith((ref) async => latest),
         logFilePathProvider.overrideWithValue(logPath),
@@ -161,6 +164,42 @@ void main() {
     await tester.tap(find.text('Open log folder'));
     await tester.pumpAndSettle();
     expect(revealed, [r'C:\logs\vault.log']);
+  });
+
+  testWidgets('About lists the translators once there are some', (
+    tester,
+  ) async {
+    await open(
+      tester,
+      credits: const [
+        TranslatorCredit(localeTag: 'en', names: 'Jane Doe, John Roe'),
+      ],
+    );
+    await tab(tester, 'About');
+
+    expect(find.text('Translators'), findsOneWidget);
+    expect(find.text('English: Jane Doe, John Roe'), findsOneWidget);
+  });
+
+  testWidgets('About has no translator section without credits', (
+    tester,
+  ) async {
+    await open(tester);
+    await tab(tester, 'About');
+
+    expect(find.text('Translators'), findsNothing);
+  });
+
+  testWidgets('the Changelog has no English-only note in English', (
+    tester,
+  ) async {
+    await open(tester);
+    await tab(tester, 'Changelog');
+
+    expect(
+      find.text('The changelog is only available in English.'),
+      findsNothing,
+    );
   });
 
   testWidgets('Check for updates now reports an up-to-date app', (

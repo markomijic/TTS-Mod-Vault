@@ -90,3 +90,4 @@ flutter:
   assets:
     - assets/icon/
     - assets/text/
+    - TRANSLATORS.md

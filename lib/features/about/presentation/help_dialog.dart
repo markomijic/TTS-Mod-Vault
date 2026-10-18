@@ -11,22 +11,27 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/platform/file_explorer.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
+import 'package:tts_mod_vault/features/about/application/localized_assets.dart';
+import 'package:tts_mod_vault/features/about/application/translator_credits.dart';
 import 'package:tts_mod_vault/features/about/application/update_check.dart';
 import 'package:tts_mod_vault/features/about/presentation/about_links.dart';
 import 'package:tts_mod_vault/features/about/presentation/simple_markdown.dart';
 import 'package:tts_mod_vault/features/about/presentation/update_notice.dart';
 import 'package:tts_mod_vault/features/logs/application/log_providers.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
+import 'package:tts_mod_vault/l10n/locale_tags.dart';
 
-/// Asset path of the help text.
+/// Asset path of the English help text, which is also the fallback for a
+/// language without a `help_<locale>.md` of its own.
 const String helpAssetPath = 'assets/text/help.md';
 
 /// Asset path of the changelog.
 const String changelogAssetPath = 'assets/text/changelog.md';
 
-/// The Markdown of the Help tab; overridable in tests.
-final helpTextProvider = FutureProvider<String>(
-  (ref) => rootBundle.loadString(helpAssetPath),
+/// The Markdown of the Help tab for a UI locale: `help_<locale>.md` when the
+/// app ships it, else `help.md`. Overridable in tests.
+final helpTextProvider = FutureProvider.family<String, Locale>(
+  (ref, locale) => loadLocalizedAsset(helpAssetPath, locale),
 );
 
 /// The Markdown of the Changelog tab; overridable in tests.
@@ -72,6 +77,7 @@ class HelpDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
     return Dialog(
       child: SizedBox(
         width: _dialogWidth,
@@ -115,8 +121,15 @@ class HelpDialog extends StatelessWidget {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _MarkdownTab(provider: helpTextProvider),
-                    _MarkdownTab(provider: changelogTextProvider),
+                    _MarkdownTab(provider: helpTextProvider(locale)),
+                    _MarkdownTab(
+                      provider: changelogTextProvider,
+                      // The changelog is English only; say so in the
+                      // reader's language.
+                      notice: locale.languageCode == 'en'
+                          ? null
+                          : l10n.helpChangelogEnglishOnly,
+                    ),
                     const AboutTab(),
                   ],
                 ),
@@ -130,9 +143,12 @@ class HelpDialog extends StatelessWidget {
 }
 
 class _MarkdownTab extends HookConsumerWidget {
-  const _MarkdownTab({required this.provider});
+  const _MarkdownTab({required this.provider, this.notice});
 
   final FutureProvider<String> provider;
+
+  /// A line shown above the text.
+  final String? notice;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -148,7 +164,22 @@ class _MarkdownTab extends HookConsumerWidget {
         child: SingleChildScrollView(
           controller: controller,
           padding: const EdgeInsets.all(Insets.xl),
-          child: SimpleMarkdown(value),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (notice case final notice?) ...[
+                Text(
+                  notice,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                Gaps.h16,
+              ],
+              SimpleMarkdown(value),
+            ],
+          ),
         ),
       ),
       AsyncError() => Center(
@@ -178,6 +209,7 @@ class AboutTab extends ConsumerWidget {
     final version = ref.watch(currentAppVersionProvider).value;
     final logPath = ref.watch(logFilePathProvider);
     final checking = ref.watch(updateCheckProvider).isLoading;
+    final credits = ref.watch(translatorCreditsProvider).value ?? const [];
 
     Future<void> open(String url) async {
       var ok = false;
@@ -234,6 +266,21 @@ class AboutTab extends ConsumerWidget {
               color: scheme.onSurfaceVariant,
             ),
           ),
+          if (credits.isNotEmpty) ...[
+            Gaps.h16,
+            Text(l10n.aboutTranslators, style: theme.textTheme.titleSmall),
+            Gaps.h4,
+            for (final credit in credits)
+              Text(
+                l10n.aboutTranslatorsLine(
+                  _languageName(credit.localeTag),
+                  credit.names,
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+          ],
           Gaps.h24,
           Wrap(
             spacing: Insets.sm,
@@ -298,4 +345,10 @@ class AboutTab extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The native name of the language tagged [tag], or the tag itself.
+String _languageName(String tag) {
+  final locale = localeFromTag(tag);
+  return locale == null ? tag : nativeLanguageName(locale);
 }

@@ -1399,6 +1399,18 @@
     "description": "Version line of the About tab",
     "placeholders": {"version": {"type": "String"}}
   },
+  "helpChangelogEnglishOnly": "The changelog is only available in English.",
+  "@helpChangelogEnglishOnly": {"description": "Note above the changelog, shown when the app language is not English; the changelog itself is never translated"},
+  "aboutTranslators": "Translators",
+  "@aboutTranslators": {"description": "Heading of the translator credits on the About tab; the credits are only shown once a translation exists"},
+  "aboutTranslatorsLine": "{language}: {names}",
+  "@aboutTranslatorsLine": {
+    "description": "One line of the translator credits: a language and the people who translated it",
+    "placeholders": {
+      "language": {"type": "String", "example": "Deutsch"},
+      "names": {"type": "String", "example": "Jane Doe, John Roe"}
+    }
+  },
   "aboutDescription": "Download and back up the assets of your Tabletop Simulator mods.",
   "@aboutDescription": {"description": "One-line description on the About tab"},
   "aboutLicense": "Free software under the GNU General Public License v3.",

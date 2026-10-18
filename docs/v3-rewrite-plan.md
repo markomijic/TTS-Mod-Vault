@@ -436,6 +436,7 @@ Nothing open.
 ### Resume notes (keep current)
 
 - 2026-10-18 11:00: Phases 0-6 complete on Windows, committed. Waiting on the user for Linux/macOS builds and the cut-over go (see Phase 6 status and `docs/v3-cutover-checklist.md`). Nothing running.
+- 2026-10-18 15:15: Cut-over steps (a), (b1)-(b5) done on `v3-rewrite` as commit c3aa352: the 2.x project is deleted, v3 lives at the repo root, root release build smoke-tested (title 3.0.0, pdfium + sqlite3 bundled, 2.x data folder intact). Per the user, NOT merged into `main` and not tagged or pushed: everything stays on `v3-rewrite` until they say otherwise. The 2.x uncommitted material_ui work is saved as `D:	mp	tsmv-bench2-wip-material-ui-20261018.patch`.
 
 ## 10. Benchmark protocol
 

@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(fd:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(dart format:*)",
+      "PowerShell(grep:*)",
+      "PowerShell(rg:*)",
+      "PowerShell(find:*)",
+      "PowerShell(fd:*)",
+      "PowerShell(flutter analyze:*)",
+      "PowerShell(dart format:*)",
+      "Read(//**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-guard search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-guard read",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

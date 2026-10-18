@@ -13,9 +13,14 @@
 migrate_working_dir/
 .vscode/
 .env
-.claude/
+
+# Claude Code: CLAUDE.md and .claude/ (graphify skill, shared settings) are tracked;
+# only per-machine files and the graphify graph output stay local.
+.claude/settings.local.json
+.claude/*.bak
+.claude/*.graphify-bak
+.claude/skills/graphify/*.bak
 graphify-out/
-CLAUDE.md
 
 # IntelliJ related
 *.iml

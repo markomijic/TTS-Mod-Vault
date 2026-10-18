@@ -356,6 +356,8 @@ Milestone: backups and imports interoperate with v2 and TTS Mod Backup files; me
 
 Milestone: full feature parity checklist (section 7) ticked.
 
+**Status: done 2026-10-18** (`8a1a8ee` application, Phase 5 UI commit after). Settings dialog incl. Appearance, Help/Changelog/About, log panel, bulk actions, Update URLs, 2.x settings import (without deleting 2.x data). Parity audit against section 7 is the first Phase 6 task.
+
 ### Phase 6: Polish, measurement, cut-over (small to medium)
 
 - Performance pass with DevTools against your library: startup, grid scroll, selection latency, memory during import/backup. Fix regressions, record numbers.
@@ -431,7 +433,7 @@ Nothing open.
 
 ### Resume notes (keep current)
 
-- 2026-10-18 01:30: committed through `f9fe695` (Phases 0-3 complete, Phase 4 application layer). **In progress, uncommitted:** (a) Phase 4 UI wiring agent (`lib/features/backups/presentation`, `lib/features/cleanup/presentation`, stub call sites in `mod_context_menu.dart`, `selected_mod_actions.dart`, `app_shell.dart`); (b) Phase 5 application agent (`lib/features/bulk`, `lib/features/url_updates`, `lib/features/settings`, `lib/features/logs` application folders, `lib/data/legacy`, one call added to `startup_controller.dart`). On resume: analyze + test those folders, fix or re-dispatch, commit, then dispatch Phase 5 UI (settings dialog with Appearance section, collapsible log panel in `bottomSlot`, bulk actions menu + multi-select view buttons, Update URLs dialog with presets, help/changelog dialogs from `assets/text/`), then Phase 6 polish (parity checklist audit, benchmarks incl. backup/import memory, Linux/macOS builds, README, cut-over).
+- 2026-10-18 09:00: Phases 0-5 complete and committed (1015 tests). Phase 6 next: parity audit of section 7 (fix gaps), remaining benchmarks (backup/import memory on a sandbox copy, cleanup, bulk URL check, stress library), light theme + keyboard pass, Linux/macOS builds (need the user's VM/Mac), README + 3.0.0 changelog, cut-over (user's go required). Housekeeping: drop `hive_ce_flutter` later; consider removing the duplicate `library.options`/`network.options` persistence.
 
 ## 10. Benchmark protocol
 

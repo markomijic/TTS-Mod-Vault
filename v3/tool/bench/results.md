@@ -212,3 +212,263 @@ batch returns; `indexFiles 0` means the asset-folder listing and
 - Dropping the low-cardinality `mod_assets_type` index (~2 % of cold wall).
 - The ~1.2 s before `main()` is the Flutter Windows engine start and is the
   same for v2; nothing in the Dart code affects it.
+
+## v3 Phase 6 (2026-10-18)
+
+Operation benchmarks of plan section 10.3 and the stress library of 10.4.
+Source: `v3-rewrite` at commit `5f6a81e`, Flutter 3.47.7 / Dart 3.13.5. GUI
+numbers come from the release exe `build\windows\x64\runner\Release\tts_mod_vault.exe`
+through `bench.ps1`; every `op_bench` number is a **JIT number** (headless
+`flutter_tester`, see README "JIT, not release") and is never put next to the
+release start-up rows. For `op_bench` the comparable figure is the RSS
+**delta** over the baseline (the baseline of ~200-215 MB is the flutter_tester
+engine plus the loaded library); `maxRss at end` is the OS peak of the whole
+process including the setup refresh. No v2 counterpart exists for these rows
+(v2 has no headless path and the v2 GUI rows were not measured), so Phase 6
+records v3 only. Same machine as Phase 1 (Ryzen 7 5700X3D, 14 worker
+isolates), nothing else heavy running, CPU 0-6 % before each GUI launch.
+
+### Safety record
+
+Plan 10.2 was followed: the real library under `Documents\My Games\Tabletop
+Simulator` was only read (sandbox copy, stress templates, the stopped URL
+check); nothing was written, deleted, imported or cleaned there. The 2.x data
+folder was not touched. All output went under `D:\tmp\ttsmv-bench\`; the
+combined footprint peaked at ~17.4 GB (during the sandbox `backup-all`, free
+space on D dropped from 146.5 GB to 129.1 GB) and is 9.41 GB after the session
+(`sandbox` 7.92 GB and `stress` 1.44 GB kept, everything else deleted; free
+space on D 136.7 GB). Verification at the end of the session:
+
+- real library: 20,446 files / 38.91 GB, every path, size and mtime identical
+  to the inventory taken before the session;
+- `Documents\TTS Mod Vault` (2.x): unchanged, SHA256 identical;
+- v3 data folder `%APPDATA%\io.github.markomijic\TTS Mod Vault` (`vault.sqlite`
+  16,605,184 bytes, `vault.log` 59,845 bytes): copied to
+  `D:\tmp\ttsmv-bench\v3-data-backup\` before the stress GUI runs, restored
+  byte for byte afterwards, SHA256 of both files identical to the pre-session
+  snapshot (`1D7EAD84...DDD8D6` / `BC4FD097...E880`).
+
+### Sandbox (`make_sandbox.ps1`)
+
+`3781830124` (the plan's "large mod") has 1,576 referenced assets but only
+**4** of them are cached in the real library (0.01 GB), so a sandbox picked by
+JSON size alone (the five largest JSONs) would have carried 1.0 GB of assets
+and the "multi-GB import" row would have been meaningless. A read-only survey
+of cached bytes per Workshop mod (`list_assets.dart` per JSON, matched against
+the asset folders) chose the mods instead:
+
+| Mod | JSON | Assets cached / referenced | Cached size |
+| --- | --- | --- | --- |
+| `3781830124` Lord of the Rings LCG [Scripted] | 64.9 MB | 4 / 1,576 | 0.01 GB |
+| `3775466398` Lands of Evershade | 3.5 MB | 677 / 677 | 2.95 GB |
+| `3720241537` Zombicide - White Death (`Queued/`) | 4.4 MB | 638 / 645 | 2.41 GB |
+| `3756707253` Cozy Stickerville (`Queued/`) | 1.2 MB | 397 / 415 | 1.27 GB |
+| `2912738329` Marvel Zombies - A Zombicide Game (`Queued/`) | 2.8 MB | 300 / 618 | 1.23 GB |
+
+Dry run then copy: 2,016 files, 7.92 GB (8,501,641,801 bytes; Images 1,931,
+Models 41, PDF 27, Assetbundles 6, Audio 1; 1,939 referenced assets are not
+cached in the source and so are "missing" in the sandbox too), plus 500 x 1 KB
+`orphan<i>.png` in `Mods\Images`. `3775466398` doubles as the multi-GB case
+for the backup and import rows.
+
+### Peak memory, one-mod backup (`op_bench backup-one`, JIT)
+
+| Mod | Run | Elapsed | Archive | RSS baseline | peak | delta |
+| --- | --- | --- | --- | --- | --- | --- |
+| `3781830124` (68 MB JSON, 4 assets) | 1 | 903 ms | 14,768,500 B | 312.0 MB (first run, compile) | 328.3 MB | 16.3 MB |
+| | 2 | 863 ms | same | 214.5 MB | 233.2 MB | 18.7 MB |
+| | 3 | 886 ms | same | 215.2 MB | 232.8 MB | 17.6 MB |
+| | **median** | **886 ms** | **14.8 MB** | | | **17.6 MB** |
+| `3775466398` (677 assets) | 1 | 71,497 ms | 3,028,124,043 B | 214.8 MB | 285.9 MB | 71.1 MB |
+| | 2 | 62,979 ms | same | 215.0 MB | 271.5 MB | 56.5 MB |
+| | 3 | 63,620 ms | same | 215.3 MB | 267.7 MB | 52.4 MB |
+| | **median** | **63,620 ms** | **3.03 GB** | | | **56.5 MB** |
+
+The 68 MB JSON compresses to 14.8 MB; the 3.03 GB archive is written at ~48
+MB/s (deflate-bound) with a peak delta of 1.9 % of its size.
+
+### Peak memory, full-library backup (`op_bench backup-all`, JIT)
+
+Run on the **sandbox**, not the real library: the real `Mods` folder is 39.8
+GB, so a full archive set would not fit the 20 GB budget (plan 10.2), and
+`op_bench` has no mod-count limit for `backup-all`. 5 mods, replace
+behaviour, output `D:\tmp\ttsmv-bench\backups-all\` (deleted after the runs).
+
+| Run | Elapsed | Archives | RSS baseline | peak | delta |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 170,417 ms | 5 / 8,208,598,650 B | 216.7 MB | 292.7 MB | 76.0 MB |
+| 2 | 167,575 ms | same | 215.7 MB | 295.6 MB | 79.9 MB |
+| 3 | 167,145 ms | same | 214.8 MB | 295.2 MB | 80.4 MB |
+| **median** | **167,575 ms** | **8.21 GB** | | | **79.9 MB** |
+
+Archive sizes: Lands of Evershade 3,028,124,043; Zombicide - White Death
+2,560,534,848; Cozy Stickerville 1,334,598,486; Marvel Zombies 1,270,572,773;
+Lord of the Rings 14,768,500 bytes. 0 skipped, 0 failed.
+
+### Peak memory, multi-GB import (`op_bench import`, JIT)
+
+Into `D:\tmp\ttsmv-bench\sandbox-import\`, an empty TTS-shaped folder that was
+wiped and recreated before every run (fresh data folder too), so every run is
+a first import with nothing to skip.
+
+| Archive | Run | Elapsed | Extracted | RSS baseline | peak | delta |
+| --- | --- | --- | --- | --- | --- | --- |
+| `3775466398` 3.03 GB | 1 | 6,362 ms | 677 assets + JSON | 205.3 MB | 261.9 MB | 56.6 MB |
+| | 2 | 6,460 ms | same | 205.3 MB | 254.7 MB | 49.4 MB |
+| | 3 | 6,679 ms | same | 205.3 MB | 256.5 MB | 51.3 MB |
+| | **median** | **6,460 ms** | | | | **51.3 MB (1.7 % of the archive)** |
+| `3781830124` 14.8 MB | 1 | 869 ms | 4 assets + 68 MB JSON | 205.6 MB | 481.3 MB | 275.8 MB |
+| | 2 | 854 ms | same | 205.5 MB | 468.3 MB | 262.8 MB |
+| | 3 | 823 ms | same | 205.4 MB | 468.3 MB | 262.9 MB |
+| | **median** | **854 ms** | | | | **262.9 MB** |
+
+The import memory is flat with respect to the archive: 3.03 GB of assets are
+streamed through in 6.5 s with a 51 MB peak delta (470 MB/s, stored entries).
+The 14.8 MB archive shows the opposite ratio (17.8x its size) because the cost
+is the 68 MB mod JSON being decoded and parsed after extraction (the string
+alone is ~136 MB in Dart), not the archive; the same JSON costs the refresh the
+same amount on every cold start. This is a per-mod-JSON cost, bounded by the
+largest JSON in the library, not by the archive size.
+
+### Cleanup (`op_bench cleanup`, JIT, sandbox with 500 seeded orphans)
+
+| Run | Scan | Candidates | Delete | Deleted | RSS delta |
+| --- | --- | --- | --- | --- | --- |
+| dry-run 1 | 427 ms | 500 / 512,000 B | - | - | 6.1 MB |
+| dry-run 2 | 430 ms | 500 | - | - | 2.8 MB |
+| dry-run 3 | 430 ms | 500 | - | - | 6.0 MB |
+| delete 1 | 426 ms | 500 | 375 ms | 500 / 512,000 B | 12.5 MB |
+| delete 2 (re-seeded) | 430 ms | 500 | 345 ms | 500 | 12.6 MB |
+| delete 3 (re-seeded) | 434 ms | 500 | 372 ms | 500 | 13.7 MB |
+| **median** | **430 ms** | | **372 ms** | | |
+
+Exactly the 500 seeded files were flagged each time (nothing else in the
+2,016-file sandbox), 0 failed, 0 warnings. The orphans were re-seeded between
+the delete runs with the same 1 KB files `make_sandbox.ps1` writes.
+
+### Bulk URL check (`op_bench check-urls`, concurrency 5, JIT)
+
+Real library (read-only, `D:\tmp\ttsmv-bench\data-real`): 101 mods, started
+10:06:22, **stopped after 26 min 20 s** at 75 / 101 mods and 12,865 URLs
+checked (~8 URLs/s; the mods are checked one after another with 5 workers
+inside each, and the slow part is non-Steam hosts such as Dropbox links that
+run into the 15 s connect timeout). The full ~18.9k URLs would have taken ~39
+min, over the ~20 min cap, so the scenario was repeated on the sandbox as the
+brief allows; only the four `flutter_tester`/`dart` processes of that job were
+stopped.
+
+| Library | Run | Elapsed | Mods | URLs checked / total | Unreachable | RSS delta |
+| --- | --- | --- | --- | --- | --- | --- |
+| real (stopped) | 1 | >26 min 20 s | 75 / 101 | 12,865 / ~18.9k | partial | - |
+| sandbox | 1 | 167,606 ms | 5 / 5 | 3,912 / 3,912 | 14 | 38.1 MB |
+| sandbox | 2 | 62,225 ms | 5 / 5 | 3,912 / 3,912 | 14 | 37.0 MB |
+
+Both sandbox runs have equal result counts (3,912 checked, 14 unreachable), so
+they are comparable in the plan's sense, and they differ by 2.7x purely on the
+network side (second-pass CDN/DNS/TLS warmth; run 2 overlapped for ~1 min with
+the first, aborted, stress refresh attempt, which cannot explain 105 s). The
+elapsed time of this row is a network number; the counts are the stable part.
+v2 baseline: not available.
+
+### Stress library (plan 10.4)
+
+`dart run tool\stress_library.dart --source "<real>\Mods" --out D:\tmp\ttsmv-bench\stress --mods 1000 --present-fraction 0.6 --max-template-mb 10`:
+97 templates (the 4 JSONs over 10 MB skipped so the copies stay small; the
+estimate before writing was 97 x 1.36 MB avg x 1000 = 1.33 GB of JSON), 1,000
+mods, 153,636 rewritten URLs (62 not rewritable, shared), 92,178 placeholder
+files, 1,547,003,964 bytes written in 119 s. 10x the mods and 8x the asset rows
+of the real library (153.6k vs 18.9k `mod_assets`).
+
+#### Headless refresh (`op_bench refresh`, JIT)
+
+| | Run | Elapsed | In-app `durationMs` | Phases | RSS baseline / peak / delta |
+| --- | --- | --- | --- | --- | --- |
+| cold (`-Cold`) | 1 | 5,551 ms | 5,183 ms | scan 226, parse 1056, upsert 3211 (work 4074, 3 transactions), summary 550 | 199.0 / 507.1 / 308.1 MB |
+| | 2 | 5,645 ms | 5,242 ms | scan 219, parse 1093, upsert 3255 (work 4140), summary 538 | 199.2 / 531.4 / 332.2 MB |
+| | 3 | 5,558 ms | 5,188 ms | scan 217, parse 1072, upsert 3217 (work 4085), summary 541 | 197.0 / 514.6 / 317.6 MB |
+| | **median** | **5,558 ms** | **5,188 ms** | | **delta 317.6 MB** |
+| warm | 1 | 1,461 ms | 1,404 ms | scan 217, diff 36, indexFiles 494, summary 555 | 198.8 / 307.7 / 108.8 MB |
+| | 2 | 1,448 ms | 1,391 ms | scan 220, diff 30, indexFiles 478, summary 560 | 197.1 / 307.9 / 110.8 MB |
+| | 3 | 1,445 ms | 1,387 ms | scan 220, diff 29, indexFiles 478, summary 557 | 198.8 / 308.6 / 109.8 MB |
+| | **median** | **1,448 ms** | **1,391 ms** | | **delta 109.8 MB** |
+
+An earlier cold run that overlapped with the sandbox URL check measured 5,896
+ms / 5,496 ms; its warm partner failed before starting because two concurrent
+`flutter test` runs fight over `build\native_assets\windows\sqlite3.dll`
+(op_bench runs must not overlap). The series above was taken afterwards with
+nothing else running.
+
+#### GUI start-up, release build (`bench.ps1 -App v3`)
+
+The GUI was pointed at the stress library by editing the `directories` row of
+the `kv` table in a copy of the user's `vault.sqlite` (`modsDir`/`savesDir` ->
+`D:\tmp\ttsmv-bench\stress\Mods|Saves`, `backupsDir` -> an empty folder) with
+Python's sqlite3. Because the directories live in `vault.sqlite`, the harness'
+cold mode (delete `vault.sqlite`) would have fallen back to the default
+folders, i.e. the real library. Cold runs were therefore made with a **seed
+database** installed before each run: that copy with the `mods`, `mod_assets`,
+`existing_files` and `backups` tables emptied and `VACUUM`ed (kv rows kept,
+schema present), launched through `bench.ps1 -Mode warm -Runs 1` which deletes
+nothing. The difference to a true "no file" cold start is the schema creation
+(`dbOpenMs=0` in every bootstrap line, so negligible). Warm runs used the
+database the last cold run left behind. The user's data folder was restored
+and hash-verified afterwards (see the safety record).
+
+| Mode | Run | Wall | In-app | Phases (ms) | bootstrap / first frame / refresh requested (since `main()`) |
+| --- | --- | --- | --- | --- | --- |
+| cold | 1 | 5,826 ms | 4,472 ms | scan 79, diff 10, parse 928, upsert 2930 (work 3751), summary 524 | 22 / 40 / 50 |
+| | 2 | 5,667 ms | 4,404 ms | scan 75, parse 903, upsert 2900 (work 3702), summary 524 | 9 / 25 / 32 |
+| | 3 | 5,805 ms | 4,533 ms | scan 77, diff 19, parse 1042, upsert 2831 (work 3769), summary 539 | 9 / 25 / 31 |
+| | **median** | **5,805 ms** | **4,472 ms** | | 9 / 25 / 32 |
+| warm | 1 | 2,548 ms | 1,166 ms | scan 75, diff 22, indexFiles 511, summary 557 | 9 / 25 / 137 |
+| | 2 | 2,554 ms | 1,170 ms | scan 73, diff 9, indexFiles 522, summary 564 | 9 / 25 / 140 |
+| | 3 | 2,562 ms | 1,177 ms | scan 76, diff 24, indexFiles 516, summary 559 | 10 / 25 / 142 |
+| | **median** | **2,554 ms** | **1,170 ms** | | 9 / 25 / 140 |
+| after one change | 1 | 2,549 ms | 1,150 ms | scan 77, parse 24, upsert 16, indexFiles 498, summary 529 | 9 / 25 / 154 |
+| | 2 | 2,516 ms | 1,139 ms | scan 77, parse 3, upsert 1, indexFiles 513, summary 528 | 9 / 25 / 136 |
+| | 3 | 2,562 ms | 1,184 ms | scan 78, parse 7, upsert 6, indexFiles 502, summary 562 | 9 / 27 / 141 |
+| | **median** | **2,549 ms** | **1,150 ms** | | |
+
+"After one change" = the mtime of one stress JSON (`9000000000..2.json`, a
+different one per run) set to now before the launch: only that mod is
+re-parsed and upserted (3-24 ms), the rest is the warm path. Release-build
+observations against the JIT refresh: parse 903-1042 vs ~1070 ms (the parse
+workers are mostly I/O and regex, little JIT gain), upsert 2831-2930 vs ~3217
+ms, summary ~524-564 ms in both. The warm start on 1,000 mods is dominated by
+`indexFilesMs` (~515 ms for 92k placeholder files in the asset folders) and
+`summaryMs` (~560 ms for the 153.6k-row join), and the ~1.3 s before `main()`
+is unchanged from the real library. `refresh requested` moves from ~48 ms
+(real library) to ~140 ms on the stress library; the first frame is unchanged
+at 25 ms.
+
+#### GUI memory during a stress cold start (release build)
+
+One extra cold start (same seed database) sampled every 100 ms from process
+start until 5 s after `Library refresh finished` (in-app 4,466 ms: parse 1039,
+upsert 2769, summary 524): working set min 72.5 MB, max sampled 405.4 MB,
+average 212.2 MB; private bytes max 954.0 MB; OS `PeakWorkingSet64` for the
+process lifetime **453.2 MB**; peak paged memory 1,028 MB. The private-bytes
+spike is the 14 parse isolates' heaps while 1,000 JSON texts (1.47 GB) are
+decoded; the working set settles around 200 MB after the refresh.
+
+### Deviations from the plan and the brief
+
+- The sandbox mods were chosen by cached asset bytes, not JSON size (see
+  above); `3781830124` is in it as required but is not a multi-GB case.
+- `backup-all` ran on the sandbox (5 mods, 8.21 GB), not the real library,
+  for the budget reason given above.
+- The real-library URL check was stopped at 26 min 20 s and the row recorded
+  from the sandbox (3,912 URLs); the partial real-library progress is given.
+- The stress GUI cold starts used a seeded database instead of
+  `bench.ps1 -Mode cold`; the "start after one change" row was measured on
+  the stress library (the plan's "touch a copy").
+- "Select large mod" (click to asset list frame) was not measured in Phase 6;
+  it needs an interactive GUI measurement.
+- One `op_bench` pair was lost to the concurrent-`flutter test` conflict noted
+  above and re-run.
+- Not from this session: ten `flutter_tester.exe` processes from test runs on
+  2026-10-17 (19:30-19:40) were still alive on the machine and were left
+  alone.
+
+Raw rows: `D:\tmp\ttsmv-bench\*.json` (one per `op_bench` run),
+`stress-gui-runs.csv`, `stress-gui-onechange.csv`.

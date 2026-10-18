@@ -366,6 +366,8 @@ Milestone: full feature parity checklist (section 7) ticked.
 - Update README (install, build, `--enable-native-assets`), write 3.0.0 changelog (note: cache rebuilt on first start, settings migrated).
 - Cut-over commit: delete old root project files, move `v3/` contents to root, drop `PROJECT_DIR` defaults, `graphify update .`, tag `v3.0.0`.
 
+**Status 2026-10-18:** done on the Windows side: parity audit (28/28, `docs/v3-parity-audit.md`), gaps closed, keyboard shortcuts, light-theme contrast tests, benchmarks (section 10.3 and `v3/tool/bench/results.md`), Windows packaging script, future README (`docs/README-v3.md`), cut-over checklist (`docs/v3-cutover-checklist.md`), release notes (`docs/v3-release-notes-3.0.0.md`). **Needs the user:** Linux build via `packaging/appimage/build_appimage.sh` with `PROJECT_DIR=v3` on the Ubuntu VM, macOS build via `packaging/macos/build_dmg.sh` with `PROJECT_DIR=v3`, a smoke pass on each, then the go for the cut-over sequence in the checklist. Optional before 3.0: speed up the cold index at scale (upsert dominates on the 1,000-mod stress library: ~2.9 s of 4.5 s), drop the duplicate `library.options`/`network.options` persistence now that Settings is the source of truth.
+
 ## 7. Feature parity checklist
 
 Taken from the README and the code. Every item must be reachable in v3 before cut-over.
@@ -433,7 +435,7 @@ Nothing open.
 
 ### Resume notes (keep current)
 
-- 2026-10-18 09:00: Phases 0-5 complete and committed (1015 tests). Phase 6 next: parity audit of section 7 (fix gaps), remaining benchmarks (backup/import memory on a sandbox copy, cleanup, bulk URL check, stress library), light theme + keyboard pass, Linux/macOS builds (need the user's VM/Mac), README + 3.0.0 changelog, cut-over (user's go required). Housekeeping: drop `hive_ce_flutter` later; consider removing the duplicate `library.options`/`network.options` persistence.
+- 2026-10-18 11:00: Phases 0-6 complete on Windows, committed. Waiting on the user for Linux/macOS builds and the cut-over go (see Phase 6 status and `docs/v3-cutover-checklist.md`). Nothing running.
 
 ## 10. Benchmark protocol
 
@@ -488,6 +490,17 @@ Each number is the median of 3 runs, v2 (2.1.0 release build) vs v3 (release bui
 | --- | --- | --- | --- | --- |
 | Cold start | 2261 ms | 889 ms | 1722 ms | 437 ms |
 | Warm start | 1845 ms | 502 ms (v2 pads the load to a 500 ms minimum; real work ~115 ms) | 1354 ms | 95 ms |
+| Start after one change (stress library, 1,000 mods; one JSON mtime touched) | n/a (no incremental path) | n/a | 2549 ms | 1150 ms (only the touched mod re-parsed: parse 3-24 ms, upsert 1-16 ms) |
+| Select large mod | not measured | | not measured in Phase 6 (interactive GUI row) | |
+| Peak memory, one-mod backup (headless `op_bench`, JIT; cells = elapsed / RSS delta over baseline) | not measured | | `3781830124` (68 MB JSON, 4 of 1,576 assets cached, 14.8 MB archive): 886 ms | +17.6 MB; `3775466398` (677 assets, 3.03 GB archive): 63.6 s | +56.5 MB |
+| Peak memory, full-library backup (sandbox, 5 mods, 8.21 GB of archives; the real library's set would exceed the 20 GB budget) | not measured | | 167.6 s | +79.9 MB |
+| Peak memory, multi-GB import (3.03 GB archive, 677 assets, into an empty sandbox) | not measured | | 6.46 s (also: the 14.8 MB archive of the 68 MB-JSON mod 854 ms) | +51.3 MB = 1.7 % of the archive (14.8 MB archive: +262.9 MB, the 68 MB JSON decode, not the archive) |
+| Cleanup scan (sandbox, 500 seeded orphans, 512 KB) | not measured | | scan 430 ms, delete 372 ms | +6.0 MB scan / +12.6 MB with delete |
+| Bulk URL check, concurrency 5 | n/a | | real library stopped after 26 min 20 s at 75/101 mods, 12,865 URLs (~8 URL/s, past the 20 min cap); sandbox 5 mods / 3,912 URLs: 167.6 s and 62.2 s (equal counts, 14 unreachable both times) | +38.1 MB / +37.0 MB |
+| Stress library cold start (1,000 mods, 153.6k asset rows, GUI release build, seeded settings-only database) | n/a | | 5805 ms | 4472 ms (parse 903-1042, upsert 2831-2930, summary ~530) |
+| Stress library warm start | n/a | | 2554 ms | 1170 ms (indexFiles ~515, summary ~560) |
+
+Phase 6 (2026-10-18, commit `5f6a81e`, details and raw runs in `v3/tool/bench/results.md`): on the 1,000-mod / 153.6k-asset stress library of section 10.4 the release build starts cold in 5.8 s and warm in 2.6 s with a 453 MB peak working set, i.e. roughly 10x the mods cost 3.4x the cold and 1.9x the warm wall time of the real library, and the import of a 3.03 GB archive peaks 51 MB above baseline.
 
 v3 measured 2026-10-17 after the Phase 1 optimisations (v3 working tree on `v3-rewrite` after commit `ad127db`, Flutter 3.47.7, same machine and library). In both apps roughly 1.2 s of the wall time passes before `main()` runs (engine and VM start); v3's own bootstrap takes 8 ms and its first library refresh is requested ~70 ms (cold) / ~48 ms (warm) after `main()`. Before the optimisations the same v3 code measured 2446 ms / 1178 ms cold and 1387 ms / 154 ms warm (an earlier 2979 ms figure was a harness artefact: it timed the log file's 500 ms flush instead of the line's timestamp).
 

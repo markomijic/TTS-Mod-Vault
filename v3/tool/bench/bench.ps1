@@ -26,32 +26,105 @@
   Documents\My Games\Tabletop Simulator and refuses an -Exe path inside it.
   It touches only the app's own cache files listed above.
 
-.PARAMETER Exe      Full path to the release exe.
-.PARAMETER Mode     cold | warm
+  Memory mode (-Mode memory): samples WorkingSet64 / PrivateMemorySize64 of
+  an already running tts_mod_vault process (or -Pid) every -IntervalMs for
+  -Seconds and prints min / max / avg, so a GUI operation started by hand
+  can be measured. Launches, kills and deletes nothing.
+
+.PARAMETER Exe      Full path to the release exe (cold / warm).
+.PARAMETER Mode     cold | warm | memory
 .PARAMETER Runs     Number of runs (default 3).
-.PARAMETER App      v2 | v3
+.PARAMETER App      v2 | v3 (cold / warm)
 .PARAMETER TimeoutSec  Per-run timeout in seconds (default 600).
 .PARAMETER Csv      Optional path; one row per run is appended (header written if new).
 .PARAMETER KeepLogs Keep per-run stdout/stderr captures (default: deleted). They are
                     written to $env:TEMP\ttsmv-bench\ either way.
+.PARAMETER ProcessId  (-Pid) memory mode: process to sample; default: the one tts_mod_vault.
+.PARAMETER Seconds  memory mode: sampling duration, 0 = until the process exits (default 30).
+.PARAMETER IntervalMs  memory mode: sampling interval (default 250).
 
 .EXAMPLE
   .\bench.ps1 -Exe D:\tmp\ttsmv-bench\v2-release\tts_mod_vault.exe -Mode cold -Runs 3 -App v2
   .\bench.ps1 -Exe D:\Dev\TTS-Mod-Vault\v3\build\windows\x64\runner\Release\tts_mod_vault.exe -Mode warm -App v3
+  .\bench.ps1 -Mode memory -Seconds 60            # then start the backup in the app
+  .\bench.ps1 -Mode memory -Pid 12345 -Seconds 0 -Csv D:\tmp\ttsmv-bench\memory.csv
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)] [string] $Exe,
-    [Parameter(Mandatory = $true)] [ValidateSet('cold', 'warm')] [string] $Mode,
+    [string] $Exe = '',
+    [Parameter(Mandatory = $true)] [ValidateSet('cold', 'warm', 'memory')] [string] $Mode,
     [int] $Runs = 3,
-    [Parameter(Mandatory = $true)] [ValidateSet('v2', 'v3')] [string] $App,
+    [string] $App = '',
     [int] $TimeoutSec = 600,
     [string] $Csv = '',
-    [switch] $KeepLogs
+    [switch] $KeepLogs,
+    # -Mode memory only: the process to sample (default: the one running
+    # tts_mod_vault), how long (0 = until it exits or Ctrl-C) and how often.
+    [Alias('Pid')] [int] $ProcessId = 0,
+    [int] $Seconds = 30,
+    [int] $IntervalMs = 250
 )
 
 $ErrorActionPreference = 'Stop'
 $inv = [System.Globalization.CultureInfo]::InvariantCulture
+
+# ---------------------------------------------------------- memory mode ----
+# Samples WorkingSet64 / PrivateMemorySize64 of a running app so a GUI
+# operation started by hand (a backup, an import) can be measured too.
+# Nothing is launched, killed or deleted in this mode.
+if ($Mode -eq 'memory') {
+    if ($ProcessId -gt 0) {
+        $proc = Get-Process -Id $ProcessId -ErrorAction Stop
+    }
+    else {
+        $procs = @(Get-Process -Name 'tts_mod_vault' -ErrorAction SilentlyContinue)
+        if ($procs.Count -eq 0) { throw 'No tts_mod_vault process is running; start the app or pass -Pid.' }
+        if ($procs.Count -gt 1) { throw "Several tts_mod_vault processes are running ($($procs.Id -join ', ')); pass -Pid." }
+        $proc = $procs[0]
+    }
+    $forText = if ($Seconds -gt 0) { "for $Seconds s" } else { 'until it exits (Ctrl-C to stop)' }
+    Write-Host "memory: sampling '$($proc.ProcessName)' (pid $($proc.Id)) every $IntervalMs ms $forText"
+    Write-Host "  exe: $($proc.Path)"
+    $ws = New-Object System.Collections.Generic.List[double]
+    $private = New-Object System.Collections.Generic.List[double]
+    $deadline = (Get-Date).AddSeconds($Seconds)
+    $started = Get-Date
+    $exited = $false
+    while ($Seconds -le 0 -or (Get-Date) -lt $deadline) {
+        try { $proc.Refresh() } catch { $exited = $true; break }
+        if ($proc.HasExited) { $exited = $true; break }
+        $ws.Add($proc.WorkingSet64 / 1MB)
+        $private.Add($proc.PrivateMemorySize64 / 1MB)
+        Start-Sleep -Milliseconds $IntervalMs
+    }
+    $elapsed = ((Get-Date) - $started).TotalSeconds
+    if ($ws.Count -eq 0) { throw 'No samples taken (did the process exit immediately?).' }
+    $wsStats = $ws | Measure-Object -Minimum -Maximum -Average
+    $pbStats = $private | Measure-Object -Minimum -Maximum -Average
+    $peakWs = $null
+    try { if (-not $exited) { $peakWs = [math]::Round($proc.PeakWorkingSet64 / 1MB, 1) } } catch { }
+    Write-Host ("  samples      : {0} over {1:N1} s{2}" -f $ws.Count, $elapsed, $(if ($exited) { ' (process exited)' } else { '' }))
+    Write-Host ("  working set  : min {0,8:N1} MB   max {1,8:N1} MB   avg {2,8:N1} MB" -f $wsStats.Minimum, $wsStats.Maximum, $wsStats.Average)
+    Write-Host ("  private bytes: min {0,8:N1} MB   max {1,8:N1} MB   avg {2,8:N1} MB" -f $pbStats.Minimum, $pbStats.Maximum, $pbStats.Average)
+    if ($null -ne $peakWs) { Write-Host ("  peak working set (OS, whole lifetime): {0:N1} MB" -f $peakWs) }
+    $row = [pscustomobject]@{
+        Mode = 'memory'; ProcessId = $proc.Id; ProcessName = $proc.ProcessName
+        Samples = $ws.Count; Seconds = [math]::Round($elapsed, 1); IntervalMs = $IntervalMs
+        WorkingSetMinMB = [math]::Round($wsStats.Minimum, 1); WorkingSetMaxMB = [math]::Round($wsStats.Maximum, 1); WorkingSetAvgMB = [math]::Round($wsStats.Average, 1)
+        PrivateMinMB = [math]::Round($pbStats.Minimum, 1); PrivateMaxMB = [math]::Round($pbStats.Maximum, 1); PrivateAvgMB = [math]::Round($pbStats.Average, 1)
+        PeakWorkingSetMB = $peakWs
+        Timestamp = $started.ToString('yyyy-MM-dd HH:mm:ss', $inv)
+        Exe = $proc.Path
+    }
+    if ($Csv) {
+        $row | Export-Csv -LiteralPath $Csv -Append -NoTypeInformation -Encoding UTF8
+        Write-Host "  csv: $Csv"
+    }
+    return $row
+}
+
+if (-not $Exe) { throw "-Exe is required for -Mode $Mode." }
+if ($App -ne 'v2' -and $App -ne 'v3') { throw "-App v2|v3 is required for -Mode $Mode." }
 
 # ---------------------------------------------------------------- safety ----
 $libraryRoot = Join-Path $env:USERPROFILE 'Documents\My Games\Tabletop Simulator'

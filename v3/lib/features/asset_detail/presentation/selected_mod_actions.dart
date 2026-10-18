@@ -4,9 +4,11 @@ import 'package:tts_mod_vault/app/shell/operation_running_provider.dart'
     show operationRunningProvider;
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/asset_detail/application/mod_assets_provider.dart';
 import 'package:tts_mod_vault/features/backups/presentation/backup_actions.dart';
 import 'package:tts_mod_vault/features/cleanup/presentation/delete_mod_assets_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
+import 'package:tts_mod_vault/features/library/presentation/item_actions.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_progress_bar.dart';
 import 'package:tts_mod_vault/features/url_updates/presentation/update_urls_dialog.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
@@ -51,7 +53,8 @@ class OperationProgressSlot extends StatelessWidget {
 
 /// The per-mod action buttons (2.x `SelectedModActionButtons` plus the
 /// items of its overflow menu): "Download all" (disabled when nothing is
-/// missing), "Backup", "Check URLs", "Delete assets" and "Update URLs".
+/// missing), "Backup", "Check URLs", "Copy missing URLs" (disabled when
+/// nothing is missing), "Delete assets" and "Update URLs".
 class SelectedModActions extends ConsumerWidget {
   /// Creates the buttons for [mod].
   const SelectedModActions({super.key, required this.mod});
@@ -63,6 +66,12 @@ class SelectedModActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final running = ref.watch(operationRunningProvider);
+
+    Future<void> copyMissingUrls() async {
+      final assets = await ref.read(modAssetsProvider(mod.jsonPath).future);
+      if (!context.mounted) return;
+      await copyTextToClipboard(context, missingUrlsText(assets));
+    }
 
     return Wrap(
       spacing: Insets.sm,
@@ -86,6 +95,11 @@ class SelectedModActions extends ConsumerWidget {
           label: Text(l10n.actionCheckUrls),
         ),
         FilledButton.tonalIcon(
+          onPressed: mod.missingCount > 0 && !running ? copyMissingUrls : null,
+          icon: const Icon(Icons.copy_all),
+          label: Text(l10n.actionCopyMissingUrls),
+        ),
+        FilledButton.tonalIcon(
           onPressed: running
               ? null
               : () => deleteModAssetsWithDialog(context, ref, mod),
@@ -103,3 +117,11 @@ class SelectedModActions extends ConsumerWidget {
     );
   }
 }
+
+/// The URLs of the assets of [assets] that are not on disk, one per line,
+/// in list order (what "Copy missing URLs" puts on the clipboard; 2.x
+/// behaviour).
+String missingUrlsText(List<Asset> assets) => [
+  for (final asset in assets)
+    if (!asset.exists) asset.url,
+].join('\n');

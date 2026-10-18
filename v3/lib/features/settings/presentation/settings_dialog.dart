@@ -301,8 +301,9 @@ class SettingsDialog extends HookConsumerWidget {
   /// What follows a successful save or reset: folders are persisted when
   /// they changed (then the library is refreshed), otherwise a refresh runs
   /// when the effects ask for one; the Saved Objects tab is left when it
-  /// disappeared; changed default sorts are applied. [directories] is null
-  /// when the folders were not edited (reset).
+  /// disappeared; backup status filters are dropped when the backup state
+  /// was switched off; changed default sorts are applied. [directories] is
+  /// null when the folders were not edited (reset).
   static Future<void> _applyEffects(
     WidgetRef ref,
     SettingsChangeEffects effects, {
@@ -321,6 +322,9 @@ class SettingsDialog extends HookConsumerWidget {
     if (effects.hidesSavedObjects &&
         ref.read(libraryTabProvider) == LibraryTab.savedObjects) {
       ref.read(libraryTabProvider.notifier).set(LibraryTab.mods);
+    }
+    if (previous.showBackupState && !next.showBackupState) {
+      ref.read(modFilterProvider.notifier).clearBackupStatuses();
     }
     if (previous.defaultSortOption != next.defaultSortOption) {
       ref.read(modFilterProvider.notifier).setSort(next.defaultSortOption);

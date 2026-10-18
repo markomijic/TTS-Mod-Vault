@@ -1719,5 +1719,12 @@
   "operationBulkCheckingUrls": "Checking URLs for mods",
   "@operationBulkCheckingUrls": {"description": "Progress bar label of a bulk URL check"},
   "operationUpdatingUrls": "Updating URLs",
-  "@operationUpdatingUrls": {"description": "Progress bar label while URL prefixes are rewritten (count appended)"}
+  "@operationUpdatingUrls": {"description": "Progress bar label while URL prefixes are rewritten (count appended)"},
+  "backupTooltipModSaved": "Mod saved: {date}",
+  "@backupTooltipModSaved": {
+    "description": "Line of the backup badge tooltip with the mod's own save date (2.x 'Update:' line), compared against the backup date",
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "actionCopyMissingUrls": "Copy missing URLs",
+  "@actionCopyMissingUrls": {"description": "Selected-mod bottom bar: put the URLs of the assets that are not on disk on the clipboard, one per line"}
 }

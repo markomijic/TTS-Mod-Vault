@@ -615,6 +615,24 @@ void main() {
     expect(container.read(libraryTabProvider), LibraryTab.mods);
   });
 
+  testWidgets('switching backup state off drops the backup status filters', (
+    tester,
+  ) async {
+    container.read(modFilterProvider.notifier)
+      ..toggleBackupStatus(BackupStatus.outOfDate)
+      ..toggleAssetFilter(AssetFilter.missing);
+    await open(tester);
+
+    await tester.tap(find.text('Show backup state'));
+    await tester.pumpAndSettle();
+    await save(tester);
+
+    expect(settings().showBackupState, isFalse);
+    final filter = container.read(modFilterProvider);
+    expect(filter.backupStatuses, isEmpty);
+    expect(filter.assetFilters, {AssetFilter.missing});
+  });
+
   testWidgets('a changed default backup sort is applied to the filter', (
     tester,
   ) async {

@@ -370,34 +370,34 @@ Milestone: full feature parity checklist (section 7) ticked.
 
 Taken from the README and the code. Every item must be reachable in v3 before cut-over.
 
-- [ ] Mods / Saves / Saved Objects (setting) tabs with counts tooltip
-- [ ] Grid and list views (settings), title-on-cards setting
-- [ ] Sort: A-Z, newest, recently updated, missing assets; default sort setting (mods and backups)
-- [ ] Filters: folders, backup state, complete/missing, audio/image/model/PDF/asset bundle presence
-- [ ] Search mods by name; search assets of selected mod
-- [ ] Single and Ctrl/Cmd multi-select
-- [ ] Selected mod: grouped assets, type chips, downloaded/missing filter, invalid filter, PDF thumbnails toggle + default setting, images viewer, open files (audio/image/PDF), open in file explorer
-- [ ] Asset actions: open URL, copy URL, replace URL (with optional file rename), delete file, shared-with info
-- [ ] Per-mod audio visibility override + global ignore-audio setting
-- [ ] Download missing assets (single asset, per type, whole mod); concurrency setting; ignored domains
-- [ ] Check URLs for a mod, persist invalid URLs; bulk check with results dialog
-- [ ] Download Workshop mods by one or many ids; update from Workshop (single, bulk, force)
-- [ ] Backup create (folder picker, default folder, set-as-default), replace prompt, progress
-- [ ] Backup status: none / up to date / out of date / asset count mismatch, with tooltip times
-- [ ] Backups tab: browse, sort, filter, search, import, open, copy filename, delete
-- [ ] Import `.ttsmod` (ours and TTS Mod Backup), conflict dialog on older backup JSON; import JSON (+PNG)
-- [ ] Rename mod/save/saved object (+ rename backup); Save as Mod; delete mod (+ image + cache)
-- [ ] Delete mod assets (non-shared / all) with shared report; bulk delete assets
-- [ ] Update URLs (prefix or whole URL, `|` multi old prefixes, presets from settings, rename files) single and bulk
-- [ ] Cleanup unused cached files
-- [ ] Bulk: download, backup, download+backup, with skip/replace rules and post-backup deletion; cancel for every bulk op
-- [ ] Refresh with optional clear cache
-- [ ] Settings: folders (mods, saves, backups, custom saves folder), ignored subfolders, ignored domains, force JSON filename in backup names, check updates on start, asset URL font size, concurrent downloads, show saved objects, show backup state
-- [ ] Update check against GitHub releases with Nexus/GitHub links; Help; Changelog; Ko-fi/Steam links
-- [ ] Collapsible log panel under the mod/backup lists with level/source filters, search, jump to mod, copy, clear, error badge, one-click open of the rotating log file (new in 3.0)
-- [ ] Appearance settings: theme mode, seed colour, presets incl. Classic (new in 3.0)
-- [ ] Window: min size 854x480, maximise on first show, title with version
-- [ ] macOS pdfium module path fix; Linux header bar title; Windows product strings; AppImage and DMG scripts
+- [x] Mods / Saves / Saved Objects (setting) tabs with counts tooltip
+- [x] Grid and list views (settings), title-on-cards setting
+- [x] Sort: A-Z, newest, recently updated, missing assets; default sort setting (mods and backups)
+- [x] Filters: folders, backup state, complete/missing, audio/image/model/PDF/asset bundle presence
+- [x] Search mods by name; search assets of selected mod
+- [x] Single and Ctrl/Cmd multi-select
+- [ ] Selected mod: grouped assets, type chips, downloaded/missing filter, invalid filter, PDF thumbnails toggle + default setting, images viewer, open files (audio/image/PDF), open in file explorer (partial: image-tile and PDF-thumbnail context menus offer fewer actions than v2; see docs/v3-parity-audit.md G1)
+- [x] Asset actions: open URL, copy URL, replace URL (with optional file rename), delete file, shared-with info
+- [x] Per-mod audio visibility override + global ignore-audio setting
+- [x] Download missing assets (single asset, per type, whole mod); concurrency setting; ignored domains
+- [x] Check URLs for a mod, persist invalid URLs; bulk check with results dialog
+- [x] Download Workshop mods by one or many ids; update from Workshop (single, bulk, force)
+- [x] Backup create (folder picker, default folder, set-as-default), replace prompt, progress
+- [x] Backup status: none / up to date / out of date / asset count mismatch, with tooltip times
+- [x] Backups tab: browse, sort, filter, search, import, open, copy filename, delete
+- [x] Import `.ttsmod` (ours and TTS Mod Backup), conflict dialog on older backup JSON; import JSON (+PNG)
+- [x] Rename mod/save/saved object (+ rename backup); Save as Mod; delete mod (+ image + cache)
+- [x] Delete mod assets (non-shared / all) with shared report; bulk delete assets
+- [x] Update URLs (prefix or whole URL, `|` multi old prefixes, presets from settings, rename files) single and bulk
+- [x] Cleanup unused cached files
+- [x] Bulk: download, backup, download+backup, with skip/replace rules and post-backup deletion; cancel for every bulk op
+- [x] Refresh with optional clear cache
+- [x] Settings: folders (mods, saves, backups, custom saves folder), ignored subfolders, ignored domains, force JSON filename in backup names, check updates on start, asset URL font size, concurrent downloads, show saved objects, show backup state
+- [x] Update check against GitHub releases with Nexus/GitHub links; Help; Changelog; Ko-fi/Steam links
+- [x] Collapsible log panel under the mod/backup lists with level/source filters, search, jump to mod, copy, clear, error badge, one-click open of the rotating log file (new in 3.0)
+- [x] Appearance settings: theme mode, seed colour, presets incl. Classic (new in 3.0)
+- [x] Window: min size 854x480, maximise on first show, title with version
+- [x] macOS pdfium module path fix; Linux header bar title; Windows product strings; AppImage and DMG scripts
 
 ## 8. Risks and mitigations
 

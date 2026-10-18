@@ -21,13 +21,16 @@ Color backupStatusColor(VaultColors colors, BackupStatus status) =>
       BackupStatus.assetCountMismatch => colors.backupMismatch,
     };
 
-/// Tooltip of the backup badge: status, backup date, asset count and, on a
-/// mismatch, the mod's own count.
+/// Tooltip of the backup badge: status, the mod's save date (the file's
+/// mtime when the JSON has none) against the backup date, asset count and,
+/// on a mismatch, the mod's own count (2.x showed both times too).
 String backupTooltip(AppLocalizations l10n, Mod mod) {
   final backup = mod.backup;
   final lines = [mod.backupStatus.label(l10n)];
   if (backup != null) {
+    final saved = mod.savedAt ?? mod.modified;
     lines
+      ..add(l10n.backupTooltipModSaved(modDateFormat.format(saved)))
       ..add(l10n.backupTooltipModified(modDateFormat.format(backup.modified)))
       ..add(l10n.backupTooltipAssets(backup.assetCount));
     if (mod.backupStatus == BackupStatus.assetCountMismatch) {

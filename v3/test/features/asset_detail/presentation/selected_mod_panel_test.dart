@@ -1,5 +1,5 @@
 import 'package:flutter/gestures.dart' show kSecondaryButton;
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:flutter/services.dart' show LogicalKeyboardKey, SystemChannels;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
@@ -7,6 +7,7 @@ import 'package:tts_mod_vault/app/theme/vault_colors.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/domain/rules/file_key.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/asset_detail_filter.dart';
+import 'package:tts_mod_vault/features/asset_detail/application/mod_assets_provider.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_detail_selection.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_list.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_toolbar.dart';
@@ -379,6 +380,59 @@ void main() {
     });
   });
 
+  group('Copy missing URLs', () {
+    List<Object?> mockClipboard(WidgetTester tester) {
+      final calls = <Object?>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') calls.add(call.arguments);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      return calls;
+    }
+
+    testWidgets('copies the URLs not on disk, one per line', (tester) async {
+      h.select(h.fixture.alpha);
+      await pumpPanel(tester, h);
+      final calls = mockClipboard(tester);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Copy missing URLs'));
+      await tester.pumpAndSettle();
+
+      final assets = h.container
+          .read(modAssetsProvider(h.fixture.alpha.jsonPath))
+          .requireValue;
+      final expected = [
+        for (final asset in assets)
+          if (!asset.exists) asset.url,
+      ].join('\n');
+      expect(expected, contains(h.fixture.img2.url));
+      expect(expected, isNot(contains(h.fixture.img1.url)));
+      expect(calls, [
+        {'text': expected},
+      ]);
+      expect(find.text('Copied to clipboard'), findsOneWidget);
+    });
+
+    testWidgets('is disabled when nothing is missing', (tester) async {
+      h.select(h.fixture.beta);
+      await pumpPanel(tester, h);
+
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Copy missing URLs'),
+      );
+      expect(button.onPressed, isNull);
+    });
+  });
+
   group('context menu', () {
     testWidgets('right-click shows items for an existing vs a missing file', (
       tester,
@@ -391,6 +445,7 @@ void main() {
       for (final label in [
         'Open URL in browser',
         'Copy URL',
+        'Copy filename',
         'Open file',
         'Open in file explorer',
         'Replace URL…',

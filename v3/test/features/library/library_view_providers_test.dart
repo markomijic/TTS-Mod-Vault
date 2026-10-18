@@ -157,6 +157,22 @@ void main() {
       expect(names(), ['zeta']);
     });
 
+    test('clearBackupStatuses drops only the backup statuses', () {
+      filter()
+        ..toggleBackupStatus(BackupStatus.upToDate)
+        ..toggleFolder('Sub')
+        ..setQuery('a');
+      expect(names(), isEmpty);
+
+      filter().clearBackupStatuses();
+
+      final state = container.read(modFilterProvider);
+      expect(state.backupStatuses, isEmpty);
+      expect(state.folders, {'Sub'});
+      expect(state.query, 'a');
+      expect(names(), ['Alpha']);
+    });
+
     test('complete and missing exclude each other', () {
       filter().toggleAssetFilter(AssetFilter.missing);
       expect(names(), ['mid', 'zeta']);

@@ -48,6 +48,15 @@ final class ModFilterController extends Notifier<ModFilter> {
     state = state.copyWith(folders: _foldersFor(type));
   }
 
+  /// Drops every backup status from the filter (the backup state section
+  /// disappears from the menu when the "show backup state" setting is
+  /// switched off, so its filters must not keep hiding mods; 2.x did the
+  /// same).
+  void clearBackupStatuses() {
+    if (state.backupStatuses.isEmpty) return;
+    state = state.copyWith(backupStatuses: const {});
+  }
+
   /// Adds or removes a backup status from the filter.
   void toggleBackupStatus(BackupStatus status) {
     final statuses = Set<BackupStatus>.of(state.backupStatuses);

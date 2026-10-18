@@ -9,6 +9,7 @@ import 'package:tts_mod_vault/app/widgets/app_dialog.dart';
 import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/domain/rules/file_key.dart' show fileNameFromUrl;
 import 'package:tts_mod_vault/features/asset_detail/presentation/replace_url_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_actions.dart';
 import 'package:tts_mod_vault/features/library/application/mod_edit_service.dart';
@@ -32,9 +33,10 @@ Future<void> showAssetContextMenu(
 
 /// The entries of the asset context menu (2.x `showAssetContextMenu`).
 ///
-/// Live: open URL, copy URL, open file, open in file explorer, replace URL,
-/// download (missing files only), check URL, shared with, delete file.
-/// Service errors surface as a snack bar with the failure message.
+/// Live: open URL, copy URL, copy filename, open file, open in file
+/// explorer, replace URL, download (missing files only), check URL, shared
+/// with, delete file. Service errors surface as a snack bar with the
+/// failure message.
 List<MenuEntry> buildAssetContextMenu(
   BuildContext context,
   WidgetRef ref,
@@ -56,6 +58,11 @@ List<MenuEntry> buildAssetContextMenu(
       label: l10n.assetMenuCopyUrl,
       icon: Icons.content_copy,
       onPressed: () => _copy(context, asset.url),
+    ),
+    MenuAction(
+      label: l10n.menuCopyFilename,
+      icon: Icons.file_copy_outlined,
+      onPressed: () => _copy(context, assetFileName(asset)),
     ),
     if (path != null) ...[
       MenuAction(
@@ -101,6 +108,16 @@ List<MenuEntry> buildAssetContextMenu(
       ),
     ],
   ];
+}
+
+/// What "Copy filename" puts on the clipboard (2.x behaviour): the cached
+/// file's name without its extension when the asset is on disk, otherwise
+/// the name TTS would give the URL.
+String assetFileName(Asset asset) {
+  final path = asset.path;
+  return path == null
+      ? fileNameFromUrl(asset.url)
+      : p.basenameWithoutExtension(path);
 }
 
 /// "3 mods, 1 save" from a sharing map, in [ModType] order.

@@ -1,5 +1,7 @@
 # v3 cut-over checklist: from `v3/` on `v3-rewrite` to the released 3.0.0 on `main`
 
+> **Status 2026-10-23:** (a) and (b1)-(b5) are done on `v3-rewrite` (commit `c3aa352`; the root project is now v3). (b6) merge/tag/push and (c)/(d) are ON HOLD by the user's decision; do not merge into `main` until told. `main` since gained `051741c` (2.x download validation), merged into `v3-rewrite` as `6629c9e`; its port is tracked in `docs/v3-download-validation-port.md`.
+
 Ordered steps with a verification after each. Commands are for Git Bash from
 the repo root unless marked PowerShell. Nothing here is automated: releases
 are manual, there is no CI, and the app only notifies about updates.

@@ -40,7 +40,7 @@ first open. After dragging it to Applications, run this once in Terminal:
 - Keyboard shortcuts: `Ctrl+F` search, `F5` refresh, `Esc` clear selection, `Delete` remove the selected mod or backup (with confirmation)
 - "Copy missing URLs" for the selected mod
 - Every operation, including the cleanup scan, can be cancelled from the progress bar
-- Languages: English, Croatian (Hrvatski), Brazilian Portuguese (Português), Russian (Русский), Spanish (Español), Korean (한국어) and Simplified Chinese (简体中文), chosen in Settings → Interface → Language
+- Languages: English, Croatian (Hrvatski), Brazilian Portuguese (Português), Russian (Русский), Spanish (Español), Korean (한국어), Simplified Chinese (简体中文) and German (Deutsch), chosen in Settings → Interface → Language
 - Domain reachability: URL checks first test whether each domain can be reached, and URLs on a domain that is down or blocked on your network are no longer marked invalid
 - After a download, the files still missing are checked and a "Download check results" dialog lists unreachable domains and dead URLs (Settings → Network → "Check missing files after downloads", on by default)
 - Settings → Network → "Check all Mods and Saves domains"

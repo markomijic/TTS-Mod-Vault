@@ -9,4 +9,4 @@ is the one of the `app_<locale>.arb` file (`de`, `pt-BR`). Everything that is
 not such a line is ignored by the app. See
 [docs/translating.md](docs/translating.md) for how to translate.
 
-<!-- No translations yet. -->
+- hr: Claude (AI draft), Marko Mijić

@@ -1,0 +1,209 @@
+# Builds TTS Mod Vault for Windows, Linux and macOS with the scripts in
+# packaging/, so a release never needs a local build machine.
+#
+# Runs only on demand: Actions -> Build -> Run workflow, pick the branch.
+# - Always: analyze + test, then the three release builds as downloadable
+#   artifacts (Actions run page -> Artifacts).
+# - With "Create a draft release" ticked: also a DRAFT GitHub release for
+#   v<pubspec version> with all artefacts attached and the release notes from
+#   docs/v3-release-notes-<version>.md. The tag is created on the built commit
+#   when you publish the draft. Publishing stays a manual click, because the
+#   in-app update check reads releases/latest and publishing notifies users.
+#
+# Signing is unchanged from the manual process: macOS is ad-hoc signed (not
+# notarized), Windows is unsigned.
+
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft_release:
+        description: Create a draft release
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+
+jobs:
+  test:
+    name: Analyze and test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          cache: true
+
+      - name: Install Linux toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+
+      - name: Code generation
+        run: |
+          flutter config --enable-native-assets
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+
+      - run: flutter analyze
+
+      - run: flutter test
+
+  windows:
+    name: Windows zip
+    needs: test
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        shell: bash
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          cache: true
+
+      - run: flutter config --enable-native-assets
+
+      - name: Build
+        shell: pwsh
+        run: packaging\windows\build_zip.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/Windows.TTS.Mod.Vault.*.zip
+          if-no-files-found: error
+
+  linux:
+    name: Linux AppImage and zip
+    needs: test
+    runs-on: ubuntu-24.04
+    # Built on Ubuntu 22.04 (glibc 2.35) so the AppImage runs on most distros
+    # from the last several years (packaging/appimage/README.md).
+    container: ubuntu:22.04
+    steps:
+      - name: Install build tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates curl git jq unzip xz-utils zip file \
+            clang cmake ninja-build pkg-config libgtk-3-dev
+
+      - uses: actions/checkout@v4
+
+      # The checkout belongs to another uid inside the container; the build
+      # script calls `git rev-parse`, which refuses such a repo without this.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          cache: true
+
+      - run: flutter config --enable-native-assets
+
+      - name: Build AppImage
+        run: bash packaging/appimage/build_appimage.sh
+
+      - name: Zip the raw bundle and check glibc
+        run: |
+          version="$(grep '^version:' pubspec.yaml | head -1 | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)"
+          (cd build/linux/x64/release/bundle && zip -r -X -q "../../../../Linux.TTS.Mod.Vault.$version.zip" .)
+          echo "highest glibc symbol: $(objdump -T build/linux/x64/release/bundle/tts_mod_vault | grep -o 'GLIBC_2\.[0-9]*' | sort -V | tail -1)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            build/TTS_Mod_Vault-x86_64.AppImage
+            build/Linux.TTS.Mod.Vault.*.zip
+          if-no-files-found: error
+
+  macos:
+    name: macOS DMG zip
+    needs: test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          cache: true
+
+      - run: flutter config --enable-native-assets
+
+      - name: Build
+        run: bash packaging/macos/build_dmg.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: build/macOS.TTS.Mod.Vault.*.zip
+          if-no-files-found: error
+
+  release:
+    name: Draft GitHub release
+    if: inputs.draft_release
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(grep '^version:' pubspec.yaml | head -1 | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)"
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error::a release for $tag already exists; delete the old draft or bump the version"
+            exit 1
+          fi
+          notes="docs/v3-release-notes-$version.md"
+          if [ -f "$notes" ]; then
+            notes_args=(--notes-file "$notes")
+          else
+            notes_args=(--generate-notes)
+          fi
+          ls -l dist
+          gh release create "$tag" dist/* \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "TTS Mod Vault $version" \
+            "${notes_args[@]}"

@@ -17,6 +17,7 @@ import 'package:tts_mod_vault/features/bulk/application/bulk_operation.dart';
 import 'package:tts_mod_vault/features/cleanup/application/delete_assets_service.dart';
 import 'package:tts_mod_vault/features/downloads/application/check_urls_operation.dart';
 import 'package:tts_mod_vault/features/downloads/application/download_assets_operation.dart';
+import 'package:tts_mod_vault/features/downloads/application/validate_download_operation.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/operations/application/operation.dart';
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
@@ -28,10 +29,17 @@ import 'package:tts_mod_vault/features/workshop/application/workshop_service.dar
 /// Outcome of [BulkDownloadOperation].
 final class BulkDownloadResult {
   /// Creates a result.
-  const BulkDownloadResult({required this.outcomes, required this.cancelled});
+  const BulkDownloadResult({
+    required this.outcomes,
+    required this.cancelled,
+    this.validations = const [],
+  });
 
   /// One entry per mod processed, in order.
   final List<BulkModOutcome<DownloadBatchResult>> outcomes;
+
+  /// The post-download check of every mod whose download was not cancelled.
+  final List<DownloadValidationResult> validations;
 
   /// Whether the run stopped early.
   final bool cancelled;
@@ -63,18 +71,35 @@ final class BulkDownloadResult {
 }
 
 /// Downloads the missing files of every mod (v2 `downloadAllMods`): one
-/// [DownloadAssetsOperation] per mod, stopping when one reports a cancel.
+/// [DownloadAssetsOperation] per mod, each followed by a
+/// [ValidateDownloadOperation] (2.x `051741c`), stopping when one reports a
+/// cancel.
 final class BulkDownloadOperation
     extends BulkOperation<DownloadBatchResult, BulkDownloadResult> {
   /// Creates the operation.
   BulkDownloadOperation({required super.ref, required super.mods});
 
+  final List<DownloadValidationResult> _validations = [];
+
   @override
   String get bulkKindName => 'download';
 
   @override
-  Future<DownloadBatchResult> processMod(OperationContext ctx, Mod mod) =>
-      DownloadAssetsOperation(ref: ref, mod: currentMod(mod)).run(ctx);
+  Future<DownloadBatchResult> processMod(OperationContext ctx, Mod mod) async {
+    final download = await DownloadAssetsOperation(
+      ref: ref,
+      mod: currentMod(mod),
+    ).run(ctx);
+    if (download.cancelledCount == 0 && !ctx.isCancelled) {
+      _validations.add(
+        await ValidateDownloadOperation(
+          ref: ref,
+          mod: currentMod(mod),
+        ).run(ctx),
+      );
+    }
+    return download;
+  }
 
   @override
   bool stopAfter(DownloadBatchResult value) => value.cancelledCount > 0;
@@ -83,6 +108,7 @@ final class BulkDownloadOperation
   BulkDownloadResult assemble({required bool cancelled}) => BulkDownloadResult(
     outcomes: List.unmodifiable(outcomes),
     cancelled: cancelled,
+    validations: List.unmodifiable(_validations),
   );
 
   @override
@@ -346,10 +372,17 @@ final class BulkBackupOperation
 /// What happened to one mod in a bulk download + backup.
 final class BulkDownloadAndBackupModOutcome {
   /// Creates an outcome.
-  const BulkDownloadAndBackupModOutcome({required this.download, this.backup});
+  const BulkDownloadAndBackupModOutcome({
+    required this.download,
+    this.validation,
+    this.backup,
+  });
 
   /// The download step.
   final DownloadBatchResult download;
+
+  /// The post-download check, or null when the download was cancelled.
+  final DownloadValidationResult? validation;
 
   /// The backup step, or null when the run was cancelled during the
   /// download.
@@ -373,6 +406,11 @@ final class BulkDownloadAndBackupResult {
 
   /// Whether the chosen folder became the default backups folder.
   final bool backupsDirChanged;
+
+  /// The post-download check of every mod whose download was not cancelled.
+  List<DownloadValidationResult> get validations => [
+    for (final o in outcomes) ?o.value?.validation,
+  ];
 
   /// Mods the run got to.
   int get modsProcessed => outcomes.length;
@@ -411,8 +449,10 @@ final class BulkDownloadAndBackupResult {
 }
 
 /// Downloads then backs up every mod (v2 `downloadAndBackupAllMods`): the
-/// download step first, then, unless cancelled meanwhile, the same backup
-/// rules as [BulkBackupOperation] on the refreshed mod.
+/// download step first, then, unless cancelled meanwhile, the
+/// post-download check (before the backup, whose optional deletion would
+/// make every file look missing) and the same backup rules as
+/// [BulkBackupOperation] on the refreshed mod.
 final class BulkDownloadAndBackupOperation
     extends
         BulkOperation<
@@ -464,8 +504,19 @@ final class BulkDownloadAndBackupOperation
     if (download.cancelledCount > 0 || ctx.isCancelled) {
       return BulkDownloadAndBackupModOutcome(download: download);
     }
+    final validation = await ValidateDownloadOperation(
+      ref: ref,
+      mod: currentMod(mod),
+    ).run(ctx);
+    if (validation.cancelled || ctx.isCancelled) {
+      return BulkDownloadAndBackupModOutcome(download: download);
+    }
     final backup = await _step.run(ctx, currentMod(mod));
-    return BulkDownloadAndBackupModOutcome(download: download, backup: backup);
+    return BulkDownloadAndBackupModOutcome(
+      download: download,
+      validation: validation,
+      backup: backup,
+    );
   }
 
   @override

@@ -8,12 +8,31 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_results_dialog.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_validation_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/url_check_results_dialog.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_launcher.dart';
 
-/// Downloads every missing file of [mod].
-Future<void> downloadModAssets(BuildContext context, WidgetRef ref, Mod mod) =>
-    _runDownload(context, ref, (service) => service.downloadMod(mod));
+/// Downloads every missing file of [mod], then checks the files still
+/// missing (2.x `051741c`) and shows a [DownloadValidationDialog] when a
+/// host was unreachable or a URL is dead.
+Future<void> downloadModAssets(
+  BuildContext context,
+  WidgetRef ref,
+  Mod mod,
+) async {
+  final ui = OperationUi.of(context);
+  final result = await _runDownload(
+    context,
+    ref,
+    (service) => service.downloadMod(mod),
+  );
+  if (result == null || result.wasCancelled || !ui.mounted) return;
+  final validation = await ui.launch(
+    () => ref.read(downloadsServiceProvider).validateDownload(mod),
+  );
+  if (validation == null || !ui.mounted) return;
+  await showDownloadValidationResults(ui, [validation]);
+}
 
 /// Downloads the missing files of [type] of [mod].
 Future<void> downloadModAssetsOfType(
@@ -65,7 +84,9 @@ Future<void> checkSingleUrl(
   );
 }
 
-Future<void> _runDownload(
+/// Runs a download and reports it; returns its result, or null when it did
+/// not run or the widget went away.
+Future<DownloadBatchResult?> _runDownload(
   BuildContext context,
   WidgetRef ref,
   Future<DownloadBatchResult> Function(DownloadsService service) start,
@@ -73,10 +94,11 @@ Future<void> _runDownload(
   final ui = OperationUi.of(context);
   final service = ref.read(downloadsServiceProvider);
   final result = await ui.launch(() => start(service));
-  if (result == null || !ui.mounted) return;
+  if (result == null || !ui.mounted) return null;
   if (result.failedCount == 0 && !result.wasCancelled) {
     ui.showSnackBar(ui.l10n.downloadedFilesCount(result.downloadedCount));
-    return;
+    return result;
   }
   await ui.showAppDialog<void>((_) => DownloadResultsDialog(result: result));
+  return result;
 }

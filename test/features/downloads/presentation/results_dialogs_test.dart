@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_results_dialog.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_validation_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/url_check_results_dialog.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations_en.dart';
 
@@ -176,6 +177,61 @@ void main() {
       expect(find.text('down.example'), findsOneWidget);
       expect(find.text('Invalid URLs: 1'), findsOneWidget);
       expect(find.text('All URLs are valid'), findsNothing);
+    });
+  });
+
+  group('DownloadValidationDialog', () {
+    testWidgets('unreachable and invalid sections, grouped per mod', (
+      tester,
+    ) async {
+      await pumpThemedApp(
+        tester,
+        home: Scaffold(
+          body: DownloadValidationDialog(
+            results: [
+              DownloadValidationResult(
+                mod: fixtureMod('Alpha Mod', id: '1'),
+                unreachableDomains: const ['down.example'],
+                invalidUrls: const ['https://x.example/a'],
+              ),
+              DownloadValidationResult(
+                mod: fixtureMod('Beta Mod', id: '2'),
+                invalidUrls: const ['https://x.example/b'],
+              ),
+            ],
+          ),
+        ),
+      );
+      expect(find.text('Download check results'), findsOneWidget);
+      expect(find.text('Domains unreachable'), findsOneWidget);
+      expect(find.text('Invalid resources'), findsOneWidget);
+      expect(find.text('down.example'), findsOneWidget);
+      expect(find.text('https://x.example/a'), findsOneWidget);
+      expect(find.text('https://x.example/b'), findsOneWidget);
+      // Alpha appears under both sections, Beta only under invalid.
+      expect(find.text('Alpha Mod'), findsNWidgets(2));
+      expect(find.text('Beta Mod'), findsOneWidget);
+      expect(find.text('Copy all invalid URLs'), findsOneWidget);
+    });
+
+    testWidgets('only unreachable hosts: no invalid section, no copy', (
+      tester,
+    ) async {
+      await pumpThemedApp(
+        tester,
+        home: Scaffold(
+          body: DownloadValidationDialog(
+            results: [
+              DownloadValidationResult(
+                mod: fixtureMod('Alpha Mod', id: '1'),
+                unreachableDomains: const ['down.example'],
+              ),
+            ],
+          ),
+        ),
+      );
+      expect(find.text('Invalid resources'), findsNothing);
+      expect(find.text('Copy all invalid URLs'), findsNothing);
     });
   });
 }

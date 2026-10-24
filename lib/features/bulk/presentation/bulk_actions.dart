@@ -13,6 +13,7 @@ import 'package:tts_mod_vault/features/bulk/presentation/bulk_backup_dialog.dart
 import 'package:tts_mod_vault/features/bulk/presentation/bulk_delete_assets_dialog.dart';
 import 'package:tts_mod_vault/features/bulk/presentation/bulk_failures_dialog.dart';
 import 'package:tts_mod_vault/features/bulk/presentation/bulk_url_check_results_dialog.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_validation_dialog.dart';
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_launcher.dart';
 import 'package:tts_mod_vault/features/workshop/presentation/workshop_results_dialog.dart';
@@ -75,6 +76,8 @@ Future<void> runBulkDownload(
           ),
     ],
   );
+  if (!ui.mounted) return;
+  await showDownloadValidationResults(ui, result.validations);
 }
 
 /// Backs up [mods] with the choices of the [BulkBackupDialog]; with
@@ -149,6 +152,8 @@ Future<void> runBulkBackup(
             ),
       ],
     );
+    if (!ui.mounted) return;
+    await showDownloadValidationResults(ui, result.validations);
     return;
   }
 

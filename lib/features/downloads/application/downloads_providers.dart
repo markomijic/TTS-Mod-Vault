@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/downloads/application/check_urls_operation.dart';
 import 'package:tts_mod_vault/features/downloads/application/download_assets_operation.dart';
+import 'package:tts_mod_vault/features/downloads/application/validate_download_operation.dart';
 import 'package:tts_mod_vault/features/operations/application/operation_runner.dart';
 
 export 'package:tts_mod_vault/features/downloads/application/check_urls_operation.dart'
@@ -16,6 +17,8 @@ export 'package:tts_mod_vault/features/downloads/application/download_assets_ope
         DownloadOutcome,
         DownloadStatus,
         downloadProgressLabel;
+export 'package:tts_mod_vault/features/downloads/application/validate_download_operation.dart'
+    show DownloadValidationResult;
 
 /// The downloads facade.
 final downloadsServiceProvider = Provider<DownloadsService>(
@@ -47,6 +50,11 @@ class DownloadsService {
   /// Downloads one missing [asset] of [mod].
   Future<DownloadBatchResult> downloadAsset(Mod mod, Asset asset) => _runner
       .run(DownloadAssetsOperation(ref: ref, mod: mod, onlyAsset: asset));
+
+  /// Checks why the files of [mod] still missing after a download could not
+  /// be fetched (unreachable host or dead URL) and stores the dead ones.
+  Future<DownloadValidationResult> validateDownload(Mod mod) =>
+      _runner.run(ValidateDownloadOperation(ref: ref, mod: mod));
 
   /// Checks every asset URL of [mod] and stores the dead ones.
   Future<UrlCheckResult> checkUrls(Mod mod) =>

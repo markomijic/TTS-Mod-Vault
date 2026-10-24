@@ -28,6 +28,15 @@ final class FakeDownloadsService extends DownloadsService {
   /// `(mod, asset)` pairs passed to `checkUrl`.
   final List<(Mod, Asset)> checkUrlCalls = [];
 
+  /// Mods passed to `validateDownload`.
+  final List<Mod> validateCalls = [];
+
+  /// Unreachable hosts and dead URLs every `validateDownload` reports.
+  List<String> validationUnreachable = const [];
+
+  /// Dead URLs every `validateDownload` reports.
+  List<String> validationInvalid = const [];
+
   /// Result of every download call.
   DownloadBatchResult downloadResult = oneDownloaded;
 
@@ -79,6 +88,17 @@ final class FakeDownloadsService extends DownloadsService {
     _guard();
     downloadAssetCalls.add((mod, asset));
     return downloadResult;
+  }
+
+  @override
+  Future<DownloadValidationResult> validateDownload(Mod mod) async {
+    _guard();
+    validateCalls.add(mod);
+    return DownloadValidationResult(
+      mod: mod,
+      unreachableDomains: validationUnreachable,
+      invalidUrls: validationInvalid,
+    );
   }
 
   @override

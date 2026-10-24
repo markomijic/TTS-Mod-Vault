@@ -12,6 +12,7 @@ import 'package:tts_mod_vault/features/asset_detail/presentation/asset_url_row.d
 import 'package:tts_mod_vault/features/asset_detail/presentation/selected_mod_actions.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_results_dialog.dart';
+import 'package:tts_mod_vault/features/downloads/presentation/download_validation_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/url_check_results_dialog.dart';
 import 'package:tts_mod_vault/features/operations/application/operation_runner.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_progress_bar.dart';
@@ -61,6 +62,23 @@ void main() {
       ]);
       expect(find.text('Downloaded 1 file'), findsOneWidget);
       expect(find.byType(DownloadResultsDialog), findsNothing);
+      expect(find.byType(DownloadValidationDialog), findsNothing);
+    });
+
+    testWidgets('Download all checks what is still missing and shows the '
+        'download check results', (tester) async {
+      service.validationInvalid = const ['https://dead.example/a.png'];
+      h.select(h.fixture.alpha);
+      await pumpPanel(tester, h);
+
+      await tester.tap(button('Download all'));
+      await tester.pumpAndSettle();
+
+      expect(service.validateCalls.map((m) => m.jsonPath), [
+        h.fixture.alpha.jsonPath,
+      ]);
+      expect(find.byType(DownloadValidationDialog), findsOneWidget);
+      expect(find.text('https://dead.example/a.png'), findsOneWidget);
     });
 
     testWidgets('Download all is disabled when nothing is missing', (

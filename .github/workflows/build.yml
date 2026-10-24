@@ -114,9 +114,10 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      # The checkout belongs to another uid inside the container; the build
-      # script calls `git rev-parse`, which refuses such a repo without this.
-      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      # The checkout and the Flutter SDK (a git repo) belong to another uid
+      # inside the container; git, and so `flutter` and the build script's
+      # `git rev-parse`, refuse such repos without this. Container-only.
+      - run: git config --global --add safe.directory '*'
 
       - name: Read Flutter version from .fvmrc
         id: fvm

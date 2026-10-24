@@ -242,6 +242,11 @@
     "description": "Badge on a card: number of asset files not on disk",
     "placeholders": {"count": {"type": "int"}}
   },
+  "missingInvalidCount": "{missing} missing, {invalid} invalid",
+  "@missingInvalidCount": {
+    "description": "Badge on a card when some missing files have URLs a URL check found dead",
+    "placeholders": {"missing": {"type": "int"}, "invalid": {"type": "int"}}
+  },
   "hasAudioTooltip": "References audio assets",
   "@hasAudioTooltip": {"description": "Tooltip of the audio icon on a card"},
 
@@ -1385,6 +1390,10 @@
   "@settingIgnoredDomainsInfo": {"description": "Tooltip of the excluded domains list"},
   "settingAddDomain": "Add domain name",
   "@settingAddDomain": {"description": "Add button of the excluded domains list"},
+  "settingCheckAfterDownload": "Check missing files after downloads",
+  "@settingCheckAfterDownload": {"description": "Settings switch: after a download, check the files still missing for unreachable domains and dead URLs"},
+  "settingCheckAfterDownloadInfo": "After downloading a whole mod or several mods, the files that are still missing are checked: whether their domain can be reached and whether their URL still works. This adds one request per domain and one per missing file.",
+  "@settingCheckAfterDownloadInfo": {"description": "Info tooltip of the check-after-download switch"},
   "settingCheckDomains": "Check all Mods and Saves domains",
   "@settingCheckDomains": {"description": "Network settings button that checks whether every domain used by Mods and Saves can be reached"},
   "settingCheckDomainsInfo": "Checks every unique domain referenced by Mods and Saves, including excluded domains. Any HTTP response means the domain is reachable.",

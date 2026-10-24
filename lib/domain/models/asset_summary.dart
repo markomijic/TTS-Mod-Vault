@@ -5,6 +5,9 @@ part 'asset_summary.freezed.dart';
 
 /// Asset counts for one mod, computed by the library summary query.
 ///
+/// [missingInvalid] counts the missing assets whose URL a URL check stored
+/// as invalid (part of [missing], never more).
+///
 /// Only counts are kept here; the full asset list is loaded on selection.
 /// When audio is hidden for a mod (see `AudioVisibility.hideAudio`), audio
 /// assets are excluded from [total], [present] and the per-type maps, but
@@ -18,6 +21,7 @@ abstract class AssetSummary with _$AssetSummary {
     required bool hasAudio,
     required Map<AssetType, int> totalByType,
     required Map<AssetType, int> presentByType,
+    @Default(0) int missingInvalid,
   }) = _AssetSummary;
 
   const AssetSummary._();
@@ -34,7 +38,10 @@ abstract class AssetSummary with _$AssetSummary {
   /// Assets referenced by the mod that are not on disk.
   int get missing => total - present;
 
-  /// Whether every counted asset is on disk.
+  /// Whether every counted asset is on disk. Missing assets whose URL is
+  /// known to be dead still count as missing (decision for 3.0: unlike 2.x
+  /// `051741c`, nothing is hidden; [missingInvalid] is shown next to the
+  /// missing count instead).
   bool get isComplete => missing == 0;
 
   /// Referenced assets of [type] (0 when the type is absent or hidden).

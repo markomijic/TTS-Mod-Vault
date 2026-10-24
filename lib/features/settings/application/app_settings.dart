@@ -82,6 +82,7 @@ final class AppSettings {
     this.assetUrlFontSize = defaultAssetUrlFontSize,
     this.ignoredSubfolders = const [],
     this.ignoredDomains = const [],
+    this.checkAfterDownload = true,
     this.showPdfThumbnails = false,
     this.locale,
   });
@@ -128,6 +129,10 @@ final class AppSettings {
       ),
       ignoredSubfolders: _strings(json['ignoredSubfolders']),
       ignoredDomains: _strings(json['ignoredDomains']),
+      checkAfterDownload: _bool(
+        json['checkAfterDownload'],
+        d.checkAfterDownload,
+      ),
       showPdfThumbnails: _bool(json['showPdfThumbnails'], d.showPdfThumbnails),
       locale: _locale(json['locale']),
     );
@@ -199,6 +204,10 @@ final class AppSettings {
   /// Host substrings whose URLs are never downloaded.
   final List<String> ignoredDomains;
 
+  /// After a whole-mod or bulk download, check the files still missing for
+  /// unreachable domains and dead URLs (2.x `051741c` did this always).
+  final bool checkAfterDownload;
+
   /// Render first-page thumbnails for PDF assets.
   final bool showPdfThumbnails;
 
@@ -235,6 +244,7 @@ final class AppSettings {
     'assetUrlFontSize': assetUrlFontSize,
     'ignoredSubfolders': ignoredSubfolders,
     'ignoredDomains': ignoredDomains,
+    'checkAfterDownload': checkAfterDownload,
     'showPdfThumbnails': showPdfThumbnails,
     'locale': locale,
   };
@@ -257,6 +267,7 @@ final class AppSettings {
     double? assetUrlFontSize,
     List<String>? ignoredSubfolders,
     List<String>? ignoredDomains,
+    bool? checkAfterDownload,
     bool? showPdfThumbnails,
     ValueGetter<String?>? locale,
   }) => AppSettings(
@@ -280,6 +291,7 @@ final class AppSettings {
     assetUrlFontSize: assetUrlFontSize ?? this.assetUrlFontSize,
     ignoredSubfolders: ignoredSubfolders ?? this.ignoredSubfolders,
     ignoredDomains: ignoredDomains ?? this.ignoredDomains,
+    checkAfterDownload: checkAfterDownload ?? this.checkAfterDownload,
     showPdfThumbnails: showPdfThumbnails ?? this.showPdfThumbnails,
     locale: locale == null ? this.locale : locale(),
   );
@@ -304,6 +316,7 @@ final class AppSettings {
           other.assetUrlFontSize == assetUrlFontSize &&
           _sameList(other.ignoredSubfolders, ignoredSubfolders) &&
           _sameList(other.ignoredDomains, ignoredDomains) &&
+          other.checkAfterDownload == checkAfterDownload &&
           other.showPdfThumbnails == showPdfThumbnails &&
           other.locale == locale;
 
@@ -325,6 +338,7 @@ final class AppSettings {
     assetUrlFontSize,
     Object.hashAll(ignoredSubfolders),
     Object.hashAll(ignoredDomains),
+    checkAfterDownload,
     showPdfThumbnails,
     locale,
   );

@@ -148,6 +148,7 @@ void main() {
 
     await section(tester, 'Network');
     expect(find.text('Concurrent downloads'), findsOneWidget);
+    expect(find.text('Check missing files after downloads'), findsOneWidget);
     expect(find.text('Check all Mods and Saves domains'), findsOneWidget);
     expect(find.text('Excluded domains'), findsOneWidget);
 

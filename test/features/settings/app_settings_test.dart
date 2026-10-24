@@ -20,6 +20,7 @@ void main() {
       expect(s.defaultBackupSortOption, BackupSortOption.nameAsc);
       expect(s.forceBackupJsonFilename, isFalse);
       expect(s.ignoreAudioAssets, isTrue);
+      expect(s.checkAfterDownload, isTrue);
       expect(s.allowCustomSavesFolder, isFalse);
       expect(s.urlReplacementPresets, isEmpty);
       expect(s.assetUrlFontSize, 12);
@@ -52,6 +53,7 @@ void main() {
         assetUrlFontSize: 16,
         ignoredSubfolders: ['Old', 'Queued'],
         ignoredDomains: ['pastebin.com'],
+        checkAfterDownload: false,
         showPdfThumbnails: true,
       );
 

@@ -9,12 +9,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 
-/// Download concurrency and the domains never requested.
+/// Download concurrency, the domains never requested and whether downloads
+/// are followed by the check of the files still missing.
 final class NetworkOptions {
   /// Creates the options.
   const NetworkOptions({
     this.concurrentDownloads = defaultConcurrentDownloads,
     this.ignoredDomains = const [],
+    this.checkAfterDownload = true,
   });
 
   /// Reads options from their JSON form; malformed fields fall back to the
@@ -32,6 +34,7 @@ final class NetworkOptions {
                 if (domain is String && domain.trim().isNotEmpty) domain.trim(),
             ])
           : const [],
+      checkAfterDownload: json['checkAfterDownload'] != false,
     );
   }
 
@@ -50,25 +53,33 @@ final class NetworkOptions {
   /// Host substrings whose URLs are skipped when downloading.
   final List<String> ignoredDomains;
 
+  /// Whether a whole-mod or bulk download is followed by a
+  /// `ValidateDownloadOperation`.
+  final bool checkAfterDownload;
+
   /// JSON form for the key-value store.
   Map<String, Object?> toJson() => {
     'concurrentDownloads': concurrentDownloads,
     'ignoredDomains': ignoredDomains,
+    'checkAfterDownload': checkAfterDownload,
   };
 
   /// Copy with some fields replaced.
   NetworkOptions copyWith({
     int? concurrentDownloads,
     List<String>? ignoredDomains,
+    bool? checkAfterDownload,
   }) => NetworkOptions(
     concurrentDownloads: concurrentDownloads ?? this.concurrentDownloads,
     ignoredDomains: ignoredDomains ?? this.ignoredDomains,
+    checkAfterDownload: checkAfterDownload ?? this.checkAfterDownload,
   );
 
   @override
   bool operator ==(Object other) =>
       other is NetworkOptions &&
       other.concurrentDownloads == concurrentDownloads &&
+      other.checkAfterDownload == checkAfterDownload &&
       other.ignoredDomains.length == ignoredDomains.length &&
       _sameDomains(other.ignoredDomains);
 
@@ -80,13 +91,17 @@ final class NetworkOptions {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(concurrentDownloads, Object.hashAll(ignoredDomains));
+  int get hashCode => Object.hash(
+    concurrentDownloads,
+    Object.hashAll(ignoredDomains),
+    checkAfterDownload,
+  );
 
   @override
   String toString() =>
       'NetworkOptions(concurrentDownloads: $concurrentDownloads, '
-      'ignoredDomains: $ignoredDomains)';
+      'ignoredDomains: $ignoredDomains, '
+      'checkAfterDownload: $checkAfterDownload)';
 }
 
 /// Holds the current [NetworkOptions] and persists changes as JSON in the

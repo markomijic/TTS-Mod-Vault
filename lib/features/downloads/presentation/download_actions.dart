@@ -7,14 +7,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart' show WidgetRef;
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
+import 'package:tts_mod_vault/features/downloads/application/network_options.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_results_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/download_validation_dialog.dart';
 import 'package:tts_mod_vault/features/downloads/presentation/url_check_results_dialog.dart';
 import 'package:tts_mod_vault/features/operations/presentation/operation_launcher.dart';
 
-/// Downloads every missing file of [mod], then checks the files still
-/// missing (2.x `051741c`) and shows a [DownloadValidationDialog] when a
-/// host was unreachable or a URL is dead.
+/// Downloads every missing file of [mod], then, unless the setting is off,
+/// checks the files still missing (2.x `051741c`) and shows a
+/// [DownloadValidationDialog] when a host was unreachable or a URL is dead.
 Future<void> downloadModAssets(
   BuildContext context,
   WidgetRef ref,
@@ -27,6 +28,7 @@ Future<void> downloadModAssets(
     (service) => service.downloadMod(mod),
   );
   if (result == null || result.wasCancelled || !ui.mounted) return;
+  if (!ref.read(networkOptionsProvider).checkAfterDownload) return;
   final validation = await ui.launch(
     () => ref.read(downloadsServiceProvider).validateDownload(mod),
   );

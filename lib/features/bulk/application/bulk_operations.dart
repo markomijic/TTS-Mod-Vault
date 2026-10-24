@@ -17,6 +17,7 @@ import 'package:tts_mod_vault/features/bulk/application/bulk_operation.dart';
 import 'package:tts_mod_vault/features/cleanup/application/delete_assets_service.dart';
 import 'package:tts_mod_vault/features/downloads/application/check_urls_operation.dart';
 import 'package:tts_mod_vault/features/downloads/application/download_assets_operation.dart';
+import 'package:tts_mod_vault/features/downloads/application/network_options.dart';
 import 'package:tts_mod_vault/features/downloads/application/validate_download_operation.dart';
 import 'package:tts_mod_vault/features/library/application/library_controller.dart';
 import 'package:tts_mod_vault/features/operations/application/operation.dart';
@@ -72,7 +73,8 @@ final class BulkDownloadResult {
 
 /// Downloads the missing files of every mod (v2 `downloadAllMods`): one
 /// [DownloadAssetsOperation] per mod, each followed by a
-/// [ValidateDownloadOperation] (2.x `051741c`), stopping when one reports a
+/// [ValidateDownloadOperation] (2.x `051741c`) unless
+/// `NetworkOptions.checkAfterDownload` is off, stopping when one reports a
 /// cancel.
 final class BulkDownloadOperation
     extends BulkOperation<DownloadBatchResult, BulkDownloadResult> {
@@ -90,7 +92,9 @@ final class BulkDownloadOperation
       ref: ref,
       mod: currentMod(mod),
     ).run(ctx);
-    if (download.cancelledCount == 0 && !ctx.isCancelled) {
+    if (download.cancelledCount == 0 &&
+        !ctx.isCancelled &&
+        ref.read(networkOptionsProvider).checkAfterDownload) {
       _validations.add(
         await ValidateDownloadOperation(
           ref: ref,
@@ -381,7 +385,8 @@ final class BulkDownloadAndBackupModOutcome {
   /// The download step.
   final DownloadBatchResult download;
 
-  /// The post-download check, or null when the download was cancelled.
+  /// The post-download check, or null when the download was cancelled or
+  /// the check is off.
   final DownloadValidationResult? validation;
 
   /// The backup step, or null when the run was cancelled during the
@@ -504,11 +509,13 @@ final class BulkDownloadAndBackupOperation
     if (download.cancelledCount > 0 || ctx.isCancelled) {
       return BulkDownloadAndBackupModOutcome(download: download);
     }
-    final validation = await ValidateDownloadOperation(
-      ref: ref,
-      mod: currentMod(mod),
-    ).run(ctx);
-    if (validation.cancelled || ctx.isCancelled) {
+    final validation = ref.read(networkOptionsProvider).checkAfterDownload
+        ? await ValidateDownloadOperation(
+            ref: ref,
+            mod: currentMod(mod),
+          ).run(ctx)
+        : null;
+    if ((validation?.cancelled ?? false) || ctx.isCancelled) {
       return BulkDownloadAndBackupModOutcome(download: download);
     }
     final backup = await _step.run(ctx, currentMod(mod));

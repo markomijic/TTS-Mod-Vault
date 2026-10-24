@@ -1,5 +1,6 @@
 /// The Network section of the Settings dialog: download concurrency, the
-/// "Check all Mods and Saves domains" action and the excluded domains.
+/// check after downloads, the "Check all Mods and Saves domains" action and
+/// the excluded domains.
 library;
 
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
@@ -53,6 +54,13 @@ class NetworkSection extends StatelessWidget {
               onChanged: (v) =>
                   onChanged(draft.copyWith(concurrentDownloads: v.round())),
             ),
+          ),
+          SettingsSwitchTile(
+            key: const Key('settings-check-after-download'),
+            title: l10n.settingCheckAfterDownload,
+            info: l10n.settingCheckAfterDownloadInfo,
+            value: draft.checkAfterDownload,
+            onChanged: (v) => onChanged(draft.copyWith(checkAfterDownload: v)),
           ),
           Gaps.h16,
           const CheckDomainsButton(),

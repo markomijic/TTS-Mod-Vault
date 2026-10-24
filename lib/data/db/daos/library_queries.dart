@@ -176,7 +176,10 @@ class LibraryQueries extends DatabaseAccessor<AppDatabase>
   }
 
   // One row per mod: the mod columns plus total/present overall, per type
-  // (`total_<dbValue>` / `present_<dbValue>`) and `has_audio`.
+  // (`total_<dbValue>` / `present_<dbValue>`), `has_audio`, and the missing
+  // assets whose URL is in the stored invalid list (`missing_invalid`, and
+  // `missing_invalid_audio` so hidden audio can be subtracted). The
+  // json_each lookup only runs for mods that have an invalid list.
   static final String _summarySelect = () {
     final perType = [
       for (final t in AssetType.values) ...[
@@ -192,7 +195,14 @@ class LibraryQueries extends DatabaseAccessor<AppDatabase>
         'm.audio_visibility, m.invalid_urls_json, '
         'COUNT(a.url) AS total, COUNT(e.file_key) AS present, '
         'MAX(CASE WHEN a.asset_type = ${_audioType.dbValue} THEN 1 ELSE 0 END) '
-        'AS has_audio, $perType '
+        'AS has_audio, '
+        'SUM(CASE WHEN e.file_key IS NULL AND m.invalid_urls_json IS NOT NULL '
+        'AND a.url IN (SELECT value FROM json_each(m.invalid_urls_json)) '
+        'THEN 1 ELSE 0 END) AS missing_invalid, '
+        'SUM(CASE WHEN a.asset_type = ${_audioType.dbValue} '
+        'AND e.file_key IS NULL AND m.invalid_urls_json IS NOT NULL '
+        'AND a.url IN (SELECT value FROM json_each(m.invalid_urls_json)) '
+        'THEN 1 ELSE 0 END) AS missing_invalid_audio, $perType '
         'FROM mods m '
         'LEFT JOIN mod_assets a ON a.mod_path = m.json_path '
         'LEFT JOIN existing_files e '
@@ -210,6 +220,10 @@ class LibraryQueries extends DatabaseAccessor<AppDatabase>
 
     var total = row.read<int>('total');
     var present = row.read<int>('present');
+    var missingInvalid = row.readNullable<int>('missing_invalid') ?? 0;
+    if (hideAudio) {
+      missingInvalid -= row.readNullable<int>('missing_invalid_audio') ?? 0;
+    }
     final totalByType = <AssetType, int>{};
     final presentByType = <AssetType, int>{};
     for (final t in AssetType.values) {
@@ -244,6 +258,7 @@ class LibraryQueries extends DatabaseAccessor<AppDatabase>
         hasAudio: row.read<int>('has_audio') == 1,
         totalByType: totalByType,
         presentByType: presentByType,
+        missingInvalid: missingInvalid,
       ),
       invalidUrls: _decodeInvalidUrls(
         row.readNullable<String>('invalid_urls_json'),

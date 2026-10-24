@@ -7,7 +7,7 @@
 /// * `libraryOptionsProvider` (`LibraryOptions`: `ignoredSubfolders`,
 ///   `includeSavedObjects`, `ignoreAudioGlobally`, `forceBackupIdInName`)
 ///   and `networkOptionsProvider` (`NetworkOptions`: `concurrentDownloads`,
-///   `ignoredDomains`) are **fed from Settings**: every [update] pushes the
+///   `ignoredDomains`, `checkAfterDownload`) are **fed from Settings**: every [update] pushes the
 ///   matching fields into them (they still persist their own copy under
 ///   their own keys so the library refresh can start before Settings has
 ///   loaded). Edit them through Settings, not through their own setters.
@@ -243,6 +243,7 @@ final class SettingsController extends Notifier<AppSettings> {
     final nextNetwork = network.copyWith(
       concurrentDownloads: settings.concurrentDownloads,
       ignoredDomains: List.unmodifiable(settings.ignoredDomains),
+      checkAfterDownload: settings.checkAfterDownload,
     );
     if (nextNetwork != network) await networkController.set(nextNetwork);
   }

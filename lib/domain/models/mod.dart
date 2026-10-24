@@ -45,6 +45,10 @@ abstract class Mod with _$Mod {
   /// Referenced assets that are not on disk.
   int get missingCount => summary.missing;
 
+  /// Missing assets whose URL is stored as invalid (a subset of
+  /// [missingCount]).
+  int get missingInvalidCount => summary.missingInvalid;
+
   /// The save time as a [DateTime], or null when the JSON has no date.
   DateTime? get savedAt {
     final seconds = epochTime;

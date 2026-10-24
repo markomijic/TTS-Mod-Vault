@@ -110,8 +110,9 @@ class BackupStatusBadge extends StatelessWidget {
   }
 }
 
-/// "N missing" in the asset-missing colour; nothing when all assets are on
-/// disk.
+/// "N missing" in the asset-missing colour, "N missing, N invalid" when
+/// some of them have a URL a check found dead; nothing when all assets are
+/// on disk.
 class MissingCountBadge extends StatelessWidget {
   /// Creates the badge.
   const MissingCountBadge({super.key, required this.mod});
@@ -124,8 +125,12 @@ class MissingCountBadge extends StatelessWidget {
     final missing = mod.missingCount;
     if (missing <= 0) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    final invalid = mod.missingInvalidCount;
+    final l10n = AppLocalizations.of(context);
     return Text(
-      AppLocalizations.of(context).missingCount(missing),
+      invalid > 0
+          ? l10n.missingInvalidCount(missing, invalid)
+          : l10n.missingCount(missing),
       style: theme.textTheme.labelMedium?.copyWith(
         color: VaultColors.of(context).assetMissing,
         fontWeight: FontWeight.w600,

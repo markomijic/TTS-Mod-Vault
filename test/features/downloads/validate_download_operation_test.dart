@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/bulk/application/bulk_service.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
+import 'package:tts_mod_vault/features/downloads/application/network_options.dart';
 import 'package:tts_mod_vault/features/operations/application/operation_runner.dart';
 
 import '../../data/net/dead_host_adapter.dart';
@@ -141,5 +142,25 @@ void main() {
     expect(result.validations.last.invalidUrls, [h.server.url('/missing/2')]);
     expect(h.server.requestsTo('/'), hasLength(1));
     expect(await storedInvalid(beta), {h.server.url('/missing/2')});
+  });
+
+  test('with the setting off the bulk download checks nothing', () async {
+    final alpha = h.workshopMod('200007', saveName: 'Alpha');
+    await h.indexMods(
+      [alpha],
+      {
+        alpha.jsonPath: [(missing, AssetType.image)],
+      },
+    );
+    final options = h.container.read(networkOptionsProvider.notifier);
+    await options.set(
+      (await options.ensureLoaded()).copyWith(checkAfterDownload: false),
+    );
+    final result = await h.container.read(bulkServiceProvider).downloadMods([
+      alpha,
+    ]);
+    expect(result.validations, isEmpty);
+    expect(h.server.requestsTo('/'), isEmpty);
+    expect(await storedInvalid(alpha), isEmpty);
   });
 }

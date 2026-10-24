@@ -211,6 +211,50 @@ void main() {
     );
   });
 
+  group('missing invalid count', () {
+    test('counts missing assets whose URL is stored as invalid', () async {
+      await seed();
+      await db.modsDao.upsertMods([
+        modUpsert(
+          'd',
+          saveName: 'delta',
+          assets: [image('https://x/dead.png'), audio('https://x/dead.mp3')],
+        ),
+      ]);
+      // img1 and song are on disk: an invalid flag on them is not counted.
+      await db.modsDao.setInvalidUrls(pathA, [
+        'https://x/img1.png',
+        'https://x/img2.png',
+        'https://x/song.mp3',
+        'https://x/mesh.obj',
+      ]);
+      await db.modsDao.setInvalidUrls(modPath('d'), [
+        'https://x/dead.png',
+        'https://x/dead.mp3',
+      ]);
+
+      Future<Map<String, int>> counts({required bool ignoreAudio}) async => {
+        for (final m in await db.libraryQueries.modSummaries(
+          ModType.mod,
+          ignoreAudioGlobally: ignoreAudio,
+        ))
+          m.ref.id: m.missingInvalidCount,
+      };
+
+      expect(await counts(ignoreAudio: false), {'a': 2, 'b': 0, 'd': 2});
+      // Hidden audio leaves both the missing and the invalid count.
+      expect(await counts(ignoreAudio: true), {'a': 2, 'b': 0, 'd': 1});
+
+      final d = await db.libraryQueries.modSummary(
+        modPath('d'),
+        ignoreAudioGlobally: false,
+      );
+      // Option (b): missing stays strict even when every missing URL is dead.
+      expect(d!.missingCount, 2);
+      expect(d.summary.isComplete, isFalse);
+    });
+  });
+
   group('assetsForMod', () {
     test('orders by type then url and joins paths', () async {
       await seed();

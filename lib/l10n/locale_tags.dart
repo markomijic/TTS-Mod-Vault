@@ -14,6 +14,7 @@ const Map<String, String> nativeLanguageNames = {
   'pt': 'Português (Brasil)',
   'ru': 'Русский',
   'es': 'Español',
+  'ko': '한국어',
 };
 
 /// Parses a BCP 47 [tag] (`de`, `pt-BR`, `zh-Hant-TW`; `_` is accepted too)

@@ -13,3 +13,4 @@ not such a line is ignored by the app. See
 - pt: Claude (AI draft)
 - ru: Claude (AI draft)
 - es: Claude (AI draft)
+- ko: Claude (AI draft)

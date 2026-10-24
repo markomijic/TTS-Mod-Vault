@@ -13,7 +13,7 @@ The Vault cache is rebuilt on the first start, so the first library load takes a
 · Settings dialog with an Appearance section; every 2.x option is kept
 · Copy missing URLs of the selected mod
 · Every operation, including the cleanup scan, can be cancelled from the progress bar
-· Languages: English, Croatian (Hrvatski), Brazilian Portuguese (Português), Russian (Русский), Spanish (Español), Korean (한국어), Simplified Chinese (简体中文), German (Deutsch), French (Français) and Turkish (Türkçe), chosen in Settings → Interface → Language
+· Languages: English, Croatian (Hrvatski), Brazilian Portuguese (Português), Russian (Русский), Spanish (Español), Korean (한국어), Simplified Chinese (简体中文), German (Deutsch), French (Français), Turkish (Türkçe) and Italian (Italiano), chosen in Settings → Interface → Language
 · Domain reachability: URL checks first test whether each domain can be reached, and URLs on unreachable domains are no longer marked invalid
 · After a download, the files still missing are checked and a "Download check results" dialog lists unreachable domains and invalid URLs
 · Settings → Network: Check all Mods and Saves domains

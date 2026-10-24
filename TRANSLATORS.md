@@ -11,3 +11,4 @@ not such a line is ignored by the app. See
 
 - hr: Claude (AI draft), Marko Mijić
 - pt: Claude (AI draft)
+- ru: Claude (AI draft)

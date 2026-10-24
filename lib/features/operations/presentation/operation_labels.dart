@@ -4,7 +4,7 @@ library;
 
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart'
-    show checkUrlsProgressLabel;
+    show checkDomainsProgressLabel, checkUrlsProgressLabel;
 import 'package:tts_mod_vault/features/library/presentation/library_labels.dart';
 import 'package:tts_mod_vault/features/operations/application/operation.dart';
 import 'package:tts_mod_vault/features/url_updates/application/update_urls_operation.dart'
@@ -75,6 +75,11 @@ String operationProgressText(AppLocalizations l10n, OperationProgress p) {
     return hasTotal
         ? l10n.operationCheckedUrls(p.done, p.total)
         : l10n.operationCheckingUrls;
+  }
+  if (key == checkDomainsProgressLabel) {
+    return hasTotal
+        ? l10n.operationCheckedDomains(p.done, p.total)
+        : l10n.operationCheckingDomains;
   }
   if (key == workshopDetailsProgressLabel) {
     return l10n.operationWorkshopFetchingDetails;

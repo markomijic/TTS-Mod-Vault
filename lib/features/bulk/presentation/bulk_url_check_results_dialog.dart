@@ -26,19 +26,27 @@ const double _copyIconSize = 16;
 /// Size of the section icons.
 const double _sectionIconSize = 20;
 
-/// A mod with the URLs of its check that did not answer.
-typedef ModInvalidUrls = (Mod mod, List<String> invalidUrls);
+/// A mod with the URLs of its check that did not answer and the hosts it
+/// could not reach.
+typedef ModInvalidUrls = (
+  Mod mod,
+  List<String> invalidUrls,
+  List<String> unreachableDomains,
+);
 
-/// The mods of [result] that have invalid URLs, most invalid first, ties
-/// by name.
+/// The mods of [result] that have invalid URLs or unreachable hosts, most
+/// invalid first, then most unreachable, ties by name.
 List<ModInvalidUrls> modsWithInvalidUrls(BulkUrlCheckResult result) {
   final list = <ModInvalidUrls>[
     for (final (mod, check) in result.results)
-      if (check.invalidUrls.isNotEmpty) (mod, check.invalidUrls),
+      if (check.invalidUrls.isNotEmpty || check.unreachableDomains.isNotEmpty)
+        (mod, check.invalidUrls, check.unreachableDomains),
   ];
   list.sort((a, b) {
     final byCount = b.$2.length.compareTo(a.$2.length);
     if (byCount != 0) return byCount;
+    final byUnreachable = b.$3.length.compareTo(a.$3.length);
+    if (byUnreachable != 0) return byUnreachable;
     return a.$1.displayName.toLowerCase().compareTo(
       b.$1.displayName.toLowerCase(),
     );
@@ -46,15 +54,19 @@ List<ModInvalidUrls> modsWithInvalidUrls(BulkUrlCheckResult result) {
   return list;
 }
 
-/// Clipboard text: each mod's name followed by its invalid URLs.
-String bulkUrlCheckResultsText(List<ModInvalidUrls> mods) =>
-    [for (final (mod, urls) in mods) '${mod.displayName}\n${urls.join('\n')}']
-        .join('\n\n');
+/// Clipboard text: each mod's name followed by its invalid URLs (mods with
+/// only unreachable hosts are left out).
+String bulkUrlCheckResultsText(List<ModInvalidUrls> mods) => [
+  for (final (mod, urls, _) in mods)
+    if (urls.isNotEmpty) '${mod.displayName}\n${urls.join('\n')}',
+].join('\n\n');
 
 /// Port of 2.x `BulkUrlCheckResultsDialog`: a summary (mods with invalid
-/// URLs, invalid URLs, mods checked), then one expandable section per mod
-/// with invalid URLs, each URL with a copy button; "Copy all invalid URLs"
-/// copies everything. A cancelled run says so in the title.
+/// URLs, invalid URLs, unreachable domains, mods checked), then one
+/// expandable section per mod with invalid URLs or unreachable hosts, each
+/// URL with a copy button; "Copy all invalid URLs" copies everything. A
+/// cancelled run, or one that could not reach some hosts, says so in the
+/// title. Unreachable hosts are counted once across mods.
 class BulkUrlCheckResultsDialog extends StatelessWidget {
   /// Creates the dialog for [result].
   const BulkUrlCheckResultsDialog({super.key, required this.result});
@@ -70,6 +82,7 @@ class BulkUrlCheckResultsDialog extends StatelessWidget {
     final cancelled = result.cancelled;
     final withInvalid = modsWithInvalidUrls(result);
     final totalInvalid = result.invalidUrlCount;
+    final unreachable = result.unreachableDomains.length;
     final checked = result.results.length;
     final notChecked = result.modsFailed;
     final problemColor = totalInvalid > 0
@@ -79,6 +92,8 @@ class BulkUrlCheckResultsDialog extends StatelessWidget {
     return AppDialog(
       title: cancelled
           ? l10n.bulkUrlCheckCancelledTitle
+          : unreachable > 0
+          ? l10n.bulkUrlCheckUnreachableTitle
           : l10n.bulkUrlCheckCompleteTitle,
       content: SizedBox(
         width: _dialogWidth,
@@ -89,8 +104,16 @@ class BulkUrlCheckResultsDialog extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  cancelled ? Icons.warning_amber_rounded : Icons.check_circle,
-                  color: cancelled ? colors.assetInvalid : colors.assetPresent,
+                  cancelled
+                      ? Icons.warning_amber_rounded
+                      : unreachable > 0
+                      ? Icons.cloud_off
+                      : Icons.check_circle,
+                  color: cancelled
+                      ? colors.assetInvalid
+                      : unreachable > 0
+                      ? colors.logWarning
+                      : colors.assetPresent,
                 ),
                 Gaps.w8,
                 Expanded(
@@ -124,6 +147,13 @@ class BulkUrlCheckResultsDialog extends StatelessWidget {
                     label: l10n.bulkUrlCheckInvalidUrls,
                     count: totalInvalid,
                     color: problemColor,
+                  ),
+                  _SummaryItem(
+                    label: l10n.bulkUrlCheckUnreachableDomains,
+                    count: unreachable,
+                    color: unreachable > 0
+                        ? colors.logWarning
+                        : colors.assetPresent,
                   ),
                   _SummaryItem(
                     label: l10n.bulkUrlCheckModsChecked,
@@ -167,7 +197,7 @@ class BulkUrlCheckResultsDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.close),
         ),
-        if (withInvalid.isNotEmpty)
+        if (totalInvalid > 0)
           FilledButton.tonalIcon(
             onPressed: () => copyTextToClipboard(
               context,
@@ -210,7 +240,8 @@ class _SummaryItem extends StatelessWidget {
   }
 }
 
-/// One mod's heading ("Name (3)") that expands to its invalid URLs.
+/// One mod's heading ("Name (3)", or "Name (3 invalid, 1 unreachable)")
+/// that expands to its unreachable hosts and invalid URLs.
 class _ModSection extends HookWidget {
   const _ModSection({required this.entry});
 
@@ -222,7 +253,8 @@ class _ModSection extends HookWidget {
     final theme = Theme.of(context);
     final colors = VaultColors.of(context);
     final expanded = useState(false);
-    final (mod, urls) = entry;
+    final (mod, urls, unreachable) = entry;
+    final color = urls.isNotEmpty ? colors.assetMissing : colors.logWarning;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,22 +267,31 @@ class _ModSection extends HookWidget {
               children: [
                 Icon(
                   expanded.value ? Icons.expand_more : Icons.chevron_right,
-                  color: colors.assetMissing,
+                  color: color,
                   size: _sectionIconSize,
                 ),
                 Gaps.w4,
                 Icon(
-                  Icons.error_outline,
-                  color: colors.assetMissing,
+                  urls.isNotEmpty ? Icons.error_outline : Icons.cloud_off,
+                  color: color,
                   size: _sectionIconSize,
                 ),
                 Gaps.w8,
                 Expanded(
                   child: Text(
-                    l10n.bulkUrlCheckModHeading(mod.displayName, urls.length),
+                    unreachable.isEmpty
+                        ? l10n.bulkUrlCheckModHeading(
+                            mod.displayName,
+                            urls.length,
+                          )
+                        : l10n.bulkUrlCheckModHeadingUnreachable(
+                            mod.displayName,
+                            urls.length,
+                            unreachable.length,
+                          ),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: colors.assetMissing,
+                      color: color,
                     ),
                   ),
                 ),
@@ -262,7 +303,25 @@ class _ModSection extends HookWidget {
           Padding(
             padding: const EdgeInsets.only(left: Insets.xl, bottom: Insets.sm),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (unreachable.isNotEmpty) ...[
+                  Text(
+                    l10n.bulkUrlCheckUnreachableDomains,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colors.logWarning,
+                    ),
+                  ),
+                  for (final domain in unreachable) SelectableText(domain),
+                  Gaps.h8,
+                ],
+                if (urls.isNotEmpty && unreachable.isNotEmpty)
+                  Text(
+                    l10n.bulkUrlCheckInvalidUrls,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colors.assetMissing,
+                    ),
+                  ),
                 for (var i = 0; i < urls.length; i++)
                   _InvalidUrlRow(url: urls[i], index: i),
               ],

@@ -20,7 +20,9 @@ const double _copyIconSize = 16;
 /// Outcome of a URL check (port of v2 `UrlCheckResultsDialog`): the
 /// invalid URLs with a copy button each, or "All URLs are valid"; when the
 /// check was cancelled the title says so and the partial count is shown.
-/// "Re-check" closes the dialog and runs the check again.
+/// Hosts that could not be reached are listed first, with a note that their
+/// URLs were not judged (2.x `051741c`). "Re-check" closes the dialog and
+/// runs the check again.
 class UrlCheckResultsDialog extends ConsumerWidget {
   /// Creates the dialog for [mod]'s [result].
   const UrlCheckResultsDialog({
@@ -41,6 +43,7 @@ class UrlCheckResultsDialog extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = VaultColors.of(context);
     final invalid = result.invalidUrls;
+    final unreachable = result.unreachableDomains;
     final cancelled = result.cancelled;
 
     final String heading;
@@ -48,12 +51,18 @@ class UrlCheckResultsDialog extends ConsumerWidget {
       heading = l10n.urlCheckInvalidCount(invalid.length);
     } else if (cancelled) {
       heading = l10n.urlCheckNoneBeforeCancel;
+    } else if (unreachable.isNotEmpty) {
+      heading = l10n.urlCheckInvalidCount(0);
     } else {
       heading = l10n.urlCheckAllValid;
     }
 
     return AppDialog(
-      title: cancelled ? l10n.urlCheckCancelledTitle : mod.displayName,
+      title: cancelled
+          ? l10n.urlCheckCancelledTitle
+          : unreachable.isNotEmpty
+          ? l10n.urlCheckUnreachableTitle
+          : mod.displayName,
       content: SizedBox(
         width: _dialogWidth,
         child: Column(
@@ -69,6 +78,28 @@ class UrlCheckResultsDialog extends ConsumerWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              Gaps.h12,
+            ],
+            if (!cancelled && unreachable.isNotEmpty) ...[
+              Text(mod.displayName, style: theme.textTheme.bodyLarge),
+              Gaps.h12,
+            ],
+            if (unreachable.isNotEmpty) ...[
+              Text(
+                l10n.urlCheckUnreachableCount(unreachable.length),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colors.logWarning,
+                ),
+              ),
+              Gaps.h4,
+              Text(
+                l10n.urlCheckUnreachableNote,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Gaps.h4,
+              for (final domain in unreachable) SelectableText(domain),
               Gaps.h12,
             ],
             Text(

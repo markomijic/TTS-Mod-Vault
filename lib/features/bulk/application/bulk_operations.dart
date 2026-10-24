@@ -597,9 +597,15 @@ final class BulkUrlCheckResult {
   int get invalidUrlCount =>
       outcomes.fold(0, (sum, o) => sum + (o.value?.invalidUrls.length ?? 0));
 
+  /// Hosts any mod's check could not reach, each once, sorted.
+  List<String> get unreachableDomains =>
+      {for (final o in outcomes) ...?o.value?.unreachableDomains}.toList()
+        ..sort();
+
   @override
   String toString() =>
       'BulkUrlCheckResult(mods: $modsChecked, invalid: $invalidUrlCount'
+      '${unreachableDomains.isEmpty ? '' : ', unreachable: ${unreachableDomains.length}'}'
       '${cancelled ? ', cancelled' : ''})';
 }
 
@@ -615,7 +621,12 @@ final class BulkCheckUrlsOperation
 
   @override
   Future<UrlCheckResult> processMod(OperationContext ctx, Mod mod) =>
-      CheckUrlsOperation(ref: ref, mod: currentMod(mod)).run(ctx);
+      CheckUrlsOperation(
+        ref: ref,
+        mod: currentMod(mod),
+        // Mods share hosts: reuse a host result for a minute across mods.
+        forceDomainRefresh: false,
+      ).run(ctx);
 
   @override
   bool stopAfter(UrlCheckResult value) => value.cancelled;
@@ -629,7 +640,8 @@ final class BulkCheckUrlsOperation
   @override
   String summaryMessage(BulkUrlCheckResult result) =>
       'Bulk URL check finished: ${result.modsChecked} mod(s) checked, '
-      '${result.invalidUrlCount} URL(s) not reachable';
+      '${result.invalidUrlCount} URL(s) not reachable'
+      '${result.unreachableDomains.isEmpty ? '' : ', ${result.unreachableDomains.length} domain(s) not reachable'}';
 }
 
 // --- delegating wrappers --------------------------------------------------

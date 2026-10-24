@@ -39,13 +39,17 @@ Future<void> pumpDialog(WidgetTester tester, Widget dialog) async {
   await tester.pumpAndSettle();
 }
 
-UrlCheckResult check(List<String> invalid, {bool cancelled = false}) =>
-    UrlCheckResult(
-      invalidUrls: invalid,
-      cancelled: cancelled,
-      checked: 3,
-      total: 3,
-    );
+UrlCheckResult check(
+  List<String> invalid, {
+  bool cancelled = false,
+  List<String> unreachable = const [],
+}) => UrlCheckResult(
+  invalidUrls: invalid,
+  unreachableDomains: unreachable,
+  cancelled: cancelled,
+  checked: 3,
+  total: 3,
+);
 
 void main() {
   final alpha = fixtureMod('Alpha Mod', id: '1');
@@ -109,6 +113,49 @@ void main() {
       expect(find.text('URL check cancelled'), findsOneWidget);
       expect(find.text('All URLs are valid'), findsOneWidget);
       expect(find.text('Copy all invalid URLs'), findsNothing);
+    });
+  });
+
+  group('BulkUrlCheckResultsDialog with unreachable domains', () {
+    final result = BulkUrlCheckResult(
+      outcomes: [
+        BulkModOutcome(
+          mod: alpha,
+          value: check(const [], unreachable: const ['down.example']),
+        ),
+        BulkModOutcome(
+          mod: beta,
+          value: check(
+            const ['https://b/1'],
+            unreachable: const ['down.example', 'gone.example'],
+          ),
+        ),
+      ],
+      cancelled: false,
+    );
+
+    test('hosts are counted once; mods with only unreachable hosts are '
+        'listed but not copied', () {
+      expect(result.unreachableDomains, ['down.example', 'gone.example']);
+      final mods = modsWithInvalidUrls(result);
+      expect(mods.map((m) => m.$1.displayName), ['Beta Mod', 'Alpha Mod']);
+      expect(bulkUrlCheckResultsText(mods), 'Beta Mod\nhttps://b/1');
+    });
+
+    testWidgets('title, summary tile and per-mod headings', (tester) async {
+      await pumpDialog(tester, BulkUrlCheckResultsDialog(result: result));
+      expect(
+        find.text('URL check complete with unreachable domains'),
+        findsOneWidget,
+      );
+      expect(find.text('Unreachable domains'), findsOneWidget);
+      expect(find.text('Beta Mod (1 invalid, 2 unreachable)'), findsOneWidget);
+      expect(find.text('Alpha Mod (0 invalid, 1 unreachable)'), findsOneWidget);
+
+      await tester.tap(find.text('Alpha Mod (0 invalid, 1 unreachable)'));
+      await tester.pumpAndSettle();
+      expect(find.text('down.example'), findsOneWidget);
+      expect(find.text('Unreachable domains'), findsNWidgets(2));
     });
   });
 

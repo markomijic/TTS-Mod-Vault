@@ -57,7 +57,9 @@ Future<void> checkSingleUrl(
   final result = await ui.launch(() => service.checkUrl(mod, asset));
   if (result == null || result.cancelled || !ui.mounted) return;
   ui.showSnackBar(
-    result.invalidUrls.isEmpty
+    result.unreachableDomains.isNotEmpty
+        ? ui.l10n.urlCheckSingleUnreachable
+        : result.invalidUrls.isEmpty
         ? ui.l10n.urlCheckSingleValid
         : ui.l10n.urlCheckSingleInvalid,
   );

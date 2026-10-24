@@ -9,7 +9,7 @@ import 'package:tts_mod_vault/features/downloads/application/download_assets_ope
 import 'package:tts_mod_vault/features/operations/application/operation_runner.dart';
 
 export 'package:tts_mod_vault/features/downloads/application/check_urls_operation.dart'
-    show UrlCheckResult, checkUrlsProgressLabel;
+    show UrlCheckResult, checkDomainsProgressLabel, checkUrlsProgressLabel;
 export 'package:tts_mod_vault/features/downloads/application/download_assets_operation.dart'
     show
         DownloadBatchResult,

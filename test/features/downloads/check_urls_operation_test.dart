@@ -7,10 +7,12 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
+import 'package:tts_mod_vault/features/bulk/application/bulk_service.dart';
 import 'package:tts_mod_vault/features/downloads/application/downloads_providers.dart';
 import 'package:tts_mod_vault/features/downloads/application/network_options.dart';
 import 'package:tts_mod_vault/features/operations/application/operation_runner.dart';
 
+import '../../data/net/dead_host_adapter.dart';
 import 'downloads_test_harness.dart';
 
 void main() {
@@ -68,7 +70,12 @@ void main() {
       expect(invalid, {missing, html});
       expect(h.library.resummarizeCalls, [alpha.jsonPath]);
 
-      expect(progress.map((p) => p.label).toSet(), {'checking.urls'});
+      expect(progress.map((p) => p.label).toSet(), {
+        'checking.domains',
+        'checking.urls',
+      });
+      expect(progress.first.label, 'checking.urls');
+      expect(progress.where((p) => p.label == 'checking.domains').last.done, 1);
       expect(progress.last.done, 4);
       expect(progress.last.total, 4);
       expect(progress.every((p) => p.kind == OperationKind.checkUrls), isTrue);
@@ -217,4 +224,79 @@ void main() {
       );
     },
   );
+
+  group('domain reachability', () {
+    late Mod epsilon;
+    const deadA = 'http://$deadHost/a.png';
+    const deadB = 'http://$deadHost/b.png';
+
+    setUp(() async {
+      epsilon = h.workshopMod('100005', saveName: 'Epsilon');
+      await h.indexMods(
+        [epsilon],
+        {
+          epsilon.jsonPath: [
+            (live, AssetType.image),
+            (missing, AssetType.image),
+            (deadA, AssetType.image),
+            (deadB, AssetType.model),
+          ],
+        },
+      );
+    });
+
+    test(
+      'URLs on an unreachable host are skipped and nothing is saved',
+      () async {
+        await h.db.modsDao.setInvalidUrls(epsilon.jsonPath, [live]);
+        final result = await service().checkUrls(epsilon);
+
+        expect(result.cancelled, isFalse);
+        expect(result.unreachableDomains, [deadHost]);
+        expect(result.invalidUrls, [missing]);
+        expect(result.total, 4);
+        expect(result.checked, 2);
+        expect(result.allLive, isFalse);
+
+        // The stored list is left as it was and the mod is not re-summarised.
+        final stored = {
+          for (final a in await h.assetsInStore(epsilon))
+            if (a.invalid) a.url,
+        };
+        expect(stored, {live});
+        expect(h.library.resummarizeCalls, isEmpty);
+
+        expect(
+          h.logMessages,
+          contains(startsWith('Domain is not reachable: $deadHost')),
+        );
+        expect(h.logMessages, contains(endsWith('result not saved')));
+      },
+    );
+
+    test('a single-asset check on an unreachable host saves nothing', () async {
+      final asset = (await h.assetsInStore(epsilon))
+          .singleWhere((a) => a.url == deadA);
+      final result = await service().checkUrl(epsilon, asset);
+      expect(result.unreachableDomains, [deadHost]);
+      expect(result.invalidUrls, isEmpty);
+      expect(result.checked, 0);
+      expect((await h.assetsInStore(epsilon)).any((a) => a.invalid), isFalse);
+    });
+
+    test(
+      'the single check refreshes hosts, the bulk check reuses them',
+      () async {
+        await service().checkUrls(epsilon);
+        final rootRequests = h.server.requestsTo('/').length;
+        expect(rootRequests, 1);
+
+        await service().checkUrls(epsilon);
+        expect(h.server.requestsTo('/'), hasLength(2));
+
+        await h.container.read(bulkServiceProvider).checkUrls([epsilon]);
+        expect(h.server.requestsTo('/'), hasLength(2));
+      },
+    );
+  });
 }

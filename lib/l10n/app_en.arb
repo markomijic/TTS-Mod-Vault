@@ -697,6 +697,16 @@
       "total": {"type": "int"}
     }
   },
+  "operationCheckingDomains": "Checking domains…",
+  "@operationCheckingDomains": {"description": "Progress bar text of a domain reachability check before the domain count is known"},
+  "operationCheckedDomains": "Checked {done}/{total} domains",
+  "@operationCheckedDomains": {
+    "description": "Progress bar text while the hosts of asset URLs are checked for reachability",
+    "placeholders": {
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "operationCheckingUrls": "Checking URLs…",
   "@operationCheckingUrls": {"description": "Progress bar text of a URL check before the URL count is known"},
   "operationWorkshopDownloading": "Downloading Workshop items",
@@ -791,6 +801,19 @@
   "@urlCheckSingleValid": {"description": "Snack bar after the asset menu's Check URL found the URL reachable"},
   "urlCheckSingleInvalid": "URL is not reachable",
   "@urlCheckSingleInvalid": {"description": "Snack bar after the asset menu's Check URL found the URL dead"},
+  "urlCheckUnreachableTitle": "URL check complete with unreachable domains",
+  "@urlCheckUnreachableTitle": {"description": "Title of the URL check results when some hosts could not be reached"},
+  "urlCheckUnreachableCount": "Domains unreachable: {count}",
+  "@urlCheckUnreachableCount": {
+    "description": "Heading of the list of hosts a URL check could not reach",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "urlCheckUnreachableNote": "These domains could not be reached from the current network. Their URLs were not checked or marked invalid, and the result was not saved.",
+  "@urlCheckUnreachableNote": {"description": "Explanation under the unreachable domains of a URL check"},
+  "urlCheckSingleUnreachable": "The URL's domain could not be reached",
+  "@urlCheckSingleUnreachable": {"description": "Snack bar after the asset menu's Check URL could not reach the URL's host at all"},
 
   "workshopDownloadTitle": "Download Workshop mods",
   "@workshopDownloadTitle": {"description": "Title of the dialog that downloads Workshop mods by id"},
@@ -1671,6 +1694,19 @@
       "count": {"type": "int"}
     }
   },
+  "bulkUrlCheckModHeadingUnreachable": "{name} ({invalid} invalid, {unreachable} unreachable)",
+  "@bulkUrlCheckModHeadingUnreachable": {
+    "description": "Expandable section heading per mod whose URL check found unreachable domains",
+    "placeholders": {
+      "name": {"type": "String"},
+      "invalid": {"type": "int"},
+      "unreachable": {"type": "int"}
+    }
+  },
+  "bulkUrlCheckUnreachableDomains": "Unreachable domains",
+  "@bulkUrlCheckUnreachableDomains": {"description": "Summary tile and per-mod section heading of the bulk URL check results: hosts that could not be reached"},
+  "bulkUrlCheckUnreachableTitle": "URL check complete with unreachable domains",
+  "@bulkUrlCheckUnreachableTitle": {"description": "Title of the bulk URL check results when some hosts could not be reached"},
 
   "updateUrlsPreset": "Preset",
   "@updateUrlsPreset": {"description": "Label of the preset dropdown in the Update URLs dialog"},

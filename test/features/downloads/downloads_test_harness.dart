@@ -32,6 +32,7 @@ import 'package:tts_mod_vault/features/operations/application/operation_runner.d
 import 'package:tts_mod_vault/features/startup/application/directories_controller.dart';
 import 'package:tts_mod_vault/features/workshop/application/workshop_service.dart';
 
+import '../../data/net/dead_host_adapter.dart';
 import '../../data/net/test_http_server.dart';
 
 export '../../data/net/test_http_server.dart';
@@ -127,7 +128,8 @@ final class DownloadsHarness {
     final library = RecordingLibrary(
       LibraryState(lastRefresh: DateTime(2024, 5)),
     );
-    final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 5)));
+    final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 5)))
+      ..httpClientAdapter = DeadHostAdapter();
     final container = ProviderContainer.test(
       overrides: [
         keyValueStoreProvider.overrideWithValue(InMemoryKeyValueStore()),

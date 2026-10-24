@@ -5,14 +5,12 @@
 @Timeout(Duration(seconds: 60))
 library;
 
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tts_mod_vault/core/cancellation/cancellation_token.dart';
 import 'package:tts_mod_vault/data/net/domain_reachability_checker.dart';
 
+import 'dead_host_adapter.dart';
 import 'test_http_server.dart';
 
 void main() {
@@ -21,14 +19,13 @@ void main() {
   late DateTime now;
   late DomainReachabilityChecker checker;
 
-  // Requests to this host fail at connection level (see _DeadHostAdapter);
-  // a real refused port takes about 2 s per attempt on Windows.
-  const deadUrl = 'http://dead.test/asset.png';
+  // Requests to this host fail at connection level (see DeadHostAdapter).
+  const deadUrl = 'http://$deadHost/asset.png';
 
   setUp(() async {
     server = await TestHttpServer.start();
     dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 5)))
-      ..httpClientAdapter = _DeadHostAdapter(IOHttpClientAdapter());
+      ..httpClientAdapter = DeadHostAdapter();
     now = DateTime(2026, 10, 24, 12);
     checker = DomainReachabilityChecker(dio: dio, clock: () => now);
   });
@@ -164,30 +161,4 @@ void main() {
     token.cancel('stop');
     await expectLater(pending, throwsA(isA<OperationCancelledException>()));
   });
-}
-
-/// Fails every request to `dead.test` with a connection error, like a host
-/// that is down; everything else goes to [_inner].
-final class _DeadHostAdapter implements HttpClientAdapter {
-  _DeadHostAdapter(this._inner);
-
-  final HttpClientAdapter _inner;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) {
-    if (options.uri.host == 'dead.test') {
-      throw DioException.connectionError(
-        requestOptions: options,
-        reason: 'host is down',
-      );
-    }
-    return _inner.fetch(options, requestStream, cancelFuture);
-  }
-
-  @override
-  void close({bool force = false}) => _inner.close(force: force);
 }

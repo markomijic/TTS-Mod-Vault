@@ -147,5 +147,35 @@ void main() {
       expect(find.text('https://x.example/a'), findsOneWidget);
       expect(find.text('Copy all invalid URLs'), findsOneWidget);
     });
+
+    testWidgets('lists unreachable domains with the not-saved note', (
+      tester,
+    ) async {
+      await pumpThemedApp(
+        tester,
+        home: Scaffold(
+          body: UrlCheckResultsDialog(
+            mod: mod,
+            result: const UrlCheckResult(
+              invalidUrls: ['https://x.example/a'],
+              unreachableDomains: ['down.example'],
+              cancelled: false,
+              checked: 2,
+              total: 4,
+            ),
+          ),
+        ),
+      );
+      expect(
+        find.text('URL check complete with unreachable domains'),
+        findsOneWidget,
+      );
+      expect(find.text('Alpha Mod'), findsOneWidget);
+      expect(find.text('Domains unreachable: 1'), findsOneWidget);
+      expect(find.textContaining('were not checked'), findsOneWidget);
+      expect(find.text('down.example'), findsOneWidget);
+      expect(find.text('Invalid URLs: 1'), findsOneWidget);
+      expect(find.text('All URLs are valid'), findsNothing);
+    });
   });
 }

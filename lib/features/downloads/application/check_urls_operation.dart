@@ -1,5 +1,6 @@
 /// Checks whether the asset URLs of one mod still answer and stores the dead
-/// ones on the mod. Port of v2 `checkModUrlsLive`.
+/// ones on the mod. Port of v2 `checkModUrlsLive`, with the 2.x domain
+/// reachability step (`051741c`) in front.
 library;
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/core/cancellation/cancellation_token.dart';
 import 'package:tts_mod_vault/core/logging/app_log.dart';
 import 'package:tts_mod_vault/data/net/dio_client.dart';
+import 'package:tts_mod_vault/data/net/domain_reachability_checker.dart';
 import 'package:tts_mod_vault/data/net/url_checker.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/application/mod_assets_provider.dart';
@@ -20,6 +22,9 @@ import 'package:tts_mod_vault/features/operations/application/operation.dart';
 /// Progress label key of the URL check.
 const String checkUrlsProgressLabel = 'checking.urls';
 
+/// Progress label key of the domain reachability step.
+const String checkDomainsProgressLabel = 'checking.domains';
+
 /// Outcome of a [CheckUrlsOperation].
 final class UrlCheckResult {
   /// Creates a result.
@@ -28,42 +33,166 @@ final class UrlCheckResult {
     required this.cancelled,
     required this.checked,
     required this.total,
+    this.unreachableDomains = const [],
   });
 
   /// URLs that did not answer. Partial when [cancelled].
   final List<String> invalidUrls;
 
+  /// Hosts that could not be reached at all, sorted. Their URLs were not
+  /// checked and are not in [invalidUrls]; while any host is unreachable the
+  /// result is not persisted on the mod.
+  final List<String> unreachableDomains;
+
   /// Whether the check was cancelled before every URL was tried; the
   /// partial result is then not persisted on the mod.
   final bool cancelled;
 
-  /// URLs actually checked.
+  /// URLs actually checked (those on unreachable hosts are skipped).
   final int checked;
 
   /// URLs the mod has.
   final int total;
 
   /// Whether every URL answered.
-  bool get allLive => !cancelled && invalidUrls.isEmpty;
+  bool get allLive =>
+      !cancelled && invalidUrls.isEmpty && unreachableDomains.isEmpty;
 
   @override
   String toString() =>
       'UrlCheckResult(checked=$checked/$total invalid=${invalidUrls.length}'
+      '${unreachableDomains.isEmpty ? '' : ' unreachable=${unreachableDomains.length}'}'
       '${cancelled ? ' cancelled' : ''})';
 }
 
+/// Partial state of [checkUrlsWithDomains], kept by the calling operation so
+/// its `cancelledResult` can report what was found before a cancel.
+final class UrlCheckProgress {
+  /// URLs found dead so far.
+  final List<String> invalid = [];
+
+  /// Hosts found unreachable (set once the domain step finished).
+  List<String> unreachableDomains = const [];
+
+  /// URLs checked for liveness so far.
+  int checked = 0;
+
+  /// URLs given to the check.
+  int total = 0;
+
+  /// The state as a result.
+  UrlCheckResult toResult({required bool cancelled}) => UrlCheckResult(
+    invalidUrls: List.unmodifiable(invalid),
+    unreachableDomains: List.unmodifiable(unreachableDomains),
+    cancelled: cancelled,
+    checked: checked,
+    total: total,
+  );
+}
+
+/// The two-step check shared by [CheckUrlsOperation] and the post-download
+/// validation: first the hosts of [urls] are checked for reachability
+/// (progress [checkDomainsProgressLabel]); URLs on unreachable hosts are
+/// then skipped and the rest are checked for liveness with [concurrency]
+/// workers (progress [checkUrlsProgressLabel]). [onUnreachable] and
+/// [onInvalid] are called per finding (for log lines). Persists nothing;
+/// returns [into]'s state, `cancelled` when the token fired during either
+/// step.
+Future<UrlCheckResult> checkUrlsWithDomains(
+  OperationContext ctx, {
+  required OperationKind kind,
+  required List<String> urls,
+  required int concurrency,
+  required bool forceDomainRefresh,
+  required DomainReachabilityChecker domainChecker,
+  required UrlChecker urlChecker,
+  required UrlCheckProgress into,
+  void Function(String domain)? onUnreachable,
+  void Function(String url)? onInvalid,
+}) async {
+  into.total = urls.length;
+  final workers = concurrency < 1 ? 1 : concurrency;
+
+  final domains = await domainChecker.checkUrls(
+    urls,
+    concurrency: workers,
+    forceRefresh: forceDomainRefresh,
+    token: ctx.token,
+    onProgress: (done, total) => ctx.report(
+      OperationProgress(
+        kind: kind,
+        label: checkDomainsProgressLabel,
+        done: done,
+        total: total,
+      ),
+    ),
+  );
+  if (domains.cancelled || ctx.isCancelled) {
+    return into.toResult(cancelled: true);
+  }
+  final unreachable = domains.unreachable;
+  into.unreachableDomains = unreachable;
+  if (onUnreachable != null) unreachable.forEach(onUnreachable);
+
+  final unreachableSet = unreachable.toSet();
+  final toCheck = [
+    for (final url in urls)
+      if (!unreachableSet.contains(DomainReachabilityChecker.hostOf(url))) url,
+  ];
+  void publish() => ctx.report(
+    OperationProgress(
+      kind: kind,
+      label: checkUrlsProgressLabel,
+      done: into.checked,
+      total: toCheck.length,
+    ),
+  );
+  publish();
+
+  var nextIndex = 0;
+  await Future.wait(
+    List.generate(workers, (_) async {
+      while (!ctx.isCancelled && nextIndex < toCheck.length) {
+        final url = toCheck[nextIndex++];
+        final bool live;
+        try {
+          live = await urlChecker.isLive(url, token: ctx.token);
+        } on OperationCancelledException {
+          return;
+        }
+        if (ctx.isCancelled) return;
+        if (!live) {
+          into.invalid.add(url);
+          onInvalid?.call(url);
+        }
+        into.checked++;
+        publish();
+      }
+    }),
+  );
+  return into.toResult(cancelled: ctx.isCancelled);
+}
+
 /// Checks every asset URL of [mod] (audio included or not by the same rule
-/// as the asset list) with `concurrentDownloads` workers. On completion the
-/// invalid URLs replace the mod's stored list (an empty list clears it), the
-/// mod is re-summarised and its asset list invalidated; on cancellation the
-/// partial result is returned without being persisted.
+/// as the asset list) with `concurrentDownloads` workers, after checking
+/// that their hosts can be reached at all (see [checkUrlsWithDomains]).
+/// URLs on unreachable hosts are skipped and not marked invalid. On
+/// completion, and only when every host was reachable, the invalid URLs
+/// replace the mod's stored list (an empty list clears it), the mod is
+/// re-summarised and its asset list invalidated; on cancellation, or with
+/// an unreachable host, the result is returned without being persisted.
 ///
 /// With [onlyAsset] (the asset menu's "Check URL") just that URL is checked
 /// and its outcome is merged into the stored list: the URL is added when
 /// dead and removed when live, the other entries are kept.
 final class CheckUrlsOperation extends Operation<UrlCheckResult> {
   /// Creates the operation.
-  CheckUrlsOperation({required this.ref, required this.mod, this.onlyAsset});
+  CheckUrlsOperation({
+    required this.ref,
+    required this.mod,
+    this.onlyAsset,
+    this.forceDomainRefresh = true,
+  });
 
   /// Supplies the database, network client and library.
   final Ref ref;
@@ -74,20 +203,17 @@ final class CheckUrlsOperation extends Operation<UrlCheckResult> {
   /// When set, the one asset to check instead of the whole mod.
   final Asset? onlyAsset;
 
-  final List<String> _invalid = [];
-  int _checked = 0;
-  int _total = 0;
+  /// Whether host results younger than a minute are checked again. The bulk
+  /// check passes `false` so mods sharing hosts reuse one result.
+  final bool forceDomainRefresh;
+
+  final UrlCheckProgress _progress = UrlCheckProgress();
 
   @override
   OperationKind get kind => OperationKind.checkUrls;
 
   @override
-  UrlCheckResult? cancelledResult() => UrlCheckResult(
-    invalidUrls: List.unmodifiable(_invalid),
-    cancelled: true,
-    checked: _checked,
-    total: _total,
-  );
+  UrlCheckResult? cancelledResult() => _progress.toResult(cancelled: true);
 
   @override
   Future<UrlCheckResult> run(OperationContext ctx) async {
@@ -111,7 +237,6 @@ final class CheckUrlsOperation extends Operation<UrlCheckResult> {
                 ),
               );
     ctx.checkCancelled();
-    _total = assets.length;
 
     log.info(
       LogSource.urlCheck,
@@ -127,60 +252,58 @@ final class CheckUrlsOperation extends Operation<UrlCheckResult> {
       ),
     );
 
-    final checker = UrlChecker(dio: ref.read(dioProvider));
-    var nextIndex = 0;
-    void publish() => ctx.report(
-      OperationProgress(
-        kind: kind,
-        label: checkUrlsProgressLabel,
-        done: _checked,
-        total: assets.length,
+    final typeOf = {for (final asset in assets) asset.url: asset.type};
+    final result = await checkUrlsWithDomains(
+      ctx,
+      kind: kind,
+      urls: [for (final asset in assets) asset.url],
+      concurrency: options.concurrentDownloads,
+      forceDomainRefresh: forceDomainRefresh,
+      domainChecker: ref.read(domainReachabilityCheckerProvider),
+      urlChecker: UrlChecker(dio: ref.read(dioProvider)),
+      into: _progress,
+      onUnreachable: (domain) => log.warning(
+        LogSource.urlCheck,
+        'Domain is not reachable: $domain; its URLs were not checked',
+        modPath: modPath,
+        operationId: ctx.operationId,
+      ),
+      onInvalid: (url) => log.warning(
+        LogSource.urlCheck,
+        'URL is not reachable: $url',
+        details: 'type: ${typeOf[url]?.folderName}',
+        modPath: modPath,
+        url: url,
+        operationId: ctx.operationId,
       ),
     );
 
-    final workerCount = options.concurrentDownloads < 1
-        ? 1
-        : options.concurrentDownloads;
-    await Future.wait(
-      List.generate(workerCount, (_) async {
-        while (!ctx.isCancelled && nextIndex < assets.length) {
-          final asset = assets[nextIndex++];
-          final bool live;
-          try {
-            live = await checker.isLive(asset.url, token: ctx.token);
-          } on OperationCancelledException {
-            return;
-          }
-          if (ctx.isCancelled) return;
-          if (!live) {
-            _invalid.add(asset.url);
-            log.warning(
-              LogSource.urlCheck,
-              'URL is not reachable: ${asset.url}',
-              details: 'type: ${asset.type.folderName}',
-              modPath: modPath,
-              url: asset.url,
-              operationId: ctx.operationId,
-            );
-          }
-          _checked++;
-          publish();
-        }
-      }),
-    );
-
-    if (ctx.isCancelled) {
+    if (result.cancelled) {
       log.warning(
         LogSource.urlCheck,
-        'URL check of "${mod.displayName}" cancelled after $_checked/'
-        '${assets.length} URL(s); result not saved',
+        'URL check of "${mod.displayName}" cancelled after '
+        '${result.checked}/${assets.length} URL(s); result not saved',
         modPath: modPath,
         operationId: ctx.operationId,
       );
-      return cancelledResult()!;
+      return result;
     }
 
-    final invalid = List<String>.unmodifiable(_invalid);
+    final invalid = result.invalidUrls;
+    final unreachable = result.unreachableDomains;
+    if (unreachable.isNotEmpty) {
+      log.warning(
+        LogSource.urlCheck,
+        'Checked ${result.checked}/${assets.length} URL(s) of '
+        '"${mod.displayName}": ${unreachable.length} domain(s) not '
+        'reachable, ${invalid.length} URL(s) not reachable; result not saved',
+        details: [...unreachable, ...invalid].join('\n'),
+        modPath: modPath,
+        operationId: ctx.operationId,
+      );
+      return result;
+    }
+
     final stored = onlyAsset == null
         ? invalid
         : await _mergeStoredInvalidUrls(modPath, onlyAsset.url, invalid);
@@ -211,12 +334,7 @@ final class CheckUrlsOperation extends Operation<UrlCheckResult> {
         operationId: ctx.operationId,
       );
     }
-    return UrlCheckResult(
-      invalidUrls: invalid,
-      cancelled: false,
-      checked: _checked,
-      total: assets.length,
-    );
+    return result;
   }
 
   /// The mod's stored invalid list with [url] added or removed according

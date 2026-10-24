@@ -217,6 +217,9 @@ final class TestHttpServer {
       for (var i = 0; i < bytes.length; i += chunk) {
         response.add(bytes.sublist(i, min(i + chunk, bytes.length)));
         await response.flush();
+        // Without a pause a fast loopback (Linux) can hand the client the
+        // whole body in one read, so no intermediate progress is reported.
+        await Future<void>.delayed(const Duration(milliseconds: 5));
       }
       return;
     }

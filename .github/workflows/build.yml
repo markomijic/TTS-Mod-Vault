@@ -39,7 +39,7 @@ jobs:
     name: Analyze and test
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Read Flutter version from .fvmrc
         id: fvm
@@ -72,7 +72,7 @@ jobs:
     needs: test
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Read Flutter version from .fvmrc
         id: fvm
@@ -91,7 +91,7 @@ jobs:
         shell: pwsh
         run: packaging\windows\build_zip.ps1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows
           path: build/Windows.TTS.Mod.Vault.*.zip
@@ -112,7 +112,7 @@ jobs:
             ca-certificates curl git jq unzip xz-utils zip file binutils \
             clang cmake ninja-build pkg-config libgtk-3-dev
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The checkout and the Flutter SDK (a git repo) belong to another uid
       # inside the container; git, and so `flutter` and the build script's
@@ -134,7 +134,7 @@ jobs:
       - name: Build AppImage and zip
         run: bash packaging/appimage/build_appimage.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux
           path: |
@@ -147,7 +147,7 @@ jobs:
     needs: test
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Read Flutter version from .fvmrc
         id: fvm
@@ -164,7 +164,7 @@ jobs:
       - name: Build
         run: bash packaging/macos/build_dmg.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos
           path: build/macOS.TTS.Mod.Vault.*.zip
@@ -178,9 +178,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true

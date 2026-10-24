@@ -61,9 +61,15 @@ abstract final class AppTheme {
     final controlShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(controlRadius),
     );
+    // Menus and popovers float over content of the same grey in dark mode,
+    // so they get the stronger control border there.
     final menuShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(menuRadius),
-      side: BorderSide(color: scheme.outlineVariant),
+      side: BorderSide(
+        color: brightness == Brightness.dark
+            ? scheme.outline
+            : scheme.outlineVariant,
+      ),
     );
     final focusRing = BorderSide(
       color: scheme.primary.withValues(alpha: 0.6),
@@ -320,7 +326,13 @@ abstract final class AppTheme {
               ? color.withValues(alpha: 0.5)
               : color;
         }),
-        trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+        // An outlined off track keeps on and off apart when the accent is
+        // a grey (Graphite).
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.transparent
+              : palette.border,
+        ),
         thumbIcon: const WidgetStatePropertyAll(null),
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

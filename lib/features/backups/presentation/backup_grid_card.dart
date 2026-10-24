@@ -84,13 +84,13 @@ class _InfoBand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final detailStyle = theme.textTheme.labelSmall?.copyWith(
-      color: scheme.onInverseSurface,
+      color: Colors.white,
     );
     final localeName = AppLocalizations.of(context).localeName;
     return ColoredBox(
-      color: scheme.inverseSurface.withValues(alpha: 0.8),
+      // A dark scrim over the artwork in both appearances.
+      color: Colors.black.withValues(alpha: 0.62),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: Insets.sm,
@@ -105,7 +105,7 @@ class _InfoBand extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onInverseSurface,
+                color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),

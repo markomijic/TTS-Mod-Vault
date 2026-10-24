@@ -31,7 +31,7 @@ class SettingsInfoIcon extends StatelessWidget {
       message: message,
       showDuration: _tooltipShowDuration,
       textStyle: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onInverseSurface,
+        color: theme.colorScheme.onSurface,
         height: 1.5,
       ),
       child: Icon(

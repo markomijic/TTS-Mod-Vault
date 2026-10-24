@@ -20,7 +20,7 @@ class AssetHelpTooltip extends StatelessWidget {
     final scheme = theme.colorScheme;
     final colors = VaultColors.of(context);
     final base = theme.textTheme.bodyMedium?.copyWith(
-      color: scheme.onInverseSurface,
+      color: scheme.onSurface,
       height: 1.6,
     );
     final bold = base?.copyWith(fontWeight: FontWeight.bold);

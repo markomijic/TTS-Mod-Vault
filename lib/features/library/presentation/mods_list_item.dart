@@ -12,6 +12,12 @@ import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 /// Thumbnail edge length.
 const double _thumbnailSize = 40;
 
+/// Width of the audio and backup icon slots.
+const double _iconSlot = 24;
+
+/// Width of the right-aligned date column.
+const double _dateWidth = 116;
+
 /// Decoded thumbnail width (2x for HiDPI).
 const int _thumbnailCacheWidth = 80;
 
@@ -92,19 +98,33 @@ class ModsListItem extends ConsumerWidget {
               ),
               Gaps.w12,
               MissingCountBadge(mod: mod),
-              if (mod.missingCount > 0) Gaps.w12,
-              AudioBadge(mod: mod),
-              if (mod.summary.hasAudio) Gaps.w8,
-              BackupStatusBadge(mod: mod, visible: showBackupState),
-              if (showBackupState && mod.backupStatus != BackupStatus.none)
-                Gaps.w12,
-              Text(
-                formatModDate(
-                  AppLocalizations.of(context).localeName,
-                  mod.modified,
+              Gaps.w8,
+              // Fixed slots so the icons and dates line up down the list.
+              SizedBox(
+                width: _iconSlot,
+                child: Center(child: AudioBadge(mod: mod)),
+              ),
+              if (showBackupState)
+                SizedBox(
+                  width: _iconSlot,
+                  child: Center(
+                    child: BackupStatusBadge(mod: mod, visible: true),
+                  ),
                 ),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
+              Gaps.w8,
+              SizedBox(
+                width: _dateWidth,
+                child: Text(
+                  formatModDate(
+                    AppLocalizations.of(context).localeName,
+                    mod.modified,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],

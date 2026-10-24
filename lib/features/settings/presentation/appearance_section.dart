@@ -118,7 +118,7 @@ class AppearanceSection extends HookConsumerWidget {
               key: const Key('settings-seed-hex'),
               controller: hexController,
               decoration: InputDecoration(
-                labelText: l10n.settingSeedColorHex,
+                hintText: l10n.settingSeedColorHex,
                 prefixIcon: settings.presetId == null
                     ? Padding(
                         padding: const EdgeInsets.all(Insets.sm),

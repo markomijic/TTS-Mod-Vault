@@ -23,7 +23,7 @@ class BackupsHelpTooltip extends StatelessWidget {
       message: message,
       showDuration: _showDuration,
       textStyle: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onInverseSurface,
+        color: theme.colorScheme.onSurface,
         height: 1.6,
       ),
       child: Padding(

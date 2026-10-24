@@ -257,6 +257,42 @@ void main() {
     });
   });
 
+  group('distinctAssetUrls', () {
+    test('lists each URL of the given mod types once, sorted', () async {
+      await seed();
+      await db.modsDao.upsertMods([
+        // Shares a URL with mod "a"; the saved object's own URL is left out.
+        modUpsert('d', assets: [image('https://y/shared.png')]),
+        modUpsert(
+          'e',
+          type: ModType.save,
+          assets: [image('https://x/img1.png'), image('https://y/shared.png')],
+        ),
+        modUpsert(
+          'f',
+          type: ModType.savedObject,
+          assets: [image('https://z/object.png')],
+        ),
+      ]);
+
+      expect(
+        await db.libraryQueries.distinctAssetUrls({ModType.mod, ModType.save}),
+        [
+          'https://x/img1.png',
+          'https://x/img2.png',
+          'https://x/mesh.obj',
+          'https://x/rules.pdf',
+          'https://x/song.mp3',
+          'https://y/shared.png',
+        ],
+      );
+      expect(await db.libraryQueries.distinctAssetUrls({ModType.savedObject}), [
+        'https://z/object.png',
+      ]);
+      expect(await db.libraryQueries.distinctAssetUrls(const {}), isEmpty);
+    });
+  });
+
   group('modPathsReferencingFileKeys', () {
     test('finds every mod using any key, optionally excluding one', () async {
       await db.modsDao.upsertMods([

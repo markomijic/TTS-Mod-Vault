@@ -102,6 +102,22 @@ class LibraryQueries extends DatabaseAccessor<AppDatabase>
     ];
   }
 
+  /// Every distinct asset URL of the mods of [types] (audio included),
+  /// sorted. Used to collect the domains the Settings domain check tries.
+  Future<List<String>> distinctAssetUrls(Iterable<ModType> types) async {
+    final values = [for (final type in types) type.dbValue];
+    if (values.isEmpty) return const [];
+    final rows = await customSelect(
+      'SELECT DISTINCT a.url FROM mod_assets a '
+      'JOIN mods m ON m.json_path = a.mod_path '
+      'WHERE m.type IN (SELECT value FROM json_each(?)) '
+      'ORDER BY a.url',
+      variables: [Variable.withString(jsonEncode(values))],
+      readsFrom: {mods, modAssets},
+    ).get();
+    return [for (final row in rows) row.read<String>('url')];
+  }
+
   /// `json_path`s of the mods that reference any of [fileKeys], optionally
   /// without [excludeModPath] ("which other mods share these files").
   Future<Set<String>> modPathsReferencingFileKeys(

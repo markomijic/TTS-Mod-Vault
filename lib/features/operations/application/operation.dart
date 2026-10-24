@@ -16,6 +16,9 @@ enum OperationKind {
   /// Check whether a mod's asset URLs are still live.
   checkUrls,
 
+  /// Check whether the hosts referenced by Mods and Saves answer.
+  checkDomains,
+
   /// Download Workshop mods by id.
   downloadWorkshop,
 
@@ -43,7 +46,7 @@ enum OperationKind {
   /// The log source entries of this kind are filed under.
   LogSource get logSource => switch (this) {
     OperationKind.downloadAssets => LogSource.download,
-    OperationKind.checkUrls => LogSource.urlCheck,
+    OperationKind.checkUrls || OperationKind.checkDomains => LogSource.urlCheck,
     OperationKind.downloadWorkshop ||
     OperationKind.updateWorkshop => LogSource.workshop,
     OperationKind.backup => LogSource.backup,

@@ -698,7 +698,7 @@
     }
   },
   "operationCheckingDomains": "Checking domains…",
-  "@operationCheckingDomains": {"description": "Progress bar text of a domain reachability check before the domain count is known"},
+  "@operationCheckingDomains": {"description": "Progress bar text of a domain reachability check before the domain count is known; also the Settings check button while it runs"},
   "operationCheckedDomains": "Checked {done}/{total} domains",
   "@operationCheckedDomains": {
     "description": "Progress bar text while the hosts of asset URLs are checked for reachability",
@@ -1385,6 +1385,27 @@
   "@settingIgnoredDomainsInfo": {"description": "Tooltip of the excluded domains list"},
   "settingAddDomain": "Add domain name",
   "@settingAddDomain": {"description": "Add button of the excluded domains list"},
+  "settingCheckDomains": "Check all Mods and Saves domains",
+  "@settingCheckDomains": {"description": "Network settings button that checks whether every domain used by Mods and Saves can be reached"},
+  "settingCheckDomainsInfo": "Checks every unique domain referenced by Mods and Saves, including excluded domains. Any HTTP response means the domain is reachable.",
+  "@settingCheckDomainsInfo": {"description": "Explanation under the check domains button"},
+  "domainResultsTitle": "Domain reachability results",
+  "@domainResultsTitle": {"description": "Title of the dialog listing the result of the Settings domain check"},
+  "domainResultsSummary": "{reachable} reachable, {unreachable} unreachable ({total} total)",
+  "@domainResultsSummary": {
+    "description": "Summary line of the domain reachability results dialog",
+    "placeholders": {
+      "reachable": {"type": "int"},
+      "unreachable": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "domainResultsNone": "No domains were found in Mods or Saves",
+  "@domainResultsNone": {"description": "Domain reachability results dialog when no asset URL has a domain"},
+  "domainReachable": "Reachable",
+  "@domainReachable": {"description": "Status of a domain that answered in the domain reachability results"},
+  "domainUnreachable": "Unreachable",
+  "@domainUnreachable": {"description": "Status of a domain that did not answer in the domain reachability results"},
   "editableListEditTitle": "Edit entry",
   "@editableListEditTitle": {"description": "Title of the edit dialog of an editable list"},
   "editableListAddTitle": "Add entry",

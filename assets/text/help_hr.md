@@ -29,7 +29,8 @@ Radnje:
 
 - Lijevi ili desni klik na URL otvara mogućnosti (otvori, kopiraj, preuzmi, zamijeni, izbriši datoteku)
 - Dvoklik na sličicu PDF-a otvara datoteku
-- Preuzmi sve: preuzima svaku datoteku resursa koja nedostaje
+- Preuzmi sve: preuzima svaku datoteku resursa koja nedostaje. Datoteke koje i nakon toga nedostaju se provjeravaju: dijalog "Rezultati provjere preuzimanja" navodi domene koje nisu dostupne i URL-ove koji ne rade. To se isključuje u Postavke → Mreža → Provjeri datoteke koje nedostaju nakon preuzimanja
+- "Nedostaje: 3, nevažećih: 2" na kartici: nedostaju 3 datoteke, a provjera URL-ova utvrdila je da 2 njihova URL-a ne rade, pa se te datoteke ne mogu preuzeti
 - Sigurnosna kopija: izrađuje kopiju iz preuzetih datoteka resursa
 - Zvučni resursi mogu se globalno izuzeti u Postavke → Značajke, a za pojedini mod nadjačati iz njegova kontekstnog izbornika
 
@@ -71,3 +72,4 @@ Ako vaš mod sadrži `http://pastebin.com/raw.php?i=abcd`, `http://pastebin.com/
 - Datoteka dnevnika `vault.log` nalazi se uz bazu podataka. Otvorite je iz zaglavlja ploče dnevnika ili s kartice O programu; priložite je prijavama pogrešaka.
 - Ništa se ne prikazuje nakon promjene mape? Pritisnite Osvježi. I dalje ništa? Provjerite putanje mapa u Postavke → Mape i izuzete podmape.
 - Preuzimanja ispravnih URL-ova ne uspijevaju kad se mnogi izvode odjednom? Smanjite istodobna preuzimanja u Postavke → Mreža.
+- Provjere URL-ova i provjera nakon preuzimanja najprije ispituju je li svaka domena uopće dostupna. URL-ovi na domeni koja nije dostupna (ne radi ili je blokirana na vašoj mreži) ne označavaju se kao nevažeći, a provjera URL-ova s takvom domenom ne sprema se. Postavke → Mreža → Provjeri sve domene modova i spremanja ispituje svaku domenu koju koriste vaši modovi i spremanja.

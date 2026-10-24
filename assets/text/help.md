@@ -29,7 +29,8 @@ Actions:
 
 - Left- or right-click a URL for options (open, copy, download, replace, delete the file)
 - Double-click a PDF thumbnail to open the file
-- Download all: download every missing asset file. Files still missing afterwards are checked: a "Download check results" dialog lists domains that could not be reached and URLs that are dead
+- Download all: download every missing asset file. Files still missing afterwards are checked: a "Download check results" dialog lists domains that could not be reached and URLs that are dead. Turn this off with Settings → Network → Check missing files after downloads
+- "3 missing, 2 invalid" on a card: 3 files are missing and a URL check found 2 of their URLs dead, so those cannot be downloaded
 - Backup: create a backup from the downloaded asset files
 - Audio assets can be excluded globally in Settings → Features and overridden per mod from the mod's context menu
 

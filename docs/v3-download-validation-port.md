@@ -1,10 +1,9 @@
 # Port spec: 2.x "download validation and domain checks" into 3.0
 
 Written 2026-10-23 on `v3-rewrite` at `ac0f9a8`. Audience: the session that
-implements the port. Status (2026-10-24): steps 1, 2, 3, 5 and 6 of section 5
-are done on `v3-rewrite`; step 4 (the completion rule) waits for the
-decision in section 4, and post-download validation is always on until then.
-`help_hr.md` is not updated yet (it waits for the review of the Croatian draft).
+implements the port. Status (2026-10-24): all six steps of section 5 are done
+on `v3-rewrite`. Section 4 was decided by the user: option (b), and
+post-download validation is a Network setting, on by default.
 
 ## 1. Where it comes from
 
@@ -114,6 +113,10 @@ Options for 3.0:
 - (b) Keep "missing" strict: the badge keeps showing N missing, with the
   invalid count next to it ("3 missing, 3 invalid"); the filter keeps matching;
   nothing is hidden, the user still sees that the mod cannot be completed.
+
+**Decided 2026-10-24: (b)**, and a setting, on by default ("Check missing
+files after downloads"). Implemented as `AssetSummary.missingInvalid` /
+`Mod.missingInvalidCount` and the "N missing, N invalid" badge.
 
 Also to confirm: should post-download validation be always-on as in 2.x, or a
 setting (default on)? It adds one request per unique domain plus one per

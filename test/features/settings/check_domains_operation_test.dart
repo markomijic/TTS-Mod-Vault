@@ -99,7 +99,7 @@ void main() {
       total: total,
     );
     expect(operationProgressText(l10n, at(3, 12)), 'Checked 3/12 domains');
-    expect(operationProgressText(l10n, at(0, 0)), 'Checking domains...');
+    expect(operationProgressText(l10n, at(0, 0)), 'Checking domains…');
     expect(OperationKind.checkDomains.logSource, LogSource.urlCheck);
   });
 

@@ -94,7 +94,7 @@ void main() {
       await tester.tap(find.text('Check all Mods and Saves domains'));
       await tester.pump();
       expect(service.calls, 1);
-      expect(find.text('Checking domains...'), findsOneWidget);
+      expect(find.text('Checking domains…'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
 

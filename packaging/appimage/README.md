@@ -14,14 +14,22 @@ Run on **Linux** (Flutter cannot build Linux targets on Windows/macOS):
 bash packaging/appimage/build_appimage.sh                 # builds the project at the repo root
 ```
 
-Output: `build/TTS_Mod_Vault-x86_64.AppImage` (relative to the project). The
-artefact name never changes.
+Output (relative to the project):
+
+| File | Use |
+| --- | --- |
+| `build/TTS_Mod_Vault-x86_64.AppImage` | The AppImage. Its name never changes. |
+| `build/Linux.TTS.Mod.Vault.<version>.zip` | The raw bundle zipped, the fallback download (same name as the 2.x Linux release). |
+
+The GitHub Actions **Build** workflow (`.github/workflows/build.yml`) runs this
+script inside `ubuntu:22.04`, which is how release builds are made.
 
 The script runs, in order: `flutter pub get`, `dart run build_runner build`
 (drift / freezed / riverpod code generation; generated `*.g.dart` files are not
 committed), `flutter gen-l10n`, `flutter build linux --release`, then checks
 that both native assets (`lib/libpdfium.so`, `lib/libsqlite3.so`) made it into
-the bundle before packaging. It uses `fvm flutter` when FVM is installed
+the bundle and that no bundled binary needs a glibc newer than `MAX_GLIBC`
+(default `2.35`, see below), zips the bundle, and packages the AppImage. It uses `fvm flutter` when FVM is installed
 (`.fvmrc` pins the Flutter version), otherwise plain `flutter`.
 
 Test it:
@@ -39,7 +47,10 @@ chmod +x build/TTS_Mod_Vault-x86_64.AppImage
   shipped this way. The script refuses to build when the flag is off, because
   the resulting app would start and immediately crash with a missing library.
 - Build toolchain: `sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev`
-- `curl` (the script downloads `appimagetool` automatically into `build/appimage/`)
+- `curl`, `zip` and `binutils` (`objdump`)
+- `appimagetool` is downloaded by the script into `build/appimage/`: a pinned
+  release (`APPIMAGETOOL_VERSION`) whose SHA-256 is checked before it runs. To
+  upgrade, change the version and the checksum together at the top of the script.
 
 FUSE is **not** required: the script invokes appimagetool with
 `--appimage-extract-and-run`, so you don't need `libfuse2`/`libfuse2t64`.
@@ -56,14 +67,19 @@ requires *at least* that distro's glibc at runtime.
 - Built on **Ubuntu 22.04** (glibc 2.35) → runs on the large majority of distros
   from the last several years. **This is what you want for releases.**
 
-Since there's no GitHub Actions in use, the recommended way to get an old glibc
-without a second VM is a container:
+The script enforces this: it fails when any bundled binary needs a glibc newer
+than `MAX_GLIBC` (default `2.35`). On a newer distro, a local test build needs
+`MAX_GLIBC=none bash packaging/appimage/build_appimage.sh`. The 3.0 build needs
+glibc 2.34 (the executable and `libsqlite3.so`).
+
+Release builds come from the GitHub Actions **Build** workflow, which runs in
+`ubuntu:22.04`. To reproduce that locally without a second VM, use a container:
 
 ```bash
 # from the repo root, on any Linux host with Docker/Podman
 docker run --rm -v "$PWD":/src -w /src ubuntu:22.04 bash -c '
   apt-get update &&
-  apt-get install -y curl git unzip xz-utils clang cmake ninja-build \
+  apt-get install -y curl git unzip xz-utils zip binutils clang cmake ninja-build \
     pkg-config libgtk-3-dev &&
   # install Flutter inside the container, enable native assets, then:
   flutter config --enable-native-assets &&
@@ -79,7 +95,7 @@ confuse the two.)
 
 | File | Role |
 | --- | --- |
-| `packaging/appimage/build_appimage.sh` | Runs codegen + build, assembles the AppDir, runs appimagetool |
+| `packaging/appimage/build_appimage.sh` | Runs codegen + build, checks native assets and glibc, zips the bundle, assembles the AppDir, runs appimagetool |
 | `linux/io.github.markomijic.tts_mod_vault.desktop` | Desktop entry (single source of truth) |
 | `linux/io.github.markomijic.tts_mod_vault.metainfo.xml` | AppStream metadata |
 | `assets/icon/tts_mod_vault_icon.png` | App icon (from `pubspec.yaml`) |
@@ -123,6 +139,7 @@ The window's confirmed `app_id` is `io.github.markomijic.tts_mod_vault`, and
 
 Every `flutter build linux` also produces a plain bundle at
 `build/linux/x64/release/bundle/` (exe + `data/` + `lib/`, kept together). You
-can zip/tar that as a no-frills fallback for users the AppImage doesn't suit. It
+can zip/tar that as a no-frills fallback for users the AppImage doesn't suit
+(the script writes it as `build/Linux.TTS.Mod.Vault.<version>.zip`). It
 shares the same glibc floor and also relies on the host having GTK3, but has no
 icon/menu integration unless the user installs the `.desktop` manually.

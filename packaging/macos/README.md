@@ -18,7 +18,10 @@ The script runs, in order: `flutter clean` (unless `SKIP_CLEAN=1`), `flutter pub
 get`, `dart run build_runner build` (drift / freezed / riverpod code generation;
 generated `*.g.dart` files are not committed), `flutter gen-l10n`,
 `flutter build macos --release`, the native-asset and code-signature checks,
-then the DMG and zip steps. Artefact names never change.
+then the DMG and zip steps. `hdiutil create` is retried up to three times,
+since it sometimes fails with "Resource busy" (common on GitHub's Mac runners).
+Artefact names never change. The GitHub Actions **Build** workflow
+(`.github/workflows/build.yml`) runs this script on a `macos-15` runner.
 
 Output (in `build/`):
 

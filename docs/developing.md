@@ -74,12 +74,18 @@ From the repo root:
 ```sh
 bash packaging/appimage/build_appimage.sh                                # Linux AppImage
 bash packaging/macos/build_dmg.sh                                        # macOS DMG + zip
-powershell -ExecutionPolicy Bypass -File packaging\windowsuild_zip.ps1  # Windows zip
+powershell -ExecutionPolicy Bypass -File packaging\windows\build_zip.ps1  # Windows zip
 ```
 
 Each script runs `pub get`, code generation and `gen-l10n` before the build and
 verifies that both native libraries (pdfium, sqlite3) are in the bundle. See the
 README next to each script.
+
+Normally you don't run them by hand: the **Build** workflow
+(`.github/workflows/build.yml`, Actions → Build → Run workflow) runs analyze +
+tests and all three scripts on GitHub's runners, Linux inside `ubuntu:22.04`.
+The artefacts are downloadable from the run page; with "Create a draft release"
+ticked it also drafts the GitHub release for the pubspec version.
 
 ## Layout
 

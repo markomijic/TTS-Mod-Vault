@@ -7,9 +7,10 @@
     Windows counterpart of packaging/appimage/build_appimage.sh and
     packaging/macos/build_dmg.sh. Runs, in order: the native-assets check,
     (optional) flutter clean, flutter pub get, dart run build_runner build,
-    flutter gen-l10n, flutter build windows --release, then verifies that the
-    native libraries pdfium.dll and sqlite3.dll are in the Release folder and
-    zips that folder's contents into build\Windows.TTS.Mod.Vault.<version>.zip.
+    flutter gen-l10n, flutter build windows --release, copies the Visual C++
+    runtime DLLs next to the exe, verifies that they and the native libraries
+    pdfium.dll and sqlite3.dll are in the Release folder, and zips that
+    folder's contents into build\Windows.TTS.Mod.Vault.<version>.zip.
 
     Every missing piece stops the script with a non-zero exit code.
 
@@ -47,6 +48,10 @@ $ErrorActionPreference = 'Stop'
 
 $ZipPrefix = 'Windows.TTS.Mod.Vault'      # 2.x release name: Windows.TTS.Mod.Vault.2.1.0.zip
 $ExeName   = 'tts_mod_vault.exe'          # BINARY_NAME in windows\CMakeLists.txt
+# The Visual C++ runtime the exe links against. Flutter does not bundle it;
+# without these next to the exe the app does not start on a Windows install
+# that never got the VC++ redistributable ("VCRUNTIME140.dll was not found").
+$VcRuntimeDlls = @('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')
 
 function Fail([string]$Message) {
     Write-Host ''
@@ -168,9 +173,34 @@ try {
         Fail "release folder not found at $release (Flutter writes x64 builds there; an arm64 host would need a different path)"
     }
 
+    # ---- Visual C++ runtime -------------------------------------------------
+    # Copied from the redist folder of the Visual Studio that built the app
+    # (VC\Redist\MSVC\<version>\x64\Microsoft.VC14x.CRT\).
+    Step 'copying the Visual C++ runtime DLLs'
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (-not (Test-Path -LiteralPath $vswhere -PathType Leaf)) { Fail "vswhere.exe not found at $vswhere (is Visual Studio installed?)" }
+    $vsPath = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
+    if (-not $vsPath) { Fail 'no Visual Studio with the C++ x64 tools found (vswhere)' }
+    $redistRoot = Join-Path $vsPath.Trim() 'VC\Redist\MSVC'
+    $redistVersion = Get-ChildItem -LiteralPath $redistRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^\d+(\.\d+)+$' } |
+        Sort-Object { [version]$_.Name } -Descending |
+        Select-Object -First 1
+    if (-not $redistVersion) { Fail "no versioned redist folder under $redistRoot" }
+    $crt = Get-ChildItem -LiteralPath (Join-Path $redistVersion.FullName 'x64') -Directory -Filter 'Microsoft.VC*.CRT' -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if (-not $crt) { Fail "no Microsoft.VC*.CRT folder under $($redistVersion.FullName)\x64" }
+    foreach ($dll in $VcRuntimeDlls) {
+        $src = Join-Path $crt.FullName $dll
+        if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { Fail "$dll not found in $($crt.FullName)" }
+        Copy-Item -LiteralPath $src -Destination $release -Force
+    }
+    Write-Host "    from $($crt.FullName)"
+
     # The runner, the engine and the asset folder must be there, plus both native
-    # assets, or the app dies at startup ("Failed to load dynamic library").
-    $required = @($ExeName, 'flutter_windows.dll', 'pdfium.dll', 'sqlite3.dll')
+    # assets and the VC++ runtime, or the app dies at startup ("Failed to load
+    # dynamic library", "VCRUNTIME140.dll was not found").
+    $required = @($ExeName, 'flutter_windows.dll', 'pdfium.dll', 'sqlite3.dll') + $VcRuntimeDlls
     $missing = @()
     foreach ($name in $required) {
         if (-not (Test-Path -LiteralPath (Join-Path $release $name) -PathType Leaf)) { $missing += $name }
@@ -183,7 +213,7 @@ try {
         }
         exit 1
     }
-    Write-Host '    native assets OK: pdfium.dll, sqlite3.dll'
+    Write-Host "    native assets OK: pdfium.dll, sqlite3.dll; VC++ runtime OK: $($VcRuntimeDlls -join ', ')"
 
     # ---- zip the Release folder contents ------------------------------------
     # Entries are added one by one with forward-slash names. Under Windows
@@ -219,7 +249,7 @@ try {
     $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
     try {
         $entryNames = @($zip.Entries | ForEach-Object { $_.FullName })
-        foreach ($name in @($ExeName, 'pdfium.dll', 'sqlite3.dll')) {
+        foreach ($name in @($ExeName, 'pdfium.dll', 'sqlite3.dll') + $VcRuntimeDlls) {
             if ($entryNames -notcontains $name) { Fail "zip is missing top-level entry '$name'" }
         }
         if ($entryNames.Count -ne $files.Count) {

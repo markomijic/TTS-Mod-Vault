@@ -115,13 +115,24 @@ ln -s /Applications "$STAGE/Applications"
 OUT_DMG="build/$DMG_NAME"
 rm -f "$OUT_DMG"
 echo "==> creating $OUT_DMG"
-hdiutil create \
-  -volname "$VOL_NAME" \
-  -srcfolder "$STAGE" \
-  -fs HFS+ \
-  -format UDZO \
-  -ov \
-  "$OUT_DMG" >/dev/null
+# hdiutil sometimes fails with "Resource busy" when something (Spotlight, an
+# antivirus, a GitHub Actions runner) still holds the staging folder, so retry
+# a few times before giving up.
+for attempt in 1 2 3; do
+  if hdiutil create \
+    -volname "$VOL_NAME" \
+    -srcfolder "$STAGE" \
+    -fs HFS+ \
+    -format UDZO \
+    -ov \
+    "$OUT_DMG" >/dev/null; then
+    break
+  fi
+  [ "$attempt" -lt 3 ] || { echo "ERROR: hdiutil create failed 3 times"; exit 1; }
+  echo "    hdiutil create failed (attempt $attempt), retrying in 10 s"
+  rm -f "$OUT_DMG"
+  sleep 10
+done
 
 # ---- zip the DMG (matches the GitHub release format) -----------------------
 OUT_ZIP="build/$ZIP_NAME"

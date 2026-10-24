@@ -4,7 +4,9 @@
 
 Ordered steps with a verification after each. Commands are for Git Bash from
 the repo root unless marked PowerShell. Nothing here is automated: releases
-are manual, there is no CI, and the app only notifies about updates.
+are built by the on-demand GitHub Actions **Build** workflow
+(`.github/workflows/build.yml`, added 2026-10-24), publishing stays manual,
+and the app only notifies about updates.
 
 Facts the steps rely on (checked 2026-10-18 at `3ef5788`):
 
@@ -181,6 +183,9 @@ grep -n -E 'g\.dart|freezed|l10n/generated|v3/' .gitignore   # generated rules p
   "lives in `v3/`"), drop `PROJECT_DIR=v3` from "Release builds" and point the
   Windows line at `packaging/windows/build_zip.ps1`; the "Layout" block says
   `domain/, data/... arrive in Phase 1+`, which is stale.
+- `.github/workflows/build.yml`: delete the TEMPORARY `push: branches: [ci-test]`
+  trigger (only there because `workflow_dispatch` needs the file on `main`),
+  and delete the `ci-test` branch: `git push origin --delete ci-test`.
 - `CLAUDE.md` (local, ignored) and `.claude/`: fix any `v3/` paths, then
   `graphify update .` so `graphify-out/` indexes the root project.
 
@@ -242,31 +247,33 @@ git push origin v3-rewrite                        # keep the branch for the reco
 
 ## (c) Release
 
-Build the artefacts from `main` at the tag, not from the pre-flight builds
-(those came from `v3/` before the move):
+Build the artefacts with CI from `main`, not from the pre-flight builds
+(those came from `v3/` before the move): Actions → **Build** → Run workflow,
+branch `main`, tick **Create a draft release**. The run does analyze + tests,
+builds all three OSes (Linux inside `ubuntu:22.04`) and creates the draft
+release `v3.0.0` on the built commit with these artefacts and
+`docs/v3-release-notes-3.0.0.md` as the body:
 
-```sh
-git switch --detach v3.0.0           # on each build machine
-```
+| OS | Artefact (built by) |
+| --- | --- |
+| Windows | `Windows.TTS.Mod.Vault.3.0.0.zip` (`packaging/windows/build_zip.ps1`) |
+| Linux | `TTS_Mod_Vault-x86_64.AppImage` and `Linux.TTS.Mod.Vault.3.0.0.zip`, the raw bundle (`packaging/appimage/build_appimage.sh`) |
+| macOS | `macOS.TTS.Mod.Vault.3.0.0.zip`, contains `TTSModVault.dmg` (`packaging/macos/build_dmg.sh`) |
 
-| OS | Command (from the repo root) | Artefact to upload |
-| --- | --- | --- |
-| Windows | `powershell -ExecutionPolicy Bypass -File packaging\windows\build_zip.ps1` | `build\Windows.TTS.Mod.Vault.3.0.0.zip` |
-| Linux | `bash packaging/appimage/build_appimage.sh` (inside the `ubuntu:22.04` container for the public build) | `build/TTS_Mod_Vault-x86_64.AppImage` |
-| Linux raw bundle | `(cd build/linux/x64/release/bundle && zip -r -X ../../../../Linux.TTS.Mod.Vault.3.0.0.zip .)` after the AppImage build | `build/Linux.TTS.Mod.Vault.3.0.0.zip` (check the 2.1.0 release page and keep whatever name the 2.x Linux zip used) |
-| macOS | `bash packaging/macos/build_dmg.sh` | `build/macOS.TTS.Mod.Vault.3.0.0.zip` (contains `TTSModVault.dmg`) |
+The same scripts still run by hand (see the README next to each) if CI is
+unavailable.
 
-Verify each before uploading:
+Verify each artefact from the draft (or the run's Artifacts) before publishing:
 
-- Windows: extract to a new folder, run `tts_mod_vault.exe`, check `pdfium.dll` and `sqlite3.dll` are in the folder.
-- Linux: `chmod +x build/TTS_Mod_Vault-x86_64.AppImage && ./build/TTS_Mod_Vault-x86_64.AppImage`; `./build/TTS_Mod_Vault-x86_64.AppImage --appimage-extract >/dev/null && ls squashfs-root/usr/bin/lib | grep -E 'libpdfium|libsqlite3'`; on the 22.04 build, `objdump -T squashfs-root/usr/bin/tts_mod_vault | grep -o 'GLIBC_2\.[0-9]*' | sort -V | tail -1` is at most `GLIBC_2.35`.
+- Windows: extract to a new folder, run `tts_mod_vault.exe`, check `pdfium.dll`, `sqlite3.dll` and the VC++ runtime (`msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`) are in the folder.
+- Linux: `chmod +x TTS_Mod_Vault-x86_64.AppImage && ./TTS_Mod_Vault-x86_64.AppImage`. The build script already checked the native libraries and that the glibc floor is at most 2.35; the job log prints it ("glibc floor").
 - macOS: the "Verifying a release before uploading" block in `packaging/macos/README.md` (`codesign --verify --deep --strict` exits 0).
 
 GitHub release:
 
-1. https://github.com/markomijic/TTS-Mod-Vault/releases/new, tag `v3.0.0`, title `TTS Mod Vault 3.0.0`.
-2. Body: `docs/v3-release-notes-3.0.0.md` (it already contains the 3.0.0 changelog section and the macOS first-launch block the macOS README requires in every release).
-3. Attach the four artefacts. Publish as a normal release, **not** a pre-release or draft: the in-app update check (2.x and 3.0) reads `releases/latest`, so publishing is what notifies 2.x users.
+1. Open the draft `v3.0.0` that the Build run created (Releases page). Title `TTS Mod Vault 3.0.0`.
+2. Body: `docs/v3-release-notes-3.0.0.md`, filled in by CI (it already contains the 3.0.0 changelog section and the macOS first-launch block the macOS README requires in every release).
+3. Check the four artefacts are attached. Publish as a normal release, **not** a pre-release or draft: the in-app update check (2.x and 3.0) reads `releases/latest`, so publishing is what notifies 2.x users.
 4. Verify: `curl -s https://api.github.com/repos/markomijic/TTS-Mod-Vault/releases/latest | grep tag_name` prints `v3.0.0`; a 2.x install with "check for updates on start" shows the update dialog with working Nexus/GitHub links.
 
 Nexus Mods (https://www.nexusmods.com/tabletopsimulator/mods/426):

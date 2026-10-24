@@ -22,7 +22,12 @@ The script runs, in order: the native-assets check, `flutter pub get`,
 generated `*.g.dart` files are not committed), `flutter gen-l10n`,
 `flutter build windows --release`, then checks that the runner, the engine,
 `data\` and both native assets (`pdfium.dll`, `sqlite3.dll`) are in the
-release folder before zipping. It uses `fvm flutter` when FVM is installed
+release folder before zipping. Before that check it copies the Visual C++
+runtime (`msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`) next to the
+exe from the redist folder of the Visual Studio that built it (found with
+`vswhere`). Flutter does not bundle the runtime, and without it the app does not
+start on a Windows install that never got the VC++ redistributable
+("VCRUNTIME140.dll was not found"). It uses `fvm flutter` when FVM is installed
 (`.fvmrc` pins the Flutter version), otherwise plain `flutter`. Every missing
 piece ends the script with a non-zero exit code.
 

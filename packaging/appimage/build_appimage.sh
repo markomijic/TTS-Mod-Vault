@@ -9,15 +9,18 @@
 #
 # NOTE ON COMPATIBILITY: an AppImage bundles app libraries but NOT glibc, so the
 # resulting file's minimum glibc is whatever THIS build machine ships. Built on
-# Ubuntu 26.04 it will only run on similarly-new distros. For broad compatibility
-# later, build on an older LTS (e.g. inside an ubuntu:22.04 container).
+# Ubuntu 26.04 it will only run on similarly-new distros. Public releases are
+# built inside an ubuntu:22.04 container (the GitHub Actions Build workflow does
+# this). The script fails when any bundled binary needs a glibc newer than
+# MAX_GLIBC (default 2.35); set MAX_GLIBC=none for a local test build on a newer
+# distro.
 #
 # Prerequisites on the build machine:
 #   - Flutter with Linux desktop enabled (run `flutter doctor` to confirm)
 #   - Dart native assets enabled once per machine: flutter config --enable-native-assets
 #     (pdfium and sqlite3 are shipped as native assets; the script checks this)
 #   - Linux toolchain: sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev
-#   - curl (to fetch appimagetool)
+#   - curl (to fetch appimagetool), zip, binutils (objdump, for the glibc check)
 
 set -euo pipefail
 
@@ -25,6 +28,14 @@ APP_ID="io.github.markomijic.tts_mod_vault"
 BIN_NAME="tts_mod_vault"
 ICON_SRC="assets/icon/tts_mod_vault_icon.png"
 OUT_NAME="TTS_Mod_Vault-x86_64.AppImage"
+MAX_GLIBC="${MAX_GLIBC:-2.35}"
+
+# appimagetool is pinned to one release and checked against its SHA-256, so a
+# new upstream build can never change a release unnoticed. To upgrade: pick a
+# release on https://github.com/AppImage/appimagetool/releases, update both
+# lines, and run the script once.
+APPIMAGETOOL_VERSION="1.9.1"
+APPIMAGETOOL_SHA256="ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0"
 
 # Resolve repo root robustly, regardless of where this script is invoked from,
 # then enter the Flutter project (the repo root by default).
@@ -52,6 +63,12 @@ fi
 
 [ -f "$ICON_SRC" ] || { echo "ERROR: icon not found at $ICON_SRC"; exit 1; }
 
+# Version (e.g. 3.0.0) from pubspec, dropping the +build suffix.
+VERSION="$(grep '^version:' pubspec.yaml | head -1 | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)"
+[ -n "$VERSION" ] || { echo "ERROR: could not read version from pubspec.yaml"; exit 1; }
+ZIP_NAME="Linux.TTS.Mod.Vault.${VERSION}.zip"
+echo "==> building TTS Mod Vault $VERSION for Linux"
+
 echo "==> flutter pub get"
 $FLUTTER pub get
 
@@ -76,6 +93,27 @@ for lib in libpdfium.so libsqlite3.so; do
     exit 1; }
 done
 echo "    native assets OK: libpdfium.so, libsqlite3.so"
+
+# glibc floor: the highest GLIBC_x.y symbol version any bundled binary needs is
+# the oldest glibc the release runs on.
+need="0"
+for bin in "$BUNDLE/$BIN_NAME" "$BUNDLE"/lib/*.so; do
+  v="$(objdump -T "$bin" | grep -o 'GLIBC_2\.[0-9]*' | sed 's/GLIBC_//' | sort -V | tail -1 || true)"
+  [ -n "$v" ] || continue
+  need="$(printf '%s\n%s\n' "$need" "$v" | sort -V | tail -1)"
+  if [ "$MAX_GLIBC" != "none" ] && [ "$(printf '%s\n%s\n' "$v" "$MAX_GLIBC" | sort -V | tail -1)" != "$MAX_GLIBC" ]; then
+    echo "ERROR: $bin needs glibc $v, newer than MAX_GLIBC=$MAX_GLIBC"
+    echo "       build inside ubuntu:22.04 (see packaging/appimage/README.md), or MAX_GLIBC=none for a local test build"
+    exit 1
+  fi
+done
+echo "    glibc floor: $need (limit: $MAX_GLIBC)"
+
+# Raw bundle zip: the fallback download for systems the AppImage does not suit
+# (same name as the 2.x Linux release). -y keeps symlinks, -X drops extra attributes.
+rm -f "build/$ZIP_NAME"
+echo "==> zipping the bundle -> build/$ZIP_NAME"
+( cd "$BUNDLE" && zip -r -y -X -q "$OLDPWD/build/$ZIP_NAME" . )
 
 echo "==> assembling AppDir"
 WORK="build/appimage"
@@ -120,19 +158,22 @@ exec "${HERE}/usr/bin/tts_mod_vault" "$@"
 APPRUN
 chmod +x "$APPDIR/AppRun"
 
-# Fetch appimagetool if we don't already have it.
+# Fetch the pinned appimagetool ($WORK is recreated above, so this runs every
+# build) and refuse to run it unless the checksum matches.
 TOOL="$WORK/appimagetool-x86_64.AppImage"
-if [ ! -f "$TOOL" ]; then
-  echo "==> downloading appimagetool"
-  curl -fL -o "$TOOL" \
-    "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
-  chmod +x "$TOOL"
-fi
+echo "==> downloading appimagetool $APPIMAGETOOL_VERSION"
+curl -fsSL -o "$TOOL" \
+  "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGETOOL_VERSION}/appimagetool-x86_64.AppImage"
+echo "$APPIMAGETOOL_SHA256  $TOOL" | sha256sum -c --quiet - || {
+  echo "ERROR: appimagetool checksum mismatch (expected $APPIMAGETOOL_SHA256)"; exit 1; }
+chmod +x "$TOOL"
 
 echo "==> packaging AppImage"
 # --appimage-extract-and-run avoids needing FUSE (libfuse2) on the host.
 ARCH=x86_64 "$TOOL" --appimage-extract-and-run "$APPDIR" "build/$OUT_NAME"
 
 echo ""
-echo "==> done:  $PWD/build/$OUT_NAME"
+echo "==> done:"
+echo "    AppImage:  $PWD/build/$OUT_NAME"
+echo "    zip:       $PWD/build/$ZIP_NAME"
 echo "    test it:  chmod +x build/$OUT_NAME && ./build/$OUT_NAME"

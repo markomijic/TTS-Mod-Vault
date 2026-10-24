@@ -19,3 +19,4 @@ not such a line is ignored by the app. See
 - fr: Claude (AI draft)
 - tr: Claude (AI draft)
 - it: Claude (AI draft)
+- nl: Claude (AI draft)

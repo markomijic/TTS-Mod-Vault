@@ -29,7 +29,7 @@ Actions:
 
 - Left- or right-click a URL for options (open, copy, download, replace, delete the file)
 - Double-click a PDF thumbnail to open the file
-- Download all: download every missing asset file
+- Download all: download every missing asset file. Files still missing afterwards are checked: a "Download check results" dialog lists domains that could not be reached and URLs that are dead
 - Backup: create a backup from the downloaded asset files
 - Audio assets can be excluded globally in Settings → Features and overridden per mod from the mod's context menu
 
@@ -71,3 +71,4 @@ If your mod contains `http://pastebin.com/raw.php?i=abcd`, `http://pastebin.com/
 - The log file `vault.log` lives next to the database. Open it from the log panel header or from the About tab; attach it to bug reports.
 - Nothing shows up after a folder change? Press Refresh. Still nothing? Check the folder paths in Settings → Folders and the excluded subfolders.
 - Downloads of working URLs fail when many run at once? Lower the concurrent downloads in Settings → Network.
+- URL checks and the check after a download first test whether each domain can be reached at all. URLs on a domain that cannot be reached (it is down, or blocked on your network) are not marked invalid, and a URL check with such a domain is not saved. Settings → Network → Check all Mods and Saves domains tests every domain your Mods and Saves use.

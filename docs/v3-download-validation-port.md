@@ -1,8 +1,10 @@
 # Port spec: 2.x "download validation and domain checks" into 3.0
 
 Written 2026-10-23 on `v3-rewrite` at `ac0f9a8`. Audience: the session that
-implements the port. Status: analysis done, nothing ported yet, one product
-decision open (section 4).
+implements the port. Status (2026-10-24): steps 1, 2, 3, 5 and 6 of section 5
+are done on `v3-rewrite`; step 4 (the completion rule) waits for the
+decision in section 4, and post-download validation is always on until then.
+`help_hr.md` is not updated yet (it waits for the review of the Croatian draft).
 
 ## 1. Where it comes from
 

@@ -654,7 +654,7 @@ void main() {
     );
   });
 
-  testWidgets('the language dropdown offers English and Croatian', (
+  testWidgets('the language dropdown offers English, Croatian and Portuguese', (
     tester,
   ) async {
     await open(tester);
@@ -666,6 +666,7 @@ void main() {
     await tester.tap(find.byKey(const Key('settings-language')));
     await tester.pumpAndSettle();
     expect(find.text('System default'), findsNothing);
+    expect(find.text('Português (Brasil)'), findsWidgets);
     await tester.tap(find.text('Hrvatski').last);
     await tester.pumpAndSettle();
     await save(tester);

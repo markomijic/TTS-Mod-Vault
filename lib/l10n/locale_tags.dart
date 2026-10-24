@@ -11,6 +11,7 @@ import 'dart:ui' show Locale;
 const Map<String, String> nativeLanguageNames = {
   'en': 'English',
   'hr': 'Hrvatski',
+  'pt': 'Português (Brasil)',
 };
 
 /// Parses a BCP 47 [tag] (`de`, `pt-BR`, `zh-Hant-TW`; `_` is accepted too)

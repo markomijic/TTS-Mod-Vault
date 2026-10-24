@@ -10,3 +10,4 @@ not such a line is ignored by the app. See
 [docs/translating.md](docs/translating.md) for how to translate.
 
 - hr: Claude (AI draft), Marko Mijić
+- pt: Claude (AI draft)

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
 import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/theme/theme_controller.dart';
+import 'package:tts_mod_vault/app/widgets/app_snack_bar.dart';
 import 'package:tts_mod_vault/features/settings/application/settings_controller.dart';
 import 'package:tts_mod_vault/features/startup/presentation/startup_page.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
@@ -54,6 +55,7 @@ class App extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       localeResolutionCallback: resolveLocale,
       debugShowCheckedModeBanner: false,
+      builder: snackBarsAboveRoutes,
       home: const StartupPage(),
     );
   }

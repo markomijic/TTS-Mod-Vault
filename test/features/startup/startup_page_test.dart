@@ -31,7 +31,13 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(Scaffold), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(StartupPage),
+        matching: find.byType(Scaffold),
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(ProgressMessage), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(AppShell), findsNothing);

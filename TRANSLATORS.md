@@ -17,3 +17,4 @@ not such a line is ignored by the app. See
 - zh: Claude (AI draft)
 - de: Claude (AI draft)
 - fr: Claude (AI draft)
+- tr: Claude (AI draft)

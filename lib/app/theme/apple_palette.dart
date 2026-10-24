@@ -55,17 +55,17 @@ final class ApplePalette {
   /// Dark appearance.
   static const ApplePalette dark = ApplePalette._(
     brightness: Brightness.dark,
-    content: Color(0xFF1E1E20),
-    contentLowest: Color(0xFF161618),
-    sidebar: Color(0xFF262628),
-    raised: Color(0xFF2B2B2E),
-    control: Color(0xFF353538),
-    controlStrong: Color(0xFF414145),
-    selected: Color(0xFF5A5A5F),
+    content: Color(0xFF19191B),
+    contentLowest: Color(0xFF121214),
+    sidebar: Color(0xFF212123),
+    raised: Color(0xFF29292C),
+    control: Color(0xFF323235),
+    controlStrong: Color(0xFF3E3E42),
+    selected: Color(0xFF58585D),
     label: Color(0xFFF5F5F7),
     secondaryLabel: Color(0xFFA1A1A6),
     border: Color(0xFF55555A),
-    separator: Color(0xFF38383B),
+    separator: Color(0xFF333336),
     red: Color(0xFFFF453A),
     orange: Color(0xFFFF9F0A),
     green: Color(0xFF30D158),
@@ -152,11 +152,13 @@ final class ApplePalette {
     return hsl.toColor();
   }
 
-  /// White or the primary label, whichever reads better on [fill].
+  /// The text colour on an accent [fill]: white, as Apple uses on its
+  /// accent fills, unless it drops below 3:1 (the WCAG level for bold and
+  /// large text, which button labels are); then the primary label.
   Color onFill(Color fill) {
     const white = Color(0xFFFFFFFF);
     const black = Color(0xFF1D1D1F);
-    return contrast(white, fill) >= contrast(black, fill) ? white : black;
+    return contrast(white, fill) >= 3 ? white : black;
   }
 
   /// [color] laid over [base] at [opacity], as an opaque colour.

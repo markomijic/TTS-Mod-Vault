@@ -12,7 +12,7 @@ import 'package:tts_mod_vault/features/startup/application/directories_controlle
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
 /// Widest a card gets; the delegate fits as many as the width allows.
-const double _maxCardExtent = 200;
+const double _maxCardExtent = 240;
 
 /// How far beyond the viewport cards are built, in logical pixels.
 const ScrollCacheExtent _gridCacheExtent = ScrollCacheExtent.pixels(400);

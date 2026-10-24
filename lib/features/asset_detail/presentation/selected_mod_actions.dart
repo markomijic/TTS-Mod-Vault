@@ -67,6 +67,9 @@ class SelectedModActions extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final running = ref.watch(operationRunningProvider);
 
+    final scheme = Theme.of(context).colorScheme;
+    final missing = mod.missingCount > 0;
+
     Future<void> copyMissingUrls() async {
       final assets = await ref.read(modAssetsProvider(mod.jsonPath).future);
       if (!context.mounted) return;
@@ -77,17 +80,21 @@ class SelectedModActions extends ConsumerWidget {
       spacing: Insets.sm,
       runSpacing: Insets.sm,
       children: [
-        FilledButton.tonalIcon(
-          onPressed: mod.missingCount > 0 && !running
+        // One prominent action: Download all while assets are missing,
+        // otherwise Backup; the rest stay secondary.
+        _ActionButton(
+          primary: missing,
+          onPressed: missing && !running
               ? () => downloadModAssets(context, ref, mod)
               : null,
-          icon: const Icon(Icons.download_outlined),
-          label: Text(l10n.actionDownloadAll),
+          icon: Icons.download_outlined,
+          label: l10n.actionDownloadAll,
         ),
-        FilledButton.tonalIcon(
+        _ActionButton(
+          primary: !missing,
           onPressed: running ? null : () => backupMod(context, ref, mod),
-          icon: const Icon(Icons.archive_outlined),
-          label: Text(l10n.actionBackup),
+          icon: Icons.archive_outlined,
+          label: l10n.actionBackup,
         ),
         FilledButton.tonalIcon(
           onPressed: running ? null : () => checkModUrls(context, ref, mod),
@@ -103,6 +110,7 @@ class SelectedModActions extends ConsumerWidget {
           onPressed: running
               ? null
               : () => deleteModAssetsWithDialog(context, ref, mod),
+          style: FilledButton.styleFrom(foregroundColor: scheme.error),
           icon: const Icon(Icons.delete_outline),
           label: Text(l10n.actionDeleteAssets),
         ),
@@ -116,6 +124,35 @@ class SelectedModActions extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// A filled button: the accent [FilledButton] when [primary], otherwise the
+/// grey tonal one.
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.primary,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  final bool primary;
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => primary
+      ? FilledButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          label: Text(label),
+        )
+      : FilledButton.tonalIcon(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          label: Text(label),
+        );
 }
 
 /// The URLs of the assets of [assets] that are not on disk, one per line,

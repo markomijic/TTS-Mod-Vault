@@ -140,9 +140,9 @@ void main() {
       }
     });
 
-    test('body text follows the macOS scale', () {
+    test('body text is 14 pt with the macOS hierarchy', () {
       final theme = AppTheme.build(ThemeSettings.defaults(), Brightness.light);
-      expect(theme.textTheme.bodyMedium?.fontSize, 13);
+      expect(theme.textTheme.bodyMedium?.fontSize, 14);
       expect(theme.textTheme.titleSmall?.fontWeight, FontWeight.w600);
       for (final style in [
         theme.textTheme.bodySmall,

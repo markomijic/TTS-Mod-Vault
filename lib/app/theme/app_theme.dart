@@ -9,7 +9,7 @@ import 'package:tts_mod_vault/app/widgets/insets.dart';
 ///
 /// The look follows Apple's Human Interface Guidelines for desktop apps:
 /// neutral grey surfaces ([ApplePalette]) with the user's colour as the
-/// only accent, the macOS type scale (13 pt body), compact 28 px controls,
+/// only accent, the macOS type scale one step up (14 pt body), compact 28 px controls,
 /// hover highlights instead of ink ripples, and rounded sheets and menus on
 /// the floating layer.
 ///
@@ -23,7 +23,7 @@ abstract final class AppTheme {
   static const double menuRadius = 8;
 
   /// Corner radius of grid cards (mod, backup and image thumbnails).
-  static const double cardRadius = 10;
+  static const double cardRadius = 6;
 
   /// Corner radius of dialogs (sheets).
   static const double dialogRadius = 14;
@@ -259,7 +259,7 @@ abstract final class AppTheme {
         labelStyle: textTheme.bodyMedium?.copyWith(
           color: scheme.onSurfaceVariant,
         ),
-        // Floating labels render at 75 %, so 13 pt lands on the 10 pt
+        // Floating labels render at 75 %, so 14 pt stays above the 10 pt
         // desktop minimum.
         floatingLabelStyle: textTheme.bodyMedium?.copyWith(
           color: scheme.onSurfaceVariant,
@@ -314,11 +314,15 @@ abstract final class AppTheme {
       // Apple switch: a white knob on an accent or grey track.
       switchTheme: SwitchThemeData(
         mouseCursor: _clickCursor,
-        thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.disabled)
-              ? palette.selected.withValues(alpha: 0.6)
-              : const Color(0xFFFFFFFF),
-        ),
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return palette.selected.withValues(alpha: 0.6);
+          }
+          // On a white (monochrome) track the knob takes the dark label.
+          return states.contains(WidgetState.selected)
+              ? scheme.onPrimary
+              : const Color(0xFFFFFFFF);
+        }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           final on = states.contains(WidgetState.selected);
           final color = on ? scheme.primary : palette.controlStrong;
@@ -577,7 +581,12 @@ abstract final class AppTheme {
     Color readable(Color color) =>
         palette.readable(color, surfaces, minimum: textContrast);
 
-    final accent = readable(Color(settings.seedColor));
+    // A grey accent (Graphite or any grey hex) becomes the label colour:
+    // white on dark, near-black on light. That is the monochrome look of
+    // 2.x, with the accent still reserved for primary actions and
+    // selection.
+    final seed = Color(settings.seedColor);
+    final accent = isMonochrome(seed) ? palette.label : readable(seed);
     final error = readable(palette.red);
     final secondaryLabel = palette.readable(palette.secondaryLabel, [
       ...surfaces,
@@ -645,14 +654,20 @@ abstract final class AppTheme {
     );
   }
 
+  /// Whether [color] has too little saturation to read as a hue (Graphite,
+  /// greys, black and white).
+  static bool isMonochrome(Color color) =>
+      HSLColor.fromColor(color).saturation < 0.12;
+
   /// Minimum contrast for text and accents under [settings].
   static double _textContrast(ThemeSettings settings) =>
       ApplePalette.textContrast +
       (settings.contrast > 0 ? settings.contrast * 2.5 : 0);
 
-  /// The macOS text styles mapped onto Material's roles: Large Title 26,
-  /// Title 1 22, Title 2 17, Title 3 15, Headline 13 semibold, Body 13,
-  /// Callout 12, Subheadline 11 and Caption 10. Hierarchy comes from weight
+  /// The macOS text styles mapped onto Material's roles, one step up for
+  /// Windows displays: Body 14 (macOS uses 13 on Retina screens), Headline
+  /// 14 semibold, Title 3 16, Title 2 18, Title 1 24, Large Title 28,
+  /// Callout 13, Subheadline 12 and Caption 11. Hierarchy comes from weight
   /// more than size, and no style is smaller than the 10 pt desktop minimum.
   static TextTheme _textTheme(Brightness brightness, ColorScheme scheme) {
     final base = Typography.material2021(
@@ -676,39 +691,39 @@ abstract final class AppTheme {
     );
 
     return themed.copyWith(
-      displayLarge: style(themed.displayLarge, 34, 41, FontWeight.w400),
-      displayMedium: style(themed.displayMedium, 28, 34, FontWeight.w400),
-      displaySmall: style(themed.displaySmall, 26, 32, FontWeight.w400),
-      headlineLarge: style(themed.headlineLarge, 26, 32, FontWeight.w600),
-      headlineMedium: style(themed.headlineMedium, 22, 28, FontWeight.w600),
+      displayLarge: style(themed.displayLarge, 36, 43, FontWeight.w400),
+      displayMedium: style(themed.displayMedium, 30, 36, FontWeight.w400),
+      displaySmall: style(themed.displaySmall, 28, 34, FontWeight.w400),
+      headlineLarge: style(themed.headlineLarge, 28, 34, FontWeight.w600),
+      headlineMedium: style(themed.headlineMedium, 24, 30, FontWeight.w600),
       headlineSmall: style(
         themed.headlineSmall,
-        20,
-        25,
+        21,
+        26,
         FontWeight.w600,
         tracking: -0.2,
       ),
       titleLarge: style(
         themed.titleLarge,
-        17,
-        22,
+        18,
+        23,
         FontWeight.w600,
         tracking: -0.2,
       ),
-      titleMedium: style(themed.titleMedium, 15, 20, FontWeight.w600),
-      titleSmall: style(themed.titleSmall, 13, 16, FontWeight.w600),
-      bodyLarge: style(themed.bodyLarge, 13, 18, FontWeight.w400),
-      bodyMedium: style(themed.bodyMedium, 13, 17, FontWeight.w400),
+      titleMedium: style(themed.titleMedium, 16, 21, FontWeight.w600),
+      titleSmall: style(themed.titleSmall, 14, 18, FontWeight.w600),
+      bodyLarge: style(themed.bodyLarge, 14, 20, FontWeight.w400),
+      bodyMedium: style(themed.bodyMedium, 14, 19, FontWeight.w400),
       bodySmall: style(
         themed.bodySmall,
-        11,
-        14,
+        12,
+        16,
         FontWeight.w400,
         color: scheme.onSurfaceVariant,
       ),
-      labelLarge: style(themed.labelLarge, 13, 16, FontWeight.w500),
-      labelMedium: style(themed.labelMedium, 12, 15, FontWeight.w500),
-      labelSmall: style(themed.labelSmall, 10, 13, FontWeight.w500),
+      labelLarge: style(themed.labelLarge, 14, 18, FontWeight.w500),
+      labelMedium: style(themed.labelMedium, 13, 17, FontWeight.w500),
+      labelSmall: style(themed.labelSmall, 11, 14, FontWeight.w500),
     );
   }
 

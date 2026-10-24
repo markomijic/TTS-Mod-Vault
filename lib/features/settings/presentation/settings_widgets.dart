@@ -101,7 +101,7 @@ class SettingsSwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
+      contentPadding: const EdgeInsets.symmetric(horizontal: Insets.sm),
       title: Row(
         children: [
           Flexible(child: Text(title)),

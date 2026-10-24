@@ -7,7 +7,7 @@ import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/library/presentation/mods_grid_card.dart';
 
 /// Widest a card gets; the delegate fits as many as the width allows.
-const double _maxCardExtent = 200;
+const double _maxCardExtent = 240;
 
 /// How far beyond the viewport cards are built, in logical pixels.
 const ScrollCacheExtent _cacheExtent = ScrollCacheExtent.pixels(400);

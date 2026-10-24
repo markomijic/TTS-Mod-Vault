@@ -2,6 +2,7 @@ import 'dart:io' show File;
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/library/presentation/mod_badges.dart';
@@ -52,10 +53,12 @@ class ModsGridCard extends ConsumerWidget {
                 ? scheme.outline
                 : Colors.transparent,
           ),
-          borderRadius: BorderRadius.circular(Insets.sm),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(Insets.sm - _borderWidth),
+          borderRadius: BorderRadius.circular(
+            AppTheme.cardRadius - _borderWidth,
+          ),
           child: Stack(
             fit: StackFit.expand,
             children: [

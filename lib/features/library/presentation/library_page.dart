@@ -138,10 +138,20 @@ class LibraryPage extends HookConsumerWidget {
                 bottomSlot: bottomSlot,
               ),
             ),
+            // The inspector, set off by a hairline as on macOS.
             Expanded(
-              child: isBackups
-                  ? const SelectedBackupPanel()
-                  : const SelectedModPanel(),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                ),
+                child: isBackups
+                    ? const SelectedBackupPanel()
+                    : const SelectedModPanel(),
+              ),
             ),
           ],
         ),

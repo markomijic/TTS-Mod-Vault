@@ -11,7 +11,6 @@ final class ThemeSettings {
   const ThemeSettings({
     required this.mode,
     required this.seedColor,
-    required this.variant,
     required this.contrast,
     this.presetId,
   });
@@ -30,28 +29,36 @@ final class ThemeSettings {
   }) => ThemeSettings(
     mode: mode,
     seedColor: preset.seed,
-    variant: preset.variant,
     contrast: contrast,
     presetId: preset.id,
   );
 
   /// Restores settings from [json]; any missing or malformed field falls back
   /// to its default value so a corrupt record never prevents start-up.
+  ///
+  /// A preset of the 3.0 pre-releases (see `ThemePresets.legacyIds`) is
+  /// replaced by the accent closest to it, seed included.
   factory ThemeSettings.fromJson(Map<String, Object?> json) {
     final defaults = ThemeSettings.defaults();
     final mode = json['mode'];
     final seed = json['seedColor'];
-    final variant = json['variant'];
     final contrast = json['contrast'];
     final presetId = json['presetId'];
+    final legacy = presetId is String
+        ? ThemePresets.byId(ThemePresets.legacyIds[presetId] ?? '')
+        : null;
+    if (legacy != null) {
+      return ThemeSettings.fromJson({
+        ...json,
+        'seedColor': legacy.seed,
+        'presetId': legacy.id,
+      });
+    }
     return ThemeSettings(
       mode: mode is String
           ? ThemeMode.values.asNameMap()[mode] ?? defaults.mode
           : defaults.mode,
       seedColor: seed is int ? seed : defaults.seedColor,
-      variant: variant is String
-          ? DynamicSchemeVariant.values.asNameMap()[variant] ?? defaults.variant
-          : defaults.variant,
       contrast: contrast is num
           ? contrast.toDouble().clamp(minContrast, maxContrast)
           : defaults.contrast,
@@ -59,23 +66,20 @@ final class ThemeSettings {
     );
   }
 
-  /// Lowest value accepted for [contrast] (Material's reduced contrast).
+  /// Lowest value accepted for [contrast] (reduced contrast).
   static const double minContrast = -1;
 
-  /// Highest value accepted for [contrast] (Material's maximum contrast).
+  /// Highest value accepted for [contrast] (maximum contrast).
   static const double maxContrast = 1;
 
   /// Light, dark or follow the operating system.
   final ThemeMode mode;
 
-  /// Seed colour as a 32-bit ARGB value.
+  /// Accent colour as a 32-bit ARGB value.
   final int seedColor;
 
-  /// How the palette is derived from [seedColor].
-  final DynamicSchemeVariant variant;
-
-  /// Contrast level passed to `ColorScheme.fromSeed`, in
-  /// [minContrast]..[maxContrast].
+  /// Contrast level in [minContrast]..[maxContrast]: above 0 raises the
+  /// contrast of text, accents and separators, below 0 softens separators.
   final double contrast;
 
   /// Id of the preset [seedColor] and [variant] were taken from, or null when
@@ -89,14 +93,12 @@ final class ThemeSettings {
   ThemeSettings copyWith({
     ThemeMode? mode,
     int? seedColor,
-    DynamicSchemeVariant? variant,
     double? contrast,
     String? presetId,
     bool clearPresetId = false,
   }) => ThemeSettings(
     mode: mode ?? this.mode,
     seedColor: seedColor ?? this.seedColor,
-    variant: variant ?? this.variant,
     contrast: contrast ?? this.contrast,
     presetId: clearPresetId ? null : presetId ?? this.presetId,
   );
@@ -105,7 +107,6 @@ final class ThemeSettings {
   Map<String, Object?> toJson() => {
     'mode': mode.name,
     'seedColor': seedColor,
-    'variant': variant.name,
     'contrast': contrast,
     'presetId': presetId,
   };
@@ -116,16 +117,15 @@ final class ThemeSettings {
       other is ThemeSettings &&
           other.mode == mode &&
           other.seedColor == seedColor &&
-          other.variant == variant &&
           other.contrast == contrast &&
           other.presetId == presetId;
 
   @override
-  int get hashCode => Object.hash(mode, seedColor, variant, contrast, presetId);
+  int get hashCode => Object.hash(mode, seedColor, contrast, presetId);
 
   @override
   String toString() =>
       'ThemeSettings(mode: $mode, seedColor: '
-      '0x${seedColor.toRadixString(16).toUpperCase()}, variant: $variant, '
+      '0x${seedColor.toRadixString(16).toUpperCase()}, '
       'contrast: $contrast, presetId: $presetId)';
 }

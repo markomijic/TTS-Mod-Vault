@@ -12,17 +12,15 @@ void main() {
       expect(settings.mode, ThemeMode.dark);
       expect(settings.presetId, ThemePresets.defaultPreset.id);
       expect(settings.seedColor, ThemePresets.defaultPreset.seed);
-      expect(settings.variant, ThemePresets.defaultPreset.variant);
       expect(settings.contrast, 0);
     });
 
     test('round-trips through JSON', () {
       const original = ThemeSettings(
         mode: ThemeMode.light,
-        seedColor: 0xFF1565C0,
-        variant: DynamicSchemeVariant.vibrant,
+        seedColor: 0xFF007AFF,
         contrast: 0.5,
-        presetId: 'ocean',
+        presetId: 'blue',
       );
       final encoded = jsonEncode(original.toJson());
       final decoded = ThemeSettings.fromJson(
@@ -49,13 +47,11 @@ void main() {
       final decoded = ThemeSettings.fromJson({
         'mode': 'sepia',
         'seedColor': 'blue',
-        'variant': 42,
         'contrast': 'high',
         'presetId': 7,
       });
       expect(decoded.mode, defaults.mode);
       expect(decoded.seedColor, defaults.seedColor);
-      expect(decoded.variant, defaults.variant);
       expect(decoded.contrast, defaults.contrast);
       expect(decoded.presetId, isNull);
     });
@@ -71,12 +67,29 @@ void main() {
       );
     });
 
+    test('legacy palette presets migrate to the nearest accent', () {
+      final decoded = ThemeSettings.fromJson({
+        'mode': 'light',
+        'seedColor': 0xFF6750A4,
+        'variant': 'tonalSpot',
+        'contrast': 0.25,
+        'presetId': 'vault',
+      });
+      expect(decoded.presetId, ThemePresets.purpleId);
+      expect(decoded.seedColor, ThemePresets.purple.seed);
+      expect(decoded.mode, ThemeMode.light);
+      expect(decoded.contrast, 0.25);
+      expect(
+        ThemeSettings.fromJson({'presetId': 'classic'}).presetId,
+        ThemePresets.graphiteId,
+      );
+    });
+
     test('copyWith replaces only the given fields', () {
       final base = ThemeSettings.defaults();
       final copy = base.copyWith(mode: ThemeMode.system);
       expect(copy.mode, ThemeMode.system);
       expect(copy.seedColor, base.seedColor);
-      expect(copy.variant, base.variant);
       expect(copy.presetId, base.presetId);
       expect(copy, isNot(base));
     });
@@ -92,8 +105,14 @@ void main() {
       expect(ThemePresets.byId('nope'), isNull);
     });
 
-    test('classic preset is monochrome', () {
-      expect(ThemePresets.classic.variant, DynamicSchemeVariant.monochrome);
+    test('default preset is system blue', () {
+      expect(ThemePresets.defaultPreset, ThemePresets.blue);
+    });
+
+    test('every legacy id maps to a preset', () {
+      for (final id in ThemePresets.legacyIds.values) {
+        expect(ThemePresets.byId(id), isNotNull, reason: id);
+      }
     });
   });
 }

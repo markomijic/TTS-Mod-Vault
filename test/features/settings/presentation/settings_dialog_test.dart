@@ -139,8 +139,8 @@ void main() {
 
     await section(tester, 'Appearance');
     expect(find.text('Theme mode'), findsOneWidget);
-    expect(find.text('Classic'), findsOneWidget);
-    expect(find.text('Seed colour'), findsOneWidget);
+    expect(find.text('Accent colour'), findsOneWidget);
+    expect(find.text('Custom colour'), findsOneWidget);
 
     await section(tester, 'Folders');
     expect(find.text('Excluded subfolders'), findsOneWidget);
@@ -245,13 +245,13 @@ void main() {
     await open(tester);
     await section(tester, 'Appearance');
     final original = container.read(themeControllerProvider);
-    expect(original.presetId, ThemePresets.vaultId);
+    expect(original.presetId, ThemePresets.blueId);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Ocean'));
+    await tester.tap(find.byTooltip('Purple'));
     await tester.pumpAndSettle();
     expect(
       container.read(themeControllerProvider).presetId,
-      ThemePresets.oceanId,
+      ThemePresets.purpleId,
     );
 
     await tester.tap(find.text('Light'));
@@ -264,7 +264,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await section(tester, 'Appearance');
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Classic'));
+    await tester.tap(find.byTooltip('Graphite'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('settings-seed-hex')),
@@ -292,7 +292,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('settings-seed-hex')), '#12');
     await tester.pumpAndSettle();
 
-    expect(find.text('Enter a colour like #6750A4'), findsOneWidget);
+    expect(find.text('Enter a colour like #007AFF'), findsOneWidget);
     expect(container.read(themeControllerProvider).seedColor, before);
   });
 
@@ -306,7 +306,7 @@ void main() {
         );
     await container
         .read(themeControllerProvider.notifier)
-        .applyPreset(ThemePresets.emberId);
+        .applyPreset(ThemePresets.orangeId);
     await open(tester);
 
     await tester.tap(button<TextButton>('Reset to defaults'));

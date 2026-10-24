@@ -3,6 +3,7 @@ import 'dart:io' show File;
 import 'package:flutter_hooks/flutter_hooks.dart' show useState;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/domain/models/models.dart';
 import 'package:tts_mod_vault/features/asset_detail/presentation/asset_context_menu.dart';
@@ -72,10 +73,12 @@ class ImagesViewerGridCard extends HookConsumerWidget {
                 width: _borderWidth,
                 color: hovered.value ? scheme.outline : Colors.transparent,
               ),
-              borderRadius: BorderRadius.circular(Insets.sm),
+              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(Insets.sm - _borderWidth),
+              borderRadius: BorderRadius.circular(
+                AppTheme.cardRadius - _borderWidth,
+              ),
               child: Stack(
                 fit: StackFit.expand,
                 children: [

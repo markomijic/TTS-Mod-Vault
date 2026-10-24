@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tts_mod_vault/app/providers/infrastructure_providers.dart';
+import 'package:tts_mod_vault/app/theme/app_theme.dart';
 import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/core/storage/key_value_store.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
@@ -68,10 +69,12 @@ final class SidebarAction {
 
 /// The application sidebar.
 ///
-/// A themed column of M3 parts, not a `NavigationRail`: it holds actions
+/// Styled as an Apple source list: a grey panel with a hairline edge,
+/// accent-coloured icons and rounded hover rows. It is not a
+/// `NavigationRail`: it holds actions
 /// only (there is one library page, with the type selector carrying the
 /// Mods / Saves / Saved Objects / Backups tabs), so nothing in it is ever
-/// highlighted. It has no hover behaviour: the chevron at the top toggles
+/// highlighted. It has no hover behaviour: the sidebar button at the top toggles
 /// between the icon-only form ([collapsedWidth]) and the labelled form
 /// ([extendedWidth]), and that choice is persisted by [SidebarController].
 ///
@@ -110,7 +113,10 @@ class VaultSidebar extends ConsumerWidget {
       duration: animationDuration,
       curve: Curves.easeInOut,
       width: extended ? extendedWidth : collapsedWidth,
-      color: scheme.surfaceContainerLow,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border(right: BorderSide(color: scheme.outlineVariant)),
+      ),
       padding: const EdgeInsets.symmetric(vertical: Insets.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -121,7 +127,7 @@ class VaultSidebar extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: Insets.sm),
               child: IconButton(
                 tooltip: extended ? l10n.sidebarCollapse : l10n.sidebarExpand,
-                icon: Icon(extended ? Icons.chevron_left : Icons.chevron_right),
+                icon: const Icon(Icons.view_sidebar_outlined),
                 onPressed: () =>
                     ref.read(sidebarExtendedProvider.notifier).toggle(),
               ),
@@ -159,8 +165,8 @@ class _SidebarItem extends StatelessWidget {
   final SidebarAction action;
   final bool extended;
 
-  static const double _height = 40;
-  static const double _iconSize = 24;
+  static const double _height = 32;
+  static const double _iconSize = 18;
 
   /// Width of the labelled row: the extended sidebar minus the item's outer
   /// margin and the row's own horizontal padding.
@@ -173,14 +179,18 @@ class _SidebarItem extends StatelessWidget {
     final scheme = theme.colorScheme;
     final enabled = action.enabled;
     final label = action.label;
-    final foreground = enabled
-        ? scheme.onSurfaceVariant
-        : scheme.onSurface.withValues(alpha: 0.38);
+    final disabled = scheme.onSurface.withValues(alpha: 0.38);
+    final foreground = enabled ? scheme.onSurface : disabled;
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(_height / 2),
+      borderRadius: BorderRadius.circular(AppTheme.controlRadius),
     );
 
-    final iconWidget = Icon(action.icon, size: _iconSize, color: foreground);
+    // Sidebar icons take the accent colour (HIG, Sidebars).
+    final iconWidget = Icon(
+      action.icon,
+      size: _iconSize,
+      color: enabled ? scheme.primary : disabled,
+    );
 
     // While the sidebar animates from collapsed to extended the item is
     // narrower than its final size, so the labelled row is laid out at its
@@ -198,14 +208,14 @@ class _SidebarItem extends StatelessWidget {
                   child: Row(
                     children: [
                       iconWidget,
-                      Gaps.w12,
+                      Gaps.w8,
                       Expanded(
                         child: Text(
                           label,
                           maxLines: 1,
                           softWrap: false,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelLarge?.copyWith(
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             color: foreground,
                           ),
                         ),
@@ -219,10 +229,7 @@ class _SidebarItem extends StatelessWidget {
         : Center(child: iconWidget);
 
     Widget item = Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Insets.sm,
-        vertical: Insets.xs / 2,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Insets.sm, vertical: 1),
       child: Material(
         color: Colors.transparent,
         shape: shape,
@@ -250,7 +257,7 @@ class _SidebarDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(horizontal: Insets.md, vertical: Insets.xs),
-    child: Divider(),
+    padding: EdgeInsets.symmetric(horizontal: Insets.md, vertical: Insets.sm),
+    child: Divider(height: 1),
   );
 }

@@ -59,13 +59,7 @@ final class ThemeController extends Notifier<ThemeSettings> {
   Future<void> applyPreset(String id) async {
     final preset = ThemePresets.byId(id);
     if (preset == null) return;
-    await set(
-      state.copyWith(
-        seedColor: preset.seed,
-        variant: preset.variant,
-        presetId: preset.id,
-      ),
-    );
+    await set(state.copyWith(seedColor: preset.seed, presetId: preset.id));
   }
 }
 

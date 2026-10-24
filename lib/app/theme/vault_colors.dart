@@ -1,12 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:material_ui/material_ui.dart';
+import 'package:tts_mod_vault/app/theme/apple_palette.dart';
 
 /// Semantic colours that are not part of [ColorScheme]: asset and backup
 /// status plus log levels.
 ///
-/// Create one with [VaultColors.fromScheme] so the hues are harmonised with
-/// the scheme's primary colour and have the right tone for its brightness.
+/// Create one with [VaultColors.fromScheme] so the hues have the right tone
+/// for the scheme's brightness and stay readable on its surfaces.
 /// Read it with [VaultColors.of].
 @immutable
 final class VaultColors extends ThemeExtension<VaultColors> {
@@ -27,21 +26,22 @@ final class VaultColors extends ThemeExtension<VaultColors> {
 
   /// Derives every colour from [scheme].
   ///
-  /// Success, warning and info hues are seeded from fixed reference colours,
-  /// nudged towards the scheme's primary hue (like Material's harmonisation)
-  /// and then run through `ColorScheme.fromSeed` for [scheme]'s brightness so
-  /// they land on the same tones as the scheme itself. Error states reuse
-  /// [ColorScheme.error].
-  factory VaultColors.fromScheme(ColorScheme scheme) {
-    Color tone(int referenceSeed) => ColorScheme.fromSeed(
-      seedColor: _harmonize(Color(referenceSeed), scheme.primary),
-      brightness: scheme.brightness,
-      dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
-    ).primary;
+  /// Success, warning and info are Apple's system green, orange and blue for
+  /// [scheme]'s brightness, darkened or lightened until they reach
+  /// [minimum] contrast on the scheme's surfaces. Error states reuse
+  /// [ColorScheme.error], so one colour keeps one meaning.
+  factory VaultColors.fromScheme(
+    ColorScheme scheme, {
+    double minimum = ApplePalette.textContrast,
+  }) {
+    final palette = ApplePalette.of(scheme.brightness);
+    final backgrounds = [scheme.surface, scheme.surfaceContainer];
+    Color readable(Color color) =>
+        palette.readable(color, backgrounds, minimum: minimum);
 
-    final success = tone(_successSeed);
-    final warning = tone(_warningSeed);
-    final info = tone(_infoSeed);
+    final success = readable(palette.green);
+    final warning = readable(palette.orange);
+    final info = readable(palette.blue);
     final error = scheme.error;
 
     return VaultColors(
@@ -58,13 +58,6 @@ final class VaultColors extends ThemeExtension<VaultColors> {
       logError: error,
     );
   }
-
-  static const int _successSeed = 0xFF2E7D32;
-  static const int _warningSeed = 0xFFF9A825;
-  static const int _infoSeed = 0xFF1565C0;
-
-  /// Maximum hue rotation applied when harmonising, in degrees.
-  static const double _maxHarmonizeDegrees = 15;
 
   /// Returns the [VaultColors] registered on the current theme.
   static VaultColors of(BuildContext context) =>
@@ -146,19 +139,6 @@ final class VaultColors extends ThemeExtension<VaultColors> {
       logWarning: Color.lerp(logWarning, other.logWarning, t)!,
       logError: Color.lerp(logError, other.logError, t)!,
     );
-  }
-
-  /// Rotates [source]'s hue towards [target]'s by half their difference,
-  /// capped at [_maxHarmonizeDegrees]. Achromatic targets (monochrome
-  /// schemes) leave [source] untouched.
-  static Color _harmonize(Color source, Color target) {
-    final targetHsl = HSLColor.fromColor(target);
-    if (targetHsl.saturation < 0.1) return source;
-    final sourceHsl = HSLColor.fromColor(source);
-    var delta = (targetHsl.hue - sourceHsl.hue) % 360;
-    if (delta > 180) delta -= 360;
-    final shift = delta.sign * math.min(delta.abs() / 2, _maxHarmonizeDegrees);
-    return sourceHsl.withHue((sourceHsl.hue + shift) % 360).toColor();
   }
 
   @override

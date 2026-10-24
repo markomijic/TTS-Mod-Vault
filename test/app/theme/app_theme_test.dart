@@ -5,8 +5,8 @@ import 'package:tts_mod_vault/app/theme/theme_presets.dart';
 import 'package:tts_mod_vault/app/theme/theme_settings.dart';
 import 'package:tts_mod_vault/app/theme/vault_colors.dart';
 
-/// WCAG 2.x minimum contrast for graphical objects and large text.
-const double minContrast = 3;
+/// WCAG 2.x minimum contrast for body text.
+const double minContrast = 4.5;
 
 /// WCAG relative-luminance contrast ratio of two opaque colours (1..21).
 double contrastRatio(Color a, Color b) {
@@ -102,17 +102,54 @@ void main() {
       }
     }
 
-    test('classic dark theme is near black', () {
-      final theme = AppTheme.build(
-        ThemeSettings.fromPreset(ThemePresets.classic),
-        Brightness.dark,
-      );
-      final surface = theme.colorScheme.surface;
-      expect(surface.computeLuminance(), lessThan(0.02));
-      // Monochrome: no chroma on the surface.
-      expect(surface.r, closeTo(surface.g, 0.02));
-      expect(surface.g, closeTo(surface.b, 0.02));
-      expect(theme.colorScheme.onSurface.computeLuminance(), greaterThan(0.7));
+    test('surfaces are neutral greys whatever the accent', () {
+      for (final preset in ThemePresets.all) {
+        for (final brightness in Brightness.values) {
+          final scheme = AppTheme.build(
+            ThemeSettings.fromPreset(preset),
+            brightness,
+          ).colorScheme;
+          for (final surface in [
+            scheme.surface,
+            scheme.surfaceContainerLow,
+            scheme.surfaceContainer,
+            scheme.surfaceContainerHigh,
+          ]) {
+            expect(surface.r, closeTo(surface.b, 0.03), reason: preset.id);
+            expect(surface.g, closeTo(surface.b, 0.03), reason: preset.id);
+          }
+        }
+      }
+    });
+
+    test('the accent keeps the seed hue and reads as text', () {
+      for (final brightness in Brightness.values) {
+        final scheme = AppTheme.build(
+          ThemeSettings.fromPreset(ThemePresets.yellow),
+          brightness,
+        ).colorScheme;
+        expect(
+          HSLColor.fromColor(scheme.primary).hue,
+          closeTo(HSLColor.fromColor(const Color(0xFFFFCC00)).hue, 2),
+        );
+        expect(contrastRatio(scheme.primary, scheme.surface), greaterThan(4.4));
+        expect(
+          contrastRatio(scheme.onPrimary, scheme.primary),
+          greaterThan(4.4),
+        );
+      }
+    });
+
+    test('body text follows the macOS scale', () {
+      final theme = AppTheme.build(ThemeSettings.defaults(), Brightness.light);
+      expect(theme.textTheme.bodyMedium?.fontSize, 13);
+      expect(theme.textTheme.titleSmall?.fontWeight, FontWeight.w600);
+      for (final style in [
+        theme.textTheme.bodySmall,
+        theme.textTheme.labelSmall,
+      ]) {
+        expect(style!.fontSize, greaterThanOrEqualTo(10));
+      }
     });
 
     test('buttons use the hand cursor when enabled', () {
@@ -143,14 +180,26 @@ void main() {
         ThemeSettings.defaults().copyWith(contrast: 1),
         Brightness.dark,
       );
-      expect(high.colorScheme.primary, isNot(standard.colorScheme.primary));
+      expect(
+        high.colorScheme.outlineVariant,
+        isNot(standard.colorScheme.outlineVariant),
+      );
+      expect(
+        contrastRatio(high.colorScheme.primary, high.colorScheme.surface),
+        greaterThanOrEqualTo(
+          contrastRatio(
+            standard.colorScheme.primary,
+            standard.colorScheme.surface,
+          ),
+        ),
+      );
     });
   });
 
   group('VaultColors', () {
     test('fromScheme lifts every semantic colour to the minimum contrast', () {
-      // A scheme whose primary is close to the surface tone would otherwise
-      // leave the harmonised hues unreadable; fromScheme must correct them.
+      // System orange and green are too light on white as text;
+      // fromScheme must correct them for any scheme.
       for (final brightness in Brightness.values) {
         final scheme = ColorScheme.fromSeed(
           seedColor: const Color(0xFFF9A825),

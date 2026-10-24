@@ -1,5 +1,6 @@
-/// The Appearance section of the Settings dialog (plan 4.7, 3.0 rollout):
-/// theme mode, preset chips and a seed colour (swatches plus a hex field).
+/// The Appearance section of the Settings dialog: theme mode, the accent
+/// colour swatches (the macOS accent colours) and a custom accent colour as a
+/// hex value.
 /// Every change is applied to `themeControllerProvider` right away as a
 /// live preview; the dialog restores the previous theme on Cancel.
 library;
@@ -14,23 +15,8 @@ import 'package:tts_mod_vault/app/widgets/insets.dart';
 import 'package:tts_mod_vault/features/settings/presentation/settings_widgets.dart';
 import 'package:tts_mod_vault/l10n/generated/app_localizations.dart';
 
-/// Seed colours offered as swatches (Material 2 500-tones; data, not
-/// chrome). The current seed is added when it is none of these.
-const List<int> seedColorSwatches = [
-  0xFFB3261E,
-  0xFFE65100,
-  0xFFF9A825,
-  0xFF2E7D32,
-  0xFF00897B,
-  0xFF1565C0,
-  0xFF6750A4,
-  0xFFC2185B,
-  0xFF5D4037,
-  0xFF455A64,
-];
-
-/// Diameter of a swatch.
-const double _swatchSize = 32;
+/// Diameter of an accent swatch.
+const double _swatchSize = 24;
 
 /// Width of the hex field.
 const double _hexFieldWidth = 140;
@@ -75,11 +61,6 @@ class AppearanceSection extends HookConsumerWidget {
       return null;
     }, [settings.seedColor]);
 
-    final swatches = [
-      ...seedColorSwatches,
-      if (!seedColorSwatches.contains(settings.seedColor)) settings.seedColor,
-    ];
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,36 +96,22 @@ class AppearanceSection extends HookConsumerWidget {
                 controller.setMode(selection.single),
           ),
           Gaps.h24,
-          SettingsSectionTitle(l10n.settingThemePreset),
+          SettingsSectionTitle(l10n.settingAccentColor),
           Wrap(
-            spacing: Insets.sm,
+            spacing: Insets.md,
             runSpacing: Insets.sm,
             children: [
               for (final preset in ThemePresets.all)
-                ChoiceChip(
-                  avatar: _ColorDot(color: Color(preset.seed)),
-                  label: Text(preset.label(l10n)),
+                _Swatch(
+                  color: Color(preset.seed),
+                  label: preset.label(l10n),
                   selected: settings.presetId == preset.id,
-                  onSelected: (_) => controller.applyPreset(preset.id),
+                  onTap: () => controller.applyPreset(preset.id),
                 ),
             ],
           ),
           Gaps.h24,
-          SettingsSectionTitle(l10n.settingSeedColor),
-          Wrap(
-            spacing: Insets.sm,
-            runSpacing: Insets.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              for (final seed in swatches)
-                _Swatch(
-                  seed: seed,
-                  selected: seed == settings.seedColor,
-                  onTap: () => controller.setSeed(seed),
-                ),
-            ],
-          ),
-          Gaps.h12,
+          SettingsSectionTitle(l10n.settingCustomColor),
           SizedBox(
             width: _hexFieldWidth,
             child: TextField(
@@ -152,8 +119,13 @@ class AppearanceSection extends HookConsumerWidget {
               controller: hexController,
               decoration: InputDecoration(
                 labelText: l10n.settingSeedColorHex,
-                border: const OutlineInputBorder(),
-                isDense: true,
+                prefixIcon: settings.presetId == null
+                    ? Padding(
+                        padding: const EdgeInsets.all(Insets.sm),
+                        child: _ColorDot(color: Color(settings.seedColor)),
+                      )
+                    : null,
+                prefixIconConstraints: const BoxConstraints(),
                 errorText: hexValid.value ? null : l10n.settingSeedColorInvalid,
               ),
               onChanged: (text) {
@@ -189,45 +161,64 @@ class _ColorDot extends StatelessWidget {
   }
 }
 
+/// A round accent swatch, as in macOS System Settings: the selected one
+/// gets a ring and a white dot.
 class _Swatch extends StatelessWidget {
   const _Swatch({
-    required this.seed,
+    required this.color,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
 
-  final int seed;
+  final Color color;
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final color = Color(seed);
-    final onColor =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? scheme.surface
-        : scheme.inverseSurface;
     return Tooltip(
-      message: l10n.settingSeedSwatch(seedToHex(seed)),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Ink(
-          width: _swatchSize,
-          height: _swatchSize,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: selected ? scheme.onSurface : scheme.outlineVariant,
-              width: selected ? 3 : 1,
+      message: label,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          mouseCursor: SystemMouseCursors.click,
+          child: Container(
+            width: _swatchSize + 6,
+            height: _swatchSize + 6,
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selected ? color : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: selected
+                  ? const Center(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: SizedBox.square(dimension: 8),
+                      ),
+                    )
+                  : null,
             ),
           ),
-          child: selected
-              ? Icon(Icons.check, size: Insets.lg, color: onColor)
-              : null,
         ),
       ),
     );

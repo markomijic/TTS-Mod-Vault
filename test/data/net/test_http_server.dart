@@ -72,6 +72,10 @@ final class TestHttpServer {
   /// Bytes served by `/bson`.
   List<int> bsonBytes = const [];
 
+  /// When set, `/` holds the connection until [close] (domain reachability
+  /// cancellation tests); otherwise it answers 404 like any unknown path.
+  bool stallRoot = false;
+
   /// Tag served by `/release` (`null` makes the route answer 404).
   String? releaseTag = 'v3.2.0';
 
@@ -125,6 +129,11 @@ final class TestHttpServer {
     final path = request.uri.path;
     final segments = request.uri.pathSegments;
 
+    if (path == '/' && stallRoot) {
+      await _hold();
+      response.statusCode = HttpStatus.notFound;
+      return;
+    }
     if (path == '/png' || path.startsWith('/png/')) {
       return _bytes(response, pngBytes, 'image/png');
     }
